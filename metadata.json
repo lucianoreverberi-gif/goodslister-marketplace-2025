@@ -1,0 +1,8 @@
+{
+  "name": "Goodslister: AI-Powered Adventure Marketplace",
+  "description": "An innovative marketplace for renting recreational and adventure goods, connecting owners with renters. Features AI-powered assistance for listings, contracts, and an intelligent search experience.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ]
+}
