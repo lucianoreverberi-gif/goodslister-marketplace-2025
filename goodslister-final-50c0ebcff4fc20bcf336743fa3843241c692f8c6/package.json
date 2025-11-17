@@ -1,0 +1,26 @@
+{
+  "name": "goodslister-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@google/genai": "^1.29.0",
+    "@vercel/blob": "^2.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-day-picker": "^8.10.0",
+    "@react-google-maps/api": "^2.19.2"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.5.5",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  }
+}
