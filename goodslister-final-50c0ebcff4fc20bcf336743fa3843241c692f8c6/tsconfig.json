@@ -3,7 +3,8 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-    "module": "CommonJS",    "lib": [
+    "module": "ESNext",
+    "lib": [
       "ES2022",
       "DOM",
       "DOM.Iterable"
