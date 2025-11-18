@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Session } from '../App';
 import { Listing, Booking } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
@@ -17,7 +17,8 @@ interface UserDashboardPageProps {
 type DashboardTab = 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security';
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar }) => {
-    const [activeTab, setActiveTab] = useState<DashboardTab>('listings');
+    // Set 'aiAssistant' as the default active tab to fulfill the user's request.
+    const [activeTab, setActiveTab] = useState<DashboardTab>('aiAssistant');
 
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
@@ -29,10 +30,24 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
     ];
     
     const AIOptimizer: React.FC = () => {
-        const [selectedListingId, setSelectedListingId] = useState<string>(listings[0]?.id || '');
+        // Set the 'Scott Spark Mountain Bike' (id: 'listing-2') as the default selected listing.
+        const [selectedListingId, setSelectedListingId] = useState<string>('listing-2');
         const [isLoading, setIsLoading] = useState(false);
         const [aiResponse, setAiResponse] = useState('');
         const [adviceType, setAdviceType] = useState<ListingAdviceType | null>(null);
+
+        // This effect runs on mount to pre-generate the social media post as requested by the user.
+        useEffect(() => {
+            const generateInitialAdvice = async () => {
+                const scottBike = listings.find(l => l.id === 'listing-2');
+                // Only run if the bike is selected, and we don't already have a response.
+                if (selectedListingId === 'listing-2' && scottBike && !aiResponse) {
+                    await handleGenerateAdvice('promotion');
+                }
+            };
+            generateInitialAdvice();
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, []); // Run only once on mount
 
         const handleGenerateAdvice = async (type: ListingAdviceType) => {
             const selectedListing = listings.find(l => l.id === selectedListingId);
