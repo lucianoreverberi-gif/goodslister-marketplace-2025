@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { Session } from '../App';
-import { Listing } from '../types';
+import { Listing, Booking } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon } from './icons';
 import ImageUploader from './ImageUploader';
+import { format } from 'date-fns';
 
 interface UserDashboardPageProps {
     user: Session;
     listings: Listing[];
+    bookings: Booking[];
     onVerificationUpdate: (userId: string, verificationType: 'email' | 'phone' | 'id') => void;
     onUpdateAvatar: (userId: string, newAvatarUrl: string) => Promise<void>;
 }
 
-type DashboardTab = 'listings' | 'billing' | 'analytics' | 'aiAssistant' | 'security';
+type DashboardTab = 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security';
 
-const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, onVerificationUpdate, onUpdateAvatar }) => {
+const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar }) => {
     const [activeTab, setActiveTab] = useState<DashboardTab>('listings');
 
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
+        { id: 'bookings', name: 'My Bookings', icon: CalendarIcon },
         { id: 'security', name: 'Security & Verification', icon: ShieldIcon },
         { id: 'billing', name: 'Billing', icon: DollarSignIcon },
         { id: 'analytics', name: 'Analytics', icon: BarChartIcon },
@@ -208,6 +211,42 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, o
                                     </tbody>
                                 </table>
                             ) : <p className="text-center p-8 text-gray-600">You haven't listed any items yet.</p>}
+                        </div>
+                    </div>
+                );
+            case 'bookings':
+                return (
+                     <div>
+                        <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
+                        <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                            {bookings.length > 0 ? (
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="p-3">Item</th>
+                                            <th className="p-3">Dates</th>
+                                            <th className="p-3">Total Price</th>
+                                            <th className="p-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {bookings.map(booking => (
+                                            <tr key={booking.id} className="border-b">
+                                                <td className="p-3 font-medium">{booking.listing.title}</td>
+                                                <td className="p-3">{format(new Date(booking.startDate), 'MMM dd, yyyy')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}</td>
+                                                <td className="p-3">${booking.totalPrice.toFixed(2)}</td>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                                        booking.status === 'confirmed' ? 'text-green-800 bg-green-100' : 'text-yellow-800 bg-yellow-100'
+                                                    }`}>
+                                                        {booking.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : <p className="text-center p-8 text-gray-600">You haven't booked any items yet.</p>}
                         </div>
                     </div>
                 );

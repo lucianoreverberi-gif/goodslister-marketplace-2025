@@ -15,7 +15,7 @@ import LoginModal from './components/LoginModal';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage } from './components/StaticPages';
-import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory } from './types';
+import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
 
@@ -184,6 +184,21 @@ const App: React.FC = () => {
         }, 1500);
     };
 
+    const handleCreateBooking = async (listingId: string, startDate: Date, endDate: Date, totalPrice: number): Promise<Booking> => {
+        if (!session) {
+            throw new Error("You must be logged in to book an item.");
+        }
+        const result = await mockApi.createBooking(listingId, session.id, startDate, endDate, totalPrice);
+        
+        // Update app state with the new booking and the updated listing (with new bookedDates)
+        updateAppData({
+            bookings: [...appData.bookings, result.newBooking],
+            listings: appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l)
+        });
+
+        return result.newBooking;
+    };
+
     const handleVerificationUpdate = async (userId: string, verificationType: 'email' | 'phone' | 'id') => {
         const updatedUsers = await mockApi.updateUserVerification(userId, verificationType);
         updateAppData({ users: updatedUsers });
@@ -277,7 +292,8 @@ const App: React.FC = () => {
         categoryImages,
         logoUrl,
         paymentApiKey,
-        conversations
+        conversations,
+        bookings,
     } = appData;
 
     const renderPage = () => {
@@ -296,6 +312,7 @@ const App: React.FC = () => {
                     onBack={() => handleNavigate('explore')} 
                     onStartConversation={handleStartConversation}
                     currentUser={session}
+                    onCreateBooking={handleCreateBooking}
                 /> : <p>Listing not found.</p>;
             case 'createListing':
                 return <CreateListingPage onBack={() => handleNavigate('home')} />;
@@ -326,6 +343,7 @@ const App: React.FC = () => {
                 return session ? <UserDashboardPage 
                     user={session} 
                     listings={listings.filter((l: Listing) => l.owner.id === session.id)} 
+                    bookings={bookings.filter((b: Booking) => b.renterId === session.id)}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
                 /> : <p>Please log in.</p>;

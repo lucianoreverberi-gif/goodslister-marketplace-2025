@@ -84,3 +84,14 @@ export interface Conversation {
 }
 
 export type CategoryImagesMap = { [key in ListingCategory]: string };
+
+export interface Booking {
+    id: string;
+    listingId: string;
+    listing: Listing;
+    renterId: string;
+    startDate: string;
+    endDate: string;
+    totalPrice: number;
+    status: 'pending' | 'confirmed' | 'cancelled';
+}

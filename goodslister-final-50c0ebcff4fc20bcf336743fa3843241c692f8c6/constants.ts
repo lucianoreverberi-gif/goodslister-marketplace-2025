@@ -1,4 +1,4 @@
-import { Listing, User, HeroSlide, Banner, ListingCategory, Conversation, CategoryImagesMap } from './types';
+import { Listing, User, HeroSlide, Banner, ListingCategory, Conversation, CategoryImagesMap, Booking } from './types';
 
 export const mockUsers: User[] = [
     {
@@ -161,7 +161,7 @@ export const mockListings: Listing[] = [
         pricePerHour: 35,
         location: { city: 'Pembroke Pines', state: 'Florida', country: 'USA', latitude: 26.0098, longitude: -80.3259 },
         owner: mockUsers[1],
-        images: ['https://images.unsplash.com/photo-1599389816911-2795f2de00c9?q=80&w=2070&auto=format&fit=crop'],
+        images: ['https://images.unsplash.com/photo-1599389816911-2795f2de0e94?q=80&w=2070&auto=format&fit=crop'],
         isFeatured: false,
         rating: 4.7,
         reviewsCount: 19,
@@ -223,4 +223,17 @@ export const mockConversations: Conversation[] = [
             { id: 'msg-2', senderId: 'user-2', text: 'Hi Carlos! Yes, it\'s available. Would you like to book it?', timestamp: '2024-07-20T10:05:00Z'},
         ],
     },
+];
+
+export const mockBookings: Booking[] = [
+    {
+        id: 'booking-1',
+        listingId: 'listing-3', // Snowboard
+        listing: mockListings[2],
+        renterId: 'user-2',
+        startDate: '2024-08-10',
+        endDate: '2024-08-15',
+        totalPrice: 450,
+        status: 'confirmed'
+    }
 ];

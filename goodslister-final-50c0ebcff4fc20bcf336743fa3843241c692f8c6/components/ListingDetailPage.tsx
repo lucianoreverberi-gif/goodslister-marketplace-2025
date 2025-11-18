@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Listing, User } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon } from './icons';
+import { Listing, User, Booking } from '../types';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
-import { differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays, format } from 'date-fns';
 
 // A simple component to render Markdown from the AI description
 const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
@@ -50,11 +50,40 @@ interface ListingDetailPageProps {
     onBack: () => void;
     onStartConversation: (listing: Listing) => void;
     currentUser: User | null;
+    onCreateBooking: (listingId: string, startDate: Date, endDate: Date, totalPrice: number) => Promise<Booking>;
 }
 
-const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser }) => {
+const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative text-center p-8">
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <XIcon className="h-6 w-6" />
+            </button>
+            <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
+            <p className="text-gray-600 mt-2">Your reservation for the <span className="font-semibold">{booking.listing.title}</span> is complete.</p>
+            <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
+                <p><strong>Dates:</strong> {format(new Date(booking.startDate), 'LLL dd, yyyy')} - {format(new Date(booking.endDate), 'LLL dd, yyyy')}</p>
+                <p><strong>Total Price:</strong> ${booking.totalPrice.toFixed(2)}</p>
+                <p className="mt-2 text-sm text-gray-500">You can view your booking details in your dashboard.</p>
+            </div>
+            <button 
+                onClick={onClose} 
+                className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors"
+            >
+                Continue Browsing
+            </button>
+        </div>
+    </div>
+);
+
+
+const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [range, setRange] = useState<DateRange | undefined>();
+    const [isBooking, setIsBooking] = useState(false);
+    const [bookingError, setBookingError] = useState<string | null>(null);
+    const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
 
     const isOwner = currentUser?.id === listing.owner.id;
 
@@ -96,9 +125,31 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
       }
     };
 
+    const handleBookNow = async () => {
+        if (!currentUser || !range?.from || !range?.to || isOwner) return;
+        
+        setIsBooking(true);
+        setBookingError(null);
+
+        try {
+            const newBooking = await onCreateBooking(listing.id, range.from, range.to, totalPrice);
+            setSuccessfulBooking(newBooking);
+            setRange(undefined); // Reset calendar
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            setBookingError(message);
+        } finally {
+            setIsBooking(false);
+        }
+    };
+
 
     return (
         <div className="bg-gray-50">
+            {successfulBooking && (
+                <BookingConfirmationModal booking={successfulBooking} onClose={() => setSuccessfulBooking(null)} />
+            )}
+
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6">
                     <ChevronLeftIcon className="h-5 w-5" />
@@ -188,6 +239,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                            
                             {/* Booking Section */}
                             <div className="mt-auto pt-8">
+                                {bookingError && <p className="text-sm text-red-600 text-center mb-4">{bookingError}</p>}
                                 {listing.pricingType === 'daily' ? (
                                     <>
                                         <div className="bg-gray-50 rounded-lg p-4 border flex justify-center">
@@ -218,10 +270,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         )}
 
                                         <button
-                                            disabled={!currentUser || isOwner || numberOfDays === 0}
+                                            onClick={handleBookNow}
+                                            disabled={!currentUser || isOwner || numberOfDays === 0 || isBooking}
                                             className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {isOwner ? "This is your listing" : (currentUser ? (numberOfDays > 0 ? "Book Now" : "Select dates to book") : "Log in to book")}
+                                            {isBooking ? "Reserving..." : (isOwner ? "This is your listing" : (currentUser ? (numberOfDays > 0 ? "Book Now" : "Select dates to book") : "Log in to book"))}
                                         </button>
                                     </>
                                 ) : (

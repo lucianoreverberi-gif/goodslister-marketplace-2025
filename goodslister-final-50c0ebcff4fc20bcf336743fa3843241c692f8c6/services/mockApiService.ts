@@ -1,12 +1,14 @@
 // services/mockApiService.ts
 import { 
     User, Listing, HeroSlide, Banner, Conversation, 
-    CategoryImagesMap, ListingCategory 
+    CategoryImagesMap, ListingCategory, Booking 
 } from '../types';
 import { 
     mockUsers, mockListings, initialHeroSlides, initialBanners, 
-    mockConversations, initialCategoryImages 
+    mockConversations, initialCategoryImages, mockBookings
 } from '../constants';
+// FIX: Removed `isWithinInterval` which was causing a "not exported" error.
+import { eachDayOfInterval, format } from 'date-fns';
 
 // The entire structure of our "database"
 interface AppData {
@@ -18,6 +20,7 @@ interface AppData {
     logoUrl: string;
     paymentApiKey: string;
     conversations: Conversation[];
+    bookings: Booking[];
 }
 
 const LOCAL_STORAGE_KEY = 'goodslister_database';
@@ -44,6 +47,7 @@ const readDb = (): AppData => {
         logoUrl: 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
         paymentApiKey: 'pk_test_51...SAMPLE...wLz',
         conversations: mockConversations,
+        bookings: mockBookings,
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialData));
     return initialData;
@@ -294,5 +298,53 @@ export const updateConversations = (updatedConversations: Conversation[]): Promi
             writeDb(db);
             resolve(db.conversations);
         }, API_DELAY / 2); // Faster for chat
+    });
+};
+
+export const createBooking = (listingId: string, renterId: string, startDate: Date, endDate: Date, totalPrice: number): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const db = readDb();
+            const listing = db.listings.find(l => l.id === listingId);
+            
+            if (!listing) {
+                return reject(new Error("Listing not found."));
+            }
+
+            // FIX: Replaced `isWithinInterval` to fix module export error.
+            // This new logic is more robust: it generates all dates for the potential
+            // new booking and checks if any of them already exist in the listing's booked dates.
+            const newBookedDates = eachDayOfInterval({ start: startDate, end: endDate }).map(date => format(date, 'yyyy-MM-dd'));
+            const existingBookedDates = new Set(listing.bookedDates || []);
+            const isDateConflict = newBookedDates.some(day => existingBookedDates.has(day));
+
+            if (isDateConflict) {
+                return reject(new Error("Some of the selected dates are already booked."));
+            }
+
+            // Create new booking
+            const newBooking: Booking = {
+                id: `booking-${Date.now()}`,
+                listingId,
+                listing: { ...listing, owner: { ...listing.owner } }, // Deep copy to prevent circular refs in JSON
+                renterId,
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+                totalPrice,
+                status: 'confirmed',
+            };
+            
+            // Update listing with new booked dates
+            const updatedListing = {
+                ...listing,
+                bookedDates: [...(listing.bookedDates || []), ...newBookedDates],
+            };
+            
+            db.bookings.push(newBooking);
+            db.listings = db.listings.map(l => l.id === listingId ? updatedListing : l);
+            writeDb(db);
+
+            resolve({ newBooking, updatedListing });
+        }, API_DELAY * 2);
     });
 };
