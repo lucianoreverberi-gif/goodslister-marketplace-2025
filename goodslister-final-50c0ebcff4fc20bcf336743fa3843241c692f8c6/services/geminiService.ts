@@ -39,6 +39,10 @@ const callAIAssistantAPI = async (body: object) => {
             // It's likely an infrastructure error (e.g., timeout, gateway error) returning HTML or plain text.
             const errorText = await response.text();
             console.error('Non-JSON error from AI assistant API:', { status: response.status, body: errorText });
+            
+            if (response.status === 404) {
+                 throw new Error(`The API endpoint was not found (Status: 404). This is likely a deployment configuration issue.`);
+            }
             if (response.status === 504) {
                 throw new Error('The request to the AI assistant timed out. This can happen on the first attempt on a new deployment. Please try again in a moment.');
             }
