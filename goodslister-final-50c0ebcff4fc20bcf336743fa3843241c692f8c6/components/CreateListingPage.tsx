@@ -109,7 +109,7 @@ const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setIsUploading(true);
         const uploadedUrls: string[] = [];
 
-        for (const file of Array.from(files)) {
+        for (const file of Array.from(files) as File[]) {
             // Basic validation
             if (!file.type.startsWith('image/')) {
                 alert(`File ${file.name} is not a valid image.`);
