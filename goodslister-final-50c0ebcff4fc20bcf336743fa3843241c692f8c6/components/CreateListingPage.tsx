@@ -4,17 +4,6 @@ import { ListingCategory } from '../types';
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
 
-const AIToolbarButton: React.FC<{onClick: () => void, disabled: boolean, children: React.ReactNode}> = ({ onClick, disabled, children }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:text-gray-400 disabled:bg-transparent disabled:cursor-not-allowed px-3 py-1.5 rounded-md transition-colors"
-    >
-        {children}
-    </button>
-);
-
 const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [title, setTitle] = useState('');
     const [features, setFeatures] = useState<string[]>(['']);
@@ -322,44 +311,81 @@ const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
                         {/* Description with AI */}
-                        <div>
-                            <label htmlFor="description" className="block text-sm font-bold text-gray-800">Description</label>
-                             {generationError && <p className="text-sm text-red-600 mt-2">{generationError}</p>}
-                            <textarea
-                                id="description"
-                                rows={6}
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="mt-1 block w-full border-gray-300 rounded-t-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 rounded-b-none"
-                                placeholder="Describe your item in detail, or use the AI tools below to help you write."
-                            />
-                             {/* AI Writer Toolbar */}
-                            <div className="p-2 bg-gray-100 border border-t-0 border-gray-300 rounded-b-md flex items-center justify-between">
-                                <div className="flex items-center gap-1">
-                                    <AIToolbarButton onClick={handleGenerateDescription} disabled={!title.trim() || !location.trim() || !!aiAction}>
-                                        <WandSparklesIcon className="h-4 w-4 text-blue-500"/>
-                                        <span>Generate</span>
-                                    </AIToolbarButton>
-                                    <div className="h-5 w-px bg-gray-300"></div>
-                                    <AIToolbarButton onClick={handleImproveDescription} disabled={!description.trim() || !!aiAction}>
-                                        <SparklesIcon className="h-4 w-4 text-purple-500"/>
-                                        <span>Improve</span>
-                                    </AIToolbarButton>
-                                    <AIToolbarButton onClick={handleShortenDescription} disabled={!description.trim() || !!aiAction}>
-                                        <ShrinkIcon className="h-4 w-4 text-green-500"/>
-                                        <span>Shorten</span>
-                                    </AIToolbarButton>
-                                    <AIToolbarButton onClick={handleExpandDescription} disabled={!description.trim() || !!aiAction}>
-                                        <ExpandIcon className="h-4 w-4 text-orange-500"/>
-                                        <span>Expand</span>
-                                    </AIToolbarButton>
-                                </div>
-                                {aiAction && (
-                                    <div className="text-sm text-gray-600 animate-pulse flex items-center gap-2">
-                                        <WandSparklesIcon className="h-4 w-4" />
-                                        <span>AI is writing...</span>
+                        <div className="group">
+                            <div className="flex justify-between items-center mb-1">
+                                <label htmlFor="description" className="block text-sm font-bold text-gray-800">
+                                    Description
+                                </label>
+                                <span className="inline-flex items-center rounded-full bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-700 ring-1 ring-inset ring-cyan-600/20">
+                                    <SparklesIcon className="mr-1 h-3 w-3" />
+                                    AI-Powered
+                                </span>
+                            </div>
+                            {generationError && <p className="text-sm text-red-600 mt-2">{generationError}</p>}
+                            
+                            <div className="relative rounded-md shadow-sm focus-within:ring-2 focus-within:ring-cyan-500 transition-shadow">
+                                <textarea
+                                    id="description"
+                                    rows={6}
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="block w-full border-gray-300 rounded-t-lg border-b-0 focus:border-gray-300 focus:ring-0 resize-y text-gray-900 placeholder-gray-400 sm:text-sm leading-6"
+                                    placeholder="Describe your item in detail, or use the AI tools below to help you write."
+                                />
+                                 {/* AI Writer Toolbar */}
+                                <div className="flex items-center justify-between gap-x-3 border border-gray-300 border-t-0 rounded-b-lg bg-gray-50/50 px-3 py-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateDescription}
+                                            disabled={!title.trim() || !location.trim() || !!aiAction}
+                                            className="inline-flex items-center gap-x-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Generate a description based on title and location"
+                                        >
+                                            <WandSparklesIcon className="-ml-0.5 h-4 w-4 text-cyan-600" aria-hidden="true" />
+                                            Generate
+                                        </button>
+                                        
+                                        <div className="h-4 w-px bg-gray-200 mx-1" />
+                                        
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={handleImproveDescription}
+                                                disabled={!description.trim() || !!aiAction}
+                                                className="group inline-flex items-center rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white hover:text-cyan-700 hover:shadow-sm hover:ring-1 hover:ring-inset hover:ring-gray-300 disabled:text-gray-400 transition-all"
+                                            >
+                                                <SparklesIcon className="mr-1.5 h-3.5 w-3.5 group-hover:text-cyan-500" />
+                                                Improve
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleShortenDescription}
+                                                disabled={!description.trim() || !!aiAction}
+                                                className="group inline-flex items-center rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white hover:text-cyan-700 hover:shadow-sm hover:ring-1 hover:ring-inset hover:ring-gray-300 disabled:text-gray-400 transition-all"
+                                            >
+                                                <ShrinkIcon className="mr-1.5 h-3.5 w-3.5 group-hover:text-cyan-500" />
+                                                Shorten
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleExpandDescription}
+                                                disabled={!description.trim() || !!aiAction}
+                                                className="group inline-flex items-center rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white hover:text-cyan-700 hover:shadow-sm hover:ring-1 hover:ring-inset hover:ring-gray-300 disabled:text-gray-400 transition-all"
+                                            >
+                                                <ExpandIcon className="mr-1.5 h-3.5 w-3.5 group-hover:text-cyan-500" />
+                                                Expand
+                                            </button>
+                                        </div>
                                     </div>
-                                )}
+                                    
+                                    {aiAction && (
+                                        <div className="flex items-center gap-1.5 text-xs font-medium text-cyan-600 animate-pulse">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-cyan-600" />
+                                            {aiAction === 'generate' ? 'Writing...' : 'Refining...'}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             {sources.length > 0 && (
                                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
