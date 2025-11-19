@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory } from '../types';
 import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon } from './icons';
@@ -173,10 +172,19 @@ const AdminPage: React.FC<AdminPageProps> = ({
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
 
-    const handleImageUpload = async (id: string, handler: (id: any, newUrl: string) => Promise<void>, newUrl: string) => {
-        setUploadingStates(prev => ({ ...prev, [id]: true }));
-        await handler(id, newUrl);
-        setUploadingStates(prev => ({ ...prev, [id]: false }));
+    // FIX: Replaced the previous buggy handleImageUpload with this robust wrapper.
+    // It separates the "key used for loading state" (loadingKey) from the actual update logic (updateFn).
+    // This allows us to pass correct IDs to the update functions while still tracking loading for specific UI elements.
+    const wrapImageUpdate = async (loadingKey: string, updateFn: () => Promise<void>) => {
+        setUploadingStates(prev => ({ ...prev, [loadingKey]: true }));
+        try {
+            await updateFn();
+        } catch (error) {
+            console.error("Failed to update image:", error);
+            alert("Failed to save image update. Please try again.");
+        } finally {
+            setUploadingStates(prev => ({ ...prev, [loadingKey]: false }));
+        }
     };
 
     const tabs: { id: AdminTab; name: string; icon: React.ElementType }[] = [
@@ -277,7 +285,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                 <ImageUploader
                                     label="Logo (JPG or PNG). Will be displayed in the header and footer."
                                     currentImageUrl={logoUrl}
-                                    onImageChange={(newUrl) => handleImageUpload('logo', onUpdateLogo as any, newUrl)}
+                                    onImageChange={(newUrl) => wrapImageUpdate('logo', () => onUpdateLogo(newUrl))}
                                     isLoading={uploadingStates['logo']}
                                 />
                             </div>
@@ -304,7 +312,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <ImageUploader 
                                             label="Background Image"
                                             currentImageUrl={slide.imageUrl}
-                                            onImageChange={(newUrl) => handleImageUpload(slide.id, (id, url) => onUpdateSlide(id, 'imageUrl', url), newUrl)}
+                                            onImageChange={(newUrl) => wrapImageUpdate(slide.id, () => onUpdateSlide(slide.id, 'imageUrl', newUrl))}
                                             isLoading={uploadingStates[slide.id]}
                                         />
                                     </div>
@@ -322,7 +330,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             <ImageUploader
                                                 label={category}
                                                 currentImageUrl={imageUrl}
-                                                onImageChange={(newUrl) => handleImageUpload(category, (cat, url) => onUpdateCategoryImage(cat as ListingCategory, url), newUrl)}
+                                                onImageChange={(newUrl) => wrapImageUpdate(category, () => onUpdateCategoryImage(category as ListingCategory, newUrl))}
                                                 isLoading={uploadingStates[category]}
                                             />
                                         </div>
@@ -352,7 +360,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <ImageUploader
                                             label="Banner Image"
                                             currentImageUrl={banner.imageUrl}
-                                            onImageChange={(newUrl) => handleImageUpload(banner.id, (id, url) => onUpdateBanner(id, 'imageUrl', url), newUrl)}
+                                            onImageChange={(newUrl) => wrapImageUpdate(banner.id, () => onUpdateBanner(banner.id, 'imageUrl', newUrl))}
                                             isLoading={uploadingStates[banner.id]}
                                         />
                                         <div>
@@ -387,7 +395,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                     <ImageUploader
                                                         label="Update Featured Image"
                                                         currentImageUrl={listing.images[0]}
-                                                        onImageChange={(newUrl) => handleImageUpload(`listing-${listing.id}`, onUpdateListingImage, newUrl)}
+                                                        onImageChange={(newUrl) => wrapImageUpdate(`listing-${listing.id}`, () => onUpdateListingImage(listing.id, newUrl))}
                                                         isLoading={uploadingStates[`listing-${listing.id}`]}
                                                     />
                                                 </div>

@@ -1,6 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from "@google/genai";
-import { ListingCategory, Listing } from '../types';
+import type { Listing } from '../types';
+
+// FIX: Inline the ListingCategory enum to avoid runtime import errors in Vercel serverless functions
+// when running in ES Module mode. Importing from '../types' fails because Node requires .js extensions.
+enum ListingCategory {
+    MOTORCYCLES = "Motorcycles",
+    BIKES = "Bikes",
+    BOATS = "Boats",
+    CAMPING = "Camping",
+    WINTER_SPORTS = "Winter Sports",
+    WATER_SPORTS = "Water Sports",
+    RVS = "RVs",
+    UTVS = "UTVs",
+}
 
 // System instructions for various AI tasks
 const systemInstructions = {
@@ -136,7 +149,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             case 'search': {
                 const { query } = payload;
-                const prompt = `Analyze the following search query from a user on an equipment rental site and extract it into a JSON format. The query is: "${query}". Valid categories are: ${Object.values(ListingCategory).join(', ')}. Extract the category, location (city or state), and any other general search text.`;
+                // Use the local enum values
+                const categories = Object.values(ListingCategory).join(', ');
+                const prompt = `Analyze the following search query from a user on an equipment rental site and extract it into a JSON format. The query is: "${query}". Valid categories are: ${categories}. Extract the category, location (city or state), and any other general search text.`;
                 const response = await ai.models.generateContent({
                     model: "gemini-2.5-flash",
                     contents: prompt,

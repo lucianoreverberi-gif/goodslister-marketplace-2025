@@ -7,7 +7,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const filename = (req.query.filename as string) || 'image.png';
+  let filename = (req.query.filename as string) || 'image.png';
+
+  // FIX: Sanitize filename to remove spaces and special characters (e.g., "logo (1).png" -> "logo-1.png")
+  // This prevents issues with browser URLs and header rendering.
+  filename = filename.replace(/[^a-zA-Z0-9.-]/g, '-');
 
   try {
     // 1. Read the request body into a buffer first.
