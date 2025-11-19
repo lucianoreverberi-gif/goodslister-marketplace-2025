@@ -84,14 +84,28 @@ const BillingSettings: React.FC<{
 
 const SystemHealth: React.FC = () => {
     const [status, setStatus] = useState<{ blob: boolean; postgres: boolean; ai: boolean } | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/config-status')
-            .then(res => res.json())
-            .then(data => setStatus(data))
-            .catch(err => console.error("Failed to check system status", err));
+        const checkStatus = async () => {
+            try {
+                const res = await fetch('/api/config-status');
+                if (!res.ok) {
+                    throw new Error(`Server returned ${res.status}`);
+                }
+                const data = await res.json();
+                setStatus(data);
+            } catch (err) {
+                console.error("Failed to check system status:", err);
+                // Fallback to all disconnected state if API fails, to allow UI to render
+                setStatus({ blob: false, postgres: false, ai: false });
+                setError("Could not connect to server configuration.");
+            }
+        };
+        checkStatus();
     }, []);
 
+    // Show loading only if we have neither status nor a fallback result yet
     if (!status) return <div className="p-4 text-gray-500">Checking system health...</div>;
 
     const StatusItem = ({ label, connected, helpText }: { label: string, connected: boolean, helpText: string }) => (
@@ -126,7 +140,7 @@ const SystemHealth: React.FC = () => {
                     helpText="Add GEMINI_API_KEY to Vercel Environment Variables."
                 />
             </div>
-            {(!status.postgres || !status.blob) && (
+            {(!status.postgres || !status.blob || error) && (
                 <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-200 text-sm">
                     <strong>Tip:</strong> Currently, the app is using <em>Simulation Mode</em> (Local Storage). Changes you make here are only visible to you. Connect the services above in Vercel to go fully live.
                 </div>
