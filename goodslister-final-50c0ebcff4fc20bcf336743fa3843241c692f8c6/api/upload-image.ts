@@ -23,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try {
             const blob = await put(filename, buffer, {
                 access: 'public',
+                addRandomSuffix: true, // FIX: Prevents "Blob already exists" error by making filenames unique
             });
             return res.status(200).json({ url: blob.url });
         } catch (blobError) {
