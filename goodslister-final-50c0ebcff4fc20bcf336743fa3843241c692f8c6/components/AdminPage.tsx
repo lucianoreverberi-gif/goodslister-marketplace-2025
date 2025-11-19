@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon } from './icons';
 import ImageUploader from './ImageUploader';
 
 type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing';
@@ -81,6 +82,59 @@ const BillingSettings: React.FC<{
     );
 };
 
+const SystemHealth: React.FC = () => {
+    const [status, setStatus] = useState<{ blob: boolean; postgres: boolean; ai: boolean } | null>(null);
+
+    useEffect(() => {
+        fetch('/api/config-status')
+            .then(res => res.json())
+            .then(data => setStatus(data))
+            .catch(err => console.error("Failed to check system status", err));
+    }, []);
+
+    if (!status) return <div className="p-4 text-gray-500">Checking system health...</div>;
+
+    const StatusItem = ({ label, connected, helpText }: { label: string, connected: boolean, helpText: string }) => (
+        <div className={`p-4 rounded-lg border ${connected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-gray-700">{label}</span>
+                <span className={`px-2 py-1 text-xs font-bold rounded-full ${connected ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                    {connected ? 'CONNECTED' : 'DISCONNECTED'}
+                </span>
+            </div>
+            <p className="text-sm text-gray-600">{connected ? 'Ready for production.' : helpText}</p>
+        </div>
+    );
+
+    return (
+        <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4">System Health & Production Readiness</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatusItem 
+                    label="Image Storage (Blob)" 
+                    connected={status.blob} 
+                    helpText="Go to Vercel > Storage > Create 'Blob'. Required for uploading public images."
+                />
+                <StatusItem 
+                    label="Database (Postgres)" 
+                    connected={status.postgres} 
+                    helpText="Go to Vercel > Storage > Create 'Postgres'. Required to save listings/users permanently."
+                />
+                <StatusItem 
+                    label="AI Assistant (Gemini)" 
+                    connected={status.ai} 
+                    helpText="Add GEMINI_API_KEY to Vercel Environment Variables."
+                />
+            </div>
+            {(!status.postgres || !status.blob) && (
+                <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-200 text-sm">
+                    <strong>Tip:</strong> Currently, the app is using <em>Simulation Mode</em> (Local Storage). Changes you make here are only visible to you. Connect the services above in Vercel to go fully live.
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 const AdminPage: React.FC<AdminPageProps> = ({ 
     users, 
@@ -102,7 +156,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
     onUpdateCategoryImage,
     onUpdateListingImage
 }) => {
-    const [activeTab, setActiveTab] = useState<AdminTab>('content');
+    const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
 
     const handleImageUpload = async (id: string, handler: (id: any, newUrl: string) => Promise<void>, newUrl: string) => {
@@ -124,7 +178,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
             case 'dashboard':
                 return (
                     <div>
-                        <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
+                        <SystemHealth />
+                        <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h3 className="text-lg font-medium text-gray-500">Total Users</h3>
@@ -133,6 +188,10 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h3 className="text-lg font-medium text-gray-500">Total Listings</h3>
                                 <p className="text-3xl font-bold mt-2">{listings.length}</p>
+                            </div>
+                             <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-lg font-medium text-gray-500">Pending Verifications</h3>
+                                <p className="text-3xl font-bold mt-2 text-orange-500">3</p>
                             </div>
                         </div>
                     </div>
