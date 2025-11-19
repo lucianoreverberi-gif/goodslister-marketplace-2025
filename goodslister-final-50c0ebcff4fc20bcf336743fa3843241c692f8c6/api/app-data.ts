@@ -112,7 +112,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let categoryImages = defaultCategoryImages;
     if (categoryImagesQuery.rows.length > 0) {
         try {
-            categoryImages = JSON.parse(categoryImagesQuery.rows[0].value);
+            const dbImages = JSON.parse(categoryImagesQuery.rows[0].value);
+            // FIX: Merge DB images with defaults so we don't lose categories that haven't been customized yet
+            categoryImages = { ...defaultCategoryImages, ...dbImages };
         } catch (e) {
             // Keep defaults if parse fails
         }
