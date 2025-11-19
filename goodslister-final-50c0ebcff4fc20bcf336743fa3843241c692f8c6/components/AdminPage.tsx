@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory } from '../types';
 import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon } from './icons';
 import ImageUploader from './ImageUploader';
+import { initialCategoryImages } from '../constants';
 
 type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing';
 
@@ -195,6 +197,12 @@ const AdminPage: React.FC<AdminPageProps> = ({
         { id: 'billing', name: 'Billing', icon: CreditCardIcon },
     ];
 
+    // FIX: Merge props categoryImages with initialCategoryImages.
+    // This ensures that even if the database (categoryImages prop) only returns a partial list 
+    // (e.g., only 2 edited categories), the Admin Panel will still display all 8 original categories
+    // so the admin can edit any of them.
+    const displayCategoryImages = { ...initialCategoryImages, ...categoryImages };
+
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
@@ -325,7 +333,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h3 className="text-lg font-semibold mb-4">Category Images</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.entries(categoryImages).map(([category, imageUrl]) => (
+                                    {Object.entries(displayCategoryImages).map(([category, imageUrl]) => (
                                         <div key={category}>
                                             <ImageUploader
                                                 label={category}
