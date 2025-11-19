@@ -11,14 +11,12 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        // Allow either API_KEY or GEMINI_API_KEY to be used
+        'process.env.API_KEY': JSON.stringify(env.API_KEY || env.GEMINI_API_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.API_KEY || env.GEMINI_API_KEY)
       },
       resolve: {
         alias: {
-          // FIX: Replaced `__dirname` which is not available in ES modules
-          // with the modern ESM equivalent using `import.meta.url` to ensure
-          // the path alias resolves correctly.
           '@': fileURLToPath(new URL('.', import.meta.url)),
         }
       }
