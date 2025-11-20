@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
 import { generateListingDescription, improveDescription, shortenDescription, expandDescription } from '../services/geminiService';
-import { ListingCategory } from '../types';
+import { ListingCategory, User, Listing } from '../types';
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import { createListing } from '../services/mockApiService';
 
 const LIBRARIES: ("places")[] = ['places'];
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
 const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
 
-const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null }> = ({ onBack, currentUser }) => {
     const [title, setTitle] = useState('');
     const [features, setFeatures] = useState<string[]>(['']);
     const [description, setDescription] = useState('');
@@ -165,8 +166,14 @@ const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setImageUrls(prev => prev.filter((_, index) => index !== indexToRemove));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!currentUser) {
+            setSubmitMessage("You must be logged in to list an item.");
+            return;
+        }
+
         setIsSubmitting(true);
         setSubmitMessage('');
 
@@ -176,16 +183,52 @@ const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             setIsSubmitting(false);
             return;
         }
+        
+        // Parse location (simple string split for MVP, ideally use Geocoder results)
+        const locationParts = location.split(',');
+        const city = locationParts[0]?.trim() || location;
+        const state = locationParts[1]?.trim() || '';
+        const country = locationParts[locationParts.length - 1]?.trim() || '';
 
-        // Simulate API call
-        setTimeout(() => {
-            console.log('Form submitted with data:', {
-                title, features, description, category, subcategory, location, videoUrl, ownerRules, pricingType, price, sources, imageUrls
-            });
-            setSubmitMessage('Listing published successfully! Redirecting...');
+        const newListing: Listing = {
+            id: `listing-${Date.now()}`,
+            title,
+            description,
+            category: category as ListingCategory,
+            subcategory,
+            pricingType,
+            pricePerDay: pricingType === 'daily' ? parseFloat(price) : 0,
+            pricePerHour: pricingType === 'hourly' ? parseFloat(price) : 0,
+            location: {
+                city,
+                state,
+                country,
+                latitude: 0, // Would need geocoding for real coords
+                longitude: 0
+            },
+            owner: currentUser,
+            images: imageUrls,
+            videoUrl,
+            isFeatured: false,
+            rating: 0,
+            reviewsCount: 0,
+            ownerRules
+        };
+
+        try {
+            const success = await createListing(newListing);
+            if (success) {
+                setSubmitMessage('Listing published successfully! Redirecting...');
+                setTimeout(onBack, 2000);
+            } else {
+                setSubmitMessage('Failed to publish listing. Please try again.');
+            }
+        } catch (error) {
+            console.error("Submission error:", error);
+            setSubmitMessage('An unexpected error occurred.');
+        } finally {
             setIsSubmitting(false);
-            setTimeout(onBack, 2000);
-        }, 1500);
+        }
     };
 
 

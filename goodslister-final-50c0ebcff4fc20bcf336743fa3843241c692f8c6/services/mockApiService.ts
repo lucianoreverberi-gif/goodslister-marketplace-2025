@@ -168,7 +168,7 @@ export const updateUserAvatar = async (userId: string, newAvatarUrl: string): Pr
     return data.users;
 };
 
-// --- Local Only (Mocked for MVP) ---
+// --- User & Listing Actions (Real Backend) ---
 
 export const loginUser = async (email: string): Promise<User | null> => {
     const data = await fetchAllData();
@@ -176,18 +176,36 @@ export const loginUser = async (email: string): Promise<User | null> => {
 };
 
 export const registerUser = async (name: string, email: string): Promise<User | null> => {
-    // In a real app, this would be a POST /api/auth/register
-    // For now, we return a mock user but ideally we should insert into DB too.
-    // Skipping DB insert for register in this refactor to keep it simple, 
-    // but in production this needs an endpoint.
-    return {
-        id: `user-${Date.now()}`,
-        name,
-        email,
-        registeredDate: new Date().toISOString(),
-        avatarUrl: `https://i.pravatar.cc/150?u=${email}`,
-        isEmailVerified: false,
-    };
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password: 'dummy-password' }),
+        });
+        
+        if (response.ok) {
+            const newUser = await response.json();
+            return newUser;
+        }
+        return null;
+    } catch (e) {
+        console.error("Registration failed:", e);
+        return null;
+    }
+};
+
+export const createListing = async (listing: Listing): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/listings/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ listing }),
+        });
+        return response.ok;
+    } catch (e) {
+        console.error("Failed to create listing:", e);
+        return false;
+    }
 };
 
 export const updatePaymentApiKey = async (newKey: string): Promise<string> => {

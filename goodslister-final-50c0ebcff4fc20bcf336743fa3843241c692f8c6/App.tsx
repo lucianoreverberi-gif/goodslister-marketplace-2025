@@ -1,3 +1,4 @@
+
 // FIX: Created the main App component, which was previously missing.
 // This component manages the overall application state, including routing,
 // session management, and data handling, resolving module resolution errors.
@@ -315,7 +316,7 @@ const App: React.FC = () => {
                     onCreateBooking={handleCreateBooking}
                 /> : <p>Listing not found.</p>;
             case 'createListing':
-                return <CreateListingPage onBack={() => handleNavigate('home')} />;
+                return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} />;
             case 'aiAssistant':
                 return <AIAssistantPage />;
             case 'admin':
