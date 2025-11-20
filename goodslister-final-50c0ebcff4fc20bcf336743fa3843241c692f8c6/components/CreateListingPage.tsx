@@ -5,6 +5,7 @@ import { ListingCategory, User, Listing } from '../types';
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
 import { useJsApiLoader } from '@react-google-maps/api';
+import { createListing } from '../services/mockApiService';
 
 const LIBRARIES: ("places")[] = ['places'];
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
