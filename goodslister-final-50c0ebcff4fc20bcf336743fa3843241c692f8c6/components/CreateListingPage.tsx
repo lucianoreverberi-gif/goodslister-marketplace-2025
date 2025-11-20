@@ -1,8 +1,14 @@
+
 import React, { useState } from 'react';
 import { generateListingDescription, improveDescription, shortenDescription, expandDescription } from '../services/geminiService';
 import { ListingCategory } from '../types';
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
+import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+
+const LIBRARIES: ("places")[] = ['places'];
+// TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
+const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
 
 const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [title, setTitle] = useState('');
@@ -24,6 +30,29 @@ const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     
+    // Google Maps Autocomplete State
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: MAPS_API_KEY,
+        libraries: LIBRARIES,
+    });
+    const [autocomplete, setAutocomplete] = useState<any>(null);
+
+    const onLoadAutocomplete = (autoC: any) => {
+        setAutocomplete(autoC);
+    };
+
+    const onPlaceChanged = () => {
+        if (autocomplete) {
+            const place = autocomplete.getPlace();
+            if (place.formatted_address) {
+                setLocation(place.formatted_address);
+            } else if (place.name) {
+                setLocation(place.name);
+            }
+        }
+    };
+
     const handleAddFeature = () => {
         if(features.length < 5) {
             setFeatures([...features, '']);
@@ -191,17 +220,33 @@ const CreateListingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <div>
                             <label htmlFor="location" className="block text-sm font-bold text-gray-800">Location</label>
                             <div className="relative mt-2">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
                                     <MapPinIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                                 </div>
-                                <input
-                                    type="text"
-                                    id="location"
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
-                                    placeholder="E.g., Miami, FL"
-                                />
+                                {isLoaded ? (
+                                    <Autocomplete
+                                        onLoad={onLoadAutocomplete}
+                                        onPlaceChanged={onPlaceChanged}
+                                    >
+                                        <input
+                                            type="text"
+                                            id="location"
+                                            value={location}
+                                            onChange={(e) => setLocation(e.target.value)}
+                                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
+                                            placeholder="E.g., Miami, FL"
+                                        />
+                                    </Autocomplete>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        id="location"
+                                        value={location}
+                                        onChange={(e) => setLocation(e.target.value)}
+                                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
+                                        placeholder="E.g., Miami, FL"
+                                    />
+                                )}
                             </div>
                             <p className="mt-2 text-xs text-gray-500">Where is your item located? Be specific for better AI suggestions.</p>
                         </div>
