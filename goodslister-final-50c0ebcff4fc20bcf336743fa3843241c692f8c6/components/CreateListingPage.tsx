@@ -1,10 +1,9 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { generateListingDescription, improveDescription, shortenDescription, expandDescription } from '../services/geminiService';
 import { ListingCategory, User, Listing } from '../types';
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
-import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import { useJsApiLoader } from '@react-google-maps/api';
 import { createListing } from '../services/mockApiService';
 
 const LIBRARIES: ("places")[] = ['places'];
@@ -37,22 +36,25 @@ const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null
         googleMapsApiKey: MAPS_API_KEY,
         libraries: LIBRARIES,
     });
-    const [autocomplete, setAutocomplete] = useState<any>(null);
+    
+    const locationInputRef = useRef<HTMLInputElement>(null);
 
-    const onLoadAutocomplete = (autoC: any) => {
-        setAutocomplete(autoC);
-    };
+    useEffect(() => {
+        if (isLoaded && locationInputRef.current && (window as any).google) {
+            const autocomplete = new (window as any).google.maps.places.Autocomplete(locationInputRef.current, {
+                types: ['geocode'], // Restrict to geographical locations
+            });
 
-    const onPlaceChanged = () => {
-        if (autocomplete) {
-            const place = autocomplete.getPlace();
-            if (place.formatted_address) {
-                setLocation(place.formatted_address);
-            } else if (place.name) {
-                setLocation(place.name);
-            }
+            autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+                if (place.formatted_address) {
+                    setLocation(place.formatted_address);
+                } else if (place.name) {
+                    setLocation(place.name);
+                }
+            });
         }
-    };
+    }, [isLoaded]);
 
     const handleAddFeature = () => {
         if(features.length < 5) {
@@ -266,30 +268,15 @@ const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null
                                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
                                     <MapPinIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                                 </div>
-                                {isLoaded ? (
-                                    <Autocomplete
-                                        onLoad={onLoadAutocomplete}
-                                        onPlaceChanged={onPlaceChanged}
-                                    >
-                                        <input
-                                            type="text"
-                                            id="location"
-                                            value={location}
-                                            onChange={(e) => setLocation(e.target.value)}
-                                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
-                                            placeholder="E.g., Miami, FL"
-                                        />
-                                    </Autocomplete>
-                                ) : (
-                                    <input
-                                        type="text"
-                                        id="location"
-                                        value={location}
-                                        onChange={(e) => setLocation(e.target.value)}
-                                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
-                                        placeholder="E.g., Miami, FL"
-                                    />
-                                )}
+                                <input
+                                    ref={locationInputRef}
+                                    type="text"
+                                    id="location"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
+                                    placeholder="E.g., Miami, FL"
+                                />
                             </div>
                             <p className="mt-2 text-xs text-gray-500">Where is your item located? Be specific for better AI suggestions.</p>
                         </div>
