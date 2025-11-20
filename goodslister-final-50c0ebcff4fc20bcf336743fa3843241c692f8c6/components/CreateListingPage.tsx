@@ -4,12 +4,11 @@ import { generateListingDescription, improveDescription, shortenDescription, exp
 import { ListingCategory, User, Listing } from '../types';
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
-import { useJsApiLoader } from '@react-google-maps/api';
 import { createListing } from '../services/mockApiService';
 
-const LIBRARIES: ("places")[] = ['places'];
-// TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
-const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
+// TODO: Replace this with your VALID Google Maps API Key from the Google Cloud Console.
+// Ensure "Maps JavaScript API" and "Places API" are enabled for this key.
+const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0'; 
 
 interface CreateListingPageProps {
     onBack: () => void;
@@ -21,7 +20,7 @@ interface CreateListingPageProps {
 const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUser, initialData, onSubmit }) => {
     const isEditing = !!initialData;
     const [title, setTitle] = useState(initialData?.title || '');
-    const [features, setFeatures] = useState<string[]>(['']); // Features are not strictly in listing type yet, keeping simple for now
+    const [features, setFeatures] = useState<string[]>(['']); 
     const [description, setDescription] = useState(initialData?.description || '');
     const [sources, setSources] = useState<any[]>([]);
     const [category, setCategory] = useState<ListingCategory | ''>(initialData?.category || '');
@@ -43,31 +42,77 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const [imageUrls, setImageUrls] = useState<string[]>(initialData?.images || []);
     const [isUploading, setIsUploading] = useState(false);
     
-    // Google Maps Autocomplete State
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: MAPS_API_KEY,
-        libraries: LIBRARIES,
-    });
-    
+    // Google Maps Autocomplete Ref
     const locationInputRef = useRef<HTMLInputElement>(null);
+    const [mapsLoaded, setMapsLoaded] = useState(false);
 
     useEffect(() => {
-        if (isLoaded && locationInputRef.current && (window as any).google) {
-            const autocomplete = new (window as any).google.maps.places.Autocomplete(locationInputRef.current, {
-                types: ['geocode'], // Restrict to geographical locations
-            });
+        // Function to initialize Autocomplete
+        const initAutocomplete = () => {
+            if (locationInputRef.current && (window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
+                try {
+                    const autocomplete = new (window as any).google.maps.places.Autocomplete(locationInputRef.current, {
+                        types: ['geocode'], 
+                    });
 
-            autocomplete.addListener('place_changed', () => {
-                const place = autocomplete.getPlace();
-                if (place.formatted_address) {
-                    setLocation(place.formatted_address);
-                } else if (place.name) {
-                    setLocation(place.name);
+                    autocomplete.addListener('place_changed', () => {
+                        const place = autocomplete.getPlace();
+                        if (place.formatted_address) {
+                            setLocation(place.formatted_address);
+                        } else if (place.name) {
+                            setLocation(place.name);
+                        }
+                    });
+                    setMapsLoaded(true);
+                } catch (e) {
+                    console.warn("Failed to initialize Google Maps Autocomplete (likely invalid key):", e);
+                    // Fallback to normal input
+                    setMapsLoaded(false);
                 }
-            });
+            }
+        };
+
+        // Check if Google Maps script is already globally available
+        if ((window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
+             initAutocomplete();
+             return;
         }
-    }, [isLoaded]);
+
+        // Load Google Maps Script manually to handle errors gracefully
+        const scriptId = 'google-maps-script-manual';
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement("script");
+            script.id = scriptId;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            
+            script.onload = () => {
+                initAutocomplete();
+            };
+            
+            // If the script fails (e.g. network error), we just don't enable autocomplete
+            script.onerror = () => {
+                console.error("Google Maps script failed to load. Location autocomplete will be disabled.");
+                setMapsLoaded(false);
+            };
+
+            document.head.appendChild(script);
+        } else {
+            // If script exists but isn't fully loaded yet, wait a bit or check again
+            // For simplicity in this fix, we'll assume if it exists, it's loading or loaded.
+             const existingScript = document.getElementById(scriptId) as HTMLScriptElement;
+             if (existingScript) {
+                 existingScript.addEventListener('load', initAutocomplete);
+             }
+        }
+        
+        // Cleanup
+        return () => {
+            // We generally don't remove the script as other components might need it
+        };
+    }, []);
+
 
     const handleAddFeature = () => {
         if(features.length < 5) {
@@ -119,7 +164,6 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         } catch (error) {
             const message = error instanceof Error ? error.message : `The AI could not ${action} the text. Please try again.`;
             setGenerationError(message);
-            // Do not update the description, preserving the user's original text
         } finally {
             setAiAction(null);
         }
@@ -133,7 +177,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newCategory = e.target.value as ListingCategory;
         setCategory(newCategory);
-        setSubcategory(''); // Reset subcategory when category changes
+        setSubcategory(''); 
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,12 +188,11 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         const uploadedUrls: string[] = [];
 
         for (const file of Array.from(files) as File[]) {
-            // Basic validation
             if (!file.type.startsWith('image/')) {
                 alert(`File ${file.name} is not a valid image.`);
                 continue;
             }
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            if (file.size > 5 * 1024 * 1024) { 
                 alert(`Image ${file.name} is too large (max 5MB).`);
                 continue;
             }
@@ -192,14 +235,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         setIsSubmitting(true);
         setSubmitMessage('');
 
-        // Basic validation
         if (!title || !category || !price || !location || !description || imageUrls.length === 0) {
             setSubmitMessage('Please fill in all required fields and upload at least one image.');
             setIsSubmitting(false);
             return;
         }
         
-        // Parse location (simple string split for MVP, ideally use Geocoder results)
         const locationParts = location.split(',');
         const city = locationParts[0]?.trim() || location;
         const state = locationParts[1]?.trim() || '';
@@ -218,7 +259,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                 city,
                 state,
                 country,
-                latitude: initialData?.location.latitude || 0, // Would need geocoding for real coords
+                latitude: initialData?.location.latitude || 0, 
                 longitude: initialData?.location.longitude || 0
             },
             owner: currentUser,
@@ -291,7 +332,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
                                     className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
-                                    placeholder="E.g., Miami, FL"
+                                    placeholder={mapsLoaded ? "E.g., Miami, FL" : "Enter location manually (Map API Key required)"}
                                 />
                             </div>
                             <p className="mt-2 text-xs text-gray-500">Where is your item located? Be specific for better AI suggestions.</p>
