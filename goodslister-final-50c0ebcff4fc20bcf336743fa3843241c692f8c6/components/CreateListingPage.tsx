@@ -5,30 +5,41 @@ import { ListingCategory, User, Listing } from '../types';
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
 import { useJsApiLoader } from '@react-google-maps/api';
-import { createListing } from '../services/mockApiService';
 
 const LIBRARIES: ("places")[] = ['places'];
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
 const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
 
-const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null }> = ({ onBack, currentUser }) => {
-    const [title, setTitle] = useState('');
-    const [features, setFeatures] = useState<string[]>(['']);
-    const [description, setDescription] = useState('');
+interface CreateListingPageProps {
+    onBack: () => void;
+    currentUser: User | null;
+    initialData?: Listing;
+    onSubmit: (listing: Listing) => Promise<boolean>;
+}
+
+const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUser, initialData, onSubmit }) => {
+    const isEditing = !!initialData;
+    const [title, setTitle] = useState(initialData?.title || '');
+    const [features, setFeatures] = useState<string[]>(['']); // Features are not strictly in listing type yet, keeping simple for now
+    const [description, setDescription] = useState(initialData?.description || '');
     const [sources, setSources] = useState<any[]>([]);
-    const [category, setCategory] = useState<ListingCategory | ''>('');
-    const [subcategory, setSubcategory] = useState('');
+    const [category, setCategory] = useState<ListingCategory | ''>(initialData?.category || '');
+    const [subcategory, setSubcategory] = useState(initialData?.subcategory || '');
     const [aiAction, setAiAction] = useState<'generate' | 'improve' | 'shorten' | 'expand' | null>(null);
-    const [location, setLocation] = useState('');
-    const [videoUrl, setVideoUrl] = useState('');
-    const [ownerRules, setOwnerRules] = useState('');
-    const [pricingType, setPricingType] = useState<'daily' | 'hourly'>('daily');
-    const [price, setPrice] = useState('');
+    
+    // Initial location string from object
+    const initialLocationStr = initialData ? `${initialData.location.city}, ${initialData.location.state}, ${initialData.location.country}` : '';
+    const [location, setLocation] = useState(initialLocationStr);
+    
+    const [videoUrl, setVideoUrl] = useState(initialData?.videoUrl || '');
+    const [ownerRules, setOwnerRules] = useState(initialData?.ownerRules || '');
+    const [pricingType, setPricingType] = useState<'daily' | 'hourly'>(initialData?.pricingType || 'daily');
+    const [price, setPrice] = useState(initialData ? (initialData.pricingType === 'daily' ? initialData.pricePerDay?.toString() : initialData.pricePerHour?.toString()) || '' : '');
     const [generationError, setGenerationError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState('');
 
-    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [imageUrls, setImageUrls] = useState<string[]>(initialData?.images || []);
     const [isUploading, setIsUploading] = useState(false);
     
     // Google Maps Autocomplete State
@@ -193,8 +204,8 @@ const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null
         const state = locationParts[1]?.trim() || '';
         const country = locationParts[locationParts.length - 1]?.trim() || '';
 
-        const newListing: Listing = {
-            id: `listing-${Date.now()}`,
+        const listingData: Listing = {
+            id: initialData ? initialData.id : `listing-${Date.now()}`,
             title,
             description,
             category: category as ListingCategory,
@@ -206,25 +217,26 @@ const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null
                 city,
                 state,
                 country,
-                latitude: 0, // Would need geocoding for real coords
-                longitude: 0
+                latitude: initialData?.location.latitude || 0, // Would need geocoding for real coords
+                longitude: initialData?.location.longitude || 0
             },
             owner: currentUser,
             images: imageUrls,
             videoUrl,
-            isFeatured: false,
-            rating: 0,
-            reviewsCount: 0,
-            ownerRules
+            isFeatured: initialData?.isFeatured || false,
+            rating: initialData?.rating || 0,
+            reviewsCount: initialData?.reviewsCount || 0,
+            ownerRules,
+            bookedDates: initialData?.bookedDates || []
         };
 
         try {
-            const success = await createListing(newListing);
+            const success = await onSubmit(listingData);
             if (success) {
-                setSubmitMessage('Listing published successfully! Redirecting...');
+                setSubmitMessage(`Listing ${isEditing ? 'updated' : 'published'} successfully! Redirecting...`);
                 setTimeout(onBack, 2000);
             } else {
-                setSubmitMessage('Failed to publish listing. Please try again.');
+                setSubmitMessage(`Failed to ${isEditing ? 'update' : 'publish'} listing. Please try again.`);
             }
         } catch (error) {
             console.error("Submission error:", error);
@@ -240,12 +252,14 @@ const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6">
                     <ChevronLeftIcon className="h-5 w-5" />
-                    Back to home
+                    {isEditing ? 'Cancel Editing' : 'Back to home'}
                 </button>
                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg border border-gray-200/80">
                     <div className="p-6 sm:p-8 border-b">
-                        <h1 className="text-2xl font-bold text-gray-900">List Your Item</h1>
-                        <p className="mt-1 text-sm text-gray-600">Fill out the form below to list your recreational gear on our marketplace.</p>
+                        <h1 className="text-2xl font-bold text-gray-900">{isEditing ? 'Edit Listing' : 'List Your Item'}</h1>
+                        <p className="mt-1 text-sm text-gray-600">
+                            {isEditing ? 'Update the details of your item below.' : 'Fill out the form below to list your recreational gear on our marketplace.'}
+                        </p>
                     </div>
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
                         {/* Title */}
@@ -543,7 +557,7 @@ const CreateListingPage: React.FC<{ onBack: () => void; currentUser: User | null
                                     disabled={isSubmitting}
                                     className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-400"
                                 >
-                                    {isSubmitting ? 'Publishing...' : 'Publish Listing'}
+                                    {isSubmitting ? 'Processing...' : (isEditing ? 'Update Listing' : 'Publish Listing')}
                                 </button>
                             </div>
                         </div>

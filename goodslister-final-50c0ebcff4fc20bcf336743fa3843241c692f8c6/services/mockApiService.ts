@@ -208,6 +208,21 @@ export const createListing = async (listing: Listing): Promise<boolean> => {
     }
 };
 
+export const updateListing = async (listing: Listing): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/listings/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ listing }),
+        });
+        return response.ok;
+    } catch (e) {
+        console.error("Failed to update listing:", e);
+        return false;
+    }
+};
+
+
 export const updatePaymentApiKey = async (newKey: string): Promise<string> => {
     // Client-side state only for security demo
     return newKey;

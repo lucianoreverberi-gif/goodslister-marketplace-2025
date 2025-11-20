@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Session } from '../App';
 import { Listing, Booking } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 
@@ -12,11 +13,13 @@ interface UserDashboardPageProps {
     bookings: Booking[];
     onVerificationUpdate: (userId: string, verificationType: 'email' | 'phone' | 'id') => void;
     onUpdateAvatar: (userId: string, newAvatarUrl: string) => Promise<void>;
+    onListingClick?: (listingId: string) => void;
+    onEditListing?: (listingId: string) => void;
 }
 
 type DashboardTab = 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security';
 
-const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar }) => {
+const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onListingClick, onEditListing }) => {
     // Set 'aiAssistant' as the default active tab to fulfill the user's request.
     const [activeTab, setActiveTab] = useState<DashboardTab>('aiAssistant');
 
@@ -212,6 +215,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
                                             <th className="p-3">Category</th>
                                             <th className="p-3">Price/day</th>
                                             <th className="p-3">Status</th>
+                                            <th className="p-3 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -221,6 +225,22 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
                                                 <td className="p-3">{listing.category}</td>
                                                 <td className="p-3">${listing.pricePerDay}</td>
                                                 <td className="p-3"><span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Active</span></td>
+                                                <td className="p-3 flex justify-end gap-2">
+                                                    <button 
+                                                        onClick={() => onListingClick && onListingClick(listing.id)}
+                                                        className="p-1 text-gray-500 hover:text-cyan-600 hover:bg-gray-100 rounded"
+                                                        title="View Listing"
+                                                    >
+                                                        <EyeIcon className="h-5 w-5" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => onEditListing && onEditListing(listing.id)}
+                                                        className="p-1 text-gray-500 hover:text-cyan-600 hover:bg-gray-100 rounded"
+                                                        title="Edit Listing"
+                                                    >
+                                                        <PencilIcon className="h-5 w-5" />
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

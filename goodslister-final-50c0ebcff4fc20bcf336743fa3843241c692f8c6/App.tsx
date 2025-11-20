@@ -30,6 +30,9 @@ const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
+    // Edit Listing State
+    const [listingToEdit, setListingToEdit] = useState<Listing | undefined>(undefined);
+
     // Chat State
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
     const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
@@ -69,6 +72,14 @@ const App: React.FC = () => {
         setSelectedListingId(id);
         handleNavigate('listingDetail');
     }, [handleNavigate]);
+
+    const handleEditListingClick = useCallback((id: string) => {
+        const listing = appData.listings.find((l: Listing) => l.id === id);
+        if (listing) {
+            setListingToEdit(listing);
+            handleNavigate('editListing');
+        }
+    }, [appData, handleNavigate]);
 
     const handleSearch = (criteria: FilterCriteria) => {
         setInitialExploreFilters(criteria);
@@ -219,6 +230,27 @@ const App: React.FC = () => {
         }
     };
 
+    // --- Listing Management ---
+    const handleCreateListing = async (listing: Listing): Promise<boolean> => {
+        const success = await mockApi.createListing(listing);
+        if (success) {
+            // Optimistic update: add to local list immediately
+            // In a real app, we might refetch
+            updateAppData({ listings: [...appData.listings, listing] });
+        }
+        return success;
+    };
+
+    const handleUpdateListing = async (listing: Listing): Promise<boolean> => {
+        const success = await mockApi.updateListing(listing);
+        if (success) {
+            updateAppData({ 
+                listings: appData.listings.map((l: Listing) => l.id === listing.id ? listing : l) 
+            });
+        }
+        return success;
+    };
+
     // --- Admin content handlers ---
     const handleUpdateLogo = async (newUrl: string) => {
         const updatedLogoUrl = await mockApi.updateLogo(newUrl);
@@ -316,7 +348,15 @@ const App: React.FC = () => {
                     onCreateBooking={handleCreateBooking}
                 /> : <p>Listing not found.</p>;
             case 'createListing':
-                return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} />;
+                return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} onSubmit={handleCreateListing} />;
+            case 'editListing':
+                return listingToEdit ? 
+                    <CreateListingPage 
+                        onBack={() => handleNavigate('userDashboard')} 
+                        currentUser={session} 
+                        initialData={listingToEdit} 
+                        onSubmit={handleUpdateListing} 
+                    /> : <p>No listing selected for editing.</p>;
             case 'aiAssistant':
                 return <AIAssistantPage />;
             case 'admin':
@@ -347,6 +387,8 @@ const App: React.FC = () => {
                     bookings={bookings.filter((b: Booking) => b.renterId === session.id)}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
+                    onListingClick={handleListingClick}
+                    onEditListing={handleEditListingClick}
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;
