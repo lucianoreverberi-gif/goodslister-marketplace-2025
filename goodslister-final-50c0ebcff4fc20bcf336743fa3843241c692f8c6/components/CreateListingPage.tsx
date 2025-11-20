@@ -6,9 +6,8 @@ import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon } from './icons';
 import { createListing } from '../services/mockApiService';
 
-// TODO: Replace this with your VALID Google Maps API Key from the Google Cloud Console.
-// Ensure "Maps JavaScript API" and "Places API" are enabled for this key.
-const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0'; 
+// TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
+const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
 
 interface CreateListingPageProps {
     onBack: () => void;
@@ -103,14 +102,10 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             // For simplicity in this fix, we'll assume if it exists, it's loading or loaded.
              const existingScript = document.getElementById(scriptId) as HTMLScriptElement;
              if (existingScript) {
-                 existingScript.addEventListener('load', initAutocomplete);
+                 // Retry init after a short delay to allow script to finish
+                 setTimeout(initAutocomplete, 1000);
              }
         }
-        
-        // Cleanup
-        return () => {
-            // We generally don't remove the script as other components might need it
-        };
     }, []);
 
 
@@ -164,6 +159,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         } catch (error) {
             const message = error instanceof Error ? error.message : `The AI could not ${action} the text. Please try again.`;
             setGenerationError(message);
+            // Do not update the description, preserving the user's original text
         } finally {
             setAiAction(null);
         }
@@ -188,11 +184,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         const uploadedUrls: string[] = [];
 
         for (const file of Array.from(files) as File[]) {
+            // Basic validation
             if (!file.type.startsWith('image/')) {
                 alert(`File ${file.name} is not a valid image.`);
                 continue;
             }
-            if (file.size > 5 * 1024 * 1024) { 
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
                 alert(`Image ${file.name} is too large (max 5MB).`);
                 continue;
             }
@@ -235,12 +232,14 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         setIsSubmitting(true);
         setSubmitMessage('');
 
+        // Basic validation
         if (!title || !category || !price || !location || !description || imageUrls.length === 0) {
             setSubmitMessage('Please fill in all required fields and upload at least one image.');
             setIsSubmitting(false);
             return;
         }
         
+        // Parse location (simple string split for MVP, ideally use Geocoder results)
         const locationParts = location.split(',');
         const city = locationParts[0]?.trim() || location;
         const state = locationParts[1]?.trim() || '';
@@ -332,7 +331,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
                                     className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
-                                    placeholder={mapsLoaded ? "E.g., Miami, FL" : "Enter location manually (Map API Key required)"}
+                                    placeholder={mapsLoaded ? "E.g., Miami, FL" : "Enter location manually (Map loading...)"}
                                 />
                             </div>
                             <p className="mt-2 text-xs text-gray-500">Where is your item located? Be specific for better AI suggestions.</p>
