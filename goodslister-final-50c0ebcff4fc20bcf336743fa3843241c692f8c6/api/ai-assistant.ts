@@ -53,14 +53,16 @@ You MUST use your knowledge and search capabilities to find interesting tourist 
 /**
  * Builds a contextual prompt for AI advice based on the topic.
  */
-const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: string): string => {
+const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: string, location: string = ''): string => {
+    const locContext = location ? ` located in ${location}` : '';
+    
     switch (topic) {
         case 'contract':
-            return `Act as a virtual legal assistant. For a rental item of type "${itemType}" described as "${itemDescription}", suggest 3-4 important clauses to include in a rental agreement. Briefly explain why each clause is important. Format the response using bold for the clause titles.`;
+            return `Act as a virtual legal assistant. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, suggest 3-4 important clauses to include in a rental agreement. ${location ? `Please consider specific legal nuances or common practices for rentals in ${location}. ` : ''}Briefly explain why each clause is important. Format the response using bold for the clause titles.`;
         case 'insurance':
-            return `Act as an educational insurance advisor. For a rental item of type "${itemType}" described as "${itemDescription}", explain in simple terms the types of insurance coverage the owner might consider. Do not recommend a specific product. The goal is to educate on options. Format the response clearly.`;
+            return `Act as an educational insurance advisor. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, explain in simple terms the types of insurance coverage the owner might consider. ${location ? `Mention any specific insurance types relevant to ${location}. ` : ''}Do not recommend a specific product. The goal is to educate on options. Format the response clearly.`;
         case 'payment':
-            return `Act as a finance and security expert. For a rental item of type "${itemType}" described as "${itemDescription}", provide 3 key tips on best practices for securely accepting payments. Explain the pros and cons of different payment methods (e.g., platform, bank transfer, cash).`;
+            return `Act as a finance and security expert. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, provide 3 key tips on best practices for securely accepting payments. Explain the pros and cons of different payment methods (e.g., platform, bank transfer, cash).`;
         default:
             return '';
     }
@@ -132,8 +134,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             case 'advice': {
-                const { topic, itemType, itemDescription } = payload;
-                const prompt = buildAdvicePrompt(topic, itemType, itemDescription);
+                const { topic, itemType, itemDescription, location } = payload;
+                const prompt = buildAdvicePrompt(topic, itemType, itemDescription, location);
                 if (!prompt) return res.status(400).json({ error: 'Invalid advice topic provided.' });
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
                 return res.status(200).json({ advice: response.text });

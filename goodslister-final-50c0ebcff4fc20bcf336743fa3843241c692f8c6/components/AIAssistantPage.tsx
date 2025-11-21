@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ListingCategory } from '../types';
 import { getAIAdvice, AdviceTopic } from '../services/geminiService';
-import { FileTextIcon, ShieldCheckIcon, WalletIcon, SparklesIcon } from './icons';
+import { FileTextIcon, ShieldCheckIcon, WalletIcon, SparklesIcon, MapPinIcon } from './icons';
 
 interface AdviceCardProps {
     icon: React.ElementType;
@@ -14,6 +14,7 @@ interface AdviceCardProps {
 const AdviceCard: React.FC<AdviceCardProps> = ({ icon: Icon, title, description, buttonText, topic }) => {
     const [itemType, setItemType] = useState('');
     const [itemDescription, setItemDescription] = useState('');
+    const [location, setLocation] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [aiResponse, setAiResponse] = useState('');
 
@@ -21,7 +22,7 @@ const AdviceCard: React.FC<AdviceCardProps> = ({ icon: Icon, title, description,
         e.preventDefault();
         setIsLoading(true);
         setAiResponse('');
-        const response = await getAIAdvice(topic, itemType, itemDescription);
+        const response = await getAIAdvice(topic, itemType, itemDescription, location);
         setAiResponse(response);
         setIsLoading(false);
     };
@@ -51,6 +52,25 @@ const AdviceCard: React.FC<AdviceCardProps> = ({ icon: Icon, title, description,
                             {Object.values(ListingCategory).map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
+                    
+                    <div>
+                        <label htmlFor={`${topic}-location`} className="block text-sm font-medium text-gray-700">Location (Optional)</label>
+                        <div className="relative mt-1">
+                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <MapPinIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                id={`${topic}-location`}
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
+                                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
+                                placeholder="City, State or Country"
+                            />
+                        </div>
+                         <p className="mt-1 text-xs text-gray-500">Add a location to get advice tailored to local regulations.</p>
+                    </div>
+
                     <div>
                         <label htmlFor={`${topic}-description`} className="block text-sm font-medium text-gray-700">Describe Your Item</label>
                         <textarea
@@ -94,7 +114,7 @@ const AIAssistantPage: React.FC = () => {
                 <div className="text-center max-w-3xl mx-auto">
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Goodslister AI Assistant</h1>
                     <p className="mt-4 text-lg text-gray-600">
-                        Get expert guidance to rent your items safely and efficiently. Our AI provides clear, practical advice.
+                        Get expert guidance to rent your items safely and efficiently. Our AI provides clear, practical advice tailored to your needs.
                     </p>
                 </div>
                 <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
