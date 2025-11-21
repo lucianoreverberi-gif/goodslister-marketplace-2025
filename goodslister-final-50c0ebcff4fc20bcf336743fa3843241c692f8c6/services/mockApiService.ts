@@ -1,257 +1,201 @@
+import { GoogleGenAI, Type } from "@google/genai";
+import { Listing, ListingCategory } from '../types';
 
-// services/mockApiService.ts
-import { 
-    User, Listing, HeroSlide, Banner, Conversation, 
-    CategoryImagesMap, ListingCategory, Booking 
-} from '../types';
-import { mockConversations, initialCategoryImages, mockUsers, mockListings, initialHeroSlides, initialBanners, mockBookings } from '../constants';
-import { format, eachDayOfInterval } from 'date-fns';
+// Initialize the Google GenAI SDK directly for client-side use
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
-// The entire structure of our "database"
-interface AppData {
-    users: User[];
-    listings: Listing[];
-    heroSlides: HeroSlide[];
-    banners: Banner[];
-    categoryImages: CategoryImagesMap;
-    logoUrl: string;
-    paymentApiKey: string;
-    conversations: Conversation[];
-    bookings: Booking[];
+export interface FilterCriteria {
+    category?: ListingCategory;
+    location?: string;
+    text?: string;
 }
 
-// --- Data Fetching (READ) ---
+export type AdviceTopic = 'contract' | 'insurance' | 'payment';
+export type ListingAdviceType = 'improvement' | 'pricing' | 'promotion';
 
-/** Fetches all initial data for the application from the Live Database. */
-export const fetchAllData = async (): Promise<AppData> => {
+export interface ListingDescriptionResult {
+    description: string;
+    sources: any[];
+}
+
+// System instructions for various AI tasks
+const systemInstructions = {
+    improve: `You are a writing assistant for 'Goodslister', a rental marketplace. Your task is to proofread and improve the user's text for their listing description.
+- Correct all spelling and grammar mistakes.
+- Enhance clarity and flow.
+- Adjust the tone to be more engaging, friendly, and persuasive for potential renters.
+- Do NOT add new sections like headlines or bullet points if they don't exist. Refine the existing text.
+- Return ONLY the improved text, with no extra comments or apologies.`,
+    shorten: `You are a writing assistant for 'Goodslister', a rental marketplace. Your task is to make the user's listing description more concise and impactful.
+- Shorten the text while preserving the key features and benefits of the item.
+- Remove redundant words and rephrase sentences to be more direct.
+- The goal is a punchier, easier-to-read description.
+- Return ONLY the shortened text, with no extra comments.`,
+    expand: `You are a writing assistant for 'Goodslister', a rental marketplace. Your task is to expand on the user's brief listing description.
+- Elaborate on the provided points, adding more descriptive language and painting a picture of the experience.
+- If the user mentions a feature, describe the benefit of that feature.
+- Make the description more appealing and comprehensive.
+- Return ONLY the expanded text, with no extra comments.`,
+    generate: `You are an expert copywriter and local tour guide for 'Goodslister', an adventure rental marketplace. Your goal is to take a user's basic input and transform it into a stunning, persuasive listing description that sells the *experience*.
+
+**YOUR PROCESS:**
+1.  **Analyze Input:** Review the user's item title, location, and any provided features.
+2.  **Enhance Content:** Correct any spelling/grammar mistakes. Use the location to research and incorporate specific, appealing local details (like famous landmarks, scenic spots, or popular activities related to the item).
+3.  **Craft Description:** Write a compelling description using the structure below.
+
+**CRITICAL INSTRUCTION - ADD LOCAL FLAIR:**
+You MUST use your knowledge and search capabilities to find interesting tourist information about the provided **location**. Weave these details into the description. For example, if the item is a bike in Mendoza, mention the scenic vineyards. If it's a jet ski in Miami, talk about exploring Biscayne Bay. This makes the listing unique and valuable.
+
+**OUTPUT FORMAT (Strict Markdown):**
+1.  **Headline:** A captivating H3 headline (e.g., \`### Headline Here\`).
+2.  **Opening Paragraph:** An engaging paragraph selling the experience, incorporating local details.
+3.  **Highlights Section:** A section titled \`**What you'll love:**\` followed by a bulleted list of benefit-driven points.
+4.  **Call to Action:** A strong, bolded call to action (e.g., \`**Book your adventure today!**\`).`
+};
+
+/**
+ * Builds a contextual prompt for AI advice based on the topic.
+ */
+const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: string): string => {
+    switch (topic) {
+        case 'contract':
+            return `Act as a virtual legal assistant. For a rental item of type "${itemType}" described as "${itemDescription}", suggest 3-4 important clauses to include in a rental agreement. Briefly explain why each clause is important. Format the response using bold for the clause titles.`;
+        case 'insurance':
+            return `Act as an educational insurance advisor. For a rental item of type "${itemType}" described as "${itemDescription}", explain in simple terms the types of insurance coverage the owner might consider. Do not recommend a specific product. The goal is to educate on options. Format the response clearly.`;
+        case 'payment':
+            return `Act as a finance and security expert. For a rental item of type "${itemType}" described as "${itemDescription}", provide 3 key tips on best practices for securely accepting payments. Explain the pros and cons of different payment methods (e.g., platform, bank transfer, cash).`;
+        default:
+            return '';
+    }
+};
+
+/**
+ * Builds a contextual prompt for specific listing advice.
+ */
+const buildListingAdvicePrompt = (listing: Listing, type: string): string => {
+    const listingInfo = `Title: ${listing.title}, Category: ${listing.category}, Description: ${listing.description}, Price per day: $${listing.pricePerDay}`;
+    switch (type) {
+        case 'improvement':
+            return `Analyze the following rental listing information: ${listingInfo}. Provide 3 concrete and actionable suggestions to improve the listing's title and description to attract more customers. Format the response as a list.`;
+        case 'pricing':
+            return `Analyze the following rental listing information: ${listingInfo}. Based on the item type and its description, provide a pricing strategy. Should they offer discounts for longer rentals? Weekend pricing? Offer 2 ideas.`;
+        case 'promotion':
+            return `Based on the following rental listing information: ${listingInfo}. Create a short and engaging social media post (Instagram or Facebook) to promote this rental. Include relevant hashtags.`;
+        default:
+            return '';
+    }
+}
+
+/**
+ * Processes a natural language search query into structured filter criteria.
+ */
+export const processSearchQuery = async (query: string): Promise<FilterCriteria> => {
     try {
-        const response = await fetch('/api/app-data');
-        if (!response.ok) {
-            // If 404, it's likely local dev or endpoint not ready. Fail silently to fallback.
-            if (response.status === 404) {
-                throw new Error("API Endpoint not found (Local Mode)");
-            }
-            throw new Error(`API Error: ${response.status}`);
-        }
-        const data = await response.json();
+        const categories = Object.values(ListingCategory).join(', ');
+        const prompt = `Analyze the following search query from a user on an equipment rental site and extract it into a JSON format. The query is: "${query}". Valid categories are: ${categories}. Extract the category, location (city or state), and any other general search text.`;
         
-        // Merge with local constants for things not yet fully DB-backed or if DB is empty on first load
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        category: { type: Type.STRING, enum: Object.values(ListingCategory) },
+                        location: { type: Type.STRING },
+                        text: { type: Type.STRING }
+                    }
+                }
+            }
+        });
+
+        return JSON.parse(response.text!.trim()) as FilterCriteria;
+    } catch (error) {
+        console.error("Error processing search query:", error);
+        return { text: query };
+    }
+};
+
+/**
+ * Generates a compelling listing description by calling Gemini directly.
+ */
+export const generateListingDescription = async (title: string, location: string, features: string[]): Promise<ListingDescriptionResult> => {
+    const userPrompt = `Generate a description for an item with Title: ${title}, Location: ${location}, Features: ${features?.join(', ') || 'N/A'}`;
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: userPrompt,
+            config: { systemInstruction: systemInstructions.generate, tools: [{googleSearch: {}}] },
+        });
         return {
-            users: data.users.length ? data.users : mockUsers,
-            listings: data.listings.length ? data.listings : mockListings,
-            heroSlides: data.heroSlides.length ? data.heroSlides : initialHeroSlides,
-            banners: data.banners.length ? data.banners : initialBanners,
-            categoryImages: data.categoryImages || initialCategoryImages,
-            logoUrl: data.logoUrl || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
-            paymentApiKey: data.paymentApiKey || '',
-            conversations: mockConversations, // Chat still local for MVP
-            bookings: data.bookings.length ? data.bookings : mockBookings,
+            description: response.text || "",
+            sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? []
         };
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        // Only log error if it's not the expected local mode 404
-        if (!message.includes("Local Mode")) {
-            console.error("Failed to fetch live data, falling back to local mode:", error);
-        } else {
-            console.log("Running in Local Mode (using mock data)");
-        }
-        
-        // Fallback for development if DB isn't connected
-        return {
-            users: mockUsers,
-            listings: mockListings,
-            heroSlides: initialHeroSlides,
-            banners: initialBanners,
-            categoryImages: initialCategoryImages,
-            logoUrl: 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
-            paymentApiKey: '',
-            conversations: mockConversations,
-            bookings: mockBookings,
-        };
+        console.error("Generate Description Error:", error);
+        throw new Error("Failed to generate description.");
     }
 };
 
-// --- Data Updates (WRITE) ---
-
-/** Helper to send updates to the backend */
-const sendAdminAction = async (action: string, payload: any) => {
+/**
+ * Provides AI-powered advice on various topics related to listings.
+ */
+export const getAIAdvice = async (topic: AdviceTopic, itemType: string, itemDescription: string): Promise<string> => {
     try {
-        const response = await fetch('/api/admin-action', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, payload }),
-        });
-        if (!response.ok) {
-            // If it fails (e.g. locally), we just log and rely on optimistic UI updates
-             if (response.status === 404) return; // Local mode, do nothing
-             console.error("Failed to save admin action:", await response.text());
-        }
-    } catch (e) {
-        // Ignore network errors in local/fallback mode
-        console.warn("Could not save to backend (likely local mode).");
+        const prompt = buildAdvicePrompt(topic, itemType, itemDescription);
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+        return response.text || "No advice generated.";
+    } catch (error) {
+         console.error("Error getting AI advice:", error);
+         return "Could not generate advice at this time.";
     }
 };
 
-
-/** Updates a listing's primary image. */
-export const updateListingImage = async (listingId: string, newImageUrl: string): Promise<Listing[]> => {
-    await sendAdminAction('updateListingImage', { listingId, newImageUrl });
-    // Optimistic return: In a real app we'd re-fetch, but here we simulate the update for UI responsiveness
-    const data = await fetchAllData(); 
-    // Manually patch the specific listing in case the fetch hasn't propagated or for speed
-    return data.listings.map(l => l.id === listingId ? { ...l, images: [newImageUrl, ...l.images.slice(1)] } : l);
-};
-
-/** Updates the site logo. */
-export const updateLogo = async (newUrl: string): Promise<string> => {
-    await sendAdminAction('updateLogo', { url: newUrl });
-    return newUrl;
-};
-
-export const updateSlide = async (slide: HeroSlide): Promise<HeroSlide[]> => {
-    await sendAdminAction('updateSlide', slide);
-    const data = await fetchAllData();
-    return data.heroSlides.map(s => s.id === slide.id ? slide : s);
-};
-
-export const addSlide = async (slide: HeroSlide): Promise<HeroSlide[]> => {
-    await sendAdminAction('addSlide', slide);
-    const data = await fetchAllData();
-    return [...data.heroSlides, slide];
-};
-
-export const deleteSlide = async (id: string): Promise<HeroSlide[]> => {
-    await sendAdminAction('deleteSlide', { id });
-    const data = await fetchAllData();
-    return data.heroSlides.filter(s => s.id !== id);
-};
-
-export const updateBanner = async (banner: Banner): Promise<Banner[]> => {
-    await sendAdminAction('updateBanner', banner);
-    const data = await fetchAllData();
-    return data.banners.map(b => b.id === banner.id ? banner : b);
-};
-
-export const addBanner = async (banner: Banner): Promise<Banner[]> => {
-    await sendAdminAction('addBanner', banner);
-    const data = await fetchAllData();
-    return [...data.banners, banner];
-};
-
-export const deleteBanner = async (id: string): Promise<Banner[]> => {
-    await sendAdminAction('deleteBanner', { id });
-    const data = await fetchAllData();
-    return data.banners.filter(b => b.id !== id);
-};
-
-export const toggleFeaturedListing = async (id: string): Promise<Listing[]> => {
-    await sendAdminAction('toggleFeatured', { id });
-    const data = await fetchAllData();
-    return data.listings.map(l => l.id === id ? { ...l, isFeatured: !l.isFeatured } : l);
-};
-
-export const updateCategoryImage = async (category: ListingCategory, newUrl: string): Promise<CategoryImagesMap> => {
-    await sendAdminAction('updateCategoryImage', { category, url: newUrl });
-    const data = await fetchAllData();
-    return { ...data.categoryImages, [category]: newUrl };
-};
-
-export const updateUserVerification = async (userId: string, verificationType: 'email' | 'phone' | 'id'): Promise<User[]> => {
-    await sendAdminAction('updateUserVerification', { userId, type: verificationType });
-    const data = await fetchAllData();
-    return data.users; // Simplified for speed
-};
-
-export const updateUserAvatar = async (userId: string, newAvatarUrl: string): Promise<User[]> => {
-    await sendAdminAction('updateUserAvatar', { userId, url: newAvatarUrl });
-    const data = await fetchAllData();
-    return data.users;
-};
-
-// --- User & Listing Actions (Real Backend) ---
-
-export const loginUser = async (email: string): Promise<User | null> => {
-    const data = await fetchAllData();
-    return data.users.find(u => u.email === email) || null;
-};
-
-export const registerUser = async (name: string, email: string): Promise<User | null> => {
+/**
+ * Provides AI-powered advice for a specific listing.
+ */
+export const getListingAdvice = async (listing: Listing, type: ListingAdviceType): Promise<string> => {
     try {
-        const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password: 'dummy-password' }),
-        });
-        
-        if (response.ok) {
-            const newUser = await response.json();
-            return newUser;
-        }
-        return null;
-    } catch (e) {
-        console.error("Registration failed:", e);
-        return null;
+        const prompt = buildListingAdvicePrompt(listing, type);
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+        return response.text || "No advice generated.";
+    } catch (error) {
+        console.error("Error getting listing advice:", error);
+        return "Could not generate listing advice. Please try again later.";
     }
 };
 
-export const createListing = async (listing: Listing): Promise<boolean> => {
+/**
+ * Translates text from a source language to a target language.
+ */
+export const translateText = async (text: string, targetLang: string, sourceLang: string): Promise<string> => {
+    if (sourceLang.toLowerCase() === targetLang.toLowerCase()) return text;
     try {
-        const response = await fetch('/api/listings/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ listing }),
-        });
-        return response.ok;
-    } catch (e) {
-        console.error("Failed to create listing:", e);
-        return false;
+        const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. Only return the translated text.\n\nText: "${text}"`;
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+        return response.text?.trim() || text;
+    } catch (error) {
+        console.error("Error translating text:", error);
+        return `(Translation Error) ${text}`;
     }
 };
 
-export const updateListing = async (listing: Listing): Promise<boolean> => {
+const callAITextManipulation = async (action: 'improve' | 'shorten' | 'expand', text: string): Promise<string> => {
+    if (!text.trim()) return "";
     try {
-        const response = await fetch('/api/listings/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ listing }),
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: text,
+            config: { systemInstruction: systemInstructions[action] },
         });
-        return response.ok;
-    } catch (e) {
-        console.error("Failed to update listing:", e);
-        return false;
+        return response.text?.trim() || text;
+    } catch (error) {
+        console.error(`Error in ${action} text:`, error);
+        throw new Error(`Failed to ${action} text.`);
     }
 };
 
-
-export const updatePaymentApiKey = async (newKey: string): Promise<string> => {
-    // Client-side state only for security demo
-    return newKey;
-};
-
-export const updateConversations = async (updatedConversations: Conversation[]): Promise<Conversation[]> => {
-    // Chat stored in memory for demo
-    return updatedConversations;
-};
-
-export const createBooking = async (listingId: string, renterId: string, startDate: Date, endDate: Date, totalPrice: number): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
-    // For now, bookings are local-only to avoid complex date logic on the server in this step.
-    // To make this live, we would need a POST /api/bookings endpoint.
-    const data = await fetchAllData();
-    const listing = data.listings.find(l => l.id === listingId)!;
-    
-    const newBooking: Booking = {
-        id: `booking-${Date.now()}`,
-        listingId,
-        listing,
-        renterId,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        totalPrice,
-        status: 'confirmed',
-    };
-    
-    const newBookedDates = eachDayOfInterval({ start: startDate, end: endDate }).map(d => format(d, 'yyyy-MM-dd'));
-    const updatedListing = { ...listing, bookedDates: [...(listing.bookedDates || []), ...newBookedDates] };
-
-    return { newBooking, updatedListing };
-};
+export const improveDescription = (text: string) => callAITextManipulation('improve', text);
+export const shortenDescription = (text: string) => callAITextManipulation('shorten', text);
+export const expandDescription = (text: string) => callAITextManipulation('expand', text);
