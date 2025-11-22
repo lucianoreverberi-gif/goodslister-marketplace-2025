@@ -26,7 +26,7 @@ async function callAiApi(action: string, payload: any) {
         });
         
         if (!response.ok) {
-             const err = await response.json();
+             const err = await response.json().catch(() => ({}));
              throw new Error(err.error || `AI Service Error: ${response.status}`);
         }
         return response.json();
