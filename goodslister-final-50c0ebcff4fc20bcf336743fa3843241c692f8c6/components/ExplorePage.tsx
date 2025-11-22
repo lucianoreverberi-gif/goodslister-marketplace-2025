@@ -1,3 +1,4 @@
+
 // FIX: Removed google.maps type reference as type definitions are not available.
 // All google.maps types will be treated as 'any'.
 
@@ -5,7 +6,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { Listing, ListingCategory } from '../types';
 import ListingCard from './ListingCard';
 import { SearchIcon, MapPinIcon, LocateIcon } from './icons';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';
 
 interface ExplorePageProps {
@@ -46,6 +47,11 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     const [mapZoom, setMapZoom] = useState(4);
     const [hoveredListingId, setHoveredListingId] = useState<string | null>(null);
     const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+    
+    // Autocomplete state
+    const [autocomplete, setAutocomplete] = useState<any>(null);
+    // Track if the map was recently moved by a user search to prevent auto-fitting logic from overriding it immediately
+    const [userManuallySearched, setUserManuallySearched] = useState(false);
 
     // Resizable sidebar state
     const [sidebarWidth, setSidebarWidth] = useState(550);
@@ -79,6 +85,39 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     const onMapLoad = useCallback((mapInstance: any) => {
         setMap(mapInstance);
     }, []);
+    
+    // Autocomplete Load
+    const onAutocompleteLoad = useCallback((autocompleteInstance: any) => {
+        setAutocomplete(autocompleteInstance);
+    }, []);
+
+    // Handle Place Changed (User selects a location from dropdown)
+    const onPlaceChanged = () => {
+        if (autocomplete !== null) {
+            const place = autocomplete.getPlace();
+            
+            // 1. Update Map Center & Zoom independent of listings
+            if (place.geometry && place.geometry.location) {
+                const newLat = place.geometry.location.lat();
+                const newLng = place.geometry.location.lng();
+                
+                setMapCenter({ lat: newLat, lng: newLng });
+                setMapZoom(12); // Set a comfortable city-level zoom
+                
+                // Important: Flag that the user manually searched so we don't auto-fit bounds immediately if empty
+                setUserManuallySearched(true);
+            }
+
+            // 2. Update the Location Filter string to filter the list on the left
+            if (place.name || place.formatted_address) {
+                // Prefer name (e.g. "Miami"), fallback to address
+                const locName = place.name || place.formatted_address;
+                // Remove country from string to make matching easier (e.g. "Miami, FL, USA" -> "Miami, FL")
+                const simplifiedLoc = locName.split(',').slice(0, 2).join(',');
+                setLocationFilter(simplifiedLoc);
+            }
+        }
+    };
 
     // Resizing handlers
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -111,11 +150,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
 
 
     const handleCategoryToggle = (category: ListingCategory) => {
-        setSelectedCategories(prev =>
-            prev.includes(category)
+        setSelectedCategories(prev => {
+            // Reset manual search flag when user changes filters, so map can auto-fit to new results
+            setUserManuallySearched(false);
+            return prev.includes(category)
                 ? prev.filter(c => c !== category)
-                : [...prev, category]
-        );
+                : [...prev, category];
+        });
     };
 
     const clearFilters = () => {
@@ -124,6 +165,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         setPriceRange(maxPrice);
         setSortBy('rating_desc');
         setLocationFilter('');
+        setMapZoom(4);
+        setMapCenter(defaultCenter);
+        setUserManuallySearched(false);
     };
 
     const filteredAndSortedListings = useMemo(() => {
@@ -136,10 +180,12 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesCategory = selectedCategories.length > 0 ? 
                 selectedCategories.includes(listing.category) : true;
             
+            // Improved Location Matching: Split by comma to handle "City, State" better
             const locationFilterLower = locationFilter.toLowerCase();
             const matchesLocation = locationFilter ?
                 listing.location.city.toLowerCase().includes(locationFilterLower) ||
-                listing.location.state.toLowerCase().includes(locationFilterLower)
+                listing.location.state.toLowerCase().includes(locationFilterLower) ||
+                listing.location.country.toLowerCase().includes(locationFilterLower)
                 : true;
 
             const price = listing.pricingType === 'daily' ? listing.pricePerDay : listing.pricePerHour;
@@ -166,6 +212,11 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
+        // If the user just manually searched for a location (e.g. "Miami"), 
+        // we respect their zoom/center choice set in onPlaceChanged.
+        // We only auto-fit bounds if they haven't just searched, or if they change other filters.
+        if (userManuallySearched) return;
+
         if (map && filteredAndSortedListings.length > 0) {
             // If there's only one result, center and zoom directly on it
             if (filteredAndSortedListings.length === 1) {
@@ -183,12 +234,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                 });
                 map.fitBounds(bounds);
             }
-        } else if (map) {
-            // Reset map view to the default if there are no results
-            map.panTo(defaultCenter);
-            map.setZoom(4);
-        }
-    }, [filteredAndSortedListings, map]);
+        } 
+        // Note: We intentionally do NOT reset to defaultCenter if 0 results here, 
+        // so the map stays where the user left it.
+    }, [filteredAndSortedListings, map, userManuallySearched]);
 
 
     const handleUseMyLocation = () => {
@@ -199,6 +248,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                     setMapCenter({ lat: latitude, lng: longitude });
                     setMapZoom(13);
                     setLocationFilter('');
+                    setUserManuallySearched(true);
                 },
                 () => {
                     alert('Error: The Geolocation service failed or was denied.');
@@ -222,25 +272,33 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                 <div className="p-4 border-b">
                     {/* Filters */}
                     <div className="space-y-4">
-                        {/* Location Filter */}
+                        {/* Location Filter with Autocomplete */}
                         <div>
                             <label htmlFor="location" className="block text-sm font-bold text-gray-800">Location</label>
                             <div className="relative mt-1">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
                                     <MapPinIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                                 </div>
-                                <input
-                                    type="text"
-                                    id="location"
-                                    value={locationFilter}
-                                    onChange={(e) => setLocationFilter(e.target.value)}
-                                    placeholder="Search for a city"
-                                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10 pr-10"
-                                />
+                                <Autocomplete
+                                    onLoad={onAutocompleteLoad}
+                                    onPlaceChanged={onPlaceChanged}
+                                >
+                                    <input
+                                        type="text"
+                                        id="location"
+                                        value={locationFilter}
+                                        onChange={(e) => {
+                                            setLocationFilter(e.target.value);
+                                            setUserManuallySearched(false); // Reset manual flag if typing manually
+                                        }}
+                                        placeholder="Search for a city (e.g. Miami)"
+                                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10 pr-10"
+                                    />
+                                </Autocomplete>
                                 <button
                                     type="button"
                                     onClick={handleUseMyLocation}
-                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-cyan-600"
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-cyan-600 z-10"
                                     aria-label="Use my current location"
                                 >
                                     <LocateIcon className="h-5 w-5" />
@@ -279,7 +337,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                                     type="text"
                                     id="search"
                                     value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
+                                    onChange={e => {
+                                        setSearchTerm(e.target.value);
+                                        setUserManuallySearched(false); // Reset so map can refit based on keyword results
+                                    }}
                                     placeholder="Search for keywords..."
                                     className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
                                 />
@@ -319,7 +380,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                     ) : (
                         <div className="text-center py-20">
                             <h3 className="text-xl font-semibold text-gray-800">No results found</h3>
-                            <p className="mt-2 text-gray-600">Try adjusting your filters.</p>
+                            <p className="mt-2 text-gray-600">
+                                We couldn't find any items matching your filters in this location. 
+                                <br />Try moving the map or changing your search terms.
+                            </p>
+                            <button onClick={clearFilters} className="mt-4 text-cyan-600 hover:underline font-medium">
+                                Clear all filters
+                            </button>
                         </div>
                     )}
                 </div>
