@@ -423,3 +423,28 @@ export const AlertTriangleIcon: React.FC<IconProps> = (props) => (
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
     </svg>
 );
+
+export const PenToolIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+        <path d="M2 2l7.586 7.586"></path>
+        <circle cx="11" cy="11" r="2"></circle>
+    </svg>
+);
+
+export const PrinterIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+    </svg>
+);
+
+export const FileCheckIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <path d="M9 15l2 2 4-4"></path>
+    </svg>
+);
