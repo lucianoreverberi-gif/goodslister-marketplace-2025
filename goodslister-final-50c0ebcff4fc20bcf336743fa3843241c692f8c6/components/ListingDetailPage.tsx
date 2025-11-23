@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Listing, User, Booking } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format } from 'date-fns';
@@ -50,7 +51,7 @@ interface ListingDetailPageProps {
     onBack: () => void;
     onStartConversation: (listing: Listing) => void;
     currentUser: User | null;
-    onCreateBooking: (listingId: string, startDate: Date, endDate: Date, totalPrice: number) => Promise<Booking>;
+    onCreateBooking: (listingId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium') => Promise<Booking>;
 }
 
 const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
@@ -65,7 +66,11 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
             <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
                 <p><strong>Dates:</strong> {format(new Date(booking.startDate), 'LLL dd, yyyy')} - {format(new Date(booking.endDate), 'LLL dd, yyyy')}</p>
                 <p><strong>Total Price:</strong> ${booking.totalPrice.toFixed(2)}</p>
-                <p className="mt-2 text-sm text-gray-500">You can view your booking details in your dashboard.</p>
+                <div className="flex items-center gap-2 mt-2">
+                     <ShieldCheckIcon className={`h-4 w-4 ${booking.insurancePlan === 'premium' ? 'text-purple-600' : 'text-blue-600'}`} />
+                     <p className="capitalize text-sm font-medium">{booking.insurancePlan || 'Standard'} Protection</p>
+                </div>
+                <p className="mt-2 text-sm text-gray-500 border-t pt-2">You can view your booking details in your dashboard.</p>
             </div>
             <button 
                 onClick={onClose} 
@@ -84,6 +89,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [isBooking, setIsBooking] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
+    
+    // Insurance State
+    const [selectedInsurance, setSelectedInsurance] = useState<'standard' | 'essential' | 'premium'>('standard');
 
     const isOwner = currentUser?.id === listing.owner.id;
 
@@ -94,7 +102,20 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     if (listing.pricingType === 'daily' && range?.from && range.to) {
         numberOfDays = differenceInCalendarDays(range.to, range.from) + 1;
     }
-    const totalPrice = numberOfDays * (listing.pricePerDay || 0);
+    
+    // Calculate Pricing
+    const baseRentalPrice = numberOfDays * (listing.pricePerDay || 0);
+    
+    let insuranceCost = 0;
+    if (numberOfDays > 0) {
+        if (selectedInsurance === 'essential') {
+            insuranceCost = baseRentalPrice * 0.10; // 10%
+        } else if (selectedInsurance === 'premium') {
+            insuranceCost = baseRentalPrice * 0.20; // 20%
+        }
+    }
+
+    const totalPrice = baseRentalPrice + insuranceCost;
     
     // Define styles for the calendar modifiers. This is the most robust way to style.
     const modifiersStyles: React.CSSProperties | any = {
@@ -132,7 +153,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         setBookingError(null);
 
         try {
-            const newBooking = await onCreateBooking(listing.id, range.from, range.to, totalPrice);
+            const newBooking = await onCreateBooking(listing.id, range.from, range.to, totalPrice, selectedInsurance);
             setSuccessfulBooking(newBooking);
             setRange(undefined); // Reset calendar
         } catch (error) {
@@ -257,14 +278,64 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         </div>
                                         
                                         {numberOfDays > 0 && (
-                                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border space-y-2">
-                                                <div className="flex justify-between items-center text-gray-700">
-                                                    <span>${(listing.pricePerDay || 0).toFixed(2)} x {numberOfDays} days</span>
-                                                    <span className="font-medium">${((listing.pricePerDay || 0) * numberOfDays).toFixed(2)}</span>
+                                            <div className="mt-4 space-y-4">
+                                                {/* Insurance Selection */}
+                                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <UmbrellaIcon className="h-5 w-5 text-blue-600" />
+                                                        <h3 className="font-semibold text-gray-800">Trip Protection</h3>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${selectedInsurance === 'standard' ? 'bg-white border-blue-500 shadow-sm' : 'border-gray-200 hover:bg-white'}`}>
+                                                            <input type="radio" name="insurance" value="standard" checked={selectedInsurance === 'standard'} onChange={() => setSelectedInsurance('standard')} className="mt-1 mr-3" />
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between">
+                                                                    <span className="font-medium text-gray-900">Standard</span>
+                                                                    <span className="text-gray-500 text-sm">Included</span>
+                                                                </div>
+                                                                <p className="text-xs text-gray-500 mt-1">Covers factory defects. Renter liable for damage.</p>
+                                                            </div>
+                                                        </label>
+                                                        
+                                                        <label className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${selectedInsurance === 'essential' ? 'bg-white border-blue-500 shadow-sm' : 'border-gray-200 hover:bg-white'}`}>
+                                                            <input type="radio" name="insurance" value="essential" checked={selectedInsurance === 'essential'} onChange={() => setSelectedInsurance('essential')} className="mt-1 mr-3" />
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between">
+                                                                    <span className="font-medium text-gray-900">Essential Protection</span>
+                                                                    <span className="text-gray-500 text-sm">+${(baseRentalPrice * 0.10).toFixed(2)}</span>
+                                                                </div>
+                                                                <p className="text-xs text-gray-500 mt-1">Covers minor scratches and dents.</p>
+                                                            </div>
+                                                        </label>
+
+                                                        <label className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${selectedInsurance === 'premium' ? 'bg-white border-blue-500 shadow-sm' : 'border-gray-200 hover:bg-white'}`}>
+                                                            <input type="radio" name="insurance" value="premium" checked={selectedInsurance === 'premium'} onChange={() => setSelectedInsurance('premium')} className="mt-1 mr-3" />
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between">
+                                                                    <span className="font-medium text-gray-900">Premium Adventure</span>
+                                                                    <span className="text-gray-500 text-sm">+${(baseRentalPrice * 0.20).toFixed(2)}</span>
+                                                                </div>
+                                                                <p className="text-xs text-gray-500 mt-1">Full coverage including theft & major damage.</p>
+                                                            </div>
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-between items-center font-bold text-lg pt-2 border-t">
-                                                    <span>Total Price</span>
-                                                    <span>${totalPrice.toFixed(2)}</span>
+
+                                                <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
+                                                    <div className="flex justify-between items-center text-gray-700">
+                                                        <span>${(listing.pricePerDay || 0).toFixed(2)} x {numberOfDays} days</span>
+                                                        <span className="font-medium">${baseRentalPrice.toFixed(2)}</span>
+                                                    </div>
+                                                    {insuranceCost > 0 && (
+                                                         <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                            <span>Insurance ({selectedInsurance})</span>
+                                                            <span className="font-medium">+${insuranceCost.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
+                                                        <span>Total Price</span>
+                                                        <span>${totalPrice.toFixed(2)}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}

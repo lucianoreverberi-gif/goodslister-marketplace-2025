@@ -292,6 +292,13 @@ export const EyeIcon: React.FC<IconProps> = (props) => (
     </svg>
 );
 
+export const EyeOffIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+    </svg>
+);
+
 export const PencilIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <path d="M12 20h9"></path>
@@ -365,5 +372,46 @@ export const LocateIcon: React.FC<IconProps> = (props) => (
         <line x1="1" y1="12" x2="3" y2="12"></line>
         <line x1="21" y1="12" x2="23" y2="12"></line>
         <circle cx="12" cy="12" r="7"></circle>
+    </svg>
+);
+
+export const RocketIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
+        <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
+        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
+        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
+    </svg>
+);
+
+export const LandmarkIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <line x1="3" y1="22" x2="21" y2="22"></line>
+        <line x1="6" y1="18" x2="6" y2="11"></line>
+        <line x1="10" y1="18" x2="10" y2="11"></line>
+        <line x1="14" y1="18" x2="14" y2="11"></line>
+        <line x1="18" y1="18" x2="18" y2="11"></line>
+        <polygon points="12 2 20 7 4 7 12 2"></polygon>
+    </svg>
+);
+
+export const CalculatorIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+        <line x1="8" y1="6" x2="16" y2="6"></line>
+        <line x1="16" y1="14" x2="16" y2="18"></line>
+        <path d="M16 10h.01"></path>
+        <path d="M12 10h.01"></path>
+        <path d="M8 10h.01"></path>
+        <path d="M12 14h.01"></path>
+        <path d="M8 14h.01"></path>
+        <path d="M12 18h.01"></path>
+        <path d="M8 18h.01"></path>
+    </svg>
+);
+
+export const UmbrellaIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"></path>
     </svg>
 );

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Listing, HeroSlide, Banner, ListingCategory, CategoryImagesMap } from '../types';
 import ListingCard from './ListingCard';
@@ -143,7 +144,7 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-4 pr-12 py-3 rounded-l-lg border-none focus:ring-0 text-gray-900"
-                                placeholder={isListening ? "Listening..." : "Search for 'kayak in Bariloche' or 'tools'"}
+                                placeholder={isListening ? "Listening..." : "Search for kayak for 2 in Miami beach"}
                             />
                             <button 
                                 type="button" 

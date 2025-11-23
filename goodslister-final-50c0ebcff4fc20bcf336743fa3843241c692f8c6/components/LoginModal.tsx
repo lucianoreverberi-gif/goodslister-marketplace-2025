@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { XIcon } from './icons';
+import { XIcon, EyeIcon, EyeOffIcon, UserCheckIcon } from './icons';
 
 interface LoginModalProps {
     onLogin: (email: string, password: string) => Promise<boolean>;
@@ -12,6 +13,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -21,6 +25,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
         setIsLoading(true);
         let success = false;
         if (isRegistering) {
+            if (password !== confirmPassword) {
+                setError("Passwords do not match.");
+                setIsLoading(false);
+                return;
+            }
             success = await onRegister(name, email, password);
             if (!success) {
                 setError('Email is already in use or the data is invalid.');
@@ -34,12 +43,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
         setIsLoading(false);
     };
 
+    const handleDemoLogin = async () => {
+        setError('');
+        setIsLoading(true);
+        // Using a mock user credential
+        const success = await onLogin('carlos.gomez@example.com', 'password');
+        if (!success) {
+             setError('Demo login failed.');
+        }
+        setIsLoading(false);
+    };
+
     const toggleMode = () => {
         setIsRegistering(!isRegistering);
         setError('');
         setName('');
         setEmail('');
         setPassword('');
+        setConfirmPassword('');
+        setShowPassword(false);
+        setShowConfirmPassword(false);
     };
 
     return (
@@ -92,17 +115,53 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                 Password
                             </label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                autoComplete="current-password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500"
-                            />
+                            <div className="relative mt-1">
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    autoComplete="current-password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                                >
+                                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                                </button>
+                            </div>
                         </div>
+
+                        {isRegistering && (
+                            <div>
+                                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+                                    Confirm Password
+                                </label>
+                                <div className="relative mt-1">
+                                    <input
+                                        id="confirm-password"
+                                        name="confirm-password"
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        autoComplete="new-password"
+                                        required
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    >
+                                        {showConfirmPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         
                         {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
@@ -116,6 +175,20 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                             </button>
                         </div>
                     </form>
+                    
+                    {!isRegistering && (
+                        <div className="mt-4">
+                            <button 
+                                type="button" 
+                                onClick={handleDemoLogin}
+                                disabled={isLoading}
+                                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none disabled:opacity-50"
+                            >
+                                <UserCheckIcon className="h-4 w-4 text-cyan-600" />
+                                Demo Login (Carlos)
+                            </button>
+                        </div>
+                    )}
 
                     <div className="mt-6 text-center">
                         <button onClick={toggleMode} className="text-sm text-cyan-600 hover:text-cyan-800 font-medium">

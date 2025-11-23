@@ -233,7 +233,7 @@ export const updateConversations = async (updatedConversations: Conversation[]):
     return updatedConversations;
 };
 
-export const createBooking = async (listingId: string, renterId: string, startDate: Date, endDate: Date, totalPrice: number): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
+export const createBooking = async (listingId: string, renterId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium' = 'standard'): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
     // For now, bookings are local-only to avoid complex date logic on the server in this step.
     // To make this live, we would need a POST /api/bookings endpoint.
     const data = await fetchAllData();
@@ -247,6 +247,7 @@ export const createBooking = async (listingId: string, renterId: string, startDa
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         totalPrice,
+        insurancePlan,
         status: 'confirmed',
     };
     

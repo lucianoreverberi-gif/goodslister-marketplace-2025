@@ -94,5 +94,6 @@ export interface Booking {
     startDate: string;
     endDate: string;
     totalPrice: number;
+    insurancePlan?: 'standard' | 'essential' | 'premium';
     status: 'pending' | 'confirmed' | 'cancelled';
 }
