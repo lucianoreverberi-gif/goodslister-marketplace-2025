@@ -95,5 +95,6 @@ export interface Booking {
     endDate: string;
     totalPrice: number;
     insurancePlan?: 'standard' | 'essential' | 'premium';
+    paymentMethod?: 'platform' | 'direct';
     status: 'pending' | 'confirmed' | 'cancelled';
 }

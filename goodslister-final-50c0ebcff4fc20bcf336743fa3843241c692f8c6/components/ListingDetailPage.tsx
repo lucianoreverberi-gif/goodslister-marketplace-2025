@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Listing, User, Booking } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format } from 'date-fns';
@@ -51,7 +51,7 @@ interface ListingDetailPageProps {
     onBack: () => void;
     onStartConversation: (listing: Listing) => void;
     currentUser: User | null;
-    onCreateBooking: (listingId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium') => Promise<Booking>;
+    onCreateBooking: (listingId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium', paymentMethod: 'platform' | 'direct') => Promise<Booking>;
 }
 
 const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
@@ -70,6 +70,10 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                      <ShieldCheckIcon className={`h-4 w-4 ${booking.insurancePlan === 'premium' ? 'text-purple-600' : 'text-blue-600'}`} />
                      <p className="capitalize text-sm font-medium">{booking.insurancePlan || 'Standard'} Protection</p>
                 </div>
+                <div className="flex items-center gap-2 mt-1">
+                    {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
+                    <p className="capitalize text-sm font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
+                </div>
                 <p className="mt-2 text-sm text-gray-500 border-t pt-2">You can view your booking details in your dashboard.</p>
             </div>
             <button 
@@ -82,6 +86,110 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
     </div>
 );
 
+interface PaymentSelectionModalProps {
+    totalPrice: number;
+    onConfirm: (method: 'platform' | 'direct') => void;
+    onClose: () => void;
+    isProcessing: boolean;
+}
+
+const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPrice, onConfirm, onClose, isProcessing }) => {
+    const [selectedMethod, setSelectedMethod] = useState<'platform' | 'direct' | null>(null);
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg relative p-6 flex flex-col max-h-[90vh]">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
+                    <XIcon className="h-6 w-6" />
+                </button>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Payment Method</h2>
+                <p className="text-gray-600 mb-6">Complete your booking securely.</p>
+
+                <div className="space-y-4 overflow-y-auto flex-1">
+                    {/* Platform Payment Card */}
+                    <div 
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`}
+                        onClick={() => setSelectedMethod('platform')}
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-green-100 p-2 rounded-full text-green-600">
+                                    <CreditCardIcon className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900">Pay Securely Now</h3>
+                                    <p className="text-sm text-gray-500">Credit / Debit Card</p>
+                                </div>
+                            </div>
+                            <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Recommended</span>
+                        </div>
+                        <div className="mt-3 pl-11">
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                <li className="flex items-center gap-2"><ShieldCheckIcon className="h-4 w-4 text-green-500"/> Includes Goodslister Protection</li>
+                                <li className="flex items-center gap-2"><CheckCircleIcon className="h-4 w-4 text-green-500"/> Instant Confirmation</li>
+                            </ul>
+                        </div>
+                        {selectedMethod === 'platform' && (
+                            <div className="mt-4 pt-4 border-t border-cyan-200 animate-in fade-in">
+                                <div className="bg-white border border-gray-300 rounded-md p-3">
+                                    <div className="flex justify-between mb-2">
+                                        <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
+                                    <div className="h-8 w-full bg-gray-100 rounded animate-pulse"></div>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-2 text-center">🔒 256-bit SSL Encrypted Payment</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Direct Payment Card */}
+                    <div 
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'direct' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-200' : 'border-gray-200 hover:border-gray-300'}`}
+                        onClick={() => setSelectedMethod('direct')}
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-100 p-2 rounded-full text-amber-600">
+                                    <WalletIcon className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900">Pay on Pickup</h3>
+                                    <p className="text-sm text-gray-500">Direct to Owner</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-3 pl-11">
+                            <p className="text-sm text-gray-600 mb-2">Coordinate payment (Cash, Venmo, etc.) directly with the owner when you meet.</p>
+                            {selectedMethod === 'direct' && (
+                                <div className="bg-amber-100 border border-amber-200 p-3 rounded-lg text-amber-800 text-xs flex gap-2 items-start">
+                                    <AlertTriangleIcon className="h-5 w-5 flex-shrink-0" />
+                                    <p><strong>Warning:</strong> Payments made outside the platform are NOT covered by our Insurance or Refund Policy. Proceed with caution.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pt-6 mt-4 border-t">
+                    <div className="flex justify-between items-center mb-4 text-lg font-bold text-gray-900">
+                        <span>Total to Pay</span>
+                        <span>${totalPrice.toFixed(2)}</span>
+                    </div>
+                    <button
+                        onClick={() => selectedMethod && onConfirm(selectedMethod)}
+                        disabled={!selectedMethod || isProcessing}
+                        className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isProcessing ? 'Processing...' : (selectedMethod === 'platform' ? `Pay $${totalPrice.toFixed(2)} & Book` : 'Confirm Booking')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -89,6 +197,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [isBooking, setIsBooking] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     
     // Insurance State
     const [selectedInsurance, setSelectedInsurance] = useState<'standard' | 'essential' | 'premium'>('standard');
@@ -117,7 +226,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
     const totalPrice = baseRentalPrice + insuranceCost;
     
-    // Define styles for the calendar modifiers. This is the most robust way to style.
+    // Define styles for the calendar modifiers.
     const modifiersStyles: React.CSSProperties | any = {
       selected: { 
         backgroundColor: '#06B6D4',
@@ -146,16 +255,27 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
       }
     };
 
-    const handleBookNow = async () => {
+    const handleBookClick = () => {
         if (!currentUser || !range?.from || !range?.to || isOwner) return;
+        setShowPaymentModal(true);
+    };
+
+    const handleConfirmBooking = async (paymentMethod: 'platform' | 'direct') => {
+        if (!range?.from || !range?.to) return;
         
         setIsBooking(true);
         setBookingError(null);
 
+        // Simulate slight delay for UX
+        if (paymentMethod === 'platform') {
+            await new Promise(resolve => setTimeout(resolve, 1500)); 
+        }
+
         try {
-            const newBooking = await onCreateBooking(listing.id, range.from, range.to, totalPrice, selectedInsurance);
+            const newBooking = await onCreateBooking(listing.id, range.from, range.to, totalPrice, selectedInsurance, paymentMethod);
             setSuccessfulBooking(newBooking);
             setRange(undefined); // Reset calendar
+            setShowPaymentModal(false);
         } catch (error) {
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
             setBookingError(message);
@@ -167,6 +287,15 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
     return (
         <div className="bg-gray-50">
+            {showPaymentModal && (
+                <PaymentSelectionModal 
+                    totalPrice={totalPrice} 
+                    onConfirm={handleConfirmBooking} 
+                    onClose={() => setShowPaymentModal(false)} 
+                    isProcessing={isBooking}
+                />
+            )}
+
             {successfulBooking && (
                 <BookingConfirmationModal booking={successfulBooking} onClose={() => setSuccessfulBooking(null)} />
             )}
@@ -321,6 +450,19 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                     </div>
                                                 </div>
 
+                                                {/* Direct Payment Disclaimer (Sidebar) */}
+                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <WalletIcon className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                                        <div>
+                                                            <h3 className="font-semibold text-gray-900 text-sm">Flexible Payment</h3>
+                                                            <p className="text-xs text-gray-700 mt-1">
+                                                                Choose to pay securely now or pay the owner directly later.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
                                                 <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
                                                     <div className="flex justify-between items-center text-gray-700">
                                                         <span>${(listing.pricePerDay || 0).toFixed(2)} x {numberOfDays} days</span>
@@ -341,11 +483,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         )}
 
                                         <button
-                                            onClick={handleBookNow}
+                                            onClick={handleBookClick}
                                             disabled={!currentUser || isOwner || numberOfDays === 0 || isBooking}
                                             className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {isBooking ? "Reserving..." : (isOwner ? "This is your listing" : (currentUser ? (numberOfDays > 0 ? "Book Now" : "Select dates to book") : "Log in to book"))}
+                                            {isOwner ? "This is your listing" : (currentUser ? (numberOfDays > 0 ? "Book Now" : "Select dates to book") : "Log in to book")}
                                         </button>
                                     </>
                                 ) : (

@@ -196,11 +196,11 @@ const App: React.FC = () => {
         }, 1500);
     };
 
-    const handleCreateBooking = async (listingId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium' = 'standard'): Promise<Booking> => {
+    const handleCreateBooking = async (listingId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium', paymentMethod: 'platform' | 'direct'): Promise<Booking> => {
         if (!session) {
             throw new Error("You must be logged in to book an item.");
         }
-        const result = await mockApi.createBooking(listingId, session.id, startDate, endDate, totalPrice, insurancePlan);
+        const result = await mockApi.createBooking(listingId, session.id, startDate, endDate, totalPrice, insurancePlan, paymentMethod);
         
         // Update app state with the new booking and the updated listing (with new bookedDates)
         updateAppData({
