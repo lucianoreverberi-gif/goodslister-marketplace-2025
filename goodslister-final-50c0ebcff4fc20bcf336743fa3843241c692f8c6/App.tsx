@@ -19,9 +19,17 @@ import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, Ter
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
+import { CheckCircleIcon, BellIcon, MailIcon, XIcon, MessageCircleIcon } from './components/icons';
 
 export interface Session extends User {
     isAdmin?: boolean;
+}
+
+interface Notification {
+    id: string;
+    type: 'success' | 'info' | 'message';
+    title: string;
+    message: string;
 }
 
 const App: React.FC = () => {
@@ -37,6 +45,9 @@ const App: React.FC = () => {
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
     const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
     const [userLanguage, setUserLanguage] = useState('English');
+
+    // Notification System State
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     // This state now holds all data fetched from our mock API
     const [appData, setAppData] = useState<any | null>(null);
@@ -68,6 +79,19 @@ const App: React.FC = () => {
         window.scrollTo(0, 0);
     }, []);
 
+    const addNotification = (type: 'success' | 'info' | 'message', title: string, message: string) => {
+        const id = Math.random().toString(36).substring(2, 9);
+        setNotifications(prev => [...prev, { id, type, title, message }]);
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            setNotifications(prev => prev.filter(n => n.id !== id));
+        }, 5000);
+    };
+
+    const removeNotification = (id: string) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    };
+
     const handleListingClick = useCallback((id: string) => {
         setSelectedListingId(id);
         handleNavigate('listingDetail');
@@ -94,6 +118,7 @@ const App: React.FC = () => {
             const userSession: Session = { ...user, isAdmin };
             setSession(userSession);
             setIsLoginModalOpen(false);
+            addNotification('success', 'Welcome back!', `Logged in as ${user.name}`);
             if (isAdmin) {
                 handleNavigate('admin');
             }
@@ -109,6 +134,8 @@ const App: React.FC = () => {
                 updateAppData({ users: [...appData.users, newUser] });
                 setSession({ ...newUser, isAdmin: false });
                 setIsLoginModalOpen(false);
+                // Simulate sending verification email
+                addNotification('info', 'Verify your Email', `We sent a verification link to ${email}. Please check your inbox.`);
                 return true;
             }
             return false;
@@ -121,6 +148,7 @@ const App: React.FC = () => {
     const handleLogout = () => {
         setSession(null);
         handleNavigate('home');
+        addNotification('info', 'Logged Out', 'See you next time!');
     };
 
     const handleStartConversation = (listing: Listing) => {
@@ -193,6 +221,12 @@ const App: React.FC = () => {
                 );
              updateAppData({ conversations: finalConversations }); // Optimistic update
              mockApi.updateConversations(finalConversations);
+             
+             // Simulate Inbox Notification
+             if (!isChatInboxOpen) {
+                 addNotification('message', `New Message from ${owner.name}`, translatedReply.substring(0, 30) + '...');
+             }
+
         }, 1500);
     };
 
@@ -208,6 +242,17 @@ const App: React.FC = () => {
             listings: appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l)
         });
 
+        // Simulate Email Confirmation
+        setTimeout(() => {
+            addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
+        }, 500);
+
+        // Simulate Owner Notification (Logic that would happen on server)
+        setTimeout(() => {
+             // In real app, this would be an email to the owner
+             console.log(`System: Email sent to owner of ${result.updatedListing.title} about new booking.`);
+        }, 1000);
+
         return result.newBooking;
     };
 
@@ -218,6 +263,12 @@ const App: React.FC = () => {
         const updatedSessionUser = updatedUsers.find(u => u.id === session?.id);
         if (updatedSessionUser && session) {
              setSession(s => s ? {...s, ...updatedSessionUser} : null);
+        }
+        
+        if (verificationType === 'id') {
+            addNotification('success', 'Identity Verified', 'Your ID has been processed and verified successfully.');
+        } else if (verificationType === 'phone') {
+            addNotification('success', 'Phone Verified', 'Your phone number has been verified.');
         }
     };
 
@@ -237,6 +288,7 @@ const App: React.FC = () => {
             // Optimistic update: add to local list immediately
             // In a real app, we might refetch
             updateAppData({ listings: [...appData.listings, listing] });
+            addNotification('success', 'Listing Published', 'Your item is now live on the marketplace.');
         }
         return success;
     };
@@ -247,6 +299,7 @@ const App: React.FC = () => {
             updateAppData({ 
                 listings: appData.listings.map((l: Listing) => l.id === listing.id ? listing : l) 
             });
+            addNotification('success', 'Listing Updated', 'Changes saved successfully.');
         }
         return success;
     };
@@ -420,7 +473,34 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen relative">
+            {/* Notification Container */}
+            <div className="fixed top-20 right-4 z-50 space-y-3 pointer-events-none">
+                {notifications.map(n => (
+                    <div 
+                        key={n.id} 
+                        className={`pointer-events-auto w-80 p-4 rounded-lg shadow-lg transform transition-all duration-500 ease-in-out translate-x-0 border-l-4 flex items-start gap-3 ${
+                            n.type === 'success' ? 'bg-white border-green-500' : 
+                            n.type === 'message' ? 'bg-white border-blue-500' :
+                            'bg-white border-cyan-500'
+                        }`}
+                    >
+                        <div className="flex-shrink-0 pt-0.5">
+                            {n.type === 'success' && <CheckCircleIcon className="h-5 w-5 text-green-500" />}
+                            {n.type === 'info' && <MailIcon className="h-5 w-5 text-cyan-500" />}
+                            {n.type === 'message' && <MessageCircleIcon className="h-5 w-5 text-blue-500" />}
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="text-sm font-bold text-gray-900">{n.title}</h4>
+                            <p className="text-sm text-gray-600 mt-1 leading-snug">{n.message}</p>
+                        </div>
+                        <button onClick={() => removeNotification(n.id)} className="text-gray-400 hover:text-gray-600">
+                            <XIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+
             <Header 
                 onNavigate={handleNavigate}
                 onLoginClick={() => setIsLoginModalOpen(true)}

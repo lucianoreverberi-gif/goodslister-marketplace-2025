@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Session } from '../App';
 import { Listing, Booking } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 
@@ -128,6 +128,182 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => 
                         Secure payment powered by Stripe. No hidden fees.
                     </p>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => {
+    const [step, setStep] = useState<'input' | 'code'>('input');
+    const [phone, setPhone] = useState('');
+    const [code, setCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSendCode = () => {
+        if (!phone) return;
+        setIsLoading(true);
+        setTimeout(() => {
+            setIsLoading(false);
+            setStep('code');
+        }, 1500);
+    };
+
+    const handleVerify = () => {
+        if (!code) return;
+        setIsLoading(true);
+        setTimeout(() => {
+            setIsLoading(false);
+            onSuccess();
+            onClose();
+        }, 1500);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><XIcon className="h-5 w-5" /></button>
+                
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <SmartphoneIcon className="h-6 w-6 text-cyan-600" />
+                    Phone Verification
+                </h3>
+
+                {step === 'input' ? (
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-600">We'll send a 6-digit code to your mobile number.</p>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                            <input 
+                                type="tel" 
+                                value={phone} 
+                                onChange={e => setPhone(e.target.value)} 
+                                placeholder="+1 (555) 000-0000"
+                                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                            />
+                        </div>
+                        <button 
+                            onClick={handleSendCode} 
+                            disabled={!phone || isLoading}
+                            className="w-full py-2 bg-cyan-600 text-white rounded-md font-medium hover:bg-cyan-700 disabled:opacity-50"
+                        >
+                            {isLoading ? 'Sending...' : 'Send Code'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-600">Enter the code sent to {phone}</p>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                            <input 
+                                type="text" 
+                                value={code} 
+                                onChange={e => setCode(e.target.value)} 
+                                placeholder="123456"
+                                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-center text-lg tracking-widest"
+                            />
+                        </div>
+                        <button 
+                            onClick={handleVerify} 
+                            disabled={!code || isLoading}
+                            className="w-full py-2 bg-cyan-600 text-white rounded-md font-medium hover:bg-cyan-700 disabled:opacity-50"
+                        >
+                            {isLoading ? 'Verifying...' : 'Confirm Code'}
+                        </button>
+                        <button onClick={() => setStep('input')} className="w-full text-xs text-gray-500 hover:text-gray-700 mt-2">Change Number</button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const IdVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => {
+    const [step, setStep] = useState<1 | 2 | 3>(1);
+    const [idImage, setIdImage] = useState('');
+    const [selfieImage, setSelfieImage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleNext = () => {
+        if (step === 1 && idImage) setStep(2);
+        else if (step === 2 && selfieImage) handleSubmit();
+    };
+
+    const handleSubmit = () => {
+        setIsLoading(true);
+        setStep(3);
+        // Simulate AI verification delay
+        setTimeout(() => {
+            setIsLoading(false);
+            onSuccess();
+            onClose();
+        }, 3000);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><XIcon className="h-5 w-5" /></button>
+                
+                <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                    <CreditCardIcon className="h-6 w-6 text-cyan-600" />
+                    Identity Verification
+                </h3>
+                
+                {step === 1 && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <p className="text-sm text-blue-700">Please upload a clear photo of your government-issued ID (Passport, Driver's License).</p>
+                        </div>
+                        <ImageUploader 
+                            label="Upload ID Document" 
+                            currentImageUrl={idImage} 
+                            onImageChange={setIdImage} 
+                        />
+                        <div className="flex justify-end pt-4">
+                            <button 
+                                onClick={handleNext} 
+                                disabled={!idImage}
+                                className="px-6 py-2 bg-cyan-600 text-white rounded-md font-medium hover:bg-cyan-700 disabled:opacity-50"
+                            >
+                                Next Step
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <p className="text-sm text-blue-700">Now, take a selfie. We will match it with your ID to confirm it's really you.</p>
+                        </div>
+                        <div className="flex items-center justify-center mb-2">
+                            <CameraFaceIcon className="h-12 w-12 text-gray-400" />
+                        </div>
+                        <ImageUploader 
+                            label="Upload Selfie" 
+                            currentImageUrl={selfieImage} 
+                            onImageChange={setSelfieImage} 
+                        />
+                        <div className="flex justify-between pt-4">
+                            <button onClick={() => setStep(1)} className="text-gray-600 hover:text-gray-900">Back</button>
+                            <button 
+                                onClick={handleNext} 
+                                disabled={!selfieImage}
+                                className="px-6 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 disabled:opacity-50"
+                            >
+                                Submit for Verification
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-600 mx-auto mb-6"></div>
+                        <h4 className="text-lg font-bold text-gray-800">Verifying Identity...</h4>
+                        <p className="text-gray-600 mt-2">Our system is analyzing your documents securely.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -378,6 +554,9 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
     }
 
     const SecurityTab: React.FC = () => {
+        const [showPhoneModal, setShowPhoneModal] = useState(false);
+        const [showIdModal, setShowIdModal] = useState(false);
+
         const getTrustScore = () => {
             let score = 25; // Base score
             if (user.isEmailVerified) score += 25;
@@ -392,6 +571,9 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
 
         return (
             <div>
+                 {showPhoneModal && <PhoneVerificationModal onClose={() => setShowPhoneModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'phone')} />}
+                 {showIdModal && <IdVerificationModal onClose={() => setShowIdModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'id')} />}
+
                  <h2 className="text-2xl font-bold mb-6">Security & Verification</h2>
                  <div className="bg-white p-6 rounded-lg shadow grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r pb-6 md:pb-0 md:pr-8">
@@ -419,9 +601,24 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
                      <div className="md:col-span-2">
                         <h3 className="text-lg font-semibold mb-4">Complete your profile</h3>
                         <ul className="space-y-4">
-                            <VerificationItem icon={MailIcon} text="Email address verified" isVerified={!!user.isEmailVerified} onVerify={() => onVerificationUpdate(user.id, 'email')} />
-                            <VerificationItem icon={PhoneIcon} text="Phone Number" isVerified={!!user.isPhoneVerified} onVerify={() => onVerificationUpdate(user.id, 'phone')} />
-                            <VerificationItem icon={CreditCardIcon} text="Identity Document" isVerified={!!user.isIdVerified} onVerify={() => onVerificationUpdate(user.id, 'id')} />
+                            <VerificationItem 
+                                icon={MailIcon} 
+                                text="Email address verified" 
+                                isVerified={!!user.isEmailVerified} 
+                                onVerify={() => onVerificationUpdate(user.id, 'email')} 
+                            />
+                            <VerificationItem 
+                                icon={PhoneIcon} 
+                                text="Phone Number" 
+                                isVerified={!!user.isPhoneVerified} 
+                                onVerify={() => setShowPhoneModal(true)} 
+                            />
+                            <VerificationItem 
+                                icon={CreditCardIcon} 
+                                text="Identity Document" 
+                                isVerified={!!user.isIdVerified} 
+                                onVerify={() => setShowIdModal(true)} 
+                            />
                         </ul>
                          <div className="mt-6 pt-6 border-t">
                             <h3 className="text-lg font-semibold mb-2">Reputation</h3>
