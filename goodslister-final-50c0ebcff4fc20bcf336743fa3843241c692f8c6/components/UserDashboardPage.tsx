@@ -133,6 +133,124 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => 
     );
 };
 
+const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bookings, userId }) => {
+    const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
+
+    const rentingBookings = bookings.filter(b => b.renterId === userId);
+    const hostingBookings = bookings.filter(b => b.listing.owner.id === userId);
+
+    const displayedBookings = mode === 'renting' ? rentingBookings : hostingBookings;
+
+    const now = new Date();
+    
+    const activeBookings = displayedBookings.filter(b => {
+        const start = new Date(b.startDate);
+        const end = new Date(b.endDate);
+        return start <= now && end >= now;
+    }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+    const futureBookings = displayedBookings.filter(b => new Date(b.startDate) > now)
+        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+    const pastBookings = displayedBookings.filter(b => new Date(b.endDate) < now)
+        .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+
+    const renderBookingTable = (title: string, data: Booking[], emptyMsg: string, isHighlight = false) => (
+        <div className="mb-8 last:mb-0 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center gap-2 mb-4">
+                <h3 className={`text-lg font-bold ${isHighlight ? 'text-cyan-700' : 'text-gray-800'}`}>{title}</h3>
+                {data.length > 0 && <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full">{data.length}</span>}
+            </div>
+            <div className={`bg-white p-4 rounded-lg shadow overflow-x-auto ${isHighlight ? 'border border-cyan-200' : ''}`}>
+                {data.length > 0 ? (
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="p-3">Item</th>
+                                <th className="p-3">Dates</th>
+                                <th className="p-3">Total Price</th>
+                                <th className="p-3">Details</th>
+                                <th className="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map(booking => (
+                                <tr key={booking.id} className="border-b last:border-0">
+                                    <td className="p-3">
+                                        <div className="font-medium text-gray-900">{booking.listing.title}</div>
+                                        <div className="text-xs text-gray-500">
+                                            {mode === 'renting' ? `Owner: ${booking.listing.owner.name}` : `Renter: Client #${booking.renterId.substring(0,4)}`}
+                                        </div>
+                                    </td>
+                                    <td className="p-3">{format(new Date(booking.startDate), 'MMM dd')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}</td>
+                                    <td className="p-3">${booking.totalPrice.toFixed(2)}</td>
+                                    <td className="p-3 text-gray-600 text-xs">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-1">
+                                                {booking.insurancePlan && booking.insurancePlan !== 'standard' ? <ShieldIcon className="h-3 w-3 text-cyan-600"/> : null}
+                                                <span className="capitalize">{booking.insurancePlan || 'Standard'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-gray-400">
+                                                <span className="capitalize">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Arrival'}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-3">
+                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                            booking.status === 'confirmed' ? 'text-green-800 bg-green-100' : 'text-yellow-800 bg-yellow-100'
+                                        }`}>
+                                            {booking.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : <p className="text-gray-500 text-sm italic py-2">{emptyMsg}</p>}
+            </div>
+        </div>
+    );
+
+    return (
+        <div>
+             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                    {mode === 'renting' ? 'My Trips & Rentals' : 'Reservations & Clients'}
+                </h2>
+                <div className="bg-white p-1 rounded-lg border border-gray-200 shadow-sm flex">
+                    <button 
+                        onClick={() => setMode('renting')}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${mode === 'renting' ? 'bg-cyan-100 text-cyan-700 shadow-sm ring-1 ring-cyan-200' : 'text-gray-500 hover:bg-gray-50'}`}
+                    >
+                        I'm Renting
+                    </button>
+                    <button 
+                        onClick={() => setMode('hosting')}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${mode === 'hosting' ? 'bg-cyan-100 text-cyan-700 shadow-sm ring-1 ring-cyan-200' : 'text-gray-500 hover:bg-gray-50'}`}
+                    >
+                        I'm Hosting
+                    </button>
+                </div>
+            </div>
+
+            {displayedBookings.length === 0 ? (
+                 <div className="bg-white p-10 rounded-lg shadow text-center text-gray-500 border border-dashed border-gray-300">
+                    <p className="text-lg">No bookings found in this category.</p>
+                    <p className="text-sm mt-2">
+                        {mode === 'renting' ? "Time to plan your next adventure!" : "List more items to get bookings."}
+                    </p>
+                </div>
+            ) : (
+                <div>
+                    {renderBookingTable("Active Today", activeBookings, "No active bookings right now.", true)}
+                    {renderBookingTable("Upcoming Bookings", futureBookings, "No upcoming bookings scheduled.")}
+                    {renderBookingTable("Past History", pastBookings, "No past bookings.")}
+                </div>
+            )}
+        </div>
+    )
+}
+
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onListingClick, onEditListing }) => {
     // Set 'aiAssistant' as the default active tab to fulfill the user's request.
     const [activeTab, setActiveTab] = useState<DashboardTab>('aiAssistant');
@@ -449,82 +567,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
                     </div>
                 );
             case 'bookings':
-                const now = new Date();
-                // Helper to separate bookings
-                const activeBookings = bookings.filter(b => {
-                    const start = new Date(b.startDate);
-                    const end = new Date(b.endDate);
-                    return start <= now && end >= now;
-                }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-                const futureBookings = bookings.filter(b => new Date(b.startDate) > now)
-                    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-                const pastBookings = bookings.filter(b => new Date(b.endDate) < now)
-                    .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
-
-                const renderBookingTable = (title: string, data: Booking[], emptyMsg: string, isHighlight = false) => (
-                    <div className="mb-8 last:mb-0">
-                         <div className="flex items-center gap-2 mb-4">
-                            <h3 className={`text-lg font-bold ${isHighlight ? 'text-cyan-700' : 'text-gray-800'}`}>{title}</h3>
-                            {data.length > 0 && <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full">{data.length}</span>}
-                        </div>
-                        <div className={`bg-white p-4 rounded-lg shadow overflow-x-auto ${isHighlight ? 'border border-cyan-200' : ''}`}>
-                            {data.length > 0 ? (
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="p-3">Item</th>
-                                            <th className="p-3">Dates</th>
-                                            <th className="p-3">Total Price</th>
-                                            <th className="p-3">Insurance</th>
-                                            <th className="p-3">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.map(booking => (
-                                            <tr key={booking.id} className="border-b last:border-0">
-                                                <td className="p-3 font-medium">{booking.listing.title}</td>
-                                                <td className="p-3">{format(new Date(booking.startDate), 'MMM dd, yyyy')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}</td>
-                                                <td className="p-3">${booking.totalPrice.toFixed(2)}</td>
-                                                <td className="p-3 text-gray-600 capitalize text-xs">
-                                                    <div className="flex items-center gap-1">
-                                                        {booking.insurancePlan && booking.insurancePlan !== 'standard' ? <ShieldIcon className="h-3 w-3 text-cyan-600"/> : null}
-                                                        {booking.insurancePlan || 'Standard'}
-                                                    </div>
-                                                </td>
-                                                <td className="p-3">
-                                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        booking.status === 'confirmed' ? 'text-green-800 bg-green-100' : 'text-yellow-800 bg-yellow-100'
-                                                    }`}>
-                                                        {booking.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            ) : <p className="text-gray-500 text-sm italic py-2">{emptyMsg}</p>}
-                        </div>
-                    </div>
-                );
-
-                return (
-                     <div>
-                        <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
-                        {bookings.length === 0 ? (
-                             <div className="bg-white p-8 rounded-lg shadow text-center text-gray-600">
-                                <p>You haven't booked any items yet.</p>
-                            </div>
-                        ) : (
-                            <div>
-                                {renderBookingTable("Active Today", activeBookings, "No active bookings right now.", true)}
-                                {renderBookingTable("Upcoming Bookings", futureBookings, "No upcoming bookings scheduled.")}
-                                {renderBookingTable("Past History", pastBookings, "No past bookings.")}
-                            </div>
-                        )}
-                    </div>
-                );
+                return <BookingsManager bookings={bookings} userId={user.id} />;
             case 'security':
                 return <SecurityTab />;
             case 'billing':

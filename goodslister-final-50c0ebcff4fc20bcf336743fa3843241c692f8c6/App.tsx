@@ -384,7 +384,8 @@ const App: React.FC = () => {
                 return session ? <UserDashboardPage 
                     user={session} 
                     listings={listings.filter((l: Listing) => l.owner.id === session.id)} 
-                    bookings={bookings.filter((b: Booking) => b.renterId === session.id)}
+                    // Pass both bookings where user is the renter OR the owner
+                    bookings={bookings.filter((b: Booking) => b.renterId === session.id || b.listing.owner.id === session.id)}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
                     onListingClick={handleListingClick}
