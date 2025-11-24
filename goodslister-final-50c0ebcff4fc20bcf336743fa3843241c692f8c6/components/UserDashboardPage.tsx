@@ -553,6 +553,9 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
     }
 
     const SecurityTab: React.FC = () => {
+        const [showPhoneModal, setShowPhoneModal] = useState(false);
+        const [showIdModal, setShowIdModal] = useState(false);
+
         const getTrustScore = () => {
             let score = 25; // Base score
             if (user.isEmailVerified) score += 25;

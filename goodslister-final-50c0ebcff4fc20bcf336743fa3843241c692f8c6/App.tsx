@@ -462,6 +462,7 @@ const App: React.FC = () => {
                     onToggleFeatured={handleToggleFeatured}
                     onUpdateCategoryImage={handleUpdateCategoryImage}
                     onUpdateListingImage={handleUpdateListingImage}
+                    onViewListing={handleListingClick}
                 /> : <p>Access Denied.</p>;
              case 'userDashboard':
                 return session ? <UserDashboardPage 

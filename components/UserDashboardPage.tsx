@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Session } from '../App';
-import { Listing, Booking } from '../types';
+import { Session, Listing, Booking } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
 import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon } from './icons';
 import ImageUploader from './ImageUploader';

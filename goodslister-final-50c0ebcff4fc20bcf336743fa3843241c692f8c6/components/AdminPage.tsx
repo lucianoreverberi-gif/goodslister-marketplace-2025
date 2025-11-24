@@ -93,13 +93,19 @@ const SystemHealth: React.FC = () => {
             try {
                 const res = await fetch('/api/config-status');
                 if (!res.ok) {
+                    // Gracefully handle 404 (Local/Dev mode) without throwing/logging error
+                    if (res.status === 404) {
+                        console.log("System health check: Local Mode (API not found)");
+                        setStatus({ blob: false, postgres: false, ai: false });
+                        return;
+                    }
                     throw new Error(`Server returned ${res.status}`);
                 }
                 const data = await res.json();
                 setStatus(data);
             } catch (err) {
-                console.error("Failed to check system status:", err);
-                // Fallback to all disconnected state if API fails, to allow UI to render
+                // Suppress console error for cleaner dev experience
+                console.warn("Failed to check system status (using fallback):", err);
                 setStatus({ blob: false, postgres: false, ai: false });
                 setError("Could not connect to server configuration.");
             }
@@ -139,7 +145,7 @@ const SystemHealth: React.FC = () => {
                 <StatusItem 
                     label="AI Assistant (Gemini)" 
                     connected={status.ai} 
-                    helpText="Add GEMINI_API_KEY to Vercel Environment Variables."
+                    helpText="Add API_KEY to Vercel Environment Variables."
                 />
             </div>
             {(!status.postgres || !status.blob || error) && (
