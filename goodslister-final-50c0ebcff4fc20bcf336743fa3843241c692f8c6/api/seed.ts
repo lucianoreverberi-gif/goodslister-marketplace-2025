@@ -187,6 +187,7 @@ const initialBanners = [
         description: 'Do you have gear you don\'t use? List it on Goodslister and start generating passive income. It\'s easy, safe, and free.',
         buttonText: 'List your item now',
         imageUrl: 'https://images.unsplash.com/photo-1627922446305-5386f188cedc?q=80&w=2070&auto=format&fit=crop',
+        layout: 'overlay'
     },
 ];
 
@@ -268,7 +269,8 @@ export default async function handler(
             title TEXT,
             description TEXT,
             button_text TEXT,
-            image_url TEXT
+            image_url TEXT,
+            layout TEXT DEFAULT 'overlay'
         );
     `;
 
@@ -333,11 +335,18 @@ export default async function handler(
     if (parseInt(bannerRows[0].count) === 0) {
         for (const banner of initialBanners) {
             await sql`
-                INSERT INTO banners (id, title, description, button_text, image_url)
-                VALUES (${banner.id}, ${banner.title}, ${banner.description}, ${banner.buttonText}, ${banner.imageUrl})
+                INSERT INTO banners (id, title, description, button_text, image_url, layout)
+                VALUES (${banner.id}, ${banner.title}, ${banner.description}, ${banner.buttonText}, ${banner.imageUrl}, ${banner.layout || 'overlay'})
             `;
         }
         console.log('Banners inserted');
+    } else {
+        // Run a migration for existing tables to add the column if missing (simple check)
+        try {
+            await sql`ALTER TABLE banners ADD COLUMN IF NOT EXISTS layout TEXT DEFAULT 'overlay'`;
+        } catch(e) {
+            console.log("Column migration skipped or failed", e);
+        }
     }
 
     // Site Config (Logo)

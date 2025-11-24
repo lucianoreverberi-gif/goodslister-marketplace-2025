@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -20,7 +20,7 @@ interface AdminPageProps {
     onUpdateSlide: (id: string, field: keyof HeroSlide, value: string) => Promise<void>;
     onAddSlide: () => Promise<void>;
     onDeleteSlide: (id: string) => Promise<void>;
-    onUpdateBanner: (id: string, field: keyof Banner, value: string) => Promise<void>;
+    onUpdateBanner: (id: string, field: keyof Banner, value: any) => Promise<void>;
     onAddBanner: () => Promise<void>;
     onDeleteBanner: (id: string) => Promise<void>;
     onToggleFeatured: (id: string) => Promise<void>;
@@ -357,6 +357,30 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         >
                                             <XIcon className="h-5 w-5" />
                                         </button>
+                                        
+                                        {/* Layout Selector */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Banner Layout</label>
+                                            <div className="flex gap-4">
+                                                {['overlay', 'split', 'wide'].map((layout) => (
+                                                    <button
+                                                        key={layout}
+                                                        onClick={() => onUpdateBanner(banner.id, 'layout', layout)}
+                                                        className={`flex flex-col items-center p-2 rounded-lg border transition-all ${
+                                                            (banner.layout || 'overlay') === layout 
+                                                                ? 'border-cyan-500 bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500' 
+                                                                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        {layout === 'overlay' && <LayoutOverlayIcon className="w-8 h-8 mb-1" />}
+                                                        {layout === 'split' && <LayoutSplitIcon className="w-8 h-8 mb-1" />}
+                                                        {layout === 'wide' && <LayoutWideIcon className="w-8 h-8 mb-1" />}
+                                                        <span className="text-xs font-medium capitalize">{layout}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Title</label>
                                             <input type="text" value={banner.title} onChange={e => onUpdateBanner(banner.id, 'title', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>

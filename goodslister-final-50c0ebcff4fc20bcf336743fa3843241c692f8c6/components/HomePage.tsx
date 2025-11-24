@@ -118,6 +118,75 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
 
     const featuredListings = listings.filter(l => l.isFeatured);
 
+    const renderBanner = (banner: Banner) => {
+        const layout = banner.layout || 'overlay';
+
+        if (layout === 'split') {
+            return (
+                <div key={banner.id} className="bg-white h-[500px] flex flex-col md:flex-row overflow-hidden rounded-2xl shadow-xl">
+                    <div className="w-full md:w-1/2 h-1/2 md:h-full relative">
+                        <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover"/>
+                    </div>
+                    <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-gray-900 text-white">
+                        <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{banner.title}</h2>
+                        <p className="mt-4 text-lg text-gray-300">{banner.description}</p>
+                        <div className="mt-8">
+                            <button onClick={onCreateListing} className="inline-block py-3 px-8 text-gray-900 font-semibold rounded-lg bg-white hover:bg-gray-100 transition-colors shadow-lg">
+                                {banner.buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (layout === 'wide') {
+            return (
+                <div key={banner.id} className="bg-white overflow-hidden rounded-2xl shadow-xl">
+                    <div className="h-[300px] md:h-[400px] relative">
+                        <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover"/>
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent"></div>
+                        <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10">
+                             <span className="inline-block py-1 px-3 rounded-full bg-cyan-600 text-white text-xs font-bold tracking-wider uppercase mb-2">Featured</span>
+                        </div>
+                    </div>
+                    <div className="p-8 md:p-10 bg-white">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{banner.title}</h2>
+                                <p className="mt-2 text-gray-600 max-w-2xl">{banner.description}</p>
+                            </div>
+                            <button onClick={onCreateListing} className="flex-shrink-0 py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors whitespace-nowrap">
+                                {banner.buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Default 'overlay' layout
+        return (
+            <div key={banner.id} className="relative bg-gray-800 h-[500px] text-white flex items-center justify-center overflow-hidden rounded-2xl shadow-xl">
+                <div className="absolute inset-0">
+                    <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover"/>
+                    <div className="absolute inset-0 bg-black/50"></div>
+                </div>
+                <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                        {banner.title}
+                    </h2>
+                    <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-200">
+                        {banner.description}
+                    </p>
+                    <button onClick={onCreateListing} className="mt-8 inline-block py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
+                        {banner.buttonText}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <main>
             {/* Hero section */}
@@ -303,26 +372,8 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
 
                 {/* Banners */}
                 <div className="py-16 sm:py-24">
-                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
-                        {banners.map(banner => (
-                            <div key={banner.id} className="relative bg-gray-800 h-[650px] text-white flex items-center justify-center overflow-hidden rounded-2xl shadow-xl">
-                                <div className="absolute inset-0">
-                                    <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover"/>
-                                    <div className="absolute inset-0 bg-black/50"></div>
-                                </div>
-                                <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-                                        {banner.title}
-                                    </h2>
-                                    <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-200">
-                                        {banner.description}
-                                    </p>
-                                    <button onClick={onCreateListing} className="mt-8 inline-block py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
-                                        {banner.buttonText}
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+                        {banners.map(banner => renderBanner(banner))}
                     </div>
                 </div>
             </>

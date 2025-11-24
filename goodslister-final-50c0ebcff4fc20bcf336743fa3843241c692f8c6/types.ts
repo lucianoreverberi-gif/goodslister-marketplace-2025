@@ -26,6 +26,10 @@ export interface User {
     totalReviews?: number;
 }
 
+export interface Session extends User {
+    isAdmin?: boolean;
+}
+
 export interface Location {
     city: string;
     state: string;
@@ -67,6 +71,7 @@ export interface Banner {
     description: string;
     buttonText: string;
     imageUrl: string;
+    layout?: 'overlay' | 'split' | 'wide';
 }
 
 export interface Message {

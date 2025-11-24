@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { Session } from '../App';
+import { Session, Page } from '../types';
 import { MessageSquareIcon, MenuIcon, XIcon } from './icons';
-import { Page } from '../types';
 
 interface HeaderProps {
     onNavigate: (page: Page) => void;

@@ -469,3 +469,27 @@ export const BellIcon: React.FC<IconProps> = (props) => (
         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
     </svg>
 );
+
+// New Layout Icons
+export const LayoutOverlayIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <rect x="6" y="8" width="12" height="8" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
+    </svg>
+);
+
+export const LayoutSplitIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="12" y1="3" x2="12" y2="21"></line>
+        <rect x="14" y="6" width="5" height="12" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
+    </svg>
+);
+
+export const LayoutWideIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="3" y1="14" x2="21" y2="14"></line>
+        <rect x="5" y="16" width="14" height="3" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
+    </svg>
+);

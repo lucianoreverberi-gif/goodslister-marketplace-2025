@@ -56,17 +56,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ success: true });
 
         case 'updateBanner':
-             await sql`
-                UPDATE banners 
-                SET title=${payload.title}, description=${payload.description}, button_text=${payload.buttonText}, image_url=${payload.imageUrl}
-                WHERE id=${payload.id}
-            `;
+             // If updating specific field (like just title), standard query
+             // But payload might come with just {id, field, value} or full object
+             // Here we handle the dynamic field update pattern used in AdminPage
+             if (payload.field === 'layout') {
+                 await sql`UPDATE banners SET layout=${payload.value} WHERE id=${payload.id}`;
+             } else if (payload.field === 'title') {
+                 await sql`UPDATE banners SET title=${payload.value} WHERE id=${payload.id}`;
+             } else if (payload.field === 'description') {
+                 await sql`UPDATE banners SET description=${payload.value} WHERE id=${payload.id}`;
+             } else if (payload.field === 'buttonText') {
+                 await sql`UPDATE banners SET button_text=${payload.value} WHERE id=${payload.id}`;
+             } else if (payload.field === 'imageUrl') {
+                 await sql`UPDATE banners SET image_url=${payload.value} WHERE id=${payload.id}`;
+             }
             return res.status(200).json({ success: true });
 
         case 'addBanner':
             await sql`
-               INSERT INTO banners (id, title, description, button_text, image_url)
-               VALUES (${payload.id}, ${payload.title}, ${payload.description}, ${payload.buttonText}, ${payload.imageUrl})
+               INSERT INTO banners (id, title, description, button_text, image_url, layout)
+               VALUES (${payload.id}, ${payload.title}, ${payload.description}, ${payload.buttonText}, ${payload.imageUrl}, 'overlay')
            `;
            return res.status(200).json({ success: true });
 
