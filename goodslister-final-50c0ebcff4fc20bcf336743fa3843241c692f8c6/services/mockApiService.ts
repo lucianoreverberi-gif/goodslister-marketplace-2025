@@ -92,6 +92,28 @@ const sendAdminAction = async (action: string, payload: any) => {
     }
 };
 
+/**
+ * Sends a transactional email via the backend API.
+ */
+export const sendEmail = async (type: 'welcome' | 'booking_confirmation' | 'message_notification', to: string, data: any) => {
+    try {
+        const response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, to, data }),
+        });
+        
+        if (!response.ok) {
+            console.warn("Email sending failed (API error):", await response.text());
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.warn("Email sending failed (Network error):", e);
+        return false;
+    }
+};
+
 
 /** Updates a listing's primary image. */
 export const updateListingImage = async (listingId: string, newImageUrl: string): Promise<Listing[]> => {

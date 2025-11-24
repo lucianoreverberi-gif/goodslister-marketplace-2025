@@ -553,9 +553,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
     }
 
     const SecurityTab: React.FC = () => {
-        const [showPhoneModal, setShowPhoneModal] = useState(false);
-        const [showIdModal, setShowIdModal] = useState(false);
-
         const getTrustScore = () => {
             let score = 25; // Base score
             if (user.isEmailVerified) score += 25;
@@ -763,74 +760,61 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
                     </div>
                 );
             case 'bookings':
-                return <BookingsManager bookings={bookings} userId={user.id} />;
+                return (
+                     <div>
+                        <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
+                        <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                            {bookings.length > 0 ? (
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="p-3">Item</th>
+                                            <th className="p-3">Dates</th>
+                                            <th className="p-3">Total Price</th>
+                                            <th className="p-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {bookings.map(booking => (
+                                            <tr key={booking.id} className="border-b">
+                                                <td className="p-3 font-medium">{booking.listing.title}</td>
+                                                <td className="p-3">{format(new Date(booking.startDate), 'MMM dd, yyyy')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}</td>
+                                                <td className="p-3">${booking.totalPrice.toFixed(2)}</td>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                                        booking.status === 'confirmed' ? 'text-green-800 bg-green-100' : 'text-yellow-800 bg-yellow-100'
+                                                    }`}>
+                                                        {booking.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : <p className="text-center p-8 text-gray-600">You haven't booked any items yet.</p>}
+                        </div>
+                    </div>
+                );
             case 'security':
                 return <SecurityTab />;
             case 'billing':
                 return (
-                    <div className="space-y-8">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                             <h2 className="text-2xl font-bold">Billing & Payments</h2>
-                             <button className="mt-4 sm:mt-0 px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-700 flex items-center gap-2">
-                                <LandmarkIcon className="h-5 w-5" /> Connect Bank Account
-                             </button>
-                        </div>
-                        
-                        {/* Wallet / Balance Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
-                                <p className="text-sm font-medium text-gray-500">Available Balance</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">$450.00</p>
-                                <p className="text-xs text-gray-400 mt-2">Ready to payout</p>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-400">
-                                <p className="text-sm font-medium text-gray-500">Pending Balance</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">$120.00</p>
-                                <p className="text-xs text-gray-400 mt-2">Available after rental completion</p>
-                            </div>
-                        </div>
-
-                        {/* Fee Advisor */}
-                        <FeeStrategyAdvisor />
-
-                        {/* Transaction History Table */}
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">Billing</h2>
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
-                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-gray-50 border-b">
-                                        <tr>
-                                            <th className="p-3">Date</th>
-                                            <th className="p-3">Description</th>
-                                            <th className="p-3 text-right">Gross Amount</th>
-                                            <th className="p-3 text-right text-gray-500">Fees (3%)</th>
-                                            <th className="p-3 text-right font-bold">Net Payout</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr className="border-b hover:bg-gray-50">
-                                            <td className="p-3">2024-07-15</td>
-                                            <td className="p-3">
-                                                <div className="font-medium">Rental: Adventure Double Kayak</div>
-                                                <div className="text-xs text-gray-500">Ref: #TX-9821</div>
-                                            </td>
-                                            <td className="p-3 text-right">$155.00</td>
-                                            <td className="p-3 text-right text-red-400">-$4.65</td>
-                                            <td className="p-3 text-right font-bold text-green-600">+$150.35</td>
-                                        </tr>
-                                        <tr className="border-b hover:bg-gray-50">
-                                            <td className="p-3">2024-07-10</td>
-                                            <td className="p-3">
-                                                <div className="font-medium">Rental: Pro Snowboard</div>
-                                                <div className="text-xs text-gray-500">Ref: #TX-9812</div>
-                                            </td>
-                                            <td className="p-3 text-right">$232.00</td>
-                                            <td className="p-3 text-right text-red-400">-$6.96</td>
-                                            <td className="p-3 text-right font-bold text-green-600">+$225.04</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                             </div>
+                            <h3 className="text-lg font-semibold">Transaction History (Simulated)</h3>
+                             <p className="text-gray-600 text-sm mt-1 mb-4">Here you would see your earnings and payments.</p>
+                             <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="p-3">Date</th><th className="p-3">Description</th><th className="p-3">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="border-b"><td className="p-3">2024-07-15</td><td className="p-3">Payout for "Double Kayak"</td><td className="p-3 text-green-600">+$150.00</td></tr>
+                                    <tr className="border-b"><td className="p-3">2024-07-10</td><td className="p-3">Payout for "Pro Snowboard"</td><td className="p-3 text-green-600">+$225.00</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 );

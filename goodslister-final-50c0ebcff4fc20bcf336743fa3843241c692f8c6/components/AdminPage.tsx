@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -26,6 +26,7 @@ interface AdminPageProps {
     onToggleFeatured: (id: string) => Promise<void>;
     onUpdateCategoryImage: (category: ListingCategory, newUrl: string) => Promise<void>;
     onUpdateListingImage: (listingId: string, newImageUrl: string) => Promise<void>;
+    onViewListing: (id: string) => void;
 }
 
 const BillingSettings: React.FC<{
@@ -169,7 +170,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
     onDeleteBanner,
     onToggleFeatured,
     onUpdateCategoryImage,
-    onUpdateListingImage
+    onUpdateListingImage,
+    onViewListing
 }) => {
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
@@ -265,6 +267,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <th className="p-3">Subcategory</th>
                                         <th className="p-3">Owner</th>
                                         <th className="p-3">Price/day</th>
+                                        <th className="p-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -275,6 +278,15 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             <td className="p-3">{listing.subcategory}</td>
                                             <td className="p-3">{listing.owner.name}</td>
                                             <td className="p-3">${listing.pricePerDay}</td>
+                                            <td className="p-3 text-right">
+                                                <button 
+                                                    onClick={() => onViewListing(listing.id)}
+                                                    className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors"
+                                                    title="View Listing Details"
+                                                >
+                                                    <EyeIcon className="h-5 w-5" />
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
