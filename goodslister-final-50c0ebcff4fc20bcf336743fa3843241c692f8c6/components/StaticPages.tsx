@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon } from './icons';
+import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon } from './icons';
 
 const StaticPageLayout: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="bg-white">
@@ -67,6 +67,67 @@ export const HowItWorksPage: React.FC = () => (
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-3">3. Enjoy & Return</h3>
                             <p className="text-gray-600">Pick up the item, enjoy your adventure, and return it on time. Leave a review to help build our trusted community.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* New Comparison Section: Choose Your Way to Rent */}
+                <div className="mb-20 bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+                    <div className="p-8 sm:p-12 text-center bg-gradient-to-r from-gray-900 to-gray-800 text-white">
+                        <h2 className="text-3xl font-bold">Choose Your Way to Rent</h2>
+                        <p className="mt-4 text-gray-300">Flexibility is key. Choose the booking method that works best for you.</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+                        <div className="p-8 sm:p-12 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="bg-green-100 p-3 rounded-full text-green-600">
+                                    <LockIcon className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900">Secure Platform Booking</h3>
+                            </div>
+                            <ul className="space-y-4 text-gray-600">
+                                <li className="flex items-start gap-3">
+                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
+                                    <span><strong>Full Insurance Coverage:</strong> Items are protected against damage and theft.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
+                                    <span><strong>Payment Protection:</strong> Funds are held securely until the rental starts.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
+                                    <span><strong>Verified Reviews:</strong> Only completed bookings can leave feedback.</span>
+                                </li>
+                            </ul>
+                            <p className="mt-6 text-sm text-gray-500 bg-green-50 p-3 rounded border border-green-100">
+                                <strong>Recommended</strong> for high-value items and peace of mind.
+                            </p>
+                        </div>
+
+                        <div className="p-8 sm:p-12 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="bg-amber-100 p-3 rounded-full text-amber-600">
+                                    <HandshakeIcon className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900">Direct Arrangement</h3>
+                            </div>
+                            <ul className="space-y-4 text-gray-600">
+                                <li className="flex items-start gap-3">
+                                    <ShieldCheckIcon className="h-6 w-6 text-amber-500 flex-shrink-0" />
+                                    <span><strong>Flexible Payments:</strong> Pay via cash, Venmo, or other methods upon meeting.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <ShieldCheckIcon className="h-6 w-6 text-amber-500 flex-shrink-0" />
+                                    <span><strong>Direct Communication:</strong> Negotiate terms directly with the owner.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <ShieldCheckIcon className="h-6 w-6 text-gray-400 flex-shrink-0" />
+                                    <span><span className="text-gray-500">Note:</span> No platform insurance coverage included.</span>
+                                </li>
+                            </ul>
+                            <p className="mt-6 text-sm text-gray-500 bg-amber-50 p-3 rounded border border-amber-100">
+                                <strong>Good for</strong> smaller items or quick, local transactions.
+                            </p>
                         </div>
                     </div>
                 </div>
