@@ -15,7 +15,7 @@ import UserDashboardPage from './components/UserDashboardPage';
 import LoginModal from './components/LoginModal';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
-import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage } from './components/StaticPages';
+import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -359,11 +359,9 @@ const App: React.FC = () => {
         const updatedSlides = await mockApi.deleteSlide(id);
         updateAppData({ heroSlides: updatedSlides });
     };
-    
     const handleUpdateBanner = async (id: string, field: keyof Banner, value: string) => {
         const bannerToUpdate = appData.banners.find((b: Banner) => b.id === id);
         if(bannerToUpdate) {
-            // Create the updated banner object
             const updatedBanner = { ...bannerToUpdate, [field]: value };
             
             // Optimistically update the local state immediately
@@ -522,6 +520,8 @@ const App: React.FC = () => {
                 return <TermsPage />;
             case 'privacyPolicy':
                 return <PrivacyPolicyPage />;
+            case 'howItWorks':
+                return <HowItWorksPage />;
             case 'home':
             default:
                 return <HomePage 

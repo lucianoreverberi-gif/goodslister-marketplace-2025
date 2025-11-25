@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { MailIcon, PhoneIcon } from './icons';
+import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon } from './icons';
 
 const StaticPageLayout: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="bg-white">
@@ -16,6 +17,108 @@ const StaticPageLayout: React.FC<{ title: string; children: React.ReactNode }> =
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="max-w-3xl mx-auto prose prose-lg max-w-none text-gray-700">
                     {children}
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+export const HowItWorksPage: React.FC = () => (
+    <div className="bg-white">
+        <div className="relative bg-gray-800 py-24 sm:py-32">
+            <div className="absolute inset-0">
+                <img src="https://images.unsplash.com/photo-1501555088652-021faa106b9b?q=80&w=2073&auto=format&fit=crop" alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/80 to-gray-900/80"></div>
+            </div>
+            <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 className="text-4xl font-extrabold text-white tracking-tight sm:text-5xl">How Goodslister Works</h1>
+                <p className="mt-4 text-xl text-gray-200 max-w-2xl mx-auto">Whether you're looking for adventure or looking to earn, we've made the process simple, safe, and seamless.</p>
+            </div>
+        </div>
+
+        <div className="py-16 sm:py-24 bg-gray-50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                {/* For Renters Section */}
+                <div className="mb-20">
+                    <div className="text-center mb-12">
+                        <span className="text-cyan-600 font-bold tracking-wider uppercase text-sm">For Adventurers</span>
+                        <h2 className="text-3xl font-bold text-gray-900 mt-2">Rent Unique Gear</h2>
+                        <p className="text-gray-600 mt-4 max-w-2xl mx-auto">Access high-quality equipment without the cost of ownership. Find exactly what you need, right where you need it.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+                            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600">
+                                <SearchIcon className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">1. Find Your Gear</h3>
+                            <p className="text-gray-600">Use our AI-powered search to describe what you need. Browse listings with verified photos, reviews, and detailed descriptions.</p>
+                        </div>
+                        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+                            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600">
+                                <ShieldCheckIcon className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">2. Book Securely</h3>
+                            <p className="text-gray-600">Select your dates and choose a protection plan. Pay securely through the platform or coordinate directly with the owner.</p>
+                        </div>
+                        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+                            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600">
+                                <SmileIcon className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">3. Enjoy & Return</h3>
+                            <p className="text-gray-600">Pick up the item, enjoy your adventure, and return it on time. Leave a review to help build our trusted community.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-gray-200 my-12"></div>
+
+                {/* For Owners Section */}
+                <div>
+                    <div className="text-center mb-12">
+                        <span className="text-green-600 font-bold tracking-wider uppercase text-sm">For Owners</span>
+                        <h2 className="text-3xl font-bold text-gray-900 mt-2">Earn from Your Gear</h2>
+                        <p className="text-gray-600 mt-4 max-w-2xl mx-auto">Turn your idle equipment into a passive income stream. It's free to list, and you're covered by our protection plans.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+                            <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                                <UploadCloudIcon className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">1. List for Free</h3>
+                            <p className="text-gray-600">Create a listing in minutes. Upload photos, set your price, and let our AI optimize your description for maximum visibility.</p>
+                        </div>
+                        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+                            <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                                <MessageSquareIcon className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">2. Accept Bookings</h3>
+                            <p className="text-gray-600">Receive requests from verified renters. Chat directly to coordinate pickup times and answer questions.</p>
+                        </div>
+                        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+                            <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                                <WalletIcon className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">3. Get Paid</h3>
+                            <p className="text-gray-600">Secure payments are deposited directly into your account after the rental starts. You keep 97% of the listing price.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div className="bg-gray-900 py-16">
+            <div className="container mx-auto px-4 text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">Ready to get started?</h2>
+                <p className="text-gray-400 mb-8">Join thousands of adventurers and owners today.</p>
+                <div className="flex justify-center gap-4">
+                    <a href="/explore" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/explore'); window.dispatchEvent(new PopStateEvent('popstate')); }} className="px-6 py-3 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition-colors">
+                        Explore Gear
+                    </a>
+                    <a href="/createListing" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/createListing'); window.dispatchEvent(new PopStateEvent('popstate')); }} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors">
+                        List Your Item
+                    </a>
                 </div>
             </div>
         </div>

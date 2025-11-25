@@ -20,13 +20,6 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
         setIsMenuOpen(false);
     };
 
-    const handleHowItWorksClick = () => {
-        handleNavigation('home');
-        setTimeout(() => {
-            document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-    };
-
     useEffect(() => {
         document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
         return () => { document.body.style.overflow = 'unset'; };
@@ -42,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
             <>
                 <button onClick={() => handleNavigation('explore')} className={className}>Explore</button>
                 <button onClick={() => handleNavigation('createListing')} className={className}>List Your Item</button>
-                <button onClick={handleHowItWorksClick} className={className}>How It Works</button>
+                <button onClick={() => handleNavigation('howItWorks')} className={className}>How It Works</button>
                 <button onClick={() => handleNavigation('aiAssistant')} className={className}>AI Assistant</button>
                 {session?.isAdmin && (
                     <button onClick={() => handleNavigation('admin')} className={`${className} text-cyan-600 hover:text-cyan-800`}>Admin</button>

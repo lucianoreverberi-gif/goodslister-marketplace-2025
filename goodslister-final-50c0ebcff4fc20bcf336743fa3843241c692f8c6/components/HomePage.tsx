@@ -4,7 +4,7 @@ import { Listing, HeroSlide, Banner, ListingCategory, CategoryImagesMap, Page } 
 import ListingCard from './ListingCard';
 import CategoryCard from './CategoryCard';
 import { processSearchQuery, FilterCriteria } from '../services/geminiService';
-import { SearchIcon, ChevronLeftIcon, ChevronRightIcon, ShieldCheckIcon, SmileIcon, UserCheckIcon, WalletIcon, MessageCircleIcon, FileSignatureIcon, MicrophoneIcon, ScanIcon, BrainIcon, ZapIcon, GlobeIcon } from './icons';
+import { SearchIcon, ChevronLeftIcon, ChevronRightIcon, ShieldCheckIcon, SmileIcon, UserCheckIcon, WalletIcon, MessageCircleIcon, FileSignatureIcon, MicrophoneIcon, ScanIcon, BrainIcon, ZapIcon, GlobeIcon, UploadCloudIcon, MessageSquareIcon } from './icons';
 
 // Extend the global Window interface for SpeechRecognition APIs
 declare global {
@@ -30,6 +30,7 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
     const [isSearching, setIsSearching] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isListening, setIsListening] = useState(false);
+    const [howItWorksTab, setHowItWorksTab] = useState<'renter' | 'owner'>('renter');
     const recognitionRef = useRef<any>(null);
     
     const performSearch = async (query: string) => {
@@ -265,28 +266,88 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">How does Goodslister work?</h2>
                         <p className="mt-4 text-lg leading-8 text-gray-600">Renting has never been so easy, fast, and secure.</p>
-                        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
-                            <div className="flex flex-col items-center text-center">
-                                <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
-                                    <SearchIcon className="h-8 w-8" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900">1. Search and Find</h3>
-                                <p className="mt-2 text-base text-gray-600">Explore thousands of items listed by verified owners in your area. Use our smart search to find exactly what you need.</p>
+                        
+                        {/* Renter/Owner Toggle */}
+                        <div className="flex justify-center mt-8 mb-12">
+                            <div className="bg-gray-100 p-1 rounded-lg inline-flex">
+                                <button
+                                    onClick={() => setHowItWorksTab('renter')}
+                                    className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                                        howItWorksTab === 'renter' 
+                                            ? 'bg-white text-cyan-600 shadow-sm' 
+                                            : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                                >
+                                    For Renters
+                                </button>
+                                <button
+                                    onClick={() => setHowItWorksTab('owner')}
+                                    className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                                        howItWorksTab === 'owner' 
+                                            ? 'bg-white text-green-600 shadow-sm' 
+                                            : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                                >
+                                    For Owners
+                                </button>
                             </div>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
-                                    <ShieldCheckIcon className="h-8 w-8" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900">2. Book with Confidence</h3>
-                                <p className="mt-2 text-base text-gray-600">Communicate directly with the owner, agree on the dates, and pay securely through our platform with built-in protection.</p>
-                            </div>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
-                                    <SmileIcon className="h-8 w-8" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900">3. Enjoy the Adventure</h3>
-                                <p className="mt-2 text-base text-gray-600">Pick up the item and live your experience. When you're done, return the item and rate the owner to help our trusted community grow.</p>
-                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
+                            {howItWorksTab === 'renter' ? (
+                                <>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
+                                            <SearchIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">1. Search and Find</h3>
+                                        <p className="mt-2 text-base text-gray-600">Explore thousands of items listed by verified owners in your area. Use our smart search to find exactly what you need.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                                        <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
+                                            <ShieldCheckIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">2. Book with Confidence</h3>
+                                        <p className="mt-2 text-base text-gray-600">Communicate directly with the owner, agree on the dates, and pay securely through our platform with built-in protection.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                                        <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
+                                            <SmileIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">3. Enjoy the Adventure</h3>
+                                        <p className="mt-2 text-base text-gray-600">Pick up the item and live your experience. When you're done, return the item and rate the owner.</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                            <UploadCloudIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">1. List your item</h3>
+                                        <p className="mt-2 text-base text-gray-600">Upload photos and set your price. Our AI will help you write a description that attracts more renters instantly.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                                        <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                            <MessageSquareIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">2. Accept Bookings</h3>
+                                        <p className="mt-2 text-base text-gray-600">Receive requests from verified users. Chat with them to coordinate pickup and approve the booking.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                                        <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                            <WalletIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">3. Get Paid</h3>
+                                        <p className="mt-2 text-base text-gray-600">Earn passive income. Payments are secure and automatically deposited into your account.</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="mt-12">
+                            <button onClick={() => onNavigate('howItWorks')} className="text-cyan-600 hover:text-cyan-800 font-semibold hover:underline">
+                                Learn more details &rarr;
+                            </button>
                         </div>
                     </div>
                 </div>
