@@ -493,3 +493,27 @@ export const LayoutWideIcon: React.FC<IconProps> = (props) => (
         <rect x="5" y="16" width="14" height="3" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
     </svg>
 );
+
+export const GavelIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="m13 13 6 6"></path>
+        <path d="m14.3 9.6 1.4 1.4a3 3 0 0 0 4.24-4.24l-1.4-1.4a3 3 0 0 0-4.24 4.24z"></path>
+        <path d="m13.7 13.7-3.2 3.2a3 3 0 0 1-4.24-4.24l3.2-3.2a3 3 0 0 1 4.24 4.24z"></path>
+        <path d="M2 21h4"></path>
+    </svg>
+);
+
+export const AlertIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+);
+
+export const CheckSquareIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <polyline points="9 11 12 14 22 4"></polyline>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+    </svg>
+);

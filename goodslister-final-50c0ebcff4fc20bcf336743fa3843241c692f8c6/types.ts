@@ -56,6 +56,7 @@ export interface Listing {
     reviewsCount: number;
     bookedDates?: string[];
     ownerRules?: string;
+    approvalStatus?: 'pending' | 'approved' | 'rejected'; // New field for moderation
 }
 
 export interface HeroSlide {
@@ -102,4 +103,15 @@ export interface Booking {
     insurancePlan?: 'standard' | 'essential' | 'premium';
     paymentMethod?: 'platform' | 'direct';
     status: 'pending' | 'confirmed' | 'cancelled';
+}
+
+export interface Dispute {
+    id: string;
+    bookingId: string;
+    reporterId: string;
+    reason: 'damage' | 'late_return' | 'not_as_described' | 'cancellation';
+    description: string;
+    status: 'open' | 'resolved' | 'escalated';
+    dateOpened: string;
+    amountInvolved: number;
 }

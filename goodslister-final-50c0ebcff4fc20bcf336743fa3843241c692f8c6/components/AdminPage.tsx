@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon } from './icons';
+import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute } from '../types';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing' | 'disputes' | 'moderation';
 
 interface AdminPageProps {
     users: User[];
@@ -28,6 +28,12 @@ interface AdminPageProps {
     onUpdateListingImage: (listingId: string, newImageUrl: string) => Promise<void>;
     onViewListing: (id: string) => void;
 }
+
+// Mock Disputes Data
+const mockDisputes: Dispute[] = [
+    { id: 'dsp-1', bookingId: 'bk-123', reporterId: 'user-2', reason: 'damage', description: 'Item received with scratches not mentioned in listing.', status: 'open', dateOpened: '2024-03-10', amountInvolved: 150 },
+    { id: 'dsp-2', bookingId: 'bk-456', reporterId: 'user-1', reason: 'late_return', description: 'Renter returned item 2 days late.', status: 'escalated', dateOpened: '2024-03-08', amountInvolved: 100 },
+];
 
 const BillingSettings: React.FC<{
     currentApiKey: string;
@@ -93,7 +99,6 @@ const SystemHealth: React.FC = () => {
             try {
                 const res = await fetch('/api/config-status');
                 if (!res.ok) {
-                    // Gracefully handle 404 (Local/Dev mode) without throwing/logging error
                     if (res.status === 404) {
                         console.log("System health check: Local Mode (API not found)");
                         setStatus({ blob: false, postgres: false, ai: false });
@@ -104,7 +109,6 @@ const SystemHealth: React.FC = () => {
                 const data = await res.json();
                 setStatus(data);
             } catch (err) {
-                // Suppress console error for cleaner dev experience
                 console.warn("Failed to check system status (using fallback):", err);
                 setStatus({ blob: false, postgres: false, ai: false });
                 setError("Could not connect to server configuration.");
@@ -113,7 +117,6 @@ const SystemHealth: React.FC = () => {
         checkStatus();
     }, []);
 
-    // Show loading only if we have neither status nor a fallback result yet
     if (!status) return <div className="p-4 text-gray-500">Checking system health...</div>;
 
     const StatusItem = ({ label, connected, helpText }: { label: string, connected: boolean, helpText: string }) => (
@@ -124,35 +127,18 @@ const SystemHealth: React.FC = () => {
                     {connected ? 'CONNECTED' : 'DISCONNECTED'}
                 </span>
             </div>
-            <p className="text-sm text-gray-600">{connected ? 'Ready for production.' : helpText}</p>
+            <p className="text-sm text-gray-600">{connected ? 'Operational.' : helpText}</p>
         </div>
     );
 
     return (
         <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4">System Health & Production Readiness</h2>
+            <h2 className="text-xl font-bold mb-4">Platform Health</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatusItem 
-                    label="Image Storage (Blob)" 
-                    connected={status.blob} 
-                    helpText="Go to Vercel > Storage > Create 'Blob'. Required for uploading public images."
-                />
-                <StatusItem 
-                    label="Database (Postgres)" 
-                    connected={status.postgres} 
-                    helpText="Go to Vercel > Storage > Create 'Postgres'. Required to save listings/users permanently."
-                />
-                <StatusItem 
-                    label="AI Assistant (Gemini)" 
-                    connected={status.ai} 
-                    helpText="Add API_KEY to Vercel Environment Variables."
-                />
+                <StatusItem label="Image Storage" connected={status.blob} helpText="Connect Vercel Blob" />
+                <StatusItem label="Database" connected={status.postgres} helpText="Connect Vercel Postgres" />
+                <StatusItem label="AI Intelligence" connected={status.ai} helpText="Configure API_KEY" />
             </div>
-            {(!status.postgres || !status.blob || error) && (
-                <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-200 text-sm">
-                    <strong>Tip:</strong> Currently, the app is using <em>Simulation Mode</em> (Local Storage). Changes you make here are only visible to you. Connect the services above in Vercel to go fully live.
-                </div>
-            )}
         </div>
     );
 };
@@ -182,9 +168,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
 
-    // FIX: Replaced the previous buggy handleImageUpload with this robust wrapper.
-    // It separates the "key used for loading state" (loadingKey) from the actual update logic (updateFn).
-    // This allows us to pass correct IDs to the update functions while still tracking loading for specific UI elements.
     const wrapImageUpdate = async (loadingKey: string, updateFn: () => Promise<void>) => {
         setUploadingStates(prev => ({ ...prev, [loadingKey]: true }));
         try {
@@ -198,17 +181,15 @@ const AdminPage: React.FC<AdminPageProps> = ({
     };
 
     const tabs: { id: AdminTab; name: string; icon: React.ElementType }[] = [
-        { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboardIcon },
+        { id: 'dashboard', name: 'Command Center', icon: LayoutDashboardIcon },
+        { id: 'disputes', name: 'Disputes', icon: GavelIcon },
+        { id: 'moderation', name: 'Moderation', icon: CheckSquareIcon },
         { id: 'users', name: 'Users', icon: UsersIcon },
-        { id: 'listings', name: 'Listings', icon: PackageIcon },
+        { id: 'listings', name: 'All Listings', icon: PackageIcon },
         { id: 'content', name: 'Content', icon: PaletteIcon },
         { id: 'billing', name: 'Billing', icon: CreditCardIcon },
     ];
 
-    // FIX: Merge props categoryImages with initialCategoryImages.
-    // This ensures that even if the database (categoryImages prop) only returns a partial list 
-    // (e.g., only 2 edited categories), the Admin Panel will still display all 8 original categories
-    // so the admin can edit any of them.
     const displayCategoryImages = { ...initialCategoryImages, ...categoryImages };
 
     const renderContent = () => {
@@ -217,20 +198,141 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 return (
                     <div>
                         <SystemHealth />
-                        <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-lg font-medium text-gray-500">Total Users</h3>
-                                <p className="text-3xl font-bold mt-2">{users.length}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            {/* Business Intelligence Metrics */}
+                            <div className="bg-gradient-to-br from-blue-600 to-cyan-600 p-6 rounded-lg shadow-lg text-white">
+                                <h3 className="text-sm font-medium opacity-90">Gross Merchandise Value (GMV)</h3>
+                                <p className="text-3xl font-bold mt-1">$12,450.00</p>
+                                <span className="text-xs bg-white/20 px-2 py-1 rounded mt-2 inline-block">+12% vs last month</span>
                             </div>
                             <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-lg font-medium text-gray-500">Total Listings</h3>
-                                <p className="text-3xl font-bold mt-2">{listings.length}</p>
+                                <h3 className="text-sm font-medium text-gray-500">Total Revenue (Take Rate)</h3>
+                                <p className="text-3xl font-bold mt-1 text-gray-900">$1,867.50</p>
                             </div>
-                             <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-lg font-medium text-gray-500">Pending Verifications</h3>
-                                <p className="text-3xl font-bold mt-2 text-orange-500">3</p>
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-sm font-medium text-gray-500">Active Listings</h3>
+                                <p className="text-3xl font-bold mt-1 text-gray-900">{listings.length}</p>
                             </div>
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-sm font-medium text-gray-500">Open Disputes</h3>
+                                <p className="text-3xl font-bold mt-1 text-red-600">2</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="font-bold text-gray-800 mb-4">Recent Activity</h3>
+                                <ul className="space-y-3">
+                                    <li className="flex items-center text-sm text-gray-600">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                        New user registration: <strong>Ana Rodriguez</strong>
+                                    </li>
+                                    <li className="flex items-center text-sm text-gray-600">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                        New listing: <strong>Mountain Bike</strong> in Mendoza
+                                    </li>
+                                    <li className="flex items-center text-sm text-gray-600">
+                                        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                                        Booking request #492 pending approval
+                                    </li>
+                                </ul>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="font-bold text-gray-800 mb-4">Quick Actions</h3>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setActiveTab('moderation')} className="px-4 py-2 bg-cyan-100 text-cyan-700 rounded-md text-sm font-medium hover:bg-cyan-200">
+                                        Review Pending Listings
+                                    </button>
+                                    <button onClick={() => setActiveTab('disputes')} className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200">
+                                        Handle Disputes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'disputes':
+                return (
+                    <div>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold">Dispute Resolution Center</h2>
+                            <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">2 Active Cases</span>
+                        </div>
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-50 border-b">
+                                    <tr>
+                                        <th className="p-4 font-medium text-gray-500">ID</th>
+                                        <th className="p-4 font-medium text-gray-500">Reason</th>
+                                        <th className="p-4 font-medium text-gray-500">Amount</th>
+                                        <th className="p-4 font-medium text-gray-500">Status</th>
+                                        <th className="p-4 font-medium text-gray-500">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {mockDisputes.map(dispute => (
+                                        <tr key={dispute.id} className="border-b last:border-0 hover:bg-gray-50">
+                                            <td className="p-4 font-mono text-gray-600">{dispute.id}</td>
+                                            <td className="p-4">
+                                                <span className="font-bold block text-gray-800 capitalize">{dispute.reason.replace('_', ' ')}</span>
+                                                <span className="text-xs text-gray-500">{dispute.description}</span>
+                                            </td>
+                                            <td className="p-4 font-bold">${dispute.amountInvolved}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${
+                                                    dispute.status === 'open' ? 'bg-yellow-100 text-yellow-800' : 
+                                                    dispute.status === 'escalated' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                                                }`}>
+                                                    {dispute.status}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <button className="text-cyan-600 hover:underline mr-3">View Evidence</button>
+                                                <button className="text-gray-600 hover:text-gray-900">Message</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            case 'moderation':
+                return (
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">Listing Moderation Queue</h2>
+                        <p className="text-gray-600 mb-4">Review listings before they go live to ensure quality and safety standards.</p>
+                        {/* Mock pending listing */}
+                        <div className="bg-white rounded-lg shadow border border-l-4 border-l-yellow-400 p-6 mb-4">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-4">
+                                    <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
+                                        [Image]
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg">Vintage Hiking Gear Set</h3>
+                                        <p className="text-sm text-gray-600">User: Carlos Gomez</p>
+                                        <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                                            "Old boots and a backpack I found in the attic. Not sure if waterproof."
+                                        </p>
+                                        <div className="mt-2 flex gap-2">
+                                            <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">Camping</span>
+                                            <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">$15/day</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <button className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-bold hover:bg-green-700">
+                                        Approve Listing
+                                    </button>
+                                    <button className="px-4 py-2 bg-red-50 text-red-700 rounded-md text-sm font-medium hover:bg-red-100">
+                                        Reject
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-center p-8 text-gray-500 italic">
+                            No more items in queue. Good job!
                         </div>
                     </div>
                 );
@@ -244,15 +346,21 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                     <tr>
                                         <th className="p-3">Name</th>
                                         <th className="p-3">Email</th>
-                                        <th className="p-3">Registration Date</th>
+                                        <th className="p-3">Date Joined</th>
+                                        <th className="p-3">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {users.map(user => (
                                         <tr key={user.id} className="border-b">
-                                            <td className="p-3">{user.name}</td>
-                                            <td className="p-3">{user.email}</td>
-                                            <td className="p-3">{user.registeredDate}</td>
+                                            <td className="p-3 font-medium">{user.name}</td>
+                                            <td className="p-3 text-gray-600">{user.email}</td>
+                                            <td className="p-3 text-gray-600">{user.registeredDate}</td>
+                                            <td className="p-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${user.isIdVerified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {user.isIdVerified ? 'Verified' : 'Unverified'}
+                                                </span>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -263,14 +371,13 @@ const AdminPage: React.FC<AdminPageProps> = ({
             case 'listings':
                  return (
                     <div>
-                        <h2 className="text-2xl font-bold mb-6">Manage Listings</h2>
+                        <h2 className="text-2xl font-bold mb-6">Manage All Listings</h2>
                          <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="p-3">Title</th>
                                         <th className="p-3">Category</th>
-                                        <th className="p-3">Subcategory</th>
                                         <th className="p-3">Owner</th>
                                         <th className="p-3">Price/day</th>
                                         <th className="p-3 text-right">Actions</th>
@@ -281,7 +388,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <tr key={listing.id} className="border-b">
                                             <td className="p-3">{listing.title}</td>
                                             <td className="p-3">{listing.category}</td>
-                                            <td className="p-3">{listing.subcategory}</td>
                                             <td className="p-3">{listing.owner.name}</td>
                                             <td className="p-3">${listing.pricePerDay}</td>
                                             <td className="p-3 text-right">
@@ -426,9 +532,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             {/* Featured Products */}
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h3 className="text-lg font-semibold mb-4">Featured Items</h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Select which items appear on the homepage. You can also update the main image for any featured item.
-                                </p>
                                 <div className="space-y-6">
                                     {listings.map(listing => (
                                         <div key={listing.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
@@ -476,8 +579,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center px-4 py-2 rounded-lg text-left transition-colors ${
                                         activeTab === tab.id
-                                            ? 'bg-cyan-600 text-white'
-                                            : 'hover:bg-gray-200'
+                                            ? 'bg-cyan-600 text-white shadow-md'
+                                            : 'hover:bg-gray-200 text-gray-700'
                                     }`}
                                 >
                                     <tab.icon className="h-5 w-5 mr-3" />
