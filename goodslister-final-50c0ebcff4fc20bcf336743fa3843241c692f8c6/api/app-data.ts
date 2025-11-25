@@ -107,7 +107,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         description: row.description,
         buttonText: row.button_text,
         imageUrl: row.image_url,
-        layout: row.layout || 'overlay'
+        layout: row.layout || 'overlay',
+        linkUrl: row.link_url || ''
     }));
 
     let categoryImages = defaultCategoryImages;

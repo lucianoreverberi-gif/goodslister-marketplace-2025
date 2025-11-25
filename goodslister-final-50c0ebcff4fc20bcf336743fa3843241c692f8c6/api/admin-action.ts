@@ -65,15 +65,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     description=${payload.description}, 
                     button_text=${payload.buttonText}, 
                     image_url=${payload.imageUrl}, 
-                    layout=${payload.layout || 'overlay'}
+                    layout=${payload.layout || 'overlay'},
+                    link_url=${payload.linkUrl || ''}
                 WHERE id=${payload.id}
              `;
             return res.status(200).json({ success: true });
 
         case 'addBanner':
             await sql`
-               INSERT INTO banners (id, title, description, button_text, image_url, layout)
-               VALUES (${payload.id}, ${payload.title}, ${payload.description}, ${payload.buttonText}, ${payload.imageUrl}, 'overlay')
+               INSERT INTO banners (id, title, description, button_text, image_url, layout, link_url)
+               VALUES (${payload.id}, ${payload.title}, ${payload.description}, ${payload.buttonText}, ${payload.imageUrl}, 'overlay', ${payload.linkUrl || ''})
            `;
            return res.status(200).json({ success: true });
 

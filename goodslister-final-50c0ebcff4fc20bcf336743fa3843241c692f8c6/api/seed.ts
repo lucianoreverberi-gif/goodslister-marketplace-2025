@@ -187,7 +187,8 @@ const initialBanners = [
         description: 'Do you have gear you don\'t use? List it on Goodslister and start generating passive income. It\'s easy, safe, and free.',
         buttonText: 'List your item now',
         imageUrl: 'https://images.unsplash.com/photo-1627922446305-5386f188cedc?q=80&w=2070&auto=format&fit=crop',
-        layout: 'overlay'
+        layout: 'overlay',
+        linkUrl: '/createListing'
     },
 ];
 
@@ -249,11 +250,28 @@ export default async function handler(
             start_date TIMESTAMP,
             end_date TIMESTAMP,
             total_price NUMERIC(10, 2),
-            status VARCHAR(20)
+            status VARCHAR(20),
+            insurance_plan VARCHAR(50),
+            payment_method VARCHAR(50)
         );
     `;
 
-    // 4. Create Content Tables (Hero Slides, Banners, Config)
+    // 4. Create Payments Table (New for Organization)
+    await sql`
+        CREATE TABLE IF NOT EXISTS payments (
+            id VARCHAR(255) PRIMARY KEY,
+            booking_id VARCHAR(255) REFERENCES bookings(id),
+            payer_id VARCHAR(255) REFERENCES users(id),
+            payee_id VARCHAR(255) REFERENCES users(id),
+            amount NUMERIC(10, 2),
+            platform_fee NUMERIC(10, 2),
+            owner_payout NUMERIC(10, 2),
+            status VARCHAR(20),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
+    // 5. Create Content Tables (Hero Slides, Banners, Config)
     await sql`
         CREATE TABLE IF NOT EXISTS hero_slides (
             id VARCHAR(255) PRIMARY KEY,
@@ -270,7 +288,19 @@ export default async function handler(
             description TEXT,
             button_text TEXT,
             image_url TEXT,
-            layout TEXT DEFAULT 'overlay'
+            layout TEXT DEFAULT 'overlay',
+            link_url TEXT
+        );
+    `;
+
+    await sql`
+        CREATE TABLE IF NOT EXISTS inspections (
+            id VARCHAR(255) PRIMARY KEY,
+            booking_id VARCHAR(255) REFERENCES bookings(id),
+            image_url TEXT,
+            status VARCHAR(50),
+            ai_analysis TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `;
 
@@ -335,15 +365,16 @@ export default async function handler(
     if (parseInt(bannerRows[0].count) === 0) {
         for (const banner of initialBanners) {
             await sql`
-                INSERT INTO banners (id, title, description, button_text, image_url, layout)
-                VALUES (${banner.id}, ${banner.title}, ${banner.description}, ${banner.buttonText}, ${banner.imageUrl}, ${banner.layout || 'overlay'})
+                INSERT INTO banners (id, title, description, button_text, image_url, layout, link_url)
+                VALUES (${banner.id}, ${banner.title}, ${banner.description}, ${banner.buttonText}, ${banner.imageUrl}, ${banner.layout || 'overlay'}, ${banner.linkUrl || ''})
             `;
         }
         console.log('Banners inserted');
     } else {
-        // Run a migration for existing tables to add the column if missing (simple check)
+        // Run a migration for existing tables to add the columns if missing (simple check)
         try {
             await sql`ALTER TABLE banners ADD COLUMN IF NOT EXISTS layout TEXT DEFAULT 'overlay'`;
+            await sql`ALTER TABLE banners ADD COLUMN IF NOT EXISTS link_url TEXT`;
         } catch(e) {
             console.log("Column migration skipped or failed", e);
         }
@@ -360,7 +391,7 @@ export default async function handler(
     }
 
 
-    return res.status(200).json({ message: 'Database seeded successfully', details: 'All tables (users, listings, content) created and data inserted.' });
+    return res.status(200).json({ message: 'Database seeded successfully', details: 'All tables (users, listings, bookings, payments, content) created and data inserted.' });
   } catch (error) {
     console.error('Seeding error:', error);
     return res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });

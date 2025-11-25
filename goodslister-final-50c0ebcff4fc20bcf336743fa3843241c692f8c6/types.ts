@@ -74,6 +74,7 @@ export interface Banner {
     buttonText: string;
     imageUrl: string;
     layout?: 'overlay' | 'split' | 'wide';
+    linkUrl?: string;
 }
 
 export interface Message {

@@ -730,6 +730,17 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             <label className="block text-sm font-medium text-gray-700">Button Text</label>
                                             <input type="text" value={banner.buttonText} onChange={e => onUpdateBanner(banner.id, 'buttonText', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
                                         </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Button Link (Optional)</label>
+                                            <input 
+                                                type="text" 
+                                                value={banner.linkUrl || ''} 
+                                                onChange={e => onUpdateBanner(banner.id, 'linkUrl', e.target.value)} 
+                                                className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                                placeholder="e.g., /explore or /createListing"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">Use local paths (like '/explore') or full URLs.</p>
+                                        </div>
                                     </div>
                                 ))}
                                  <button onClick={onAddBanner} className="mt-4 w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-cyan-500 hover:text-cyan-600 font-semibold transition-colors">

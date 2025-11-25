@@ -119,6 +119,28 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
 
     const featuredListings = listings.filter(l => l.isFeatured);
 
+    const handleBannerClick = (banner: Banner) => {
+        if (banner.linkUrl) {
+            if (banner.linkUrl.startsWith('http')) {
+                window.open(banner.linkUrl, '_blank');
+            } else {
+                const path = banner.linkUrl.startsWith('/') ? banner.linkUrl.substring(1) : banner.linkUrl;
+                
+                // Map common paths to page IDs
+                if (path === 'explore') onNavigate('explore');
+                else if (path === 'createListing') onNavigate('createListing');
+                else if (path === 'aiAssistant') onNavigate('aiAssistant');
+                else if (path === 'userDashboard') onNavigate('userDashboard');
+                else {
+                    // Fallback: try to use it as a page ID directly if it matches Page type
+                    onNavigate(path as Page); 
+                }
+            }
+        } else {
+            onCreateListing(); // Default action
+        }
+    };
+
     const renderBanner = (banner: Banner) => {
         const layout = banner.layout || 'overlay';
 
@@ -132,7 +154,7 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                         <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{banner.title}</h2>
                         <p className="mt-4 text-lg text-gray-300">{banner.description}</p>
                         <div className="mt-8">
-                            <button onClick={onCreateListing} className="inline-block py-3 px-8 text-gray-900 font-semibold rounded-lg bg-white hover:bg-gray-100 transition-colors shadow-lg">
+                            <button onClick={() => handleBannerClick(banner)} className="inline-block py-3 px-8 text-gray-900 font-semibold rounded-lg bg-white hover:bg-gray-100 transition-colors shadow-lg">
                                 {banner.buttonText}
                             </button>
                         </div>
@@ -157,7 +179,7 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{banner.title}</h2>
                                 <p className="mt-2 text-gray-600 max-w-2xl">{banner.description}</p>
                             </div>
-                            <button onClick={onCreateListing} className="flex-shrink-0 py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors whitespace-nowrap">
+                            <button onClick={() => handleBannerClick(banner)} className="flex-shrink-0 py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors whitespace-nowrap">
                                 {banner.buttonText}
                             </button>
                         </div>
@@ -180,7 +202,7 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                     <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-200">
                         {banner.description}
                     </p>
-                    <button onClick={onCreateListing} className="mt-8 inline-block py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
+                    <button onClick={() => handleBannerClick(banner)} className="mt-8 inline-block py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
                         {banner.buttonText}
                     </button>
                 </div>

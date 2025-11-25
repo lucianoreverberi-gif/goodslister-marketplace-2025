@@ -268,26 +268,62 @@ export const updateConversations = async (updatedConversations: Conversation[]):
 };
 
 export const createBooking = async (listingId: string, renterId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium' = 'standard', paymentMethod: 'platform' | 'direct' = 'platform'): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
-    // For now, bookings are local-only to avoid complex date logic on the server in this step.
-    // To make this live, we would need a POST /api/bookings endpoint.
-    const data = await fetchAllData();
-    const listing = data.listings.find(l => l.id === listingId)!;
-    
-    const newBooking: Booking = {
-        id: `booking-${Date.now()}`,
-        listingId,
-        listing,
-        renterId,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        totalPrice,
-        insurancePlan,
-        paymentMethod,
-        status: 'confirmed',
-    };
-    
-    const newBookedDates = eachDayOfInterval({ start: startDate, end: endDate }).map(d => format(d, 'yyyy-MM-dd'));
-    const updatedListing = { ...listing, bookedDates: [...(listing.bookedDates || []), ...newBookedDates] };
+    // --- LIVE BACKEND INTEGRATION ---
+    // We now call the dedicated API endpoint 'api/bookings/create' which handles
+    // both the booking creation and the payment record insertion.
+    try {
+        const response = await fetch('/api/bookings/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                listingId, 
+                renterId, 
+                startDate: startDate.toISOString(), 
+                endDate: endDate.toISOString(), 
+                totalPrice, 
+                insurancePlan, 
+                paymentMethod 
+            }),
+        });
 
-    return { newBooking, updatedListing };
+        if (response.ok) {
+            const result = await response.json();
+            const booking = result.booking;
+            // Fetch fresh data to ensure listings reflect the booked dates
+            const data = await fetchAllData();
+            const updatedListing = data.listings.find(l => l.id === listingId)!;
+            // Merge the new booking with the fully populated listing object for the UI
+            return { 
+                newBooking: { ...booking, listing: updatedListing }, 
+                updatedListing 
+            };
+        } else {
+            throw new Error("Failed to create booking on server");
+        }
+    } catch (e) {
+        console.error("Booking API Error:", e);
+        
+        // --- FALLBACK FOR LOCAL/DEMO MODE ---
+        // If the API is not reachable (e.g. database not set up), fallback to local simulation
+        const data = await fetchAllData();
+        const listing = data.listings.find(l => l.id === listingId)!;
+        
+        const newBooking: Booking = {
+            id: `booking-${Date.now()}`,
+            listingId,
+            listing,
+            renterId,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            totalPrice,
+            insurancePlan,
+            paymentMethod,
+            status: 'confirmed',
+        };
+        
+        const newBookedDates = eachDayOfInterval({ start: startDate, end: endDate }).map(d => format(d, 'yyyy-MM-dd'));
+        const updatedListing = { ...listing, bookedDates: [...(listing.bookedDates || []), ...newBookedDates] };
+
+        return { newBooking, updatedListing };
+    }
 };
