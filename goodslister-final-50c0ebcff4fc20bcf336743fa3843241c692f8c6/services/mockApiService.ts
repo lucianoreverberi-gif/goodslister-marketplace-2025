@@ -149,7 +149,13 @@ export const deleteSlide = async (id: string): Promise<HeroSlide[]> => {
 };
 
 export const updateBanner = async (banner: Banner): Promise<Banner[]> => {
-    await sendAdminAction('updateBanner', banner);
+    // Fire and forget the server update to ensure responsiveness
+    sendAdminAction('updateBanner', banner).catch(err => console.error("Bg save failed", err));
+    
+    // FIX: Do NOT await fetchAllData() here. 
+    // When typing, if we fetch stale data from the server and return it, it overwrites the user's input.
+    // Instead, we fetch the latest data but explicitly overwrite the specific banner 
+    // with the 'banner' object passed in (which contains the latest user keystroke).
     const data = await fetchAllData();
     return data.banners.map(b => b.id === banner.id ? banner : b);
 };
@@ -157,6 +163,12 @@ export const updateBanner = async (banner: Banner): Promise<Banner[]> => {
 export const addBanner = async (banner: Banner): Promise<Banner[]> => {
     await sendAdminAction('addBanner', banner);
     const data = await fetchAllData();
+    
+    // Check if the banner is already in the fetched data (to avoid duplicates if server is fast)
+    const exists = data.banners.some(b => b.id === banner.id);
+    if (exists) {
+        return data.banners;
+    }
     return [...data.banners, banner];
 };
 

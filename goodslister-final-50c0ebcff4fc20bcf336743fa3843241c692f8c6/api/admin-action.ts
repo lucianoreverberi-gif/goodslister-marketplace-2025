@@ -56,20 +56,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ success: true });
 
         case 'updateBanner':
-             // If updating specific field (like just title), standard query
-             // But payload might come with just {id, field, value} or full object
-             // Here we handle the dynamic field update pattern used in AdminPage
-             if (payload.field === 'layout') {
-                 await sql`UPDATE banners SET layout=${payload.value} WHERE id=${payload.id}`;
-             } else if (payload.field === 'title') {
-                 await sql`UPDATE banners SET title=${payload.value} WHERE id=${payload.id}`;
-             } else if (payload.field === 'description') {
-                 await sql`UPDATE banners SET description=${payload.value} WHERE id=${payload.id}`;
-             } else if (payload.field === 'buttonText') {
-                 await sql`UPDATE banners SET button_text=${payload.value} WHERE id=${payload.id}`;
-             } else if (payload.field === 'imageUrl') {
-                 await sql`UPDATE banners SET image_url=${payload.value} WHERE id=${payload.id}`;
-             }
+             // FIX: Handle full banner object update. 
+             // The frontend sends the complete banner object as 'payload'.
+             // We update all fields to ensure consistency and avoid "missing field" logic errors.
+             await sql`
+                UPDATE banners SET 
+                    title=${payload.title}, 
+                    description=${payload.description}, 
+                    button_text=${payload.buttonText}, 
+                    image_url=${payload.imageUrl}, 
+                    layout=${payload.layout || 'overlay'}
+                WHERE id=${payload.id}
+             `;
             return res.status(200).json({ success: true });
 
         case 'addBanner':
