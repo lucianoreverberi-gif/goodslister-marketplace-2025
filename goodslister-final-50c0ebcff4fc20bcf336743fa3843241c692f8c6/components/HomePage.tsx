@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Listing, HeroSlide, Banner, ListingCategory, CategoryImagesMap } from '../types';
+import { Listing, HeroSlide, Banner, ListingCategory, CategoryImagesMap, Page } from '../types';
 import ListingCard from './ListingCard';
 import CategoryCard from './CategoryCard';
 import { processSearchQuery, FilterCriteria } from '../services/geminiService';
-import { SearchIcon, ChevronLeftIcon, ChevronRightIcon, ShieldCheckIcon, SmileIcon, UserCheckIcon, WalletIcon, MessageCircleIcon, BrainCircuitIcon, FileSignatureIcon, WandSparklesIcon, LanguagesIcon, MicrophoneIcon } from './icons';
+import { SearchIcon, ChevronLeftIcon, ChevronRightIcon, ShieldCheckIcon, SmileIcon, UserCheckIcon, WalletIcon, MessageCircleIcon, FileSignatureIcon, MicrophoneIcon, ScanIcon, BrainIcon, ZapIcon, GlobeIcon } from './icons';
 
 // Extend the global Window interface for SpeechRecognition APIs
 declare global {
@@ -18,13 +18,14 @@ interface HomePageProps {
     onListingClick: (id: string) => void;
     onCreateListing: () => void;
     onSearch: (criteria: FilterCriteria) => void;
+    onNavigate: (page: Page) => void;
     listings: Listing[];
     heroSlides: HeroSlide[];
     banners: Banner[];
     categoryImages: CategoryImagesMap;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, onSearch, listings, heroSlides, banners, categoryImages }) => {
+const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, onSearch, onNavigate, listings, heroSlides, banners, categoryImages }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -209,6 +210,7 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                     <form onSubmit={handleSearch} className="mt-8 max-w-xl mx-auto flex items-center rounded-lg shadow-lg bg-white">
                         <div className="relative w-full">
                            <input
+                                id="hero-search-input"
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -306,34 +308,56 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Intelligence, Integrated.</h2>
                         <p className="mt-4 text-lg leading-8 text-gray-600 max-w-3xl mx-auto">We've designed a platform where AI works for you, making everything simpler, faster, and safer.</p>
-                        <div className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-                            <div className="flex flex-col items-center text-center">
-                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6">
-                                    <BrainCircuitIcon className="h-10 w-10" />
+                        <div className="mt-20 flex flex-wrap justify-center gap-8">
+                            <div 
+                                onClick={() => document.getElementById('hero-search-input')?.focus()}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <BrainIcon className="h-10 w-10" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Neural Search</h3>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Neural Search</h3>
                                 <p className="mt-2 text-base text-gray-600">Describe what you're looking for in your own words. Our AI interprets your intent to find the perfect gear.</p>
                             </div>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6">
+                            <div 
+                                onClick={() => onNavigate('aiAssistant')}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
                                     <FileSignatureIcon className="h-10 w-10" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Smart Contracts</h3>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Smart Contracts</h3>
                                 <p className="mt-2 text-base text-gray-600">Generate detailed rental agreements in seconds. AI protects your interests with clear and concise clauses.</p>
                             </div>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6">
-                                    <WandSparklesIcon className="h-10 w-10" />
+                            <div 
+                                onClick={onCreateListing}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <ZapIcon className="h-10 w-10" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Optimized Listings</h3>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Optimized Listings</h3>
                                 <p className="mt-2 text-base text-gray-600">Create high-impact listings with a single click. Our AI writes descriptions that capture attention and convert.</p>
                             </div>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6">
-                                    <LanguagesIcon className="h-10 w-10" />
+                            <div 
+                                onClick={() => onNavigate('explore')}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <GlobeIcon className="h-10 w-10" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Multilingual Chat</h3>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Multilingual Chat</h3>
                                 <p className="mt-2 text-base text-gray-600">Communicate globally with instant AI-powered translations directly in your chat conversations.</p>
+                            </div>
+                            <div 
+                                onClick={() => onNavigate('userDashboard')}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <ScanIcon className="h-10 w-10" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">AI Smart Inspector</h3>
+                                <p className="mt-2 text-base text-gray-600">Automatically compare before/after photos to detect damage and process claims fairly in seconds.</p>
                             </div>
                         </div>
                     </div>

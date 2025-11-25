@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Session, Listing, Booking } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 
@@ -22,6 +22,128 @@ interface PromotionModalProps {
     listing: Listing;
     onClose: () => void;
 }
+
+const InspectionModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => {
+    const [step, setStep] = useState<'upload' | 'analyzing' | 'result'>('upload');
+    const [image, setImage] = useState('');
+    const [analysisResult, setAnalysisResult] = useState<{ status: 'clean' | 'damaged', details: string } | null>(null);
+
+    const handleAnalyze = () => {
+        if (!image) return;
+        setStep('analyzing');
+        
+        // Simulate AI Analysis with a delay
+        setTimeout(() => {
+            // Randomly determine result for demo purposes
+            const isDamaged = Math.random() > 0.7; 
+            setAnalysisResult({
+                status: isDamaged ? 'damaged' : 'clean',
+                details: isDamaged 
+                    ? "Detected: Deep scratch on the front surface (Confidence: 92%). Possible dent on side panel." 
+                    : "Condition Verified: Excellent. No visible scratches, dents, or wear detected beyond normal usage."
+            });
+            setStep('result');
+        }, 3000);
+    };
+
+    const handleFileClaim = () => {
+        alert("Claim filed! Use the Admin Panel > Disputes to manage this case.");
+        onClose();
+    };
+
+    const handleReleaseDeposit = () => {
+        alert("Deposit released to renter successfully.");
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg relative flex flex-col">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
+                    <XIcon className="h-6 w-6" />
+                </button>
+                
+                <div className="p-6 border-b">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <ScanIcon className="h-7 w-7 text-cyan-600" />
+                        AI Smart Inspector
+                    </h2>
+                    <p className="text-gray-600 text-sm mt-1">Verifying return condition for <strong>{booking.listing.title}</strong></p>
+                </div>
+
+                <div className="p-6">
+                    {step === 'upload' && (
+                        <div className="space-y-4">
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                                <p className="text-sm text-blue-700">
+                                    <strong>Step 1:</strong> Upload a clear photo of the returned item. Our AI will compare it against the listing's original condition to detect damages.
+                                </p>
+                            </div>
+                            <ImageUploader 
+                                label="Upload Return Photo" 
+                                currentImageUrl={image} 
+                                onImageChange={setImage} 
+                            />
+                            <button 
+                                onClick={handleAnalyze} 
+                                disabled={!image}
+                                className="w-full mt-4 py-3 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <BrainCircuitIcon className="h-5 w-5" />
+                                Analyze Condition
+                            </button>
+                        </div>
+                    )}
+
+                    {step === 'analyzing' && (
+                        <div className="text-center py-10">
+                            <div className="relative w-24 h-24 mx-auto mb-6">
+                                <div className="absolute inset-0 border-4 border-cyan-200 rounded-full opacity-25 animate-ping"></div>
+                                <div className="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin"></div>
+                                <ScanIcon className="absolute inset-0 m-auto h-10 w-10 text-cyan-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800 animate-pulse">Analyzing Image...</h3>
+                            <p className="text-gray-500 mt-2">Scanning for scratches, dents, and wear.</p>
+                        </div>
+                    )}
+
+                    {step === 'result' && analysisResult && (
+                        <div className="text-center animate-in fade-in slide-in-from-bottom-4">
+                            <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4 ${analysisResult.status === 'clean' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                {analysisResult.status === 'clean' ? <CheckCircleIcon className="h-10 w-10" /> : <FileWarningIcon className="h-10 w-10" />}
+                            </div>
+                            
+                            <h3 className={`text-2xl font-bold mb-2 ${analysisResult.status === 'clean' ? 'text-green-700' : 'text-red-700'}`}>
+                                {analysisResult.status === 'clean' ? 'Condition Verified' : 'Damage Detected'}
+                            </h3>
+                            
+                            <div className="bg-gray-50 p-4 rounded-lg border text-left mb-6">
+                                <p className="text-gray-700 text-sm font-medium">AI Analysis Report:</p>
+                                <p className="text-gray-600 text-sm mt-1">{analysisResult.details}</p>
+                            </div>
+
+                            {analysisResult.status === 'clean' ? (
+                                <button onClick={handleReleaseDeposit} className="w-full py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-md">
+                                    Release Security Deposit
+                                </button>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={onClose} className="py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50">
+                                        Ignore (Minor Wear)
+                                    </button>
+                                    <button onClick={handleFileClaim} className="py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow-md flex items-center justify-center gap-2">
+                                        <GavelIcon className="h-5 w-5" />
+                                        File Claim
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => {
     const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
@@ -310,6 +432,7 @@ const IdVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void
 
 const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bookings, userId }) => {
     const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
+    const [selectedInspection, setSelectedInspection] = useState<Booking | null>(null);
 
     const rentingBookings = bookings.filter(b => b.renterId === userId);
     const hostingBookings = bookings.filter(b => b.listing.owner.id === userId);
@@ -346,6 +469,7 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
                                 <th className="p-3">Total Price</th>
                                 <th className="p-3">Details</th>
                                 <th className="p-3">Status</th>
+                                {mode === 'hosting' && title === 'Past History' && <th className="p-3">Action</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -377,6 +501,17 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
                                             {booking.status}
                                         </span>
                                     </td>
+                                    {mode === 'hosting' && title === 'Past History' && (
+                                        <td className="p-3">
+                                            <button 
+                                                onClick={() => setSelectedInspection(booking)}
+                                                className="flex items-center gap-1 text-xs font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded border border-cyan-200 hover:bg-cyan-100"
+                                            >
+                                                <ScanIcon className="h-3 w-3" />
+                                                Inspect Return
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
@@ -388,6 +523,10 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
 
     return (
         <div>
+             {selectedInspection && (
+                 <InspectionModal booking={selectedInspection} onClose={() => setSelectedInspection(null)} />
+             )}
+
              <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                 <h2 className="text-2xl font-bold text-gray-900">
                     {mode === 'renting' ? 'My Trips & Rentals' : 'Reservations & Clients'}
@@ -763,61 +902,85 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
                     </div>
                 );
             case 'bookings':
-                return (
-                     <div>
-                        <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
-                        <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
-                            {bookings.length > 0 ? (
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="p-3">Item</th>
-                                            <th className="p-3">Dates</th>
-                                            <th className="p-3">Total Price</th>
-                                            <th className="p-3">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {bookings.map(booking => (
-                                            <tr key={booking.id} className="border-b">
-                                                <td className="p-3 font-medium">{booking.listing.title}</td>
-                                                <td className="p-3">{format(new Date(booking.startDate), 'MMM dd, yyyy')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}</td>
-                                                <td className="p-3">${booking.totalPrice.toFixed(2)}</td>
-                                                <td className="p-3">
-                                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        booking.status === 'confirmed' ? 'text-green-800 bg-green-100' : 'text-yellow-800 bg-yellow-100'
-                                                    }`}>
-                                                        {booking.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            ) : <p className="text-center p-8 text-gray-600">You haven't booked any items yet.</p>}
-                        </div>
-                    </div>
-                );
+                return <BookingsManager bookings={bookings} userId={user.id} />;
             case 'security':
                 return <SecurityTab />;
             case 'billing':
                 return (
                     <div>
                         <h2 className="text-2xl font-bold mb-6">Billing</h2>
+                        
+                        <FeeStrategyAdvisor />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            {/* Wallet / Balance Card */}
+                            <div className="bg-white p-6 rounded-lg shadow flex flex-col justify-between h-full">
+                                <div>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-800">Wallet Balance</h3>
+                                        <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Active</span>
+                                    </div>
+                                    <p className="text-4xl font-bold text-gray-900">$1,250.00</p>
+                                    <p className="text-sm text-gray-500 mt-1">Available for payout</p>
+                                </div>
+                                <div className="mt-6 pt-6 border-t">
+                                    <button className="w-full py-2 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                                        <LandmarkIcon className="h-4 w-4" />
+                                        Withdraw to Bank
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Connect Bank Card */}
+                            <div className="bg-white p-6 rounded-lg shadow border border-dashed border-gray-300 flex flex-col items-center justify-center text-center">
+                                <div className="bg-gray-100 p-3 rounded-full mb-4">
+                                    <LandmarkIcon className="h-8 w-8 text-gray-500" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-800">Payout Method</h3>
+                                <p className="text-gray-500 text-sm mt-1 max-w-xs">Connect your bank account via Stripe to receive automatic payouts from rentals.</p>
+                                <button className="mt-4 px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">
+                                    Connect with Stripe
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold">Transaction History (Simulated)</h3>
-                             <p className="text-gray-600 text-sm mt-1 mb-4">Here you would see your earnings and payments.</p>
-                             <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="p-3">Date</th><th className="p-3">Description</th><th className="p-3">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr className="border-b"><td className="p-3">2024-07-15</td><td className="p-3">Payout for "Double Kayak"</td><td className="p-3 text-green-600">+$150.00</td></tr>
-                                    <tr className="border-b"><td className="p-3">2024-07-10</td><td className="p-3">Payout for "Pro Snowboard"</td><td className="p-3 text-green-600">+$225.00</td></tr>
-                                </tbody>
-                            </table>
+                            <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
+                             {bookings.length > 0 ? (
+                                 <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="p-3">Date</th>
+                                            <th className="p-3">Description</th>
+                                            <th className="p-3">Type</th>
+                                            <th className="p-3 text-right">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {bookings.map(booking => (
+                                            <tr key={booking.id} className="border-b last:border-0">
+                                                <td className="p-3 text-gray-600">{format(new Date(booking.startDate), 'MMM dd, yyyy')}</td>
+                                                <td className="p-3">
+                                                    <div className="font-medium text-gray-900">
+                                                        {booking.renterId === user.id ? `Payment for ${booking.listing.title}` : `Payout for ${booking.listing.title}`}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">ID: {booking.id}</div>
+                                                </td>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-1 text-xs rounded-full ${booking.renterId === user.id ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                                        {booking.renterId === user.id ? 'Payment' : 'Payout'}
+                                                    </span>
+                                                </td>
+                                                <td className={`p-3 text-right font-bold ${booking.renterId === user.id ? 'text-gray-900' : 'text-green-600'}`}>
+                                                    {booking.renterId === user.id ? '-' : '+'}${booking.totalPrice.toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                             ) : (
+                                 <p className="text-gray-500 italic">No transactions recorded yet.</p>
+                             )}
                         </div>
                     </div>
                 );
@@ -849,6 +1012,9 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
         }
     };
     
+    // State for Modals
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [showIdModal, setShowIdModal] = useState(false);
 
     return (
         <div className="bg-gray-50 min-h-screen">

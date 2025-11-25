@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon } from './icons';
+import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing' | 'disputes' | 'moderation';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing' | 'disputes' | 'moderation' | 'marketing' | 'settings';
 
 interface AdminPageProps {
     users: User[];
@@ -33,6 +33,12 @@ interface AdminPageProps {
 const mockDisputes: Dispute[] = [
     { id: 'dsp-1', bookingId: 'bk-123', reporterId: 'user-2', reason: 'damage', description: 'Item received with scratches not mentioned in listing.', status: 'open', dateOpened: '2024-03-10', amountInvolved: 150 },
     { id: 'dsp-2', bookingId: 'bk-456', reporterId: 'user-1', reason: 'late_return', description: 'Renter returned item 2 days late.', status: 'escalated', dateOpened: '2024-03-08', amountInvolved: 100 },
+];
+
+// Mock Coupons Data
+const mockCoupons: Coupon[] = [
+    { id: 'cpn-1', code: 'WELCOME10', discountType: 'percentage', discountValue: 10, usageLimit: 100, usedCount: 45, expiryDate: '2025-12-31', status: 'active' },
+    { id: 'cpn-2', code: 'SUMMER20', discountType: 'fixed', discountValue: 20, usageLimit: 50, usedCount: 50, expiryDate: '2023-08-31', status: 'expired' },
 ];
 
 const BillingSettings: React.FC<{
@@ -85,6 +91,188 @@ const BillingSettings: React.FC<{
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+};
+
+const GlobalSettingsTab: React.FC = () => {
+    const [serviceFee, setServiceFee] = useState(10);
+    const [ownerFee, setOwnerFee] = useState(3);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = () => {
+        setIsSaving(true);
+        setTimeout(() => setIsSaving(false), 1000);
+    };
+
+    return (
+        <div>
+            <h2 className="text-2xl font-bold mb-6">Platform Configuration</h2>
+            <div className="bg-white p-6 rounded-lg shadow mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <CreditCardIcon className="h-5 w-5 text-cyan-600" />
+                    Dynamic Fee Structure
+                </h3>
+                <p className="text-sm text-gray-500 mb-6">Adjust the marketplace fees in real-time. These changes affect all future bookings immediately.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Renter Service Fee (%)</label>
+                        <div className="relative rounded-md shadow-sm">
+                            <input
+                                type="number"
+                                value={serviceFee}
+                                onChange={(e) => setServiceFee(Number(e.target.value))}
+                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-3 pr-12 py-2"
+                            />
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500 sm:text-sm">%</span>
+                            </div>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">Charged to the renter on top of the listing price.</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Owner Transaction Fee (%)</label>
+                        <div className="relative rounded-md shadow-sm">
+                            <input
+                                type="number"
+                                value={ownerFee}
+                                onChange={(e) => setOwnerFee(Number(e.target.value))}
+                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-3 pr-12 py-2"
+                            />
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500 sm:text-sm">%</span>
+                            </div>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">Deducted from the owner's payout.</p>
+                    </div>
+                </div>
+                <div className="mt-6 pt-4 border-t flex justify-end">
+                    <button 
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-cyan-600 text-white rounded-md font-bold hover:bg-cyan-700 transition-colors"
+                    >
+                        {isSaving ? 'Saving...' : 'Update Fees'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const MarketingTab: React.FC = () => {
+    const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons);
+    const [showCreate, setShowCreate] = useState(false);
+    
+    // New Coupon State
+    const [newCode, setNewCode] = useState('');
+    const [newDiscount, setNewDiscount] = useState(10);
+    const [newType, setNewType] = useState<'percentage' | 'fixed'>('percentage');
+
+    const handleCreateCoupon = () => {
+        const coupon: Coupon = {
+            id: `cpn-${Date.now()}`,
+            code: newCode.toUpperCase(),
+            discountType: newType,
+            discountValue: newDiscount,
+            usageLimit: 100,
+            usedCount: 0,
+            expiryDate: '2025-12-31',
+            status: 'active'
+        };
+        setCoupons([...coupons, coupon]);
+        setShowCreate(false);
+        setNewCode('');
+    };
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h2 className="text-2xl font-bold">Marketing Engine</h2>
+                    <p className="text-gray-600 text-sm">Manage discount codes and promotions.</p>
+                </div>
+                <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 flex items-center gap-2">
+                    <TicketIcon className="h-5 w-5" />
+                    Create Coupon
+                </button>
+            </div>
+
+            {showCreate && (
+                <div className="bg-white p-6 rounded-lg shadow mb-6 border border-cyan-100 animate-in fade-in slide-in-from-top-2">
+                    <h3 className="font-bold text-lg mb-4">New Coupon Configuration</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code</label>
+                            <input 
+                                type="text" 
+                                value={newCode} 
+                                onChange={e => setNewCode(e.target.value)} 
+                                className="w-full border-gray-300 rounded-md uppercase font-mono" 
+                                placeholder="SUMMER25"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                            <select 
+                                value={newType} 
+                                onChange={e => setNewType(e.target.value as any)} 
+                                className="w-full border-gray-300 rounded-md"
+                            >
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="fixed">Fixed Amount ($)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Value</label>
+                            <input 
+                                type="number" 
+                                value={newDiscount} 
+                                onChange={e => setNewDiscount(Number(e.target.value))} 
+                                className="w-full border-gray-300 rounded-md"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
+                        <button onClick={handleCreateCoupon} disabled={!newCode} className="px-4 py-2 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">Launch Coupon</button>
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50 border-b">
+                        <tr>
+                            <th className="p-4 font-medium text-gray-500">Code</th>
+                            <th className="p-4 font-medium text-gray-500">Discount</th>
+                            <th className="p-4 font-medium text-gray-500">Usage</th>
+                            <th className="p-4 font-medium text-gray-500">Status</th>
+                            <th className="p-4 font-medium text-gray-500">Expiry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {coupons.map(coupon => (
+                            <tr key={coupon.id} className="border-b last:border-0 hover:bg-gray-50">
+                                <td className="p-4 font-mono font-bold text-gray-800">{coupon.code}</td>
+                                <td className="p-4 text-green-600 font-bold">
+                                    {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `-$${coupon.discountValue}`}
+                                </td>
+                                <td className="p-4 text-gray-600">
+                                    {coupon.usedCount} / {coupon.usageLimit}
+                                </td>
+                                <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${coupon.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                                        {coupon.status}
+                                    </span>
+                                </td>
+                                <td className="p-4 text-gray-500">{coupon.expiryDate}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
@@ -184,10 +372,12 @@ const AdminPage: React.FC<AdminPageProps> = ({
         { id: 'dashboard', name: 'Command Center', icon: LayoutDashboardIcon },
         { id: 'disputes', name: 'Disputes', icon: GavelIcon },
         { id: 'moderation', name: 'Moderation', icon: CheckSquareIcon },
+        { id: 'marketing', name: 'Marketing', icon: TicketIcon },
         { id: 'users', name: 'Users', icon: UsersIcon },
         { id: 'listings', name: 'All Listings', icon: PackageIcon },
         { id: 'content', name: 'Content', icon: PaletteIcon },
         { id: 'billing', name: 'Billing', icon: CreditCardIcon },
+        { id: 'settings', name: 'Settings', icon: CogIcon },
     ];
 
     const displayCategoryImages = { ...initialCategoryImages, ...categoryImages };
@@ -239,18 +429,25 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             </div>
                             <div className="bg-white rounded-lg shadow p-6">
                                 <h3 className="font-bold text-gray-800 mb-4">Quick Actions</h3>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap">
                                     <button onClick={() => setActiveTab('moderation')} className="px-4 py-2 bg-cyan-100 text-cyan-700 rounded-md text-sm font-medium hover:bg-cyan-200">
                                         Review Pending Listings
                                     </button>
                                     <button onClick={() => setActiveTab('disputes')} className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200">
                                         Handle Disputes
                                     </button>
+                                    <button onClick={() => setActiveTab('marketing')} className="px-4 py-2 bg-purple-100 text-purple-700 rounded-md text-sm font-medium hover:bg-purple-200">
+                                        Create Coupon
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 );
+            case 'marketing':
+                return <MarketingTab />;
+            case 'settings':
+                return <GlobalSettingsTab />;
             case 'disputes':
                 return (
                     <div>
@@ -346,20 +543,30 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                     <tr>
                                         <th className="p-3">Name</th>
                                         <th className="p-3">Email</th>
-                                        <th className="p-3">Date Joined</th>
                                         <th className="p-3">Status</th>
+                                        <th className="p-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {users.map(user => (
                                         <tr key={user.id} className="border-b">
-                                            <td className="p-3 font-medium">{user.name}</td>
+                                            <td className="p-3 font-medium">
+                                                {user.name}
+                                                <div className="text-xs text-gray-400">Joined: {user.registeredDate}</div>
+                                            </td>
                                             <td className="p-3 text-gray-600">{user.email}</td>
-                                            <td className="p-3 text-gray-600">{user.registeredDate}</td>
                                             <td className="p-3">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${user.isIdVerified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                                                     {user.isIdVerified ? 'Verified' : 'Unverified'}
                                                 </span>
+                                            </td>
+                                            <td className="p-3 text-right">
+                                                <button className="text-xs text-red-600 hover:underline mr-3 font-semibold" onClick={() => alert(`Simulated Ban for ${user.name}`)}>
+                                                    Suspend
+                                                </button>
+                                                <button className="text-xs text-gray-500 hover:text-gray-800 hover:underline" onClick={() => alert(`Reset password email sent to ${user.email}`)}>
+                                                    Reset Pass
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

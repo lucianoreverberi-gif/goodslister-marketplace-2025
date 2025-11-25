@@ -24,6 +24,7 @@ export interface User {
     isIdVerified?: boolean;
     averageRating?: number;
     totalReviews?: number;
+    status?: 'active' | 'suspended'; // Added status for admin control
 }
 
 export interface Session extends User {
@@ -56,7 +57,7 @@ export interface Listing {
     reviewsCount: number;
     bookedDates?: string[];
     ownerRules?: string;
-    approvalStatus?: 'pending' | 'approved' | 'rejected'; // New field for moderation
+    approvalStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface HeroSlide {
@@ -102,7 +103,8 @@ export interface Booking {
     totalPrice: number;
     insurancePlan?: 'standard' | 'essential' | 'premium';
     paymentMethod?: 'platform' | 'direct';
-    status: 'pending' | 'confirmed' | 'cancelled';
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'inspection_pending';
+    inspectionResult?: 'clean' | 'damaged';
 }
 
 export interface Dispute {
@@ -114,4 +116,15 @@ export interface Dispute {
     status: 'open' | 'resolved' | 'escalated';
     dateOpened: string;
     amountInvolved: number;
+}
+
+export interface Coupon {
+    id: string;
+    code: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    usageLimit: number;
+    usedCount: number;
+    expiryDate: string;
+    status: 'active' | 'expired';
 }
