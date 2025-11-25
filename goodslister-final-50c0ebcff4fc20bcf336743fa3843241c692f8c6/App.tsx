@@ -359,22 +359,51 @@ const App: React.FC = () => {
         const updatedSlides = await mockApi.deleteSlide(id);
         updateAppData({ heroSlides: updatedSlides });
     };
+    
     const handleUpdateBanner = async (id: string, field: keyof Banner, value: string) => {
         const bannerToUpdate = appData.banners.find((b: Banner) => b.id === id);
         if(bannerToUpdate) {
-            const updatedBanners = await mockApi.updateBanner({ ...bannerToUpdate, [field]: value });
+            // Create the updated banner object
+            const updatedBanner = { ...bannerToUpdate, [field]: value };
+            
+            // Optimistically update the local state immediately
+            const updatedBanners = appData.banners.map((b: Banner) => b.id === id ? updatedBanner : b);
             updateAppData({ banners: updatedBanners });
+            
+            // Send the update to the server in the background.
+            // We ignore the promise return (void/bool) and trust the optimistic update.
+            await mockApi.updateBanner(updatedBanner);
         }
     };
+
     const handleAddBanner = async () => {
-        const newBanner = { id: `banner-${Date.now()}`, title: 'New Banner', description: 'Description', buttonText: 'Click', imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop' };
-        const updatedBanners = await mockApi.addBanner(newBanner);
+        const newBanner: Banner = { 
+            id: `banner-${Date.now()}`, 
+            title: 'New Banner', 
+            description: 'Description', 
+            buttonText: 'Click', 
+            imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop',
+            layout: 'overlay' as const,
+            linkUrl: ''
+        };
+        
+        // Optimistic update: add to local list immediately
+        const updatedBanners = [...appData.banners, newBanner];
         updateAppData({ banners: updatedBanners });
+        
+        // Send to server
+        await mockApi.addBanner(newBanner);
     };
+
     const handleDeleteBanner = async (id: string) => {
-        const updatedBanners = await mockApi.deleteBanner(id);
+        // Optimistic update
+        const updatedBanners = appData.banners.filter((b: Banner) => b.id !== id);
         updateAppData({ banners: updatedBanners });
+        
+        // Send to server
+        await mockApi.deleteBanner(id);
     };
+
     const handleToggleFeatured = async (id: string) => {
         const updatedListings = await mockApi.toggleFeaturedListing(id);
         updateAppData({ listings: updatedListings });

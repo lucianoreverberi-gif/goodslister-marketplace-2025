@@ -148,34 +148,38 @@ export const deleteSlide = async (id: string): Promise<HeroSlide[]> => {
     return data.heroSlides.filter(s => s.id !== id);
 };
 
-export const updateBanner = async (banner: Banner): Promise<Banner[]> => {
-    // Fire and forget the server update to ensure responsiveness
-    sendAdminAction('updateBanner', banner).catch(err => console.error("Bg save failed", err));
-    
-    // FIX: Do NOT await fetchAllData() here. 
-    // When typing, if we fetch stale data from the server and return it, it overwrites the user's input.
-    // Instead, we fetch the latest data but explicitly overwrite the specific banner 
-    // with the 'banner' object passed in (which contains the latest user keystroke).
-    const data = await fetchAllData();
-    return data.banners.map(b => b.id === banner.id ? banner : b);
-};
+// --- Banner Operations (Optimized for concurrent edits) ---
 
-export const addBanner = async (banner: Banner): Promise<Banner[]> => {
-    await sendAdminAction('addBanner', banner);
-    const data = await fetchAllData();
-    
-    // Check if the banner is already in the fetched data (to avoid duplicates if server is fast)
-    const exists = data.banners.some(b => b.id === banner.id);
-    if (exists) {
-        return data.banners;
+export const updateBanner = async (banner: Banner): Promise<boolean> => {
+    try {
+        // Fire and forget the server update to ensure responsiveness.
+        // We return true immediately to allow optimistic UI updates.
+        await sendAdminAction('updateBanner', banner);
+        return true;
+    } catch (err) {
+        console.error("Background save failed for banner", err);
+        return false;
     }
-    return [...data.banners, banner];
 };
 
-export const deleteBanner = async (id: string): Promise<Banner[]> => {
-    await sendAdminAction('deleteBanner', { id });
-    const data = await fetchAllData();
-    return data.banners.filter(b => b.id !== id);
+export const addBanner = async (banner: Banner): Promise<boolean> => {
+    try {
+        await sendAdminAction('addBanner', banner);
+        return true;
+    } catch (err) {
+        console.error("Failed to add banner", err);
+        return false;
+    }
+};
+
+export const deleteBanner = async (id: string): Promise<boolean> => {
+    try {
+        await sendAdminAction('deleteBanner', { id });
+        return true;
+    } catch (err) {
+        console.error("Failed to delete banner", err);
+        return false;
+    }
 };
 
 export const toggleFeaturedListing = async (id: string): Promise<Listing[]> => {
