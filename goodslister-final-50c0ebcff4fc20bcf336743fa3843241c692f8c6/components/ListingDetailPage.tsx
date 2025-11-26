@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Listing, User, Booking } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon } from './icons';
+import { Listing, User, Booking, ListingCategory } from '../types';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format } from 'date-fns';
@@ -258,6 +258,14 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
 
+    // Identify high-risk categories where insurance is handled directly (not via platform add-on)
+    const isHighRisk = 
+        listing.category === ListingCategory.MOTORCYCLES ||
+        listing.category === ListingCategory.BOATS ||
+        listing.category === ListingCategory.RVS ||
+        listing.category === ListingCategory.UTVS ||
+        (listing.category === ListingCategory.WATER_SPORTS && listing.subcategory?.toLowerCase().includes('jet ski'));
+
     // Calculate Totals
     const getPriceDetails = () => {
         if (!range?.from || !range?.to) return null;
@@ -266,8 +274,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         
         const rentalTotal = basePrice * days;
         
-        // Simple Logic: Premium is 15% of rental, Standard is free
-        const protectionFee = insurancePlan === 'premium' ? rentalTotal * 0.15 : 0;
+        // Logic: Platform insurance only applies to non-high-risk items.
+        // For High Risk items, protectionFee is 0 because it's handled directly/externally.
+        let protectionFee = 0;
+        if (!isHighRisk && insurancePlan === 'premium') {
+            protectionFee = rentalTotal * 0.15;
+        }
         
         const totalPrice = rentalTotal + protectionFee;
 
@@ -311,7 +323,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                 range.to, 
                 priceDetails.totalPrice, 
                 paymentMethod,
-                insurancePlan === 'premium' ? 'insurance' : 'waiver',
+                (!isHighRisk && insurancePlan === 'premium') ? 'insurance' : 'waiver',
                 priceDetails.protectionFee
             );
             setSuccessfulBooking(newBooking);
@@ -479,42 +491,52 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         {/* Price Summary & Insurance Section */}
                                         {priceDetails && (
                                             <div className="mt-4 space-y-4">
-                                                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                                        <ShieldCheckIcon className="h-5 w-5 text-cyan-600" />
-                                                        Protection Plan
-                                                    </h3>
-                                                    <div className="space-y-3">
-                                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
-                                                            <input 
-                                                                type="radio" 
-                                                                name="insurance" 
-                                                                value="standard" 
-                                                                checked={insurancePlan === 'standard'}
-                                                                onChange={() => setInsurancePlan('standard')}
-                                                                className="mt-1 text-cyan-600 focus:ring-cyan-500"
-                                                            />
-                                                            <div>
-                                                                <span className="font-bold text-gray-900 block">Standard (Included)</span>
-                                                                <span className="text-xs text-gray-500">Basic damage waiver. High deductible.</span>
-                                                            </div>
-                                                        </label>
-                                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
-                                                            <input 
-                                                                type="radio" 
-                                                                name="insurance" 
-                                                                value="premium" 
-                                                                checked={insurancePlan === 'premium'}
-                                                                onChange={() => setInsurancePlan('premium')}
-                                                                className="mt-1 text-cyan-600 focus:ring-cyan-500"
-                                                            />
-                                                            <div>
-                                                                <span className="font-bold text-gray-900 block">Premium Insurance (+15%)</span>
-                                                                <span className="text-xs text-gray-500">Full coverage, theft protection, low deductible.</span>
-                                                            </div>
-                                                        </label>
+                                                {isHighRisk ? (
+                                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
+                                                        <div className="flex items-center gap-2 font-bold mb-1">
+                                                            <ShieldIcon className="h-4 w-4 text-amber-700" />
+                                                            Direct Insurance
+                                                        </div>
+                                                        <p>For this high-value item, insurance and damage policies are handled directly with the owner. Please review the contract before signing.</p>
                                                     </div>
-                                                </div>
+                                                ) : (
+                                                    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                                        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                                            <ShieldCheckIcon className="h-5 w-5 text-cyan-600" />
+                                                            Protection Plan
+                                                        </h3>
+                                                        <div className="space-y-3">
+                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                                <input 
+                                                                    type="radio" 
+                                                                    name="insurance" 
+                                                                    value="standard" 
+                                                                    checked={insurancePlan === 'standard'}
+                                                                    onChange={() => setInsurancePlan('standard')}
+                                                                    className="mt-1 text-cyan-600 focus:ring-cyan-500"
+                                                                />
+                                                                <div>
+                                                                    <span className="font-bold text-gray-900 block">Standard (Included)</span>
+                                                                    <span className="text-xs text-gray-500">Basic damage waiver. High deductible.</span>
+                                                                </div>
+                                                            </label>
+                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                                <input 
+                                                                    type="radio" 
+                                                                    name="insurance" 
+                                                                    value="premium" 
+                                                                    checked={insurancePlan === 'premium'}
+                                                                    onChange={() => setInsurancePlan('premium')}
+                                                                    className="mt-1 text-cyan-600 focus:ring-cyan-500"
+                                                                />
+                                                                <div>
+                                                                    <span className="font-bold text-gray-900 block">Premium Insurance (+15%)</span>
+                                                                    <span className="text-xs text-gray-500">Full coverage, theft protection, low deductible.</span>
+                                                                </div>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
                                                     <div className="flex justify-between items-center text-gray-700">
