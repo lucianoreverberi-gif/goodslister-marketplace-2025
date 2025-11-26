@@ -148,38 +148,22 @@ export const deleteSlide = async (id: string): Promise<HeroSlide[]> => {
     return data.heroSlides.filter(s => s.id !== id);
 };
 
-// --- Banner Operations (Optimized for concurrent edits) ---
-
-export const updateBanner = async (banner: Banner): Promise<boolean> => {
-    try {
-        // Fire and forget the server update to ensure responsiveness.
-        // We return true immediately to allow optimistic UI updates.
-        await sendAdminAction('updateBanner', banner);
-        return true;
-    } catch (err) {
-        console.error("Background save failed for banner", err);
-        return false;
-    }
+export const updateBanner = async (banner: Banner): Promise<Banner[]> => {
+    await sendAdminAction('updateBanner', banner);
+    const data = await fetchAllData();
+    return data.banners.map(b => b.id === banner.id ? banner : b);
 };
 
-export const addBanner = async (banner: Banner): Promise<boolean> => {
-    try {
-        await sendAdminAction('addBanner', banner);
-        return true;
-    } catch (err) {
-        console.error("Failed to add banner", err);
-        return false;
-    }
+export const addBanner = async (banner: Banner): Promise<Banner[]> => {
+    await sendAdminAction('addBanner', banner);
+    const data = await fetchAllData();
+    return [...data.banners, banner];
 };
 
-export const deleteBanner = async (id: string): Promise<boolean> => {
-    try {
-        await sendAdminAction('deleteBanner', { id });
-        return true;
-    } catch (err) {
-        console.error("Failed to delete banner", err);
-        return false;
-    }
+export const deleteBanner = async (id: string): Promise<Banner[]> => {
+    await sendAdminAction('deleteBanner', { id });
+    const data = await fetchAllData();
+    return data.banners.filter(b => b.id !== id);
 };
 
 export const toggleFeaturedListing = async (id: string): Promise<Listing[]> => {
@@ -323,6 +307,8 @@ export const createBooking = async (listingId: string, renterId: string, startDa
             insurancePlan,
             paymentMethod,
             status: 'confirmed',
+            protectionType: 'waiver',
+            protectionFee: 0
         };
         
         const newBookedDates = eachDayOfInterval({ start: startDate, end: endDate }).map(d => format(d, 'yyyy-MM-dd'));

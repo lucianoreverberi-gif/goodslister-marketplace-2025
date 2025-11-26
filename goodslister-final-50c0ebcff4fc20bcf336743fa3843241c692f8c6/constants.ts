@@ -234,6 +234,9 @@ export const mockBookings: Booking[] = [
         startDate: '2024-08-10',
         endDate: '2024-08-15',
         totalPrice: 450,
-        status: 'confirmed'
+        status: 'confirmed',
+        protectionType: 'waiver',
+        protectionFee: 45,
+        paymentMethod: 'platform'
     }
 ];

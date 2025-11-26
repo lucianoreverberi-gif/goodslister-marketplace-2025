@@ -1,50 +1,37 @@
 
-import React, { useState } from 'react';
-import { Listing, User, Booking } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon } from './icons';
+import React, { useState, useEffect } from 'react';
+import { Listing, User, Booking, RiskTier } from '../types';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format } from 'date-fns';
+import { RiskManagerService, PriceBreakdown } from '../services/riskService';
+import ImageUploader from './ImageUploader'; // Reuse existing uploader
 
 // A simple component to render Markdown from the AI description
 const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
     const createMarkup = (markdownText: string) => {
         if (!markdownText) return { __html: '' };
-        
-        // Process paragraphs by splitting by double newlines
         const paragraphs = markdownText.split('\n\n').map(p => {
-            // Process elements within each paragraph
             let processedParagraph = p
-                // Headers (must be at the start of a paragraph)
                 .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold my-3">$1</h3>')
-                // Bold text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-            // Process bullet points
             if (processedParagraph.includes('* ')) {
                 const listItems = processedParagraph.split('\n')
                     .filter(line => line.trim().startsWith('* '))
                     .map(item => `<li class="ml-5 list-disc">${item.trim().substring(2).trim()}</li>`)
                     .join('');
-                // Replace the original list text with the HTML list
                 processedParagraph = processedParagraph.replace(/(\* .*\n?)+/, `<ul class="space-y-1 my-3">${listItems}</ul>`);
             }
-            
-            // For non-header and non-list paragraphs, wrap in <p> tags
-            // and replace single newlines with <br /> for line breaks within paragraphs
             if (!processedParagraph.startsWith('<h3') && !processedParagraph.startsWith('<ul')) {
                  processedParagraph = `<p>${processedParagraph.replace(/\n/g, '<br />')}</p>`;
             }
-            
             return processedParagraph;
         }).join('');
-
         return { __html: paragraphs };
     };
-
     return <div className="prose max-w-none text-gray-600 leading-relaxed" dangerouslySetInnerHTML={createMarkup(text)} />;
 };
-
 
 interface ListingDetailPageProps {
     listing: Listing;
@@ -67,8 +54,8 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                 <p><strong>Dates:</strong> {format(new Date(booking.startDate), 'LLL dd, yyyy')} - {format(new Date(booking.endDate), 'LLL dd, yyyy')}</p>
                 <p><strong>Total Price:</strong> ${booking.totalPrice.toFixed(2)}</p>
                 <div className="flex items-center gap-2 mt-2">
-                     <ShieldCheckIcon className={`h-4 w-4 ${booking.insurancePlan === 'premium' ? 'text-purple-600' : 'text-blue-600'}`} />
-                     <p className="capitalize text-sm font-medium">{booking.insurancePlan || 'Standard'} Protection</p>
+                     <ShieldCheckIcon className="h-4 w-4 text-blue-600" />
+                     <p className="capitalize text-sm font-medium">Protection: {booking.protectionType === 'insurance' ? 'External Insurance' : 'Standard Waiver'}</p>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                     {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
@@ -76,10 +63,7 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                 </div>
                 <p className="mt-2 text-sm text-gray-500 border-t pt-2">You can view your booking details in your dashboard.</p>
             </div>
-            <button 
-                onClick={onClose} 
-                className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors"
-            >
+            <button onClick={onClose} className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
                 Continue Browsing
             </button>
         </div>
@@ -130,18 +114,6 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
                                 <li className="flex items-center gap-2"><CheckCircleIcon className="h-4 w-4 text-green-500"/> Instant Confirmation</li>
                             </ul>
                         </div>
-                        {selectedMethod === 'platform' && (
-                            <div className="mt-4 pt-4 border-t border-cyan-200 animate-in fade-in">
-                                <div className="bg-white border border-gray-300 rounded-md p-3">
-                                    <div className="flex justify-between mb-2">
-                                        <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-                                        <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
-                                    </div>
-                                    <div className="h-8 w-full bg-gray-100 rounded animate-pulse"></div>
-                                </div>
-                                <p className="text-xs text-gray-400 mt-2 text-center">🔒 256-bit SSL Encrypted Payment</p>
-                            </div>
-                        )}
                     </div>
 
                     {/* Direct Payment Card */}
@@ -199,69 +171,39 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     
-    // Insurance State
-    const [selectedInsurance, setSelectedInsurance] = useState<'standard' | 'essential' | 'premium'>('standard');
+    // NEW: License State for Tier 2
+    const [licenseImage, setLicenseImage] = useState<string>('');
+    const [priceBreakdown, setPriceBreakdown] = useState<PriceBreakdown | null>(null);
 
     const isOwner = currentUser?.id === listing.owner.id;
-
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
 
-    let numberOfDays = 0;
-    if (listing.pricingType === 'daily' && range?.from && range.to) {
-        numberOfDays = differenceInCalendarDays(range.to, range.from) + 1;
-    }
-    
-    // Calculate Pricing
-    const baseRentalPrice = numberOfDays * (listing.pricePerDay || 0);
-    
-    let insuranceCost = 0;
-    if (numberOfDays > 0) {
-        if (selectedInsurance === 'essential') {
-            insuranceCost = baseRentalPrice * 0.10; // 10%
-        } else if (selectedInsurance === 'premium') {
-            insuranceCost = baseRentalPrice * 0.20; // 20%
+    // Calculate Pricing dynamically when dates change
+    useEffect(() => {
+        if (listing.pricingType === 'daily' && range?.from && range.to) {
+            const days = differenceInCalendarDays(range.to, range.from) + 1;
+            const breakdown = RiskManagerService.calculatePricing(listing, days);
+            setPriceBreakdown(breakdown);
+        } else {
+            setPriceBreakdown(null);
         }
-    }
-
-    const totalPrice = baseRentalPrice + insuranceCost;
-    
-    // Define styles for the calendar modifiers.
-    const modifiersStyles: React.CSSProperties | any = {
-      selected: { 
-        backgroundColor: '#06B6D4',
-        color: 'white',
-      },
-      range_middle: { 
-        backgroundColor: '#06B6D4',
-        color: 'white',
-        borderRadius: 0,
-      },
-      range_start: {
-        borderTopRightRadius: 0,
-        borderBottomRightRadius: 0,
-      },
-      range_end: {
-        borderTopLeftRadius: 0,
-        borderBottomLeftRadius: 0,
-      },
-       today: {
-        fontWeight: 'bold',
-        color: '#10B981',
-      },
-      disabled: {
-        textDecoration: 'line-through',
-        opacity: 0.5,
-      }
-    };
+    }, [range, listing]);
 
     const handleBookClick = () => {
         if (!currentUser || !range?.from || !range?.to || isOwner) return;
+        
+        // Tier 2 Check: License Required
+        if (priceBreakdown?.requiresLicense && !licenseImage && !currentUser.licenseVerified) {
+            alert("Please upload a valid license to book this Power Sport item.");
+            return;
+        }
+        
         setShowPaymentModal(true);
     };
 
     const handleConfirmBooking = async (paymentMethod: 'platform' | 'direct') => {
-        if (!range?.from || !range?.to) return;
+        if (!range?.from || !range?.to || !priceBreakdown) return;
         
         setIsBooking(true);
         setBookingError(null);
@@ -272,7 +214,16 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         }
 
         try {
-            const newBooking = await onCreateBooking(listing.id, range.from, range.to, totalPrice, selectedInsurance, paymentMethod);
+            // Mapping new logic to the createBooking signature
+            // Note: passing 'standard' as dummy for insurancePlan since we handle fee in price now
+            const newBooking = await onCreateBooking(
+                listing.id, 
+                range.from, 
+                range.to, 
+                priceBreakdown.totalPrice, 
+                'standard', 
+                paymentMethod
+            );
             setSuccessfulBooking(newBooking);
             setRange(undefined); // Reset calendar
             setShowPaymentModal(false);
@@ -284,12 +235,20 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         }
     };
 
+    const modifiersStyles: React.CSSProperties | any = {
+      selected: { backgroundColor: '#06B6D4', color: 'white' },
+      range_middle: { backgroundColor: '#06B6D4', color: 'white', borderRadius: 0 },
+      range_start: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
+      range_end: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
+      today: { fontWeight: 'bold', color: '#10B981' },
+      disabled: { textDecoration: 'line-through', opacity: 0.5 }
+    };
 
     return (
         <div className="bg-gray-50">
-            {showPaymentModal && (
+            {showPaymentModal && priceBreakdown && (
                 <PaymentSelectionModal 
-                    totalPrice={totalPrice} 
+                    totalPrice={priceBreakdown.totalPrice} 
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
@@ -335,7 +294,14 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                         {/* Details and Booking */}
                         <div className="lg:col-span-2 p-6 sm:p-8 flex flex-col">
                             <div>
-                                <p className="text-sm font-semibold text-cyan-600 uppercase tracking-wider">{listing.category}{listing.subcategory && ` / ${listing.subcategory}`}</p>
+                                <div className="flex justify-between items-start">
+                                    <p className="text-sm font-semibold text-cyan-600 uppercase tracking-wider">{listing.category}{listing.subcategory && ` / ${listing.subcategory}`}</p>
+                                    {listing.hasGpsTracker && (
+                                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                            GPS Tracked
+                                        </span>
+                                    )}
+                                </div>
                                 <h1 className="text-3xl font-bold text-gray-900 mt-2">{listing.title}</h1>
                                 
                                 <div className="flex items-center text-sm text-gray-600 mt-4">
@@ -406,77 +372,65 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                             />
                                         </div>
                                         
-                                        {numberOfDays > 0 && (
+                                        {/* Dynamic Risk Management UI */}
+                                        {priceBreakdown && (
                                             <div className="mt-4 space-y-4">
-                                                {/* Insurance Selection */}
-                                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <UmbrellaIcon className="h-5 w-5 text-blue-600" />
-                                                        <h3 className="font-semibold text-gray-800">Trip Protection</h3>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${selectedInsurance === 'standard' ? 'bg-white border-blue-500 shadow-sm' : 'border-gray-200 hover:bg-white'}`}>
-                                                            <input type="radio" name="insurance" value="standard" checked={selectedInsurance === 'standard'} onChange={() => setSelectedInsurance('standard')} className="mt-1 mr-3" />
-                                                            <div className="flex-1">
-                                                                <div className="flex justify-between">
-                                                                    <span className="font-medium text-gray-900">Standard</span>
-                                                                    <span className="text-gray-500 text-sm">Included</span>
-                                                                </div>
-                                                                <p className="text-xs text-gray-500 mt-1">Covers factory defects. Renter liable for damage.</p>
-                                                            </div>
-                                                        </label>
-                                                        
-                                                        <label className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${selectedInsurance === 'essential' ? 'bg-white border-blue-500 shadow-sm' : 'border-gray-200 hover:bg-white'}`}>
-                                                            <input type="radio" name="insurance" value="essential" checked={selectedInsurance === 'essential'} onChange={() => setSelectedInsurance('essential')} className="mt-1 mr-3" />
-                                                            <div className="flex-1">
-                                                                <div className="flex justify-between">
-                                                                    <span className="font-medium text-gray-900">Essential Protection</span>
-                                                                    <span className="text-gray-500 text-sm">+${(baseRentalPrice * 0.10).toFixed(2)}</span>
-                                                                </div>
-                                                                <p className="text-xs text-gray-500 mt-1">Covers minor scratches and dents.</p>
-                                                            </div>
-                                                        </label>
-
-                                                        <label className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${selectedInsurance === 'premium' ? 'bg-white border-blue-500 shadow-sm' : 'border-gray-200 hover:bg-white'}`}>
-                                                            <input type="radio" name="insurance" value="premium" checked={selectedInsurance === 'premium'} onChange={() => setSelectedInsurance('premium')} className="mt-1 mr-3" />
-                                                            <div className="flex-1">
-                                                                <div className="flex justify-between">
-                                                                    <span className="font-medium text-gray-900">Premium Adventure</span>
-                                                                    <span className="text-gray-500 text-sm">+${(baseRentalPrice * 0.20).toFixed(2)}</span>
-                                                                </div>
-                                                                <p className="text-xs text-gray-500 mt-1">Full coverage including theft & major damage.</p>
-                                                            </div>
-                                                        </label>
-                                                    </div>
-                                                </div>
-
-                                                {/* Direct Payment Disclaimer (Sidebar) */}
-                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <WalletIcon className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                                {/* Tier 1: Soft Goods Protection Badge */}
+                                                {priceBreakdown.riskTier === RiskTier.TIER_1_SOFT_GOODS && (
+                                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
+                                                        <ShieldCheckIcon className="h-6 w-6 text-green-600" />
                                                         <div>
-                                                            <h3 className="font-semibold text-gray-900 text-sm">Flexible Payment</h3>
-                                                            <p className="text-xs text-gray-700 mt-1">
-                                                                Choose to pay securely now or pay the owner directly later.
-                                                            </p>
+                                                            <p className="text-sm font-bold text-green-800">Goodslister Protection</p>
+                                                            <p className="text-xs text-green-700">Includes Damage Waiver. No hidden fees.</p>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                )}
 
+                                                {/* Tier 2: Powersports Requirement */}
+                                                {priceBreakdown.riskTier === RiskTier.TIER_2_POWERSPORTS && (
+                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <FileTextIcon className="h-5 w-5 text-blue-600" />
+                                                            <h3 className="font-bold text-blue-800 text-sm">License Verification Required</h3>
+                                                        </div>
+                                                        <p className="text-xs text-blue-700 mb-3">
+                                                            To rent this High-Performance item, you must provide a valid Driver's or Boater's License.
+                                                        </p>
+                                                        {!currentUser?.licenseVerified && (
+                                                            <ImageUploader 
+                                                                label="Upload License (Front)" 
+                                                                currentImageUrl={licenseImage} 
+                                                                onImageChange={setLicenseImage} 
+                                                            />
+                                                        )}
+                                                        {currentUser?.licenseVerified && (
+                                                            <div className="flex items-center gap-2 text-xs text-green-600 font-bold">
+                                                                <CheckCircleIcon className="h-4 w-4" /> License Verified on Profile
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Price Summary */}
                                                 <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
                                                     <div className="flex justify-between items-center text-gray-700">
-                                                        <span>${(listing.pricePerDay || 0).toFixed(2)} x {numberOfDays} days</span>
-                                                        <span className="font-medium">${baseRentalPrice.toFixed(2)}</span>
+                                                        <span>Rental (${(listing.pricePerDay || 0)} x {differenceInCalendarDays(range!.to!, range!.from!) + 1} days)</span>
+                                                        <span className="font-medium">${priceBreakdown.baseRentalPrice.toFixed(2)}</span>
                                                     </div>
-                                                    {insuranceCost > 0 && (
-                                                         <div className="flex justify-between items-center text-gray-700 text-sm">
-                                                            <span>Insurance ({selectedInsurance})</span>
-                                                            <span className="font-medium">+${insuranceCost.toFixed(2)}</span>
-                                                        </div>
-                                                    )}
+                                                    <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                        <span>Service Fee</span>
+                                                        <span className="font-medium">${priceBreakdown.serviceFee.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                        <span className="flex items-center gap-1">
+                                                            <UmbrellaIcon className="h-3 w-3" /> 
+                                                            {priceBreakdown.riskTier === RiskTier.TIER_1_SOFT_GOODS ? 'Damage Waiver' : 'Liability Insurance'}
+                                                        </span>
+                                                        <span className="font-medium">${priceBreakdown.protectionFee.toFixed(2)}</span>
+                                                    </div>
                                                     <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
                                                         <span>Total Price</span>
-                                                        <span>${totalPrice.toFixed(2)}</span>
+                                                        <span>${priceBreakdown.totalPrice.toFixed(2)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -484,10 +438,10 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
                                         <button
                                             onClick={handleBookClick}
-                                            disabled={!currentUser || isOwner || numberOfDays === 0 || isBooking}
+                                            disabled={!currentUser || isOwner || !priceBreakdown || isBooking}
                                             className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {isOwner ? "This is your listing" : (currentUser ? (numberOfDays > 0 ? "Book Now" : "Select dates to book") : "Log in to book")}
+                                            {isOwner ? "This is your listing" : (currentUser ? (priceBreakdown ? "Book Now" : "Select dates to book") : "Log in to book")}
                                         </button>
                                     </>
                                 ) : (

@@ -11,6 +11,12 @@ export enum ListingCategory {
     UTVS = "UTVs",
 }
 
+// NEW: Define the Risk Tiers for the Hybrid Strategy
+export enum RiskTier {
+    TIER_1_SOFT_GOODS = "SOFT_GOODS",       // Internal Damage Waiver
+    TIER_2_POWERSPORTS = "POWERSPORTS"      // External Insurance
+}
+
 export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks';
 
 export interface User {
@@ -21,10 +27,11 @@ export interface User {
     avatarUrl: string;
     isEmailVerified?: boolean;
     isPhoneVerified?: boolean;
-    isIdVerified?: boolean;
+    isIdVerified?: boolean; // Important for Tier 2
+    licenseVerified?: boolean; // NEW: Specific for Powersports/Marine
     averageRating?: number;
     totalReviews?: number;
-    status?: 'active' | 'suspended'; // Added status for admin control
+    status?: 'active' | 'suspended';
 }
 
 export interface Session extends User {
@@ -58,6 +65,8 @@ export interface Listing {
     bookedDates?: string[];
     ownerRules?: string;
     approvalStatus?: 'pending' | 'approved' | 'rejected';
+    // NEW: Hardware check for Tier 2 Assets
+    hasGpsTracker?: boolean;
 }
 
 export interface HeroSlide {
@@ -102,7 +111,12 @@ export interface Booking {
     startDate: string;
     endDate: string;
     totalPrice: number;
-    insurancePlan?: 'standard' | 'essential' | 'premium';
+    
+    // REFACTORED: Split protection logic
+    protectionType: 'waiver' | 'insurance'; 
+    protectionFee: number; // The 15% or the $35/day
+    insurancePlan?: 'standard' | 'essential' | 'premium'; // Deprecated/Optional now
+    
     paymentMethod?: 'platform' | 'direct';
     status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'inspection_pending';
     inspectionResult?: 'clean' | 'damaged';
