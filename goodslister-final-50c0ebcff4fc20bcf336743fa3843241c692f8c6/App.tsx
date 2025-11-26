@@ -16,15 +16,11 @@ import LoginModal from './components/LoginModal';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
-import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking } from './types';
+import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
 import { CheckCircleIcon, BellIcon, MailIcon, XIcon, MessageCircleIcon } from './components/icons';
 import { format } from 'date-fns';
-
-export interface Session extends User {
-    isAdmin?: boolean;
-}
 
 interface Notification {
     id: string;
@@ -255,11 +251,12 @@ const App: React.FC = () => {
         }, 1500);
     };
 
-    const handleCreateBooking = async (listingId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium', paymentMethod: 'platform' | 'direct'): Promise<Booking> => {
+    const handleCreateBooking = async (listingId: string, startDate: Date, endDate: Date, totalPrice: number, paymentMethod: 'platform' | 'direct', protectionType: 'waiver' | 'insurance', protectionFee: number): Promise<Booking> => {
         if (!session) {
             throw new Error("You must be logged in to book an item.");
         }
-        const result = await mockApi.createBooking(listingId, session.id, startDate, endDate, totalPrice, insurancePlan, paymentMethod);
+        // Pass all new parameters to the API/Mock layer
+        const result = await mockApi.createBooking(listingId, session.id, startDate, endDate, totalPrice, paymentMethod, protectionType, protectionFee);
         
         // Update app state with the new booking and the updated listing (with new bookedDates)
         updateAppData({
@@ -362,46 +359,19 @@ const App: React.FC = () => {
     const handleUpdateBanner = async (id: string, field: keyof Banner, value: string) => {
         const bannerToUpdate = appData.banners.find((b: Banner) => b.id === id);
         if(bannerToUpdate) {
-            const updatedBanner = { ...bannerToUpdate, [field]: value };
-            
-            // Optimistically update the local state immediately
-            const updatedBanners = appData.banners.map((b: Banner) => b.id === id ? updatedBanner : b);
+            const updatedBanners = await mockApi.updateBanner({ ...bannerToUpdate, [field]: value });
             updateAppData({ banners: updatedBanners });
-            
-            // Send the update to the server in the background.
-            // We ignore the promise return (void/bool) and trust the optimistic update.
-            await mockApi.updateBanner(updatedBanner);
         }
     };
-
     const handleAddBanner = async () => {
-        const newBanner: Banner = { 
-            id: `banner-${Date.now()}`, 
-            title: 'New Banner', 
-            description: 'Description', 
-            buttonText: 'Click', 
-            imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop',
-            layout: 'overlay' as const,
-            linkUrl: ''
-        };
-        
-        // Optimistic update: add to local list immediately
-        const updatedBanners = [...appData.banners, newBanner];
+        const newBanner = { id: `banner-${Date.now()}`, title: 'New Banner', description: 'Description', buttonText: 'Click', imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop' };
+        const updatedBanners = await mockApi.addBanner(newBanner);
         updateAppData({ banners: updatedBanners });
-        
-        // Send to server
-        await mockApi.addBanner(newBanner);
     };
-
     const handleDeleteBanner = async (id: string) => {
-        // Optimistic update
-        const updatedBanners = appData.banners.filter((b: Banner) => b.id !== id);
+        const updatedBanners = await mockApi.deleteBanner(id);
         updateAppData({ banners: updatedBanners });
-        
-        // Send to server
-        await mockApi.deleteBanner(id);
     };
-
     const handleToggleFeatured = async (id: string) => {
         const updatedListings = await mockApi.toggleFeaturedListing(id);
         updateAppData({ listings: updatedListings });

@@ -38,7 +38,15 @@ interface ListingDetailPageProps {
     onBack: () => void;
     onStartConversation: (listing: Listing) => void;
     currentUser: User | null;
-    onCreateBooking: (listingId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium', paymentMethod: 'platform' | 'direct') => Promise<Booking>;
+    onCreateBooking: (
+        listingId: string, 
+        startDate: Date, 
+        endDate: Date, 
+        totalPrice: number, 
+        paymentMethod: 'platform' | 'direct',
+        protectionType: 'waiver' | 'insurance',
+        protectionFee: number
+    ) => Promise<Booking>;
 }
 
 const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
@@ -52,16 +60,22 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
             <p className="text-gray-600 mt-2">Your reservation for the <span className="font-semibold">{booking.listing.title}</span> is complete.</p>
             <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
                 <p><strong>Dates:</strong> {format(new Date(booking.startDate), 'LLL dd, yyyy')} - {format(new Date(booking.endDate), 'LLL dd, yyyy')}</p>
-                <p><strong>Total Price:</strong> ${booking.totalPrice.toFixed(2)}</p>
-                <div className="flex items-center gap-2 mt-2">
-                     <ShieldCheckIcon className="h-4 w-4 text-blue-600" />
-                     <p className="capitalize text-sm font-medium">Protection: {booking.protectionType === 'insurance' ? 'External Insurance' : 'Standard Waiver'}</p>
+                <div className="flex items-center justify-between mt-2">
+                    <strong>Total Price:</strong> 
+                    <span className="text-lg font-bold text-cyan-700">${booking.totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-3 text-sm border-t pt-2 border-gray-200">
+                     <ShieldCheckIcon className={`h-4 w-4 ${booking.protectionType === 'insurance' ? 'text-blue-600' : 'text-green-600'}`} />
+                     <div>
+                        <span className="font-semibold">{booking.protectionType === 'insurance' ? 'External Insurance' : 'Standard Waiver'}</span>
+                        <span className="text-gray-500 block text-xs">Fee: ${booking.protectionFee.toFixed(2)}</span>
+                     </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-sm">
                     {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
-                    <p className="capitalize text-sm font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
+                    <p className="capitalize font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
                 </div>
-                <p className="mt-2 text-sm text-gray-500 border-t pt-2">You can view your booking details in your dashboard.</p>
+                <p className="mt-3 text-xs text-gray-400 text-center">Check your email for the receipt.</p>
             </div>
             <button onClick={onClose} className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
                 Continue Browsing
@@ -214,15 +228,16 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         }
 
         try {
-            // Mapping new logic to the createBooking signature
-            // Note: passing 'standard' as dummy for insurancePlan since we handle fee in price now
+            const protectionType = priceBreakdown.riskTier === RiskTier.TIER_1_SOFT_GOODS ? 'waiver' : 'insurance';
+            
             const newBooking = await onCreateBooking(
                 listing.id, 
                 range.from, 
                 range.to, 
                 priceBreakdown.totalPrice, 
-                'standard', 
-                paymentMethod
+                paymentMethod,
+                protectionType,
+                priceBreakdown.protectionFee
             );
             setSuccessfulBooking(newBooking);
             setRange(undefined); // Reset calendar

@@ -255,7 +255,16 @@ export const updateConversations = async (updatedConversations: Conversation[]):
     return updatedConversations;
 };
 
-export const createBooking = async (listingId: string, renterId: string, startDate: Date, endDate: Date, totalPrice: number, insurancePlan: 'standard' | 'essential' | 'premium' = 'standard', paymentMethod: 'platform' | 'direct' = 'platform'): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
+export const createBooking = async (
+    listingId: string, 
+    renterId: string, 
+    startDate: Date, 
+    endDate: Date, 
+    totalPrice: number, 
+    paymentMethod: 'platform' | 'direct',
+    protectionType: 'waiver' | 'insurance',
+    protectionFee: number
+): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
     // --- LIVE BACKEND INTEGRATION ---
     // We now call the dedicated API endpoint 'api/bookings/create' which handles
     // both the booking creation and the payment record insertion.
@@ -269,8 +278,9 @@ export const createBooking = async (listingId: string, renterId: string, startDa
                 startDate: startDate.toISOString(), 
                 endDate: endDate.toISOString(), 
                 totalPrice, 
-                insurancePlan, 
-                paymentMethod 
+                paymentMethod,
+                protectionType,
+                protectionFee
             }),
         });
 
@@ -304,11 +314,10 @@ export const createBooking = async (listingId: string, renterId: string, startDa
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
             totalPrice,
-            insurancePlan,
             paymentMethod,
             status: 'confirmed',
-            protectionType: 'waiver',
-            protectionFee: 0
+            protectionType,
+            protectionFee
         };
         
         const newBookedDates = eachDayOfInterval({ start: startDate, end: endDate }).map(d => format(d, 'yyyy-MM-dd'));
