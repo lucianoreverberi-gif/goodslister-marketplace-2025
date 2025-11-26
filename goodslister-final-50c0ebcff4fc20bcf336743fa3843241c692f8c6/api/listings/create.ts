@@ -22,13 +22,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             id, title, description, category, subcategory, 
             price_per_day, price_per_hour, pricing_type, 
             location_city, location_state, location_country, location_lat, location_lng,
-            owner_id, images, video_url, is_featured, rating, reviews_count, booked_dates, owner_rules
+            owner_id, images, video_url, is_featured, rating, reviews_count, booked_dates, owner_rules,
+            has_gps_tracker, has_commercial_insurance, security_deposit
         )
         VALUES (
             ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, ${listing.subcategory},
             ${listing.pricePerDay || 0}, ${listing.pricePerHour || 0}, ${listing.pricingType},
             ${listing.location.city}, ${listing.location.state}, ${listing.location.country}, ${listing.location.latitude}, ${listing.location.longitude},
-            ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}
+            ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''},
+            ${listing.hasGpsTracker || false}, ${listing.hasCommercialInsurance || false}, ${listing.securityDeposit || 0}
         )
     `;
 

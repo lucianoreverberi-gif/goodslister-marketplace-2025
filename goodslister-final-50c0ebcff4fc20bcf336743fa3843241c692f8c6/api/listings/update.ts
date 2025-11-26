@@ -31,7 +31,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             location_lng = ${listing.location.longitude},
             images = ${listing.images as any},
             video_url = ${listing.videoUrl || ''},
-            owner_rules = ${listing.ownerRules || ''}
+            owner_rules = ${listing.ownerRules || ''},
+            has_gps_tracker = ${listing.hasGpsTracker || false},
+            has_commercial_insurance = ${listing.hasCommercialInsurance || false},
+            security_deposit = ${listing.securityDeposit || 0}
         WHERE id = ${listing.id}
     `;
 

@@ -45,6 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       isEmailVerified: row.is_email_verified,
       isPhoneVerified: row.is_phone_verified,
       isIdVerified: row.is_id_verified,
+      licenseVerified: row.license_verified,
       averageRating: Number(row.average_rating),
       totalReviews: row.total_reviews
     }));
@@ -74,7 +75,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         rating: Number(row.rating),
         reviewsCount: row.reviews_count,
         bookedDates: row.booked_dates || [],
-        ownerRules: row.owner_rules
+        ownerRules: row.owner_rules,
+        hasGpsTracker: row.has_gps_tracker,
+        hasCommercialInsurance: row.has_commercial_insurance,
+        securityDeposit: Number(row.security_deposit)
       };
     });
 
@@ -88,7 +92,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             startDate: row.start_date,
             endDate: row.end_date,
             totalPrice: Number(row.total_price),
-            status: row.status
+            status: row.status,
+            protectionType: row.protection_type,
+            protectionFee: Number(row.protection_fee),
+            paymentMethod: row.payment_method
         }
     }).filter(b => b.listing); 
 

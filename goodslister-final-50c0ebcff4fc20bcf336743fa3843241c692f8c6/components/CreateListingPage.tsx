@@ -34,6 +34,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const [ownerRules, setOwnerRules] = useState(initialData?.ownerRules || '');
     const [pricingType, setPricingType] = useState<'daily' | 'hourly'>(initialData?.pricingType || 'daily');
     const [price, setPrice] = useState(initialData ? (initialData.pricingType === 'daily' ? initialData.pricePerDay?.toString() : initialData.pricePerHour?.toString()) || '' : '');
+    
     const [generationError, setGenerationError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState('');
@@ -268,7 +269,9 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             rating: initialData?.rating || 0,
             reviewsCount: initialData?.reviewsCount || 0,
             ownerRules,
-            bookedDates: initialData?.bookedDates || []
+            bookedDates: initialData?.bookedDates || [],
+            hasCommercialInsurance: false,
+            securityDeposit: 0
         };
 
         try {

@@ -50,7 +50,9 @@ export default async function handler(
         reviews_count INTEGER DEFAULT 0,
         booked_dates TEXT[],
         owner_rules TEXT,
-        has_gps_tracker BOOLEAN DEFAULT FALSE
+        has_gps_tracker BOOLEAN DEFAULT FALSE,
+        has_commercial_insurance BOOLEAN DEFAULT FALSE,
+        security_deposit NUMERIC(10, 2) DEFAULT 0
       );
     `;
 
@@ -129,6 +131,8 @@ export default async function handler(
     // Run migrations for existing columns if needed
     try {
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_gps_tracker BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_commercial_insurance BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS security_deposit NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS license_verified BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS protection_type VARCHAR(20)`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS protection_fee NUMERIC(10, 2)`;
@@ -157,13 +161,13 @@ export default async function handler(
                     id, title, description, category, subcategory, 
                     price_per_day, price_per_hour, pricing_type, 
                     location_city, location_state, location_country, location_lat, location_lng,
-                    owner_id, images, video_url, is_featured, rating, reviews_count, booked_dates, owner_rules, has_gps_tracker
+                    owner_id, images, video_url, is_featured, rating, reviews_count, booked_dates, owner_rules, has_gps_tracker, has_commercial_insurance, security_deposit
                 )
                 VALUES (
                     ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, ${listing.subcategory},
                     ${listing.pricePerDay || 0}, ${listing.pricePerHour || 0}, ${listing.pricingType},
                     ${listing.location.city}, ${listing.location.state}, ${listing.location.country}, ${listing.location.latitude}, ${listing.location.longitude},
-                    ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, ${false}
+                    ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, ${false}, ${listing.hasCommercialInsurance || false}, ${listing.securityDeposit || 0}
                 )
             `;
         }

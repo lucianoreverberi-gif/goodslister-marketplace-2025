@@ -67,6 +67,10 @@ export interface Listing {
     approvalStatus?: 'pending' | 'approved' | 'rejected';
     // NEW: Hardware check for Tier 2 Assets
     hasGpsTracker?: boolean;
+    
+    // NEW: Safety & Legal Configuration
+    hasCommercialInsurance?: boolean;
+    securityDeposit?: number;
 }
 
 export interface HeroSlide {
@@ -117,6 +121,13 @@ export interface Booking {
     protectionFee: number; // The 15% or the $35/day
     insurancePlan?: 'standard' | 'essential' | 'premium'; // Deprecated/Optional now
     
+    // NEW: Legal Contract Signature
+    contractSignature?: {
+        signedBy: string;
+        signedAt: string;
+        contractType: string;
+    };
+
     paymentMethod?: 'platform' | 'direct';
     status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'inspection_pending';
     inspectionResult?: 'clean' | 'damaged';

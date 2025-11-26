@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, RiskTier } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { RiskManagerService, PriceBreakdown } from '../services/riskService';
-import ImageUploader from './ImageUploader'; // Reuse existing uploader
+import { LegalService } from '../services/legalService';
+import ImageUploader from './ImageUploader'; 
 
 // A simple component to render Markdown from the AI description
 const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
@@ -83,6 +84,70 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
         </div>
     </div>
 );
+
+interface ContractSigningModalProps {
+    listing: Listing;
+    renter: User;
+    startDate: Date;
+    endDate: Date;
+    totalPrice: number;
+    onSign: () => void;
+    onClose: () => void;
+}
+
+const ContractSigningModal: React.FC<ContractSigningModalProps> = ({ listing, renter, startDate, endDate, totalPrice, onSign, onClose }) => {
+    const [agreed, setAgreed] = useState(false);
+    const contractHtml = LegalService.generateContractHtml(listing, renter, startDate, endDate, totalPrice);
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative flex flex-col max-h-[90vh]">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
+                    <XIcon className="h-6 w-6" />
+                </button>
+                
+                <div className="p-6 border-b bg-gray-50 rounded-t-2xl">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <FileSignatureIcon className="h-6 w-6 text-cyan-600" />
+                        Sign Rental Agreement
+                    </h2>
+                    <p className="text-gray-600 mt-1">Please review and sign the contract for this {listing.category}.</p>
+                </div>
+
+                <div className="p-6 overflow-y-auto flex-1">
+                    <div 
+                        className="prose prose-sm max-w-none text-gray-700 border border-gray-300 p-6 rounded shadow-inner bg-white"
+                        dangerouslySetInnerHTML={{ __html: contractHtml }}
+                    />
+                </div>
+
+                <div className="p-6 border-t bg-white rounded-b-2xl">
+                    <div className="flex items-center gap-3 mb-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                        <input 
+                            type="checkbox" 
+                            id="agree" 
+                            checked={agreed} 
+                            onChange={(e) => setAgreed(e.target.checked)} 
+                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="agree" className="text-sm text-gray-700 font-medium">
+                            I have read and agree to the terms above. I understand this is a legally binding contract.
+                        </label>
+                    </div>
+                    
+                    <button
+                        onClick={onSign}
+                        disabled={!agreed}
+                        className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                    >
+                        <PenToolIcon className="h-5 w-5" />
+                        Digitally Sign & Proceed to Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 interface PaymentSelectionModalProps {
     totalPrice: number;
@@ -183,6 +248,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [isBooking, setIsBooking] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
+    
+    const [showContractModal, setShowContractModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     
     // NEW: License State for Tier 2
@@ -213,6 +280,13 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             return;
         }
         
+        // STEP 1: Trigger Contract Signing
+        setShowContractModal(true);
+    };
+
+    const handleContractSigned = () => {
+        setShowContractModal(false);
+        // STEP 2: Trigger Payment
         setShowPaymentModal(true);
     };
 
@@ -261,6 +335,20 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
     return (
         <div className="bg-gray-50">
+            {/* Contract Modal - Step 1 of Checkout */}
+            {showContractModal && currentUser && priceBreakdown && range?.from && range?.to && (
+                <ContractSigningModal 
+                    listing={listing} 
+                    renter={currentUser}
+                    startDate={range.from}
+                    endDate={range.to}
+                    totalPrice={priceBreakdown.totalPrice}
+                    onSign={handleContractSigned}
+                    onClose={() => setShowContractModal(false)}
+                />
+            )}
+
+            {/* Payment Modal - Step 2 of Checkout */}
             {showPaymentModal && priceBreakdown && (
                 <PaymentSelectionModal 
                     totalPrice={priceBreakdown.totalPrice} 
