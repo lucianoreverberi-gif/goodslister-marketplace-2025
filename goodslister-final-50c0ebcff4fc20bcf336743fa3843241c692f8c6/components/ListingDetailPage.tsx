@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Listing, User, Booking, RiskTier } from '../types';
+import { Listing, User, Booking } from '../types';
 import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format } from 'date-fns';
-import { RiskManagerService, PriceBreakdown } from '../services/riskService';
 import { LegalService } from '../services/legalService';
 import ImageUploader from './ImageUploader'; 
 
@@ -68,8 +67,8 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                 <div className="flex items-center gap-2 mt-3 text-sm border-t pt-2 border-gray-200">
                      <ShieldCheckIcon className={`h-4 w-4 ${booking.protectionType === 'insurance' ? 'text-blue-600' : 'text-green-600'}`} />
                      <div>
-                        <span className="font-semibold">{booking.protectionType === 'insurance' ? 'External Insurance' : 'Standard Waiver'}</span>
-                        <span className="text-gray-500 block text-xs">Fee: ${booking.protectionFee.toFixed(2)}</span>
+                        <span className="font-semibold">{booking.protectionType === 'insurance' ? 'Premium Insurance' : 'Standard Protection'}</span>
+                        {booking.protectionFee > 0 && <span className="text-gray-500 block text-xs">Fee: ${booking.protectionFee.toFixed(2)}</span>}
                      </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2 text-sm">
@@ -141,7 +140,7 @@ const ContractSigningModal: React.FC<ContractSigningModalProps> = ({ listing, re
                         className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                     >
                         <PenToolIcon className="h-5 w-5" />
-                        Digitally Sign & Proceed to Payment
+                        Digitally Sign & Proceed
                     </button>
                 </div>
             </div>
@@ -252,46 +251,50 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [showContractModal, setShowContractModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     
-    // NEW: License State for Tier 2
-    const [licenseImage, setLicenseImage] = useState<string>('');
-    const [priceBreakdown, setPriceBreakdown] = useState<PriceBreakdown | null>(null);
+    // State for Insurance Selection (Restored functionality)
+    const [insurancePlan, setInsurancePlan] = useState<'standard' | 'premium'>('standard');
 
     const isOwner = currentUser?.id === listing.owner.id;
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
 
-    // Calculate Pricing dynamically when dates change
-    useEffect(() => {
-        if (listing.pricingType === 'daily' && range?.from && range.to) {
-            const days = differenceInCalendarDays(range.to, range.from) + 1;
-            const breakdown = RiskManagerService.calculatePricing(listing, days);
-            setPriceBreakdown(breakdown);
-        } else {
-            setPriceBreakdown(null);
-        }
-    }, [range, listing]);
+    // Calculate Totals
+    const getPriceDetails = () => {
+        if (!range?.from || !range?.to) return null;
+        const days = differenceInCalendarDays(range.to, range.from) + 1;
+        const basePrice = listing.pricingType === 'daily' ? (listing.pricePerDay || 0) : 0;
+        
+        const rentalTotal = basePrice * days;
+        
+        // Simple Logic: Premium is 15% of rental, Standard is free
+        const protectionFee = insurancePlan === 'premium' ? rentalTotal * 0.15 : 0;
+        
+        const totalPrice = rentalTotal + protectionFee;
+
+        return {
+            days,
+            rentalTotal,
+            protectionFee,
+            totalPrice
+        };
+    };
+
+    const priceDetails = getPriceDetails();
 
     const handleBookClick = () => {
         if (!currentUser || !range?.from || !range?.to || isOwner) return;
-        
-        // Tier 2 Check: License Required
-        if (priceBreakdown?.requiresLicense && !licenseImage && !currentUser.licenseVerified) {
-            alert("Please upload a valid license to book this Power Sport item.");
-            return;
-        }
-        
-        // STEP 1: Trigger Contract Signing
+        // Trigger Contract Signing first
         setShowContractModal(true);
     };
 
     const handleContractSigned = () => {
         setShowContractModal(false);
-        // STEP 2: Trigger Payment
+        // Trigger Payment
         setShowPaymentModal(true);
     };
 
     const handleConfirmBooking = async (paymentMethod: 'platform' | 'direct') => {
-        if (!range?.from || !range?.to || !priceBreakdown) return;
+        if (!range?.from || !range?.to || !priceDetails) return;
         
         setIsBooking(true);
         setBookingError(null);
@@ -302,16 +305,14 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         }
 
         try {
-            const protectionType = priceBreakdown.riskTier === RiskTier.TIER_1_SOFT_GOODS ? 'waiver' : 'insurance';
-            
             const newBooking = await onCreateBooking(
                 listing.id, 
                 range.from, 
                 range.to, 
-                priceBreakdown.totalPrice, 
+                priceDetails.totalPrice, 
                 paymentMethod,
-                protectionType,
-                priceBreakdown.protectionFee
+                insurancePlan === 'premium' ? 'insurance' : 'waiver',
+                priceDetails.protectionFee
             );
             setSuccessfulBooking(newBooking);
             setRange(undefined); // Reset calendar
@@ -336,22 +337,22 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     return (
         <div className="bg-gray-50">
             {/* Contract Modal - Step 1 of Checkout */}
-            {showContractModal && currentUser && priceBreakdown && range?.from && range?.to && (
+            {showContractModal && currentUser && priceDetails && range?.from && range?.to && (
                 <ContractSigningModal 
                     listing={listing} 
                     renter={currentUser}
                     startDate={range.from}
                     endDate={range.to}
-                    totalPrice={priceBreakdown.totalPrice}
+                    totalPrice={priceDetails.totalPrice}
                     onSign={handleContractSigned}
                     onClose={() => setShowContractModal(false)}
                 />
             )}
 
             {/* Payment Modal - Step 2 of Checkout */}
-            {showPaymentModal && priceBreakdown && (
+            {showPaymentModal && priceDetails && (
                 <PaymentSelectionModal 
-                    totalPrice={priceBreakdown.totalPrice} 
+                    totalPrice={priceDetails.totalPrice} 
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
@@ -475,65 +476,63 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                             />
                                         </div>
                                         
-                                        {/* Dynamic Risk Management UI */}
-                                        {priceBreakdown && (
+                                        {/* Price Summary & Insurance Section */}
+                                        {priceDetails && (
                                             <div className="mt-4 space-y-4">
-                                                {/* Tier 1: Soft Goods Protection Badge */}
-                                                {priceBreakdown.riskTier === RiskTier.TIER_1_SOFT_GOODS && (
-                                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
-                                                        <ShieldCheckIcon className="h-6 w-6 text-green-600" />
-                                                        <div>
-                                                            <p className="text-sm font-bold text-green-800">Goodslister Protection</p>
-                                                            <p className="text-xs text-green-700">Includes Damage Waiver. No hidden fees.</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Tier 2: Powersports Requirement */}
-                                                {priceBreakdown.riskTier === RiskTier.TIER_2_POWERSPORTS && (
-                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FileTextIcon className="h-5 w-5 text-blue-600" />
-                                                            <h3 className="font-bold text-blue-800 text-sm">License Verification Required</h3>
-                                                        </div>
-                                                        <p className="text-xs text-blue-700 mb-3">
-                                                            To rent this High-Performance item, you must provide a valid Driver's or Boater's License.
-                                                        </p>
-                                                        {!currentUser?.licenseVerified && (
-                                                            <ImageUploader 
-                                                                label="Upload License (Front)" 
-                                                                currentImageUrl={licenseImage} 
-                                                                onImageChange={setLicenseImage} 
+                                                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                                        <ShieldCheckIcon className="h-5 w-5 text-cyan-600" />
+                                                        Protection Plan
+                                                    </h3>
+                                                    <div className="space-y-3">
+                                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                            <input 
+                                                                type="radio" 
+                                                                name="insurance" 
+                                                                value="standard" 
+                                                                checked={insurancePlan === 'standard'}
+                                                                onChange={() => setInsurancePlan('standard')}
+                                                                className="mt-1 text-cyan-600 focus:ring-cyan-500"
                                                             />
-                                                        )}
-                                                        {currentUser?.licenseVerified && (
-                                                            <div className="flex items-center gap-2 text-xs text-green-600 font-bold">
-                                                                <CheckCircleIcon className="h-4 w-4" /> License Verified on Profile
+                                                            <div>
+                                                                <span className="font-bold text-gray-900 block">Standard (Included)</span>
+                                                                <span className="text-xs text-gray-500">Basic damage waiver. High deductible.</span>
                                                             </div>
-                                                        )}
+                                                        </label>
+                                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                            <input 
+                                                                type="radio" 
+                                                                name="insurance" 
+                                                                value="premium" 
+                                                                checked={insurancePlan === 'premium'}
+                                                                onChange={() => setInsurancePlan('premium')}
+                                                                className="mt-1 text-cyan-600 focus:ring-cyan-500"
+                                                            />
+                                                            <div>
+                                                                <span className="font-bold text-gray-900 block">Premium Insurance (+15%)</span>
+                                                                <span className="text-xs text-gray-500">Full coverage, theft protection, low deductible.</span>
+                                                            </div>
+                                                        </label>
                                                     </div>
-                                                )}
+                                                </div>
 
-                                                {/* Price Summary */}
                                                 <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
                                                     <div className="flex justify-between items-center text-gray-700">
-                                                        <span>Rental (${(listing.pricePerDay || 0)} x {differenceInCalendarDays(range!.to!, range!.from!) + 1} days)</span>
-                                                        <span className="font-medium">${priceBreakdown.baseRentalPrice.toFixed(2)}</span>
+                                                        <span>Rental (${(listing.pricePerDay || 0)} x {priceDetails.days} days)</span>
+                                                        <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center text-gray-700 text-sm">
-                                                        <span>Service Fee</span>
-                                                        <span className="font-medium">${priceBreakdown.serviceFee.toFixed(2)}</span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center text-gray-700 text-sm">
-                                                        <span className="flex items-center gap-1">
-                                                            <UmbrellaIcon className="h-3 w-3" /> 
-                                                            {priceBreakdown.riskTier === RiskTier.TIER_1_SOFT_GOODS ? 'Damage Waiver' : 'Liability Insurance'}
-                                                        </span>
-                                                        <span className="font-medium">${priceBreakdown.protectionFee.toFixed(2)}</span>
-                                                    </div>
+                                                    {priceDetails.protectionFee > 0 && (
+                                                        <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                            <span className="flex items-center gap-1">
+                                                                <UmbrellaIcon className="h-3 w-3" /> 
+                                                                Premium Protection
+                                                            </span>
+                                                            <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
                                                     <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
-                                                        <span>Total Price</span>
-                                                        <span>${priceBreakdown.totalPrice.toFixed(2)}</span>
+                                                        <span>Total</span>
+                                                        <span>${priceDetails.totalPrice.toFixed(2)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -541,10 +540,10 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
                                         <button
                                             onClick={handleBookClick}
-                                            disabled={!currentUser || isOwner || !priceBreakdown || isBooking}
+                                            disabled={!currentUser || isOwner || !priceDetails || isBooking}
                                             className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {isOwner ? "This is your listing" : (currentUser ? (priceBreakdown ? "Book Now" : "Select dates to book") : "Log in to book")}
+                                            {isOwner ? "This is your listing" : (currentUser ? (priceDetails ? "Book Now" : "Select dates to book") : "Log in to book")}
                                         </button>
                                     </>
                                 ) : (

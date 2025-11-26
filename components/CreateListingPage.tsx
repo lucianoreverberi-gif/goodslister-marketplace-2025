@@ -397,9 +397,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                         </div>
 
                         {/* SMART ADVISORY COMPONENT INJECTED HERE */}
-                        {/* Key forces remount on category change to trigger animation */}
                         <SmartAdvisory 
-                            key={`${category}-${subcategory}`}
                             category={category} 
                             subcategory={subcategory} 
                             location={location}
