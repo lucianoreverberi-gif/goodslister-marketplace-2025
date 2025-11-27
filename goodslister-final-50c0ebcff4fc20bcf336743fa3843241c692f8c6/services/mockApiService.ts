@@ -266,8 +266,6 @@ export const createBooking = async (
     protectionFee: number
 ): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
     // --- LIVE BACKEND INTEGRATION ---
-    // We now call the dedicated API endpoint 'api/bookings/create' which handles
-    // both the booking creation and the payment record insertion.
     try {
         const response = await fetch('/api/bookings/create', {
             method: 'POST',
@@ -287,10 +285,8 @@ export const createBooking = async (
         if (response.ok) {
             const result = await response.json();
             const booking = result.booking;
-            // Fetch fresh data to ensure listings reflect the booked dates
             const data = await fetchAllData();
             const updatedListing = data.listings.find(l => l.id === listingId)!;
-            // Merge the new booking with the fully populated listing object for the UI
             return { 
                 newBooking: { ...booking, listing: updatedListing }, 
                 updatedListing 
@@ -302,7 +298,6 @@ export const createBooking = async (
         console.error("Booking API Error:", e);
         
         // --- FALLBACK FOR LOCAL/DEMO MODE ---
-        // If the API is not reachable (e.g. database not set up), fallback to local simulation
         const data = await fetchAllData();
         const listing = data.listings.find(l => l.id === listingId)!;
         

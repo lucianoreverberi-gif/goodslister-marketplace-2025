@@ -3,8 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { generateListingDescription, improveDescription, shortenDescription, expandDescription } from '../services/geminiService';
 import { ListingCategory, User, Listing, ListingType, PriceUnit } from '../types';
 import { subcategories } from '../constants';
-import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, CameraIcon, SparklesIcon, ShrinkIcon, ExpandIcon, XIcon, UserCheckIcon, InfoIcon } from './icons';
-import { createListing } from '../services/mockApiService';
+import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon } from './icons';
 import SmartAdvisory from './SmartAdvisory';
 
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
@@ -149,7 +148,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
     const handleRemoveImage = (index: number) => setImageUrls(prev => prev.filter((_, i) => i !== index));
 
-    // --- AI Handlers (Simplified for brevity) ---
+    // --- AI Handlers ---
     const handleGenerateDescription = async () => {
         if (!title.trim() || !location.trim()) {
             setGenerationError("Please provide a title and a location to generate a description with local tips.");
@@ -160,8 +159,17 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         setDescription('');
         setSources([]);
         try {
-            const nonEmptyFeatures = features.filter(f => f.trim() !== '');
-            const result = await generateListingDescription(title, location, nonEmptyFeatures);
+            // Collect context for AI
+            const contextFeatures = features.filter(f => f.trim() !== '');
+            
+            // Inject Experience details into context for better generation
+            if (listingType === 'experience') {
+                if (whatsIncluded) contextFeatures.push(`Included: ${whatsIncluded}`);
+                if (itinerary) contextFeatures.push(`Itinerary: ${itinerary}`);
+                if (skillLevel) contextFeatures.push(`Skill Level: ${skillLevel}`);
+            }
+
+            const result = await generateListingDescription(title, location, contextFeatures);
             setDescription(result.description);
             setSources(result.sources);
         } catch (error) {
@@ -270,7 +278,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                     <div className="p-6 sm:p-8 border-b">
                         <h1 className="text-2xl font-bold text-gray-900">{isEditing ? 'Edit Listing' : 'Create New Listing'}</h1>
                         
-                        {/* Listing Type Selector */}
+                        {/* Listing Type Selector - RESTORED */}
                         <div className="mt-6 flex rounded-md shadow-sm bg-gray-100 p-1">
                             <button
                                 type="button"
@@ -319,6 +327,28 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                 <label className="block text-sm font-bold text-gray-800">Location</label>
                                 <input ref={locationInputRef} type="text" value={location} onChange={e => setLocation(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md shadow-sm" placeholder="E.g., Miami, FL" />
                             </div>
+                        </div>
+
+                        {/* Key Features - IMPORTANT for AI */}
+                        <div>
+                            <label className="block text-sm font-bold text-gray-800">Key Features (Optional)</label>
+                            <p className="mt-1 text-xs text-gray-500">List up to 5 key features. The AI uses these to write your description.</p>
+                            {features.map((feature, index) => (
+                                <div key={index} className="flex items-center mt-2">
+                                    <input
+                                        type="text"
+                                        value={feature}
+                                        onChange={(e) => handleFeatureChange(index, e.target.value)}
+                                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                        placeholder={`Feature ${index + 1}`}
+                                    />
+                                </div>
+                            ))}
+                            {features.length < 5 && (
+                                <button type="button" onClick={handleAddFeature} className="mt-2 text-sm font-medium text-cyan-600 hover:text-cyan-800">
+                                    + Add feature
+                                </button>
+                            )}
                         </div>
 
                         {/* Dynamic Experience Details Step */}
@@ -402,10 +432,129 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             )}
                         </div>
 
-                        {/* Description */}
+                        {/* YouTube Video */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-800">Description</label>
-                            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={5} className="mt-2 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Describe your listing..." />
+                            <label htmlFor="videoUrl" className="block text-sm font-bold text-gray-800">YouTube Video (Optional)</label>
+                             <input
+                                type="url"
+                                id="videoUrl"
+                                value={videoUrl}
+                                onChange={(e) => setVideoUrl(e.target.value)}
+                                className="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                placeholder="https://www.youtube.com/watch?v=..."
+                            />
+                            <p className="mt-2 text-xs text-gray-500">Add a link to a video to showcase your item. <strong>Supports 360° videos!</strong></p>
+                        </div>
+
+                        {/* Description with AI */}
+                        <div className="group">
+                            <div className="flex justify-between items-center mb-1">
+                                <label htmlFor="description" className="block text-sm font-bold text-gray-800">
+                                    Description
+                                </label>
+                                <span className="inline-flex items-center rounded-full bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-700 ring-1 ring-inset ring-cyan-600/20">
+                                    <SparklesIcon className="mr-1 h-3 w-3" />
+                                    AI-Powered
+                                </span>
+                            </div>
+                            {generationError && <p className="text-sm text-red-600 mt-2">{generationError}</p>}
+                            
+                            <div className="relative rounded-md shadow-sm focus-within:ring-2 focus-within:ring-cyan-500 transition-shadow">
+                                <textarea
+                                    id="description"
+                                    rows={6}
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="block w-full border-gray-300 rounded-t-lg border-b-0 focus:border-gray-300 focus:ring-0 resize-y text-gray-900 placeholder-gray-400 sm:text-sm leading-6"
+                                    placeholder="Describe your item in detail, or use the AI tools below to help you write."
+                                />
+                                 {/* AI Writer Toolbar */}
+                                <div className="flex items-center justify-between gap-x-3 border border-gray-300 border-t-0 rounded-b-lg bg-gray-50/50 px-3 py-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateDescription}
+                                            disabled={!title.trim() || !location.trim() || !!aiAction}
+                                            className="inline-flex items-center gap-x-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Generate a description based on title and location"
+                                        >
+                                            <WandSparklesIcon className="-ml-0.5 h-4 w-4 text-cyan-600" aria-hidden="true" />
+                                            Generate
+                                        </button>
+                                        
+                                        <div className="h-4 w-px bg-gray-200 mx-1" />
+                                        
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={handleImproveDescription}
+                                                disabled={!description.trim() || !!aiAction}
+                                                className="group inline-flex items-center rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white hover:text-cyan-700 hover:shadow-sm hover:ring-1 hover:ring-inset hover:ring-gray-300 disabled:text-gray-400 transition-all"
+                                            >
+                                                <SparklesIcon className="mr-1.5 h-3.5 w-3.5 group-hover:text-cyan-500" />
+                                                Improve
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleShortenDescription}
+                                                disabled={!description.trim() || !!aiAction}
+                                                className="group inline-flex items-center rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white hover:text-cyan-700 hover:shadow-sm hover:ring-1 hover:ring-inset hover:ring-gray-300 disabled:text-gray-400 transition-all"
+                                            >
+                                                <ShrinkIcon className="mr-1.5 h-3.5 w-3.5 group-hover:text-cyan-500" />
+                                                Shorten
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleExpandDescription}
+                                                disabled={!description.trim() || !!aiAction}
+                                                className="group inline-flex items-center rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white hover:text-cyan-700 hover:shadow-sm hover:ring-1 hover:ring-inset hover:ring-gray-300 disabled:text-gray-400 transition-all"
+                                            >
+                                                <ExpandIcon className="mr-1.5 h-3.5 w-3.5 group-hover:text-cyan-500" />
+                                                Expand
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {aiAction && (
+                                        <div className="flex items-center gap-1.5 text-xs font-medium text-cyan-600 animate-pulse">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-cyan-600" />
+                                            {aiAction === 'generate' ? 'Writing...' : 'Refining...'}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            {sources.length > 0 && (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                                    <h4 className="text-sm font-bold text-gray-800">AI-Sourced Information:</h4>
+                                    <p className="text-xs text-gray-500 mb-2">The description was enhanced with information from the following web pages:</p>
+                                    <ul className="space-y-1">
+                                        {sources.map((source: any, index: number) => (
+                                            source.web?.uri && (
+                                                <li key={index} className="flex items-start">
+                                                    <span className="text-cyan-600 mr-2">›</span>
+                                                    <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-sm text-cyan-600 hover:underline truncate" title={source.web.uri}>
+                                                        {source.web.title || source.web.uri}
+                                                    </a>
+                                                </li>
+                                            )
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Owner's Rules */}
+                        <div>
+                            <label htmlFor="owner-rules" className="block text-sm font-bold text-gray-800">Owner's Rules (Optional)</label>
+                            <textarea
+                                id="owner-rules"
+                                rows={4}
+                                value={ownerRules}
+                                onChange={(e) => setOwnerRules(e.target.value)}
+                                className="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                placeholder="E.g., No smoking, must be returned clean, late fees may apply."
+                            />
+                            <p className="mt-2 text-xs text-gray-500">Set clear expectations for renters. This helps prevent misunderstandings.</p>
                         </div>
 
                         {/* Pricing */}
