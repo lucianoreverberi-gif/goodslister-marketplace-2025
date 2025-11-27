@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, CalendarIcon, ClockIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, CalendarIcon, ClockIcon, LockIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes, startOfDay } from 'date-fns';
@@ -43,7 +43,8 @@ interface ListingDetailPageProps {
         startDate: Date, 
         endDate: Date, 
         totalPrice: number, 
-        paymentMethod: 'platform' | 'direct',
+        amountPaidOnline: number,
+        balanceDueOnSite: number,
         protectionType: 'waiver' | 'insurance',
         protectionFee: number
     ) => Promise<Booking>;
@@ -70,27 +71,31 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                     <XIcon className="h-6 w-6" />
                 </button>
-                <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <CheckCircleIcon className="h-10 w-10 text-green-600" />
+                </div>
                 <h2 className="text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
                 <p className="text-gray-600 mt-2">Your reservation for the <span className="font-semibold">{booking.listing.title}</span> is complete.</p>
-                <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
-                    <p><strong>Start:</strong> {format(new Date(booking.startDate), 'MMM dd, h:mm a')}</p>
-                    <p><strong>End:</strong> {format(new Date(booking.endDate), 'MMM dd, h:mm a')}</p>
-                    <div className="flex items-center justify-between mt-2">
-                        <strong>Total Price:</strong> 
-                        <span className="text-lg font-bold text-cyan-700">${booking.totalPrice.toFixed(2)}</span>
+                
+                <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm"><strong>Start:</strong> {format(new Date(booking.startDate), 'MMM dd, h:mm a')}</p>
+                    <p className="text-sm"><strong>End:</strong> {format(new Date(booking.endDate), 'MMM dd, h:mm a')}</p>
+                    
+                    <div className="border-t border-gray-200 my-3"></div>
+                    
+                    {/* SPLIT PAYMENT SUMMARY */}
+                    <div className="flex justify-between items-center text-sm text-gray-500 mb-1">
+                        <span>Paid Online:</span>
+                        <span className="font-semibold text-gray-900">${booking.amountPaidOnline?.toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-3 text-sm border-t pt-2 border-gray-200">
-                         <ShieldCheckIcon className={`h-4 w-4 ${booking.protectionType === 'insurance' ? 'text-blue-600' : 'text-green-600'}`} />
-                         <div>
-                            <span className="font-semibold">{booking.protectionType === 'insurance' ? 'Platform Insurance' : 'Standard/Waiver'}</span>
-                            {booking.protectionFee > 0 && <span className="text-gray-500 block text-xs">Fee: ${booking.protectionFee.toFixed(2)}</span>}
-                         </div>
+                    
+                    <div className="flex justify-between items-center text-lg mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
+                        <span className="font-bold text-yellow-800">Balance Due:</span>
+                        <span className="font-bold text-yellow-800">${booking.balanceDueOnSite?.toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-2 text-sm">
-                        {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
-                        <p className="capitalize font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
-                    </div>
+                    <p className="text-xs text-yellow-700 mt-1 text-center">
+                        Please pay this amount to the host upon pickup via Cash, Zelle, or Venmo.
+                    </p>
                 </div>
                 
                 <a 
@@ -183,16 +188,16 @@ const ContractSigningModal: React.FC<ContractSigningModalProps> = ({ listing, re
     );
 };
 
-interface PaymentSelectionModalProps {
-    totalPrice: number;
-    onConfirm: (method: 'platform' | 'direct') => void;
+interface BookingBreakdownModalProps {
+    listingTitle: string;
+    days: number;
+    priceDetails: any;
+    onConfirm: () => void;
     onClose: () => void;
     isProcessing: boolean;
 }
 
-const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPrice, onConfirm, onClose, isProcessing }) => {
-    const [selectedMethod, setSelectedMethod] = useState<'platform' | 'direct' | null>(null);
-
+const BookingBreakdownModal: React.FC<BookingBreakdownModalProps> = ({ listingTitle, days, priceDetails, onConfirm, onClose, isProcessing }) => {
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg relative p-6 flex flex-col max-h-[90vh]">
@@ -200,75 +205,69 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
                     <XIcon className="h-6 w-6" />
                 </button>
                 
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Payment Method</h2>
-                <p className="text-gray-600 mb-6">Complete your booking securely.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Confirm & Pay</h2>
+                <p className="text-gray-600 mb-6 text-sm">Secure your booking for <strong>{listingTitle}</strong>.</p>
 
-                <div className="space-y-4 overflow-y-auto flex-1">
-                    {/* Platform Payment Card */}
-                    <div 
-                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`}
-                        onClick={() => setSelectedMethod('platform')}
-                    >
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-green-100 p-2 rounded-full text-green-600">
-                                    <CreditCardIcon className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900">Pay Securely Now</h3>
-                                    <p className="text-sm text-gray-500">Credit / Debit Card</p>
-                                </div>
+                <div className="space-y-6 overflow-y-auto flex-1">
+                    
+                    {/* Pay Now Section */}
+                    <div className="border border-cyan-200 bg-cyan-50 rounded-xl p-4">
+                        <h3 className="font-bold text-cyan-800 flex items-center gap-2 mb-3">
+                            <CreditCardIcon className="h-5 w-5" /> Pay Now to Reserve
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Goodslister Service Fee (15%)</span>
+                                <span className="font-medium">${priceDetails.serviceFee.toFixed(2)}</span>
                             </div>
-                            <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Recommended</span>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Protection Plan</span>
+                                <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
+                            </div>
+                            <div className="border-t border-cyan-200 pt-2 flex justify-between font-bold text-lg text-cyan-900">
+                                <span>Due Now (Stripe)</span>
+                                <span>${priceDetails.onlineTotal.toFixed(2)}</span>
+                            </div>
                         </div>
-                        <div className="mt-3 pl-11">
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                <li className="flex items-center gap-2"><ShieldCheckIcon className="h-4 w-4 text-green-500"/> Includes Goodslister Protection</li>
-                                <li className="flex items-center gap-2"><CheckCircleIcon className="h-4 w-4 text-green-500"/> Instant Confirmation</li>
-                            </ul>
+                        <div className="mt-3 flex items-center gap-2 text-xs text-cyan-700 bg-white/50 p-2 rounded">
+                            <LockIcon className="h-3 w-3" />
+                            <span>Security Deposit of ${priceDetails.depositAmount} will be placed on hold.</span>
                         </div>
                     </div>
 
-                    {/* Direct Payment Card */}
-                    <div 
-                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'direct' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-200' : 'border-gray-200 hover:border-gray-300'}`}
-                        onClick={() => setSelectedMethod('direct')}
-                    >
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-amber-100 p-2 rounded-full text-amber-600">
-                                    <WalletIcon className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900">Pay on Pickup</h3>
-                                    <p className="text-sm text-gray-500">Direct to Owner</p>
-                                </div>
+                    {/* Pay Later Section */}
+                    <div className="border border-gray-200 bg-gray-50 rounded-xl p-4">
+                        <h3 className="font-bold text-gray-700 flex items-center gap-2 mb-3">
+                            <WalletIcon className="h-5 w-5" /> Pay to Host at Pickup
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Rental Rate ({days} {days === 1 ? 'day' : 'days'})</span>
+                                <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
+                            </div>
+                            <div className="border-t border-gray-200 pt-2 flex justify-between font-bold text-lg text-gray-800">
+                                <span>Balance Due</span>
+                                <span>${priceDetails.rentalTotal.toFixed(2)}</span>
                             </div>
                         </div>
-                        <div className="mt-3 pl-11">
-                            <p className="text-sm text-gray-600 mb-2">Coordinate payment (Cash, Venmo, etc.) directly with the owner when you meet.</p>
-                            {selectedMethod === 'direct' && (
-                                <div className="bg-amber-100 border border-amber-200 p-3 rounded-lg text-amber-800 text-xs flex gap-2 items-start">
-                                    <AlertTriangleIcon className="h-5 w-5 flex-shrink-0" />
-                                    <p><strong>Warning:</strong> Payments made outside the platform are NOT covered by our Insurance or Refund Policy. Proceed with caution.</p>
-                                </div>
-                            )}
+                        <div className="mt-3 text-xs text-gray-500 italic">
+                            Pay directly via Zelle, Cash, or Venmo when you meet the host.
                         </div>
                     </div>
+
                 </div>
 
                 <div className="pt-6 mt-4 border-t">
-                    <div className="flex justify-between items-center mb-4 text-lg font-bold text-gray-900">
-                        <span>Total to Pay</span>
-                        <span>${totalPrice.toFixed(2)}</span>
-                    </div>
                     <button
-                        onClick={() => selectedMethod && onConfirm(selectedMethod)}
-                        disabled={!selectedMethod || isProcessing}
-                        className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={onConfirm}
+                        disabled={isProcessing}
+                        className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                     >
-                        {isProcessing ? 'Processing...' : (selectedMethod === 'platform' ? `Pay $${totalPrice.toFixed(2)} & Book` : 'Confirm Booking')}
+                        {isProcessing ? 'Processing Payment...' : `Pay Reserve & Book ($${priceDetails.onlineTotal.toFixed(2)})`}
                     </button>
+                    <p className="text-center text-xs text-gray-400 mt-3">
+                        By clicking, you agree to our Terms & Cancellation Policy.
+                    </p>
                 </div>
             </div>
         </div>
@@ -324,7 +323,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         listing.category === ListingCategory.UTVS ||
         (listing.category === ListingCategory.WATER_SPORTS && listing.subcategory?.toLowerCase().includes('jet ski'));
 
-    // Calculate Totals
+    // Calculate Totals - REFRACTORED FOR SPLIT PAYMENT
     const getPriceDetails = () => {
         let rentalTotal = 0;
         let days = 0;
@@ -342,6 +341,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             rentalTotal = basePrice * selectedTimeSlots.length;
         }
         
+        // --- 1. Platform Fee (Due Now) ---
+        // 15% Service Fee charged on the base rental amount
+        const serviceFee = rentalTotal * 0.15;
+
+        // --- 2. Protection Fee (Due Now) ---
         // Logic: Platform insurance only applies to non-high-risk items.
         // For High Risk items, protectionFee is 0 because it's handled directly/externally.
         let protectionFee = 0;
@@ -354,13 +358,17 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             // 'none' is 0
         }
         
-        const totalPrice = rentalTotal + protectionFee;
+        const onlineTotal = serviceFee + protectionFee;
+        const totalProjectedCost = rentalTotal + onlineTotal;
 
         return {
             days, // or hours count contextually
-            rentalTotal,
-            protectionFee,
-            totalPrice
+            rentalTotal, // Due Later (Offline)
+            serviceFee,  // Due Now
+            protectionFee, // Due Now
+            onlineTotal, // Total Due Now
+            depositAmount: listing.securityDeposit || 0,
+            totalPrice: totalProjectedCost
         };
     };
 
@@ -379,11 +387,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
     const handleContractSigned = () => {
         setShowContractModal(false);
-        // Trigger Payment
+        // Trigger Split Payment Modal
         setShowPaymentModal(true);
     };
 
-    const handleConfirmBooking = async (paymentMethod: 'platform' | 'direct') => {
+    const handleConfirmBooking = async () => {
         if (!priceDetails) return;
         
         // Determine start/end dates based on pricing type
@@ -409,18 +417,17 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         setIsBooking(true);
         setBookingError(null);
 
-        // Simulate slight delay for UX
-        if (paymentMethod === 'platform') {
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
-        }
+        // Simulate Stripe Processing Delay
+        await new Promise(resolve => setTimeout(resolve, 2000)); 
 
         try {
             const newBooking = await onCreateBooking(
                 listing.id, 
                 finalStartDate, 
                 finalEndDate, 
-                priceDetails.totalPrice, 
-                paymentMethod,
+                priceDetails.totalPrice, // Total value of booking
+                priceDetails.onlineTotal, // Amount charged to card
+                priceDetails.rentalTotal, // Balance due on site
                 (!isHighRisk && (insurancePlan === 'premium' || insurancePlan === 'standard')) ? 'insurance' : 'waiver',
                 priceDetails.protectionFee
             );
@@ -476,12 +483,14 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                 />
             )}
 
-            {/* Payment Modal - Step 2 of Checkout */}
+            {/* Payment Modal - Step 2 of Checkout (Refactored for Split) */}
             {showPaymentModal && priceDetails && (
-                <PaymentSelectionModal 
-                    totalPrice={priceDetails.totalPrice} 
-                    onConfirm={handleConfirmBooking} 
-                    onClose={() => setShowPaymentModal(false)} 
+                <BookingBreakdownModal 
+                    listingTitle={listing.title}
+                    days={priceDetails.days}
+                    priceDetails={priceDetails}
+                    onConfirm={handleConfirmBooking}
+                    onClose={() => setShowPaymentModal(false)}
                     isProcessing={isBooking}
                 />
             )}
@@ -710,6 +719,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         )}
 
                                         <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
+                                            {/* Offline Portion */}
                                             <div className="flex justify-between items-center text-gray-700">
                                                 {listing.pricingType === 'daily' ? (
                                                     <span>Rental (${(listing.pricePerDay || 0)} x {priceDetails.days} days)</span>
@@ -718,27 +728,37 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                 )}
                                                 <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
                                             </div>
-                                            {listing.securityDeposit && listing.securityDeposit > 0 && (
+                                            
+                                            {/* Online Portion */}
+                                            {priceDetails.serviceFee > 0 && (
                                                 <div className="flex justify-between items-center text-gray-700 text-sm">
                                                     <span className="flex items-center gap-1">
-                                                        <ShieldIcon className="h-3 w-3 text-gray-500" /> 
-                                                        Security Deposit (Refundable)
+                                                        <CreditCardIcon className="h-3 w-3 text-cyan-600" /> 
+                                                        Service Fee
                                                     </span>
-                                                    <span className="font-medium">${listing.securityDeposit.toFixed(2)}</span>
+                                                    <span className="font-medium text-cyan-700">${priceDetails.serviceFee.toFixed(2)}</span>
                                                 </div>
                                             )}
                                             {priceDetails.protectionFee > 0 && (
                                                 <div className="flex justify-between items-center text-gray-700 text-sm">
                                                     <span className="flex items-center gap-1">
-                                                        <UmbrellaIcon className="h-3 w-3" /> 
+                                                        <UmbrellaIcon className="h-3 w-3 text-cyan-600" /> 
                                                         Protection Fee
                                                     </span>
-                                                    <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
+                                                    <span className="font-medium text-cyan-700">${priceDetails.protectionFee.toFixed(2)}</span>
                                                 </div>
                                             )}
-                                            <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
-                                                <span>Total</span>
-                                                <span>${priceDetails.totalPrice.toFixed(2)}</span>
+                                            
+                                            {/* Split Totals */}
+                                            <div className="border-t pt-2 mt-2">
+                                                <div className="flex justify-between items-center font-bold text-cyan-800">
+                                                    <span>Due Now (Online)</span>
+                                                    <span>${priceDetails.onlineTotal.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-gray-500 text-sm mt-1">
+                                                    <span>Due Later (Direct to Host)</span>
+                                                    <span>${priceDetails.rentalTotal.toFixed(2)}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

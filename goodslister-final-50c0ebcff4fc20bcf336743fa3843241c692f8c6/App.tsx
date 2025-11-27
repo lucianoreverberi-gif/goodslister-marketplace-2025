@@ -1,4 +1,3 @@
-
 // FIX: Created the main App component, which was previously missing.
 // This component manages the overall application state, including routing,
 // session management, and data handling, resolving module resolution errors.
@@ -251,12 +250,33 @@ const App: React.FC = () => {
         }, 1500);
     };
 
-    const handleCreateBooking = async (listingId: string, startDate: Date, endDate: Date, totalPrice: number, paymentMethod: 'platform' | 'direct', protectionType: 'waiver' | 'insurance', protectionFee: number): Promise<Booking> => {
+    const handleCreateBooking = async (
+        listingId: string, 
+        startDate: Date, 
+        endDate: Date, 
+        totalPrice: number, 
+        amountPaidOnline: number, 
+        balanceDueOnSite: number, 
+        protectionType: 'waiver' | 'insurance', 
+        protectionFee: number
+    ): Promise<Booking> => {
         if (!session) {
             throw new Error("You must be logged in to book an item.");
         }
+        
         // Pass all new parameters to the API/Mock layer
-        const result = await mockApi.createBooking(listingId, session.id, startDate, endDate, totalPrice, paymentMethod, protectionType, protectionFee);
+        const result = await mockApi.createBooking(
+            listingId, 
+            session.id, 
+            startDate, 
+            endDate, 
+            totalPrice, 
+            amountPaidOnline,
+            balanceDueOnSite,
+            'platform', // paymentMethod defaulted to platform for online portion
+            protectionType, 
+            protectionFee
+        );
         
         // Update app state with the new booking and the updated listing (with new bookedDates)
         updateAppData({
@@ -271,7 +291,7 @@ const App: React.FC = () => {
             startDate: format(startDate, 'MMM dd, yyyy'),
             endDate: format(endDate, 'MMM dd, yyyy'),
             totalPrice: totalPrice.toFixed(2),
-            paymentMethod
+            paymentMethod: 'platform'
         }).then(success => {
             if (success) {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);

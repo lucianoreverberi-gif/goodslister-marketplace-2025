@@ -1,3 +1,4 @@
+
 import { Listing, User, HeroSlide, Banner, ListingCategory, Conversation, CategoryImagesMap, Booking } from './types';
 
 export const mockUsers: User[] = [
@@ -237,6 +238,8 @@ export const mockBookings: Booking[] = [
         status: 'confirmed',
         protectionType: 'waiver',
         protectionFee: 45,
-        paymentMethod: 'platform'
+        paymentMethod: 'platform',
+        amountPaidOnline: 450,
+        balanceDueOnSite: 0
     }
 ];

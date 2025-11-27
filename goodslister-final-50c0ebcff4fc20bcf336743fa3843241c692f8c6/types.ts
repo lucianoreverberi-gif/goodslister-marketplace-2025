@@ -133,6 +133,10 @@ export interface Booking {
     protectionFee: number; // The 15% or the $35/day
     insurancePlan?: 'standard' | 'essential' | 'premium'; // Deprecated/Optional now
     
+    // NEW: Split Payment Fields
+    amountPaidOnline: number; // Service Fee + Protection
+    balanceDueOnSite: number; // Base Rental Price (Paid to host)
+
     // NEW: Legal Contract Signature
     contractSignature?: {
         signedBy: string;
@@ -140,7 +144,7 @@ export interface Booking {
         contractType: string;
     };
 
-    paymentMethod?: 'platform' | 'direct';
+    paymentMethod?: 'platform' | 'direct'; // Kept for legacy/analytics, but now mostly 'split'
     status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
     inspectionResult?: 'clean' | 'damaged';
     

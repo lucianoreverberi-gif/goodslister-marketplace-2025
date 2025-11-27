@@ -261,6 +261,8 @@ export const createBooking = async (
     startDate: Date, 
     endDate: Date, 
     totalPrice: number, 
+    amountPaidOnline: number,
+    balanceDueOnSite: number,
     paymentMethod: 'platform' | 'direct',
     protectionType: 'waiver' | 'insurance',
     protectionFee: number
@@ -276,6 +278,8 @@ export const createBooking = async (
                 startDate: startDate.toISOString(), 
                 endDate: endDate.toISOString(), 
                 totalPrice, 
+                amountPaidOnline,
+                balanceDueOnSite,
                 paymentMethod,
                 protectionType,
                 protectionFee
@@ -309,6 +313,8 @@ export const createBooking = async (
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
             totalPrice,
+            amountPaidOnline,
+            balanceDueOnSite,
             paymentMethod,
             status: 'confirmed',
             protectionType,

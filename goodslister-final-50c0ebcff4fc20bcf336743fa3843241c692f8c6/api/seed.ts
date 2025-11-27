@@ -62,7 +62,7 @@ export default async function handler(
       );
     `;
 
-    // ... (Keep Bookings, Payments, Content, Inspections tables as is)
+    // 3. Create Bookings Table with Split Payment support
     await sql`
         CREATE TABLE IF NOT EXISTS bookings (
             id VARCHAR(255) PRIMARY KEY,
@@ -71,6 +71,8 @@ export default async function handler(
             start_date TIMESTAMP,
             end_date TIMESTAMP,
             total_price NUMERIC(10, 2),
+            amount_paid_online NUMERIC(10, 2) DEFAULT 0,
+            balance_due_on_site NUMERIC(10, 2) DEFAULT 0,
             status VARCHAR(20),
             protection_type VARCHAR(20),
             protection_fee NUMERIC(10, 2),
@@ -145,6 +147,9 @@ export default async function handler(
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
+        // Migration for bookings table split payment
+        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
+        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
     } catch (e) {
         console.log("Migration skipped", e);
     }
