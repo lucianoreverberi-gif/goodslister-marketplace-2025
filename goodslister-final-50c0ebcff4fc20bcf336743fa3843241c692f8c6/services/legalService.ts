@@ -4,88 +4,160 @@ import { format } from 'date-fns';
 
 export enum ContractType {
     BAREBOAT = "Bareboat Charter Agreement",
-    HIGH_RISK_WAIVER = "Liability Waiver & Assumption of Risk",
+    POWERSPORTS_WAIVER = "Risk Warning, Waiver & Release of Liability",
     STANDARD_RENTAL = "Standard Equipment Rental Agreement"
 }
 
 export class LegalService {
 
-    public static getContractType(category: ListingCategory): ContractType {
+    public static getContractType(listing: Listing): ContractType {
+        const { category, subcategory } = listing;
+
         if (category === ListingCategory.BOATS) {
             return ContractType.BAREBOAT;
         }
-        if (category === ListingCategory.UTVS || category === ListingCategory.MOTORCYCLES || category === ListingCategory.WATER_SPORTS) {
-            // Simplified check: Assume Jet Skis (Water Sports) fall here for now
-            return ContractType.HIGH_RISK_WAIVER;
+
+        // Logic for Powersports (High Risk Bodily Injury)
+        // Check for specific subcategories in Water Sports like Jet Ski
+        const isJetSki = category === ListingCategory.WATER_SPORTS && 
+                         subcategory?.toLowerCase().includes('jet ski');
+                         
+        const isPowersport = 
+            category === ListingCategory.UTVS || 
+            category === ListingCategory.MOTORCYCLES || 
+            category === ListingCategory.WINTER_SPORTS || // Snowmobiles often here or just risky
+            isJetSki;
+
+        if (isPowersport) {
+            return ContractType.POWERSPORTS_WAIVER;
         }
+
         return ContractType.STANDARD_RENTAL;
     }
 
+    /**
+     * Generates the specific Liability Waiver for Powersports.
+     * Focuses on Bodily Injury Risk and Safety Equipment.
+     */
+    private static generateLiabilityWaiver(listing: Listing): string {
+        const vehicleType = listing.subcategory || listing.category;
+        
+        return `
+            <div class="space-y-6 text-gray-800">
+                <div>
+                    <h3 class="font-bold text-red-700 text-lg uppercase border-b-2 border-red-200 pb-1 mb-2">I. EXPRESS ASSUMPTION OF RISK</h3>
+                    <p>The Renter acknowledges that operating a <strong>${vehicleType}</strong> is an inherently dangerous activity. Risks include, but are not limited to: collisions with other vehicles or stationary objects, overturning, ejection from the vehicle, drowning, and severe bodily injury, paralysis, or death. The Renter voluntarily assumes ALL such risks, known and unknown, even if arising from the negligence of others.</p>
+                </div>
+                
+                <div>
+                    <h3 class="font-bold text-red-700 text-lg uppercase border-b-2 border-red-200 pb-1 mb-2">II. MANDATORY SAFETY GEAR & "KILL SWITCH"</h3>
+                    <p>The Renter certifies they have received a safety briefing from the Owner. The Renter agrees to wear a USCG-approved Personal Flotation Device (Life Vest) or DOT-approved helmet AT ALL TIMES. Crucially, the Renter agrees to properly attach the engine cut-off switch lanyard ('kill cord') to their person at all times while operating the vehicle.</p>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-red-700 text-lg uppercase border-b-2 border-red-200 pb-1 mb-2">III. UNQUALIFIED RELEASE</h3>
+                    <p>The Renter hereby releases, waives, and discharges the Owner and Goodslister from any and all claims for damages for death, personal injury, or property damage which they may have, or which may hereafter accrue to them, as a result of using the equipment.</p>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-red-700 text-lg uppercase border-b-2 border-red-200 pb-1 mb-2">IV. ZERO TOLERANCE ALCOHOL/DRUGS POLICY</h3>
+                    <p>Operation of the equipment under the influence of alcohol, marijuana, or illegal drugs is strictly prohibited and constitutes a material breach of this agreement. The Owner reserves the right to terminate the rental immediately without refund and retain the full security deposit if intoxication is suspected.</p>
+                </div>
+            </div>
+        `;
+    }
+
     public static generateContractHtml(listing: Listing, renter: User, startDate: Date, endDate: Date, totalPrice: number): string {
-        const contractType = this.getContractType(listing.category);
+        const contractType = this.getContractType(listing);
         const dateStr = format(new Date(), 'MMMM do, yyyy');
         const startStr = format(startDate, 'MMM dd, yyyy');
         const endStr = format(endDate, 'MMM dd, yyyy');
 
+        // Header Logic
+        let headerTitle: string = contractType;
+        if (contractType === ContractType.POWERSPORTS_WAIVER) {
+            headerTitle = "RISK WARNING, WAIVER AND RELEASE OF LIABILITY, AND INDEMNIFICATION AGREEMENT";
+        }
+
         const header = `
-            <div class="text-center mb-6">
-                <h1 class="text-xl font-bold uppercase">${contractType}</h1>
-                <p class="text-sm text-gray-500">Generated by Goodslister Legal Center on ${dateStr}</p>
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-black uppercase tracking-tight text-gray-900 leading-tight">${headerTitle}</h1>
+                <p class="text-sm text-gray-500 mt-2 font-mono">Generated by Goodslister Legal Center on ${dateStr}</p>
             </div>
-            <div class="mb-4 p-4 bg-gray-50 rounded border text-sm">
-                <p><strong>LESSOR (Owner):</strong> ${listing.owner.name}</p>
-                <p><strong>LESSEE (Renter):</strong> ${renter.name}</p>
-                <p><strong>ITEM:</strong> ${listing.title} (Category: ${listing.category})</p>
-                <p><strong>RENTAL PERIOD:</strong> ${startStr} to ${endStr}</p>
+            <div class="mb-8 p-5 bg-gray-50 rounded-xl border border-gray-200 text-sm shadow-sm">
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Lessor (Owner)</p>
+                        <p class="font-medium text-gray-900 text-base">${listing.owner.name}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Lessee (Renter)</p>
+                        <p class="font-medium text-gray-900 text-base">${renter.name}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Item</p>
+                        <p class="font-medium text-gray-900 text-base">${listing.title}</p>
+                        <p class="text-xs text-gray-500">${listing.category} ${listing.subcategory ? `/ ${listing.subcategory}` : ''}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Rental Period</p>
+                        <p class="font-medium text-gray-900 text-base">${startStr} - ${endStr}</p>
+                    </div>
+                </div>
             </div>
         `;
 
         let body = '';
 
+        // Switcher Logic
         switch (contractType) {
             case ContractType.BAREBOAT:
                 body = `
-                    <h3 class="font-bold mt-4">1. DEMISE CHARTER</h3>
-                    <p>The Renter acknowledges that they have full command, possession, and control of the vessel for the duration of the rental period. The Owner provides no crew.</p>
-                    
-                    <h3 class="font-bold mt-4">2. SEAWORTHINESS</h3>
-                    <p>The Renter warrants that they are competent to operate the vessel. The Owner warrants the vessel is seaworthy at the time of handover.</p>
-                    
-                    <h3 class="font-bold mt-4">3. NAVIGATION LIMITS</h3>
-                    <p>The vessel shall be used only within the coastal waters of ${listing.location.city}, ${listing.location.state}.</p>
+                    <div class="space-y-6 text-gray-800">
+                        <div>
+                            <h3 class="font-bold text-lg uppercase mb-2">1. DEMISE CHARTER</h3>
+                            <p>The Renter acknowledges that they have full command, possession, and control of the vessel for the duration of the rental period. The Owner provides no crew.</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg uppercase mb-2">2. SEAWORTHINESS</h3>
+                            <p>The Renter warrants that they are competent to operate the vessel. The Owner warrants the vessel is seaworthy at the time of handover.</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg uppercase mb-2">3. NAVIGATION LIMITS</h3>
+                            <p>The vessel shall be used only within the coastal waters of ${listing.location.city}, ${listing.location.state}.</p>
+                        </div>
+                    </div>
                 `;
                 break;
 
-            case ContractType.HIGH_RISK_WAIVER:
-                body = `
-                    <h3 class="font-bold mt-4 text-red-700">1. ASSUMPTION OF RISK</h3>
-                    <p>The Renter acknowledges that operating a ${listing.category} involves inherent risks, including bodily injury or death. The Renter voluntarily assumes all such risks.</p>
-                    
-                    <h3 class="font-bold mt-4">2. SAFETY BRIEFING</h3>
-                    <p>The Renter confirms they will receive a safety briefing from the Owner regarding the operation of the vehicle/craft before use.</p>
-                    
-                    <h3 class="font-bold mt-4">3. HELMETS & SAFETY GEAR</h3>
-                    <p>The Renter agrees to wear all legally required safety equipment (helmets, life vests) at all times.</p>
-                `;
+            case ContractType.POWERSPORTS_WAIVER:
+                body = this.generateLiabilityWaiver(listing);
                 break;
 
             default: // STANDARD
                 body = `
-                    <h3 class="font-bold mt-4">1. CONDITION OF EQUIPMENT</h3>
-                    <p>The Renter acknowledges receiving the equipment in good working order and agrees to return it in the same condition, ordinary wear and tear excepted.</p>
-                    
-                    <h3 class="font-bold mt-4">2. RESPONSIBILITY FOR LOSS</h3>
-                    <p>The Renter is responsible for the full replacement cost of the equipment if lost or stolen during the rental period.</p>
+                    <div class="space-y-6 text-gray-800">
+                        <div>
+                            <h3 class="font-bold text-lg uppercase mb-2">1. CONDITION OF EQUIPMENT</h3>
+                            <p>The Renter acknowledges receiving the equipment in good working order and agrees to return it in the same condition, ordinary wear and tear excepted.</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg uppercase mb-2">2. RESPONSIBILITY FOR LOSS</h3>
+                            <p>The Renter is responsible for the full replacement cost of the equipment if lost or stolen during the rental period.</p>
+                        </div>
+                    </div>
                 `;
                 break;
         }
 
         const commonClauses = `
-            <h3 class="font-bold mt-4">4. SECURITY DEPOSIT</h3>
-            <p>A security deposit of <strong>$${listing.securityDeposit || 0}</strong> is held by Goodslister to cover potential damages.</p>
-            
-            <h3 class="font-bold mt-4">5. INDEMNIFICATION</h3>
-            <p>The Renter agrees to indemnify and hold harmless the Owner and Goodslister from any claims arising out of the use of the rented item.</p>
+            <div class="mt-10 pt-6 border-t-2 border-gray-100">
+                <h3 class="font-bold text-gray-900 uppercase text-sm tracking-wider mb-2">Additional Terms</h3>
+                <div class="bg-blue-50 p-4 rounded-lg text-sm text-blue-900">
+                    <p><strong>SECURITY DEPOSIT:</strong> A security deposit of <strong>$${listing.securityDeposit || 0}</strong> is held by Goodslister to cover potential damages.</p>
+                    <p class="mt-2"><strong>INDEMNIFICATION:</strong> The Renter agrees to indemnify and hold harmless the Owner and Goodslister from any claims arising out of the use of the rented item.</p>
+                </div>
+            </div>
         `;
 
         return header + body + commonClauses;
