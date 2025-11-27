@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Listing, ListingCategory } from '../types';
 import ListingCard from './ListingCard';
-import { SearchIcon, MapPinIcon, LocateIcon } from './icons';
+import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon } from './icons';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';
 
@@ -57,6 +57,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     const [sidebarWidth, setSidebarWidth] = useState(550);
     const [isResizing, setIsResizing] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    
+    // Mobile View State (List vs Map)
+    const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -106,6 +109,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                 
                 // Important: Flag that the user manually searched so we don't auto-fit bounds immediately if empty
                 setUserManuallySearched(true);
+                
+                // Switch to map view on mobile when searching location
+                if (isMobile) setMobileView('map');
             }
 
             // 2. Update the Location Filter string to filter the list on the left
@@ -249,6 +255,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                     setMapZoom(13);
                     setLocationFilter('');
                     setUserManuallySearched(true);
+                    if (isMobile) setMobileView('map');
                 },
                 () => {
                     alert('Error: The Geolocation service failed or was denied.');
@@ -263,13 +270,35 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     if (!isLoaded) return <div className="p-8 text-center">Loading map and listings...</div>;
 
     return (
-        <div className="flex flex-col md:flex-row md:h-[calc(100vh-64px)] md:overflow-hidden">
-            {/* Left Panel */}
+        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden relative">
+            {/* Mobile View Toggle Button */}
+            <div className="md:hidden absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
+                <button
+                    onClick={() => setMobileView(prev => prev === 'list' ? 'map' : 'list')}
+                    className="bg-gray-900 text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-2 font-bold text-sm hover:scale-105 transition-transform border border-gray-700"
+                >
+                    {mobileView === 'list' ? (
+                        <>
+                            <MapPinIcon className="h-4 w-4" />
+                            Show Map
+                        </>
+                    ) : (
+                        <>
+                            <LayoutDashboardIcon className="h-4 w-4" />
+                            Show List
+                        </>
+                    )}
+                </button>
+            </div>
+
+            {/* Left Panel (Filters & List) */}
             <div
                 style={!isMobile ? { width: `${sidebarWidth}px` } : {}}
-                className="w-full flex flex-col flex-shrink-0"
+                className={`w-full flex-col flex-shrink-0 bg-white border-r border-gray-200 transition-all duration-300 
+                    ${isMobile ? (mobileView === 'map' ? 'hidden' : 'flex h-full') : 'flex'}
+                `}
             >
-                <div className="p-4 border-b">
+                <div className="p-4 border-b flex-shrink-0">
                     {/* Filters */}
                     <div className="space-y-4">
                         {/* Location Filter with Autocomplete */}
@@ -349,7 +378,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center p-4 border-b">
+                <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
                     <p className="text-sm text-gray-600">{filteredAndSortedListings.length} results</p>
                     <select 
                         id="sort-by"
@@ -364,7 +393,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                 </div>
 
                 {/* Listing Grid */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                     {filteredAndSortedListings.length > 0 ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             {filteredAndSortedListings.map(listing => (
@@ -392,14 +421,14 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                 </div>
             </div>
             
-            {/* Draggable Divider */}
+            {/* Draggable Divider (Desktop only) */}
             <div
                 onMouseDown={handleMouseDown}
-                className="hidden md:block w-2 cursor-col-resize bg-gray-200 hover:bg-cyan-400 active:bg-cyan-500 transition-colors duration-200"
+                className="hidden md:block w-2 cursor-col-resize bg-gray-200 hover:bg-cyan-400 active:bg-cyan-500 transition-colors duration-200 flex-shrink-0"
             ></div>
 
             {/* Right Panel - Map */}
-            <div className="flex-1 relative h-96 md:h-auto">
+            <div className={`flex-1 relative h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : 'block'}`}>
                 <GoogleMap
                     mapContainerStyle={mapContainerStyle}
                     center={mapCenter}
