@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, CalendarIcon, ClockIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
-import { differenceInCalendarDays, format } from 'date-fns';
+import { differenceInCalendarDays, format, addHours, setHours, setMinutes, startOfDay } from 'date-fns';
 import { LegalService } from '../services/legalService';
 import ImageUploader from './ImageUploader'; 
 
@@ -49,40 +49,67 @@ interface ListingDetailPageProps {
     ) => Promise<Booking>;
 }
 
-const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative text-center p-8">
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <XIcon className="h-6 w-6" />
-            </button>
-            <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
-            <p className="text-gray-600 mt-2">Your reservation for the <span className="font-semibold">{booking.listing.title}</span> is complete.</p>
-            <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
-                <p><strong>Dates:</strong> {format(new Date(booking.startDate), 'LLL dd, yyyy')} - {format(new Date(booking.endDate), 'LLL dd, yyyy')}</p>
-                <div className="flex items-center justify-between mt-2">
-                    <strong>Total Price:</strong> 
-                    <span className="text-lg font-bold text-cyan-700">${booking.totalPrice.toFixed(2)}</span>
+const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => {
+    
+    // Generate Google Calendar Link
+    const createGoogleCalendarUrl = () => {
+        const title = encodeURIComponent(`Rental: ${booking.listing.title}`);
+        const details = encodeURIComponent(`Rental via Goodslister.\nItem: ${booking.listing.title}\nOwner: ${booking.listing.owner.name}\nPrice: $${booking.totalPrice}`);
+        const location = encodeURIComponent(`${booking.listing.location.city}, ${booking.listing.location.country}`);
+        
+        // Format dates for Google (YYYYMMDDTHHmmSSZ) - keeping it simple with ISO slice
+        const start = new Date(booking.startDate).toISOString().replace(/-|:|\.\d\d\d/g, '');
+        const end = new Date(booking.endDate).toISOString().replace(/-|:|\.\d\d\d/g, '');
+        
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative text-center p-8">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <XIcon className="h-6 w-6" />
+                </button>
+                <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
+                <p className="text-gray-600 mt-2">Your reservation for the <span className="font-semibold">{booking.listing.title}</span> is complete.</p>
+                <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
+                    <p><strong>Start:</strong> {format(new Date(booking.startDate), 'MMM dd, h:mm a')}</p>
+                    <p><strong>End:</strong> {format(new Date(booking.endDate), 'MMM dd, h:mm a')}</p>
+                    <div className="flex items-center justify-between mt-2">
+                        <strong>Total Price:</strong> 
+                        <span className="text-lg font-bold text-cyan-700">${booking.totalPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3 text-sm border-t pt-2 border-gray-200">
+                         <ShieldCheckIcon className={`h-4 w-4 ${booking.protectionType === 'insurance' ? 'text-blue-600' : 'text-green-600'}`} />
+                         <div>
+                            <span className="font-semibold">{booking.protectionType === 'insurance' ? 'Platform Insurance' : 'Standard/Waiver'}</span>
+                            {booking.protectionFee > 0 && <span className="text-gray-500 block text-xs">Fee: ${booking.protectionFee.toFixed(2)}</span>}
+                         </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 text-sm">
+                        {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
+                        <p className="capitalize font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2 mt-3 text-sm border-t pt-2 border-gray-200">
-                     <ShieldCheckIcon className={`h-4 w-4 ${booking.protectionType === 'insurance' ? 'text-blue-600' : 'text-green-600'}`} />
-                     <div>
-                        <span className="font-semibold">{booking.protectionType === 'insurance' ? 'Platform Insurance' : 'Standard/Waiver'}</span>
-                        {booking.protectionFee > 0 && <span className="text-gray-500 block text-xs">Fee: ${booking.protectionFee.toFixed(2)}</span>}
-                     </div>
-                </div>
-                <div className="flex items-center gap-2 mt-2 text-sm">
-                    {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
-                    <p className="capitalize font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
-                </div>
-                <p className="mt-3 text-xs text-gray-400 text-center">Check your email for the receipt.</p>
+                
+                <a 
+                    href={createGoogleCalendarUrl()} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mt-4 flex items-center justify-center gap-2 w-full py-2 px-4 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    <CalendarIcon className="h-5 w-5 text-blue-600" />
+                    Add to Google Calendar
+                </a>
+
+                <button onClick={onClose} className="mt-3 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
+                    Continue Browsing
+                </button>
             </div>
-            <button onClick={onClose} className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
-                Continue Browsing
-            </button>
         </div>
-    </div>
-);
+    );
+};
 
 interface ContractSigningModalProps {
     listing: Listing;
@@ -96,7 +123,15 @@ interface ContractSigningModalProps {
 
 const ContractSigningModal: React.FC<ContractSigningModalProps> = ({ listing, renter, startDate, endDate, totalPrice, onSign, onClose }) => {
     const [agreed, setAgreed] = useState(false);
-    const contractHtml = LegalService.generateContractHtml(listing, renter, startDate, endDate, totalPrice);
+    
+    // Safely generate contract HTML, handle potential errors in contract generation gracefully
+    let contractHtml = "";
+    try {
+        contractHtml = LegalService.generateContractHtml(listing, renter, startDate, endDate, totalPrice);
+    } catch (e) {
+        console.error("Contract generation failed:", e);
+        contractHtml = "<p>Error generating contract. Please contact support.</p>";
+    }
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -243,7 +278,12 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
 
 const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    // State for Daily Rental
     const [range, setRange] = useState<DateRange | undefined>();
+    // State for Hourly Rental
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
+
     const [isBooking, setIsBooking] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
@@ -258,6 +298,24 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
 
+    // Hourly Time Slots Generation (e.g., 8 AM to 8 PM)
+    const generateTimeSlots = () => {
+        const slots = [];
+        for (let i = 8; i <= 20; i++) {
+            slots.push(i);
+        }
+        return slots;
+    };
+    const timeSlots = generateTimeSlots();
+
+    const toggleTimeSlot = (hour: number) => {
+        if (selectedTimeSlots.includes(hour)) {
+            setSelectedTimeSlots(selectedTimeSlots.filter(h => h !== hour));
+        } else {
+            setSelectedTimeSlots([...selectedTimeSlots, hour]);
+        }
+    };
+
     // Identify high-risk categories where insurance is handled directly (not via platform add-on)
     const isHighRisk = 
         listing.category === ListingCategory.MOTORCYCLES ||
@@ -268,11 +326,21 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
     // Calculate Totals
     const getPriceDetails = () => {
-        if (!range?.from || !range?.to) return null;
-        const days = differenceInCalendarDays(range.to, range.from) + 1;
-        const basePrice = listing.pricingType === 'daily' ? (listing.pricePerDay || 0) : 0;
-        
-        const rentalTotal = basePrice * days;
+        let rentalTotal = 0;
+        let days = 0;
+
+        if (listing.pricingType === 'daily') {
+            if (!range?.from || !range?.to) return null;
+            days = differenceInCalendarDays(range.to, range.from) + 1;
+            const basePrice = listing.pricePerDay || 0;
+            rentalTotal = basePrice * days;
+        } else {
+            // Hourly Logic
+            if (!selectedDate || selectedTimeSlots.length === 0) return null;
+            days = 1; // Considered 1 "booking event"
+            const basePrice = listing.pricePerHour || 0;
+            rentalTotal = basePrice * selectedTimeSlots.length;
+        }
         
         // Logic: Platform insurance only applies to non-high-risk items.
         // For High Risk items, protectionFee is 0 because it's handled directly/externally.
@@ -289,7 +357,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         const totalPrice = rentalTotal + protectionFee;
 
         return {
-            days,
+            days, // or hours count contextually
             rentalTotal,
             protectionFee,
             totalPrice
@@ -299,7 +367,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const priceDetails = getPriceDetails();
 
     const handleBookClick = () => {
-        if (!currentUser || !range?.from || !range?.to || isOwner) return;
+        const isValidDaily = listing.pricingType === 'daily' && range?.from && range?.to;
+        const isValidHourly = listing.pricingType === 'hourly' && selectedDate && selectedTimeSlots.length > 0;
+
+        if (!currentUser || isOwner) return;
+        if (!isValidDaily && !isValidHourly) return;
+
         // Trigger Contract Signing first
         setShowContractModal(true);
     };
@@ -311,8 +384,28 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     };
 
     const handleConfirmBooking = async (paymentMethod: 'platform' | 'direct') => {
-        if (!range?.from || !range?.to || !priceDetails) return;
+        if (!priceDetails) return;
         
+        // Determine start/end dates based on pricing type
+        let finalStartDate: Date;
+        let finalEndDate: Date;
+
+        if (listing.pricingType === 'daily' && range?.from && range?.to) {
+            finalStartDate = range.from;
+            finalEndDate = range.to;
+        } else if (listing.pricingType === 'hourly' && selectedDate && selectedTimeSlots.length > 0) {
+            // Sort slots to find range
+            const sortedSlots = [...selectedTimeSlots].sort((a, b) => a - b);
+            const startHour = sortedSlots[0];
+            const endHour = sortedSlots[sortedSlots.length - 1];
+            
+            // Construct Dates
+            finalStartDate = setMinutes(setHours(startOfDay(selectedDate), startHour), 0);
+            finalEndDate = setMinutes(setHours(startOfDay(selectedDate), endHour + 1), 0); // +1 to represent end of the hour
+        } else {
+            return;
+        }
+
         setIsBooking(true);
         setBookingError(null);
 
@@ -324,15 +417,17 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         try {
             const newBooking = await onCreateBooking(
                 listing.id, 
-                range.from, 
-                range.to, 
+                finalStartDate, 
+                finalEndDate, 
                 priceDetails.totalPrice, 
                 paymentMethod,
                 (!isHighRisk && (insurancePlan === 'premium' || insurancePlan === 'standard')) ? 'insurance' : 'waiver',
                 priceDetails.protectionFee
             );
             setSuccessfulBooking(newBooking);
-            setRange(undefined); // Reset calendar
+            setRange(undefined); 
+            setSelectedDate(undefined);
+            setSelectedTimeSlots([]);
             setShowPaymentModal(false);
         } catch (error) {
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -351,15 +446,30 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
       disabled: { textDecoration: 'line-through', opacity: 0.5 }
     };
 
+    // Need to construct startDate/endDate for contract modal too if hourly
+    const getContractDates = () => {
+        if (listing.pricingType === 'daily' && range?.from && range?.to) {
+            return { start: range.from, end: range.to };
+        }
+        if (listing.pricingType === 'hourly' && selectedDate && selectedTimeSlots.length > 0) {
+             const sortedSlots = [...selectedTimeSlots].sort((a, b) => a - b);
+             const start = setHours(selectedDate, sortedSlots[0]);
+             const end = setHours(selectedDate, sortedSlots[sortedSlots.length - 1] + 1);
+             return { start, end };
+        }
+        return { start: new Date(), end: new Date() }; // Fallback
+    };
+    const contractDates = getContractDates();
+
     return (
         <div className="bg-gray-50">
             {/* Contract Modal - Step 1 of Checkout */}
-            {showContractModal && currentUser && priceDetails && range?.from && range?.to && (
+            {showContractModal && currentUser && priceDetails && (
                 <ContractSigningModal 
                     listing={listing} 
                     renter={currentUser}
-                    startDate={range.from}
-                    endDate={range.to}
+                    startDate={contractDates.start}
+                    endDate={contractDates.end}
                     totalPrice={priceDetails.totalPrice}
                     onSign={handleContractSigned}
                     onClose={() => setShowContractModal(false)}
@@ -477,13 +587,28 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                             {/* Booking Section */}
                             <div className="mt-auto pt-8">
                                 {bookingError && <p className="text-sm text-red-600 text-center mb-4">{bookingError}</p>}
+                                
                                 {listing.pricingType === 'daily' ? (
-                                    <>
+                                    <div className="bg-gray-50 rounded-lg p-4 border flex justify-center">
+                                        <DayPicker
+                                            mode="range"
+                                            selected={range}
+                                            onSelect={setRange}
+                                            disabled={disabledDays}
+                                            numberOfMonths={1}
+                                            pagedNavigation
+                                            showOutsideDays
+                                            fixedWeeks
+                                            modifiersStyles={modifiersStyles}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
                                         <div className="bg-gray-50 rounded-lg p-4 border flex justify-center">
                                             <DayPicker
-                                                mode="range"
-                                                selected={range}
-                                                onSelect={setRange}
+                                                mode="single"
+                                                selected={selectedDate}
+                                                onSelect={setSelectedDate}
                                                 disabled={disabledDays}
                                                 numberOfMonths={1}
                                                 pagedNavigation
@@ -492,118 +617,131 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                 modifiersStyles={modifiersStyles}
                                             />
                                         </div>
+                                        {selectedDate && (
+                                            <div className="animate-in fade-in slide-in-from-top-2">
+                                                <h3 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                                    <ClockIcon className="h-4 w-4 text-cyan-600" />
+                                                    Select Hours for {format(selectedDate, 'MMM dd')}
+                                                </h3>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {timeSlots.map(hour => (
+                                                        <button
+                                                            key={hour}
+                                                            onClick={() => toggleTimeSlot(hour)}
+                                                            className={`py-2 px-2 rounded text-xs font-medium transition-colors border ${
+                                                                selectedTimeSlots.includes(hour)
+                                                                    ? 'bg-cyan-600 text-white border-cyan-600'
+                                                                    : 'bg-white text-gray-700 border-gray-200 hover:border-cyan-400'
+                                                            }`}
+                                                        >
+                                                            {hour}:00 - {hour + 1}:00
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                         
-                                        {/* Price Summary & Insurance Section */}
-                                        {priceDetails && (
-                                            <div className="mt-4 space-y-4">
-                                                {isHighRisk ? (
-                                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
-                                                        <div className="flex items-center gap-2 font-bold mb-1">
-                                                            <ShieldIcon className="h-4 w-4 text-amber-700" />
-                                                            Direct Insurance
+                                {/* Price Summary & Insurance Section */}
+                                {priceDetails && (
+                                    <div className="mt-4 space-y-4">
+                                        {isHighRisk ? (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
+                                                <div className="flex items-center gap-2 font-bold mb-1">
+                                                    <ShieldIcon className="h-4 w-4 text-amber-700" />
+                                                    Direct Insurance
+                                                </div>
+                                                <p>For this high-value item, insurance and damage policies are handled directly with the owner. Please review the contract before signing.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                                <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                                    <ShieldCheckIcon className="h-5 w-5 text-cyan-600" />
+                                                    Protection Plan
+                                                </h3>
+                                                <div className="space-y-3">
+                                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'none' ? 'bg-gray-100 border-gray-300' : 'hover:bg-gray-50'}`}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="insurance" 
+                                                            value="none" 
+                                                            checked={insurancePlan === 'none'}
+                                                            onChange={() => setInsurancePlan('none')}
+                                                            className="mt-1 text-gray-500 focus:ring-gray-400"
+                                                        />
+                                                        <div>
+                                                            <span className="font-bold text-gray-900 block">No Insurance (Free)</span>
+                                                            <span className="text-xs text-gray-500">You are fully responsible for all damages.</span>
                                                         </div>
-                                                        <p>For this high-value item, insurance and damage policies are handled directly with the owner. Please review the contract before signing.</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                                                        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                                            <ShieldCheckIcon className="h-5 w-5 text-cyan-600" />
-                                                            Protection Plan
-                                                        </h3>
-                                                        <div className="space-y-3">
-                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'none' ? 'bg-gray-100 border-gray-300' : 'hover:bg-gray-50'}`}>
-                                                                <input 
-                                                                    type="radio" 
-                                                                    name="insurance" 
-                                                                    value="none" 
-                                                                    checked={insurancePlan === 'none'}
-                                                                    onChange={() => setInsurancePlan('none')}
-                                                                    className="mt-1 text-gray-500 focus:ring-gray-400"
-                                                                />
-                                                                <div>
-                                                                    <span className="font-bold text-gray-900 block">No Insurance (Free)</span>
-                                                                    <span className="text-xs text-gray-500">You are fully responsible for all damages.</span>
-                                                                </div>
-                                                            </label>
-                                                            
-                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
-                                                                <input 
-                                                                    type="radio" 
-                                                                    name="insurance" 
-                                                                    value="standard" 
-                                                                    checked={insurancePlan === 'standard'}
-                                                                    onChange={() => setInsurancePlan('standard')}
-                                                                    className="mt-1 text-cyan-600 focus:ring-cyan-500"
-                                                                />
-                                                                <div>
-                                                                    <span className="font-bold text-gray-900 block">Standard (+10%)</span>
-                                                                    <span className="text-xs text-gray-500">Basic coverage. $500 deductible.</span>
-                                                                </div>
-                                                            </label>
-                                                            
-                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
-                                                                <input 
-                                                                    type="radio" 
-                                                                    name="insurance" 
-                                                                    value="premium" 
-                                                                    checked={insurancePlan === 'premium'}
-                                                                    onChange={() => setInsurancePlan('premium')}
-                                                                    className="mt-1 text-cyan-600 focus:ring-cyan-500"
-                                                                />
-                                                                <div>
-                                                                    <span className="font-bold text-gray-900 block">Premium (+20%)</span>
-                                                                    <span className="text-xs text-gray-500">Full coverage, theft protection, $0 deductible.</span>
-                                                                </div>
-                                                            </label>
+                                                    </label>
+                                                    
+                                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="insurance" 
+                                                            value="standard" 
+                                                            checked={insurancePlan === 'standard'}
+                                                            onChange={() => setInsurancePlan('standard')}
+                                                            className="mt-1 text-cyan-600 focus:ring-cyan-500"
+                                                        />
+                                                        <div>
+                                                            <span className="font-bold text-gray-900 block">Standard (+10%)</span>
+                                                            <span className="text-xs text-gray-500">Basic coverage. $500 deductible.</span>
                                                         </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
-                                                    <div className="flex justify-between items-center text-gray-700">
-                                                        <span>Rental (${(listing.pricePerDay || 0)} x {priceDetails.days} days)</span>
-                                                        <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
-                                                    </div>
-                                                    {priceDetails.protectionFee > 0 && (
-                                                        <div className="flex justify-between items-center text-gray-700 text-sm">
-                                                            <span className="flex items-center gap-1">
-                                                                <UmbrellaIcon className="h-3 w-3" /> 
-                                                                Protection Fee
-                                                            </span>
-                                                            <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
+                                                    </label>
+                                                    
+                                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="insurance" 
+                                                            value="premium" 
+                                                            checked={insurancePlan === 'premium'}
+                                                            onChange={() => setInsurancePlan('premium')}
+                                                            className="mt-1 text-cyan-600 focus:ring-cyan-500"
+                                                        />
+                                                        <div>
+                                                            <span className="font-bold text-gray-900 block">Premium (+20%)</span>
+                                                            <span className="text-xs text-gray-500">Full coverage, theft protection, $0 deductible.</span>
                                                         </div>
-                                                    )}
-                                                    <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
-                                                        <span>Total</span>
-                                                        <span>${priceDetails.totalPrice.toFixed(2)}</span>
-                                                    </div>
+                                                    </label>
                                                 </div>
                                             </div>
                                         )}
 
-                                        <button
-                                            onClick={handleBookClick}
-                                            disabled={!currentUser || isOwner || !priceDetails || isBooking}
-                                            className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isOwner ? "This is your listing" : (currentUser ? (priceDetails ? "Book Now" : "Select dates to book") : "Log in to book")}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="bg-gray-50 rounded-lg p-6 border text-center">
-                                            <h3 className="font-semibold text-gray-800">Hourly Rental</h3>
-                                            <p className="text-sm text-gray-600 mt-2">This item is rented by the hour. Please contact the owner directly to arrange booking times and details.</p>
+                                        <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
+                                            <div className="flex justify-between items-center text-gray-700">
+                                                {listing.pricingType === 'daily' ? (
+                                                    <span>Rental (${(listing.pricePerDay || 0)} x {priceDetails.days} days)</span>
+                                                ) : (
+                                                    <span>Rental (${(listing.pricePerHour || 0)} x {selectedTimeSlots.length} hours)</span>
+                                                )}
+                                                <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
+                                            </div>
+                                            {priceDetails.protectionFee > 0 && (
+                                                <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                    <span className="flex items-center gap-1">
+                                                        <UmbrellaIcon className="h-3 w-3" /> 
+                                                        Protection Fee
+                                                    </span>
+                                                    <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
+                                                <span>Total</span>
+                                                <span>${priceDetails.totalPrice.toFixed(2)}</span>
+                                            </div>
                                         </div>
-                                        <button
-                                            onClick={() => onStartConversation(listing)}
-                                            disabled={!currentUser || isOwner}
-                                            className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isOwner ? "This is your listing" : (currentUser ? "Contact Owner to Book" : "Log in to contact owner")}
-                                        </button>
-                                    </>
+                                    </div>
                                 )}
+
+                                <button
+                                    onClick={handleBookClick}
+                                    disabled={!currentUser || isOwner || !priceDetails || isBooking}
+                                    className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isOwner ? "This is your listing" : (currentUser ? (priceDetails ? "Book Now" : "Select dates to book") : "Log in to book")}
+                                </button>
                             </div>
                         </div>
                     </div>

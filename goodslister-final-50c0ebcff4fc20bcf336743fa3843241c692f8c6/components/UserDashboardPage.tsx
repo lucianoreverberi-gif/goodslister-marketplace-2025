@@ -433,6 +433,7 @@ const IdVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void
 const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bookings, userId }) => {
     const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
     const [selectedInspection, setSelectedInspection] = useState<Booking | null>(null);
+    const [isCalendarConnected, setIsCalendarConnected] = useState(false);
 
     const rentingBookings = bookings.filter(b => b.renterId === userId);
     const hostingBookings = bookings.filter(b => b.listing.owner.id === userId);
@@ -531,6 +532,31 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
                 <h2 className="text-2xl font-bold text-gray-900">
                     {mode === 'renting' ? 'My Trips & Rentals' : 'Reservations & Clients'}
                 </h2>
+                
+                {/* NEW: Sync Button (Only visible in Hosting mode) */}
+                {mode === 'hosting' && (
+                    <button 
+                        onClick={() => setIsCalendarConnected(!isCalendarConnected)}
+                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${
+                            isCalendarConnected 
+                                ? 'bg-green-50 border-green-200 text-green-700' 
+                                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                        }`}
+                    >
+                        {isCalendarConnected ? (
+                            <>
+                                <CheckCircleIcon className="h-4 w-4" />
+                                Synced with Google Calendar
+                            </>
+                        ) : (
+                            <>
+                                <CalendarIcon className="h-4 w-4" />
+                                Sync Availability
+                            </>
+                        )}
+                    </button>
+                )}
+
                 <div className="bg-white p-1 rounded-lg border border-gray-200 shadow-sm flex">
                     <button 
                         onClick={() => setMode('renting')}
@@ -692,9 +718,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
     }
 
     const SecurityTab: React.FC = () => {
-        const [showPhoneModal, setShowPhoneModal] = useState(false);
-        const [showIdModal, setShowIdModal] = useState(false);
-
         const getTrustScore = () => {
             let score = 25; // Base score
             if (user.isEmailVerified) score += 25;
@@ -709,9 +732,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
 
         return (
             <div>
-                 {showPhoneModal && <PhoneVerificationModal onClose={() => setShowPhoneModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'phone')} />}
-                 {showIdModal && <IdVerificationModal onClose={() => setShowIdModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'id')} />}
-
                  <h2 className="text-2xl font-bold mb-6">Security & Verification</h2>
                  <div className="bg-white p-6 rounded-lg shadow grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r pb-6 md:pb-0 md:pr-8">
