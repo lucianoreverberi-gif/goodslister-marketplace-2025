@@ -5,6 +5,7 @@ import ListingCard from './ListingCard';
 import CategoryCard from './CategoryCard';
 import { processSearchQuery, FilterCriteria } from '../services/geminiService';
 import { SearchIcon, ChevronLeftIcon, ChevronRightIcon, ShieldCheckIcon, SmileIcon, UserCheckIcon, WalletIcon, MessageCircleIcon, FileSignatureIcon, MicrophoneIcon, ScanIcon, BrainIcon, ZapIcon, GlobeIcon, UploadCloudIcon, MessageSquareIcon } from './icons';
+import FAQSection from './FAQSection';
 
 // Extend the global Window interface for SpeechRecognition APIs
 declare global {
@@ -476,6 +477,9 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                         </div>
                     </div>
                 </div>
+
+                {/* FAQ Section */}
+                <FAQSection />
 
                 {/* Banners */}
                 <div className="py-16 sm:py-24">

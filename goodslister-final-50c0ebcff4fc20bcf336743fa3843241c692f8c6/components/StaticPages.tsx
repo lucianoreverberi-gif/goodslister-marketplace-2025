@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon } from './icons';
+import FAQSection from './FAQSection';
 
 const StaticPageLayout: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="bg-white">
@@ -168,6 +169,9 @@ export const HowItWorksPage: React.FC = () => (
                 </div>
             </div>
         </div>
+
+        {/* FAQ Section */}
+        <FAQSection />
 
         <div className="bg-gray-900 py-16">
             <div className="container mx-auto px-4 text-center">
