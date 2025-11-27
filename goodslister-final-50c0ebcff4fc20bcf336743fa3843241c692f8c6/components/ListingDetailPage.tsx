@@ -67,7 +67,7 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                 <div className="flex items-center gap-2 mt-3 text-sm border-t pt-2 border-gray-200">
                      <ShieldCheckIcon className={`h-4 w-4 ${booking.protectionType === 'insurance' ? 'text-blue-600' : 'text-green-600'}`} />
                      <div>
-                        <span className="font-semibold">{booking.protectionType === 'insurance' ? 'Premium Insurance' : 'Standard Protection'}</span>
+                        <span className="font-semibold">{booking.protectionType === 'insurance' ? 'Platform Insurance' : 'Standard/Waiver'}</span>
                         {booking.protectionFee > 0 && <span className="text-gray-500 block text-xs">Fee: ${booking.protectionFee.toFixed(2)}</span>}
                      </div>
                 </div>
@@ -251,8 +251,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [showContractModal, setShowContractModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     
-    // State for Insurance Selection (Restored functionality)
-    const [insurancePlan, setInsurancePlan] = useState<'standard' | 'premium'>('standard');
+    // State for Insurance Selection
+    const [insurancePlan, setInsurancePlan] = useState<'none' | 'standard' | 'premium'>('standard');
 
     const isOwner = currentUser?.id === listing.owner.id;
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
@@ -277,8 +277,13 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         // Logic: Platform insurance only applies to non-high-risk items.
         // For High Risk items, protectionFee is 0 because it's handled directly/externally.
         let protectionFee = 0;
-        if (!isHighRisk && insurancePlan === 'premium') {
-            protectionFee = rentalTotal * 0.15;
+        if (!isHighRisk) {
+            if (insurancePlan === 'standard') {
+                protectionFee = rentalTotal * 0.10; // 10% for standard
+            } else if (insurancePlan === 'premium') {
+                protectionFee = rentalTotal * 0.20; // 20% for premium
+            }
+            // 'none' is 0
         }
         
         const totalPrice = rentalTotal + protectionFee;
@@ -323,7 +328,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                 range.to, 
                 priceDetails.totalPrice, 
                 paymentMethod,
-                (!isHighRisk && insurancePlan === 'premium') ? 'insurance' : 'waiver',
+                (!isHighRisk && (insurancePlan === 'premium' || insurancePlan === 'standard')) ? 'insurance' : 'waiver',
                 priceDetails.protectionFee
             );
             setSuccessfulBooking(newBooking);
@@ -506,6 +511,21 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                             Protection Plan
                                                         </h3>
                                                         <div className="space-y-3">
+                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'none' ? 'bg-gray-100 border-gray-300' : 'hover:bg-gray-50'}`}>
+                                                                <input 
+                                                                    type="radio" 
+                                                                    name="insurance" 
+                                                                    value="none" 
+                                                                    checked={insurancePlan === 'none'}
+                                                                    onChange={() => setInsurancePlan('none')}
+                                                                    className="mt-1 text-gray-500 focus:ring-gray-400"
+                                                                />
+                                                                <div>
+                                                                    <span className="font-bold text-gray-900 block">No Insurance (Free)</span>
+                                                                    <span className="text-xs text-gray-500">You are fully responsible for all damages.</span>
+                                                                </div>
+                                                            </label>
+                                                            
                                                             <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
                                                                 <input 
                                                                     type="radio" 
@@ -516,10 +536,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                                     className="mt-1 text-cyan-600 focus:ring-cyan-500"
                                                                 />
                                                                 <div>
-                                                                    <span className="font-bold text-gray-900 block">Standard (Included)</span>
-                                                                    <span className="text-xs text-gray-500">Basic damage waiver. High deductible.</span>
+                                                                    <span className="font-bold text-gray-900 block">Standard (+10%)</span>
+                                                                    <span className="text-xs text-gray-500">Basic coverage. $500 deductible.</span>
                                                                 </div>
                                                             </label>
+                                                            
                                                             <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
                                                                 <input 
                                                                     type="radio" 
@@ -530,8 +551,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                                     className="mt-1 text-cyan-600 focus:ring-cyan-500"
                                                                 />
                                                                 <div>
-                                                                    <span className="font-bold text-gray-900 block">Premium Insurance (+15%)</span>
-                                                                    <span className="text-xs text-gray-500">Full coverage, theft protection, low deductible.</span>
+                                                                    <span className="font-bold text-gray-900 block">Premium (+20%)</span>
+                                                                    <span className="text-xs text-gray-500">Full coverage, theft protection, $0 deductible.</span>
                                                                 </div>
                                                             </label>
                                                         </div>
@@ -547,7 +568,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                         <div className="flex justify-between items-center text-gray-700 text-sm">
                                                             <span className="flex items-center gap-1">
                                                                 <UmbrellaIcon className="h-3 w-3" /> 
-                                                                Premium Protection
+                                                                Protection Fee
                                                             </span>
                                                             <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
                                                         </div>
