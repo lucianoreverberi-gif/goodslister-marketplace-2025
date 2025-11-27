@@ -14,7 +14,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Use arrays for images and booked_dates to match Postgres schema
     await sql`
         UPDATE listings SET
             title = ${listing.title},
@@ -34,7 +33,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             owner_rules = ${listing.ownerRules || ''},
             has_gps_tracker = ${listing.hasGpsTracker || false},
             has_commercial_insurance = ${listing.hasCommercialInsurance || false},
-            security_deposit = ${listing.securityDeposit || 0}
+            security_deposit = ${listing.securityDeposit || 0},
+            listing_type = ${listing.listingType || 'rental'},
+            operator_license_id = ${listing.operatorLicenseId || ''},
+            fuel_policy = ${listing.fuelPolicy || ''},
+            skill_level = ${listing.skillLevel || ''},
+            whats_included = ${listing.whatsIncluded || ''},
+            itinerary = ${listing.itinerary || ''},
+            price_unit = ${listing.priceUnit || 'item'}
         WHERE id = ${listing.id}
     `;
 

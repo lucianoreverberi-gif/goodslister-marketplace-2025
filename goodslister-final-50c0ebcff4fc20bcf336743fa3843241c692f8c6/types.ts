@@ -17,6 +17,9 @@ export enum RiskTier {
     TIER_2_POWERSPORTS = "POWERSPORTS"      // External Insurance
 }
 
+export type ListingType = 'rental' | 'experience';
+export type PriceUnit = 'item' | 'person' | 'group';
+
 export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks';
 
 export interface User {
@@ -71,6 +74,15 @@ export interface Listing {
     // NEW: Safety & Legal Configuration
     hasCommercialInsurance?: boolean;
     securityDeposit?: number;
+
+    // NEW: Experience & Hosting Fields
+    listingType?: ListingType; // 'rental' or 'experience'
+    operatorLicenseId?: string;
+    fuelPolicy?: 'included' | 'extra';
+    skillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'all_levels';
+    whatsIncluded?: string;
+    itinerary?: string;
+    priceUnit?: PriceUnit; // 'item' (default), 'person', 'group'
 }
 
 export interface HeroSlide {

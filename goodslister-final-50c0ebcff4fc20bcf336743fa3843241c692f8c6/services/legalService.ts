@@ -19,8 +19,8 @@ export class LegalService {
 
         // Logic for Powersports (High Risk Bodily Injury)
         // Check for specific subcategories in Water Sports like Jet Ski
-        const isJetSki = category === ListingCategory.WATER_SPORTS && 
-                         subcategory?.toLowerCase().includes('jet ski');
+        const sub = subcategory ? subcategory.toLowerCase() : '';
+        const isJetSki = category === ListingCategory.WATER_SPORTS && sub.includes('jet ski');
                          
         const isPowersport = 
             category === ListingCategory.UTVS || 
@@ -160,6 +160,18 @@ export class LegalService {
             </div>
         `;
 
-        return header + body + commonClauses;
+        const footerPolicy = `
+            <div class="mt-8 pt-4 border-t-4 border-gray-200">
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Terms of Service Snapshot</h4>
+                <div class="bg-gray-100 p-4 rounded-md border border-gray-200 text-xs text-gray-700 font-mono leading-relaxed">
+                    <ul class="space-y-2 list-disc list-inside">
+                        <li><strong class="text-gray-900">CLAIMS:</strong> Damages must be reported within 48 hours of return. Late claims are void.</li>
+                        <li><strong class="text-gray-900">PRIVACY:</strong> Inspection photos are permanently deleted from our servers 72 hours after the rental ends. Owners must download evidence immediately if damage is suspected.</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+
+        return header + body + commonClauses + footerPolicy;
     }
 }

@@ -540,7 +540,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     <h4 className="text-sm font-bold text-gray-800">AI-Sourced Information:</h4>
                                     <p className="text-xs text-gray-500 mb-2">The description was enhanced with information from the following web pages:</p>
                                     <ul className="space-y-1">
-                                        {sources.map((source, index) => (
+                                        {sources.map((source: any, index: number) => (
                                             source.web?.uri && (
                                                 <li key={index} className="flex items-start">
                                                     <span className="text-cyan-600 mr-2">›</span>

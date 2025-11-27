@@ -3,10 +3,8 @@ import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Set cache control to ensure data is fresh but fast
   res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate');
 
-  // Default category images fallback (inlined to avoid import errors)
   const defaultCategoryImages = {
     "Motorcycles": 'https://images.unsplash.com/photo-1625043484555-5654b594199c?q=80&w=1974&auto=format&fit=crop',
     "Bikes": 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=2070&auto=format&fit=crop',
@@ -19,22 +17,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   try {
-    // 1. Fetch Content & Config
     const logoQuery = await sql`SELECT value FROM site_config WHERE key = 'logo_url'`;
     const slidesQuery = await sql`SELECT * FROM hero_slides`;
     const bannersQuery = await sql`SELECT * FROM banners`;
     const categoryImagesQuery = await sql`SELECT value FROM site_config WHERE key = 'category_images'`;
-
-    // 2. Fetch Users
     const usersQuery = await sql`SELECT * FROM users`;
-
-    // 3. Fetch Listings
     const listingsQuery = await sql`SELECT * FROM listings`;
-
-    // 4. Fetch Bookings
     const bookingsQuery = await sql`SELECT * FROM bookings`;
-
-    // --- Process Data ---
 
     const users = usersQuery.rows.map(row => ({
       id: row.id,
@@ -78,7 +67,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ownerRules: row.owner_rules,
         hasGpsTracker: row.has_gps_tracker,
         hasCommercialInsurance: row.has_commercial_insurance,
-        securityDeposit: Number(row.security_deposit)
+        securityDeposit: Number(row.security_deposit),
+        // New Experience Fields Mapping
+        listingType: row.listing_type || 'rental',
+        operatorLicenseId: row.operator_license_id,
+        fuelPolicy: row.fuel_policy,
+        skillLevel: row.skill_level,
+        whatsIncluded: row.whats_included,
+        itinerary: row.itinerary,
+        priceUnit: row.price_unit || 'item'
       };
     });
 
@@ -122,14 +119,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (categoryImagesQuery.rows.length > 0) {
         try {
             const dbImages = JSON.parse(categoryImagesQuery.rows[0].value);
-            // FIX: Merge DB images with defaults so we don't lose categories that haven't been customized yet
             categoryImages = { ...defaultCategoryImages, ...dbImages };
         } catch (e) {
-            // Keep defaults if parse fails
         }
     }
 
-    // Construct final object
     const appData = {
         users,
         listings,
@@ -146,7 +140,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error) {
     console.error("Failed to fetch app data:", error);
-    // Return 500 but with JSON to be handled gracefully
     return res.status(500).json({ error: "Failed to fetch application data from database." });
   }
 }
