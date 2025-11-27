@@ -5,6 +5,7 @@ import { ListingCategory, User, Listing, ListingType, PriceUnit } from '../types
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon } from './icons';
 import SmartAdvisory from './SmartAdvisory';
+import AICoverGeneratorStep from './AICoverGeneratorStep';
 
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
 const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
@@ -159,16 +160,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         setDescription('');
         setSources([]);
         try {
-            // Collect context for AI
             const contextFeatures = features.filter(f => f.trim() !== '');
-            
-            // Inject Experience details into context for better generation
             if (listingType === 'experience') {
                 if (whatsIncluded) contextFeatures.push(`Included: ${whatsIncluded}`);
                 if (itinerary) contextFeatures.push(`Itinerary: ${itinerary}`);
                 if (skillLevel) contextFeatures.push(`Skill Level: ${skillLevel}`);
             }
-
             const result = await generateListingDescription(title, location, contextFeatures);
             setDescription(result.description);
             setSources(result.sources);
@@ -196,6 +193,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const handleImproveDescription = createTextHandler('improve', improveDescription);
     const handleShortenDescription = createTextHandler('shorten', shortenDescription);
     const handleExpandDescription = createTextHandler('expand', expandDescription);
+
+    // Callback to add the AI generated image
+    const handleAiImageGenerated = (newUrl: string) => {
+        // Add to the beginning so it becomes the cover
+        setImageUrls(prev => [newUrl, ...prev]);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -278,7 +281,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                     <div className="p-6 sm:p-8 border-b">
                         <h1 className="text-2xl font-bold text-gray-900">{isEditing ? 'Edit Listing' : 'Create New Listing'}</h1>
                         
-                        {/* Listing Type Selector - RESTORED */}
+                        {/* Listing Type Selector - NO ICONS */}
                         <div className="mt-6 flex rounded-md shadow-sm bg-gray-100 p-1">
                             <button
                                 type="button"
@@ -318,7 +321,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     <label className="block text-sm font-bold text-gray-800">Subcategory</label>
                                     <select value={subcategory} onChange={e => setSubcategory(e.target.value)} disabled={!category} className="mt-2 block w-full border-gray-300 rounded-md shadow-sm disabled:bg-gray-100">
                                         <option value="" disabled>Select a subcategory</option>
-                                        {category && subcategories[category].map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                                        {category && (subcategories[category as ListingCategory] || []).map(sub => <option key={sub} value={sub}>{sub}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -431,6 +434,13 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                 </div>
                             )}
                         </div>
+
+                        {/* NEW AI COVER GENERATOR STEP - INJECTED HERE */}
+                        <AICoverGeneratorStep 
+                            category={category as ListingCategory}
+                            realPhotoCount={imageUrls.length}
+                            onImageGenerated={handleAiImageGenerated}
+                        />
 
                         {/* YouTube Video */}
                         <div>
