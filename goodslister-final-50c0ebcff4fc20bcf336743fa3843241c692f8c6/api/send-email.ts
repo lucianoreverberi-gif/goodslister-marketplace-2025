@@ -1,4 +1,5 @@
 
+// @ts-ignore: Suppress type resolution error for server-side module in client-side build context
 import { Resend } from 'resend';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 

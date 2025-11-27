@@ -321,7 +321,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     <label className="block text-sm font-bold text-gray-800">Subcategory</label>
                                     <select value={subcategory} onChange={e => setSubcategory(e.target.value)} disabled={!category} className="mt-2 block w-full border-gray-300 rounded-md shadow-sm disabled:bg-gray-100">
                                         <option value="" disabled>Select a subcategory</option>
-                                        {category && (subcategories[category as ListingCategory] || []).map((sub: string) => <option key={sub} value={sub}>{sub}</option>)}
+                                        {category && ((subcategories[category as ListingCategory] as string[]) || []).map((sub: string) => <option key={sub} value={sub}>{sub}</option>)}
                                     </select>
                                 </div>
                             </div>
