@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Session, Listing, Booking } from '../types';
+import { Session, Listing, Booking, InspectionPhoto } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
+import DigitalInspection from './DigitalInspection';
 
+// ... (Keep existing interfaces and helper components like InspectionModal, PromotionModal, etc.)
 interface UserDashboardPageProps {
     user: Session;
     listings: Listing[];
@@ -434,6 +436,10 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
     const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
     const [selectedInspection, setSelectedInspection] = useState<Booking | null>(null);
     const [isCalendarConnected, setIsCalendarConnected] = useState(false);
+    
+    // NEW: Digital Inspection State
+    const [activeInspectionBooking, setActiveInspectionBooking] = useState<Booking | null>(null);
+    const [inspectionMode, setInspectionMode] = useState<'handover' | 'return' | null>(null);
 
     const rentingBookings = bookings.filter(b => b.renterId === userId);
     const hostingBookings = bookings.filter(b => b.listing.owner.id === userId);
@@ -454,6 +460,16 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
     const pastBookings = displayedBookings.filter(b => new Date(b.endDate) < now)
         .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
 
+    const handleInspectionComplete = (photos: InspectionPhoto[], damageReported: boolean) => {
+        console.log("Inspection Saved:", { bookingId: activeInspectionBooking?.id, mode: inspectionMode, photos, damageReported });
+        // In a real app, here you would call the API to save `inspections` table data
+        // and update the Booking status (e.g., hasHandoverInspection = true)
+        
+        alert(`${inspectionMode === 'handover' ? 'Handover' : 'Return'} inspection completed successfully!`);
+        setActiveInspectionBooking(null);
+        setInspectionMode(null);
+    };
+
     const renderBookingTable = (title: string, data: Booking[], emptyMsg: string, isHighlight = false) => (
         <div className="mb-8 last:mb-0 animate-in fade-in slide-in-from-bottom-2">
                 <div className="flex items-center gap-2 mb-4">
@@ -467,10 +483,8 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
                             <tr>
                                 <th className="p-3">Item</th>
                                 <th className="p-3">Dates</th>
-                                <th className="p-3">Total Price</th>
-                                <th className="p-3">Details</th>
                                 <th className="p-3">Status</th>
-                                {mode === 'hosting' && title === 'Past History' && <th className="p-3">Action</th>}
+                                <th className="p-3">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -483,18 +497,6 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
                                         </div>
                                     </td>
                                     <td className="p-3">{format(new Date(booking.startDate), 'MMM dd')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}</td>
-                                    <td className="p-3">${booking.totalPrice.toFixed(2)}</td>
-                                    <td className="p-3 text-gray-600 text-xs">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-1">
-                                                {booking.insurancePlan && booking.insurancePlan !== 'standard' ? <ShieldIcon className="h-3 w-3 text-cyan-600"/> : null}
-                                                <span className="capitalize">{booking.insurancePlan || 'Standard'}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 text-gray-400">
-                                                <span className="capitalize">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Arrival'}</span>
-                                            </div>
-                                        </div>
-                                    </td>
                                     <td className="p-3">
                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                             booking.status === 'confirmed' ? 'text-green-800 bg-green-100' : 'text-yellow-800 bg-yellow-100'
@@ -502,17 +504,36 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
                                             {booking.status}
                                         </span>
                                     </td>
-                                    {mode === 'hosting' && title === 'Past History' && (
-                                        <td className="p-3">
-                                            <button 
-                                                onClick={() => setSelectedInspection(booking)}
-                                                className="flex items-center gap-1 text-xs font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded border border-cyan-200 hover:bg-cyan-100"
-                                            >
-                                                <ScanIcon className="h-3 w-3" />
-                                                Inspect Return
-                                            </button>
-                                        </td>
-                                    )}
+                                    <td className="p-3">
+                                        {/* Action Buttons for Inspection */}
+                                        <div className="flex gap-2">
+                                            {title === "Upcoming Bookings" && (
+                                                <button 
+                                                    onClick={() => { setActiveInspectionBooking(booking); setInspectionMode('handover'); }}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-cyan-600 text-white text-xs font-bold rounded hover:bg-cyan-700"
+                                                >
+                                                    <CameraIcon className="h-3 w-3" /> Start Handover
+                                                </button>
+                                            )}
+                                            {title === "Active Today" && (
+                                                <button 
+                                                    onClick={() => { setActiveInspectionBooking(booking); setInspectionMode('return'); }}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 text-white text-xs font-bold rounded hover:bg-orange-700"
+                                                >
+                                                    <ScanIcon className="h-3 w-3" /> Start Return
+                                                </button>
+                                            )}
+                                            {title === "Past History" && mode === 'hosting' && (
+                                                <button 
+                                                    onClick={() => setSelectedInspection(booking)}
+                                                    className="flex items-center gap-1 text-xs font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded border border-cyan-200 hover:bg-cyan-100"
+                                                >
+                                                    <ScanIcon className="h-3 w-3" />
+                                                    View Report
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -524,8 +545,19 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
 
     return (
         <div>
+             {/* Existing AI Analysis Modal */}
              {selectedInspection && (
                  <InspectionModal booking={selectedInspection} onClose={() => setSelectedInspection(null)} />
+             )}
+
+             {/* NEW: Digital Inspection Wizard */}
+             {activeInspectionBooking && inspectionMode && (
+                 <DigitalInspection 
+                    booking={activeInspectionBooking} 
+                    mode={inspectionMode}
+                    onComplete={handleInspectionComplete}
+                    onCancel={() => { setActiveInspectionBooking(null); setInspectionMode(null); }}
+                 />
              )}
 
              <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -591,7 +623,9 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
     )
 }
 
+// ... (Rest of UserDashboardPage remains the same)
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onListingClick, onEditListing }) => {
+    // ... (keep existing code)
     // Set 'aiAssistant' as the default active tab to fulfill the user's request.
     const [activeTab, setActiveTab] = useState<DashboardTab>('aiAssistant');
 

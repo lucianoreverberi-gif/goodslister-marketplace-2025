@@ -26,7 +26,6 @@ export default async function handler(
     `;
 
     // 2. Create Listings Table
-    // Note: We store complex objects like 'location' and 'images' as JSONB or simple TEXT arrays for simplicity in this MVP.
     await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id VARCHAR(255) PRIMARY KEY,
@@ -68,7 +67,9 @@ export default async function handler(
             status VARCHAR(20),
             protection_type VARCHAR(20),
             protection_fee NUMERIC(10, 2),
-            payment_method VARCHAR(50)
+            payment_method VARCHAR(50),
+            has_handover_inspection BOOLEAN DEFAULT FALSE,
+            has_return_inspection BOOLEAN DEFAULT FALSE
         );
     `;
 
@@ -110,13 +111,17 @@ export default async function handler(
         );
     `;
 
+    // NEW: Create Inspections Table
+    // Uses JSONB for photo arrays to store metadata (url, lat, lng, timestamp) within a single row per inspection
     await sql`
         CREATE TABLE IF NOT EXISTS inspections (
             id VARCHAR(255) PRIMARY KEY,
             booking_id VARCHAR(255) REFERENCES bookings(id),
-            image_url TEXT,
-            status VARCHAR(50),
-            ai_analysis TEXT,
+            status VARCHAR(50), -- 'pending_handover', 'active', 'pending_return', 'completed', 'disputed'
+            handover_photos JSONB, 
+            return_photos JSONB,
+            damage_reported BOOLEAN DEFAULT FALSE,
+            notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `;
@@ -136,6 +141,8 @@ export default async function handler(
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS license_verified BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS protection_type VARCHAR(20)`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS protection_fee NUMERIC(10, 2)`;
+        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS has_handover_inspection BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS has_return_inspection BOOLEAN DEFAULT FALSE`;
     } catch (e) {
         console.log("Migration skipped", e);
     }

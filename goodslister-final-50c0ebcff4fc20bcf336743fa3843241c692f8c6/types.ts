@@ -129,8 +129,12 @@ export interface Booking {
     };
 
     paymentMethod?: 'platform' | 'direct';
-    status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'inspection_pending';
+    status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
     inspectionResult?: 'clean' | 'damaged';
+    
+    // NEW: Inspection Tracking
+    hasHandoverInspection?: boolean;
+    hasReturnInspection?: boolean;
 }
 
 export interface Dispute {
@@ -153,4 +157,25 @@ export interface Coupon {
     usedCount: number;
     expiryDate: string;
     status: 'active' | 'expired';
+}
+
+// NEW: Inspection Interfaces
+export interface InspectionPhoto {
+    url: string;
+    angleId: string;
+    angleLabel: string;
+    timestamp: string;
+    latitude?: number;
+    longitude?: number;
+    takenByUserId: string;
+}
+
+export interface Inspection {
+    id: string;
+    bookingId: string;
+    status: 'pending_handover' | 'active' | 'pending_return' | 'completed' | 'disputed';
+    handoverPhotos: InspectionPhoto[];
+    returnPhotos: InspectionPhoto[];
+    damageReported: boolean;
+    notes: string;
 }
