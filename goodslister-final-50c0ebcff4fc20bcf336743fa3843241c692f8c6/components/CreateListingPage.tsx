@@ -38,6 +38,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const [ownerRules, setOwnerRules] = useState(initialData?.ownerRules || '');
     const [pricingType, setPricingType] = useState<'daily' | 'hourly'>(initialData?.pricingType || 'daily');
     const [price, setPrice] = useState(initialData ? (initialData.pricingType === 'daily' ? initialData.pricePerDay?.toString() : initialData.pricePerHour?.toString()) || '' : '');
+    const [securityDeposit, setSecurityDeposit] = useState(initialData?.securityDeposit?.toString() || '');
     
     const [generationError, setGenerationError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -276,7 +277,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             ownerRules,
             bookedDates: initialData?.bookedDates || [],
             hasCommercialInsurance: false, // Simplified for now, handled via Advisory visually
-            securityDeposit: 0
+            securityDeposit: parseFloat(securityDeposit) || 0
         };
 
         try {
@@ -397,9 +398,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                         </div>
 
                         {/* SMART ADVISORY COMPONENT INJECTED HERE */}
-                        {/* Key forces remount on category change to trigger animation */}
                         <SmartAdvisory 
-                            key={`${category}-${subcategory}`}
                             category={category} 
                             subcategory={subcategory} 
                             location={location}
@@ -599,6 +598,20 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     placeholder={pricingType === 'daily' ? "50" : "15"} 
                                 />
                             </div>
+                        </div>
+
+                        {/* Security Deposit Field */}
+                        <div>
+                            <label htmlFor="securityDeposit" className="block text-sm font-bold text-gray-800">Security Deposit ($)</label>
+                            <input 
+                                type="number" 
+                                id="securityDeposit" 
+                                value={securityDeposit}
+                                onChange={(e) => setSecurityDeposit(e.target.value)}
+                                className="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500" 
+                                placeholder="0" 
+                            />
+                            <p className="mt-2 text-xs text-gray-500">Amount held during rental to cover potential damages. Refundable if returned in good condition.</p>
                         </div>
                         
                         {/* Submit Button */}

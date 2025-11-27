@@ -718,6 +718,15 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                 )}
                                                 <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
                                             </div>
+                                            {listing.securityDeposit && listing.securityDeposit > 0 && (
+                                                <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                    <span className="flex items-center gap-1">
+                                                        <ShieldIcon className="h-3 w-3 text-gray-500" /> 
+                                                        Security Deposit (Refundable)
+                                                    </span>
+                                                    <span className="font-medium">${listing.securityDeposit.toFixed(2)}</span>
+                                                </div>
+                                            )}
                                             {priceDetails.protectionFee > 0 && (
                                                 <div className="flex justify-between items-center text-gray-700 text-sm">
                                                     <span className="flex items-center gap-1">
