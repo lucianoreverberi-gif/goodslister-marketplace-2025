@@ -360,13 +360,25 @@ const App: React.FC = () => {
         const updatedLogoUrl = await mockApi.updateLogo(newUrl);
         updateAppData({ logoUrl: updatedLogoUrl });
     };
+
+    // OPTIMISTIC UPDATE FIX for Slides
+    // We update local state immediately and then save to DB in background
+    // This prevents the "resetting" issue when editing multiple items quickly
     const handleUpdateSlide = async (id: string, field: keyof HeroSlide, value: string) => {
-        const slideToUpdate = appData.heroSlides.find((s: HeroSlide) => s.id === id);
+        // 1. Update Local State Immediately
+        const updatedSlides = appData.heroSlides.map((s: HeroSlide) => 
+            s.id === id ? { ...s, [field]: value } : s
+        );
+        updateAppData({ heroSlides: updatedSlides });
+
+        // 2. Persist to Backend (Fire and Forget for UI purposes)
+        const slideToUpdate = updatedSlides.find((s: HeroSlide) => s.id === id);
         if(slideToUpdate) {
-            const updatedSlides = await mockApi.updateSlide({ ...slideToUpdate, [field]: value });
-            updateAppData({ heroSlides: updatedSlides });
+            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
+            await mockApi.updateSlide(slideToUpdate);
         }
     };
+
     const handleAddSlide = async () => {
          const newSlide = { id: `slide-${Date.now()}`, title: 'New Slide', subtitle: 'Subtitle', imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723a9ce6890?q=80&w=2070&auto=format&fit=crop' };
          const updatedSlides = await mockApi.addSlide(newSlide);
@@ -376,13 +388,24 @@ const App: React.FC = () => {
         const updatedSlides = await mockApi.deleteSlide(id);
         updateAppData({ heroSlides: updatedSlides });
     };
+
+    // OPTIMISTIC UPDATE FIX for Banners
+    // Identical strategy to slides: update UI first, save later.
     const handleUpdateBanner = async (id: string, field: keyof Banner, value: string) => {
-        const bannerToUpdate = appData.banners.find((b: Banner) => b.id === id);
+        // 1. Update Local State Immediately
+        const updatedBanners = appData.banners.map((b: Banner) => 
+            b.id === id ? { ...b, [field]: value } : b
+        );
+        updateAppData({ banners: updatedBanners });
+
+        // 2. Persist to Backend
+        const bannerToUpdate = updatedBanners.find((b: Banner) => b.id === id);
         if(bannerToUpdate) {
-            const updatedBanners = await mockApi.updateBanner({ ...bannerToUpdate, [field]: value });
-            updateAppData({ banners: updatedBanners });
+            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
+            await mockApi.updateBanner(bannerToUpdate);
         }
     };
+
     const handleAddBanner = async () => {
         const newBanner = { id: `banner-${Date.now()}`, title: 'New Banner', description: 'Description', buttonText: 'Click', imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop' };
         const updatedBanners = await mockApi.addBanner(newBanner);
