@@ -8,7 +8,7 @@ export enum ListingCategory {
     WINTER_SPORTS = "Winter Sports",
     WATER_SPORTS = "Water Sports",
     RVS = "RVs",
-    UTVS = "UTVs",
+    ATVS_UTVS = "ATVs & UTVs",
 }
 
 // NEW: Define the Risk Tiers for the Hybrid Strategy
@@ -20,7 +20,7 @@ export enum RiskTier {
 export type ListingType = 'rental' | 'experience';
 export type PriceUnit = 'item' | 'person' | 'group';
 
-export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks';
+export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks' | 'floridaCompliance';
 
 export interface User {
     id: string;

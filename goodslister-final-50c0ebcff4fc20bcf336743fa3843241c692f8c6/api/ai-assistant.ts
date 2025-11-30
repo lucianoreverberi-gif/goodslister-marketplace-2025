@@ -12,7 +12,7 @@ enum ListingCategory {
     WINTER_SPORTS = "Winter Sports",
     WATER_SPORTS = "Water Sports",
     RVS = "RVs",
-    UTVS = "UTVs",
+    ATVS_UTVS = "ATVs & UTVs",
 }
 
 // System instructions for various AI tasks
@@ -62,7 +62,10 @@ const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: str
         case 'insurance':
             return `Act as an educational insurance advisor. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, explain in simple terms the types of insurance coverage the owner might consider. ${location ? `Mention any specific insurance types relevant to ${location}. ` : ''}Do not recommend a specific product. The goal is to educate on options. Format the response clearly.`;
         case 'payment':
-            return `Act as a finance and security expert. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, provide 3 key tips on best practices for securely accepting payments. Explain the pros and cons of different payment methods (e.g., platform, bank transfer, cash).`;
+            return `Act as a finance and security expert regarding peer-to-peer rentals. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}:
+            1. Provide 3 essential tips for securely accepting payments.
+            2. Then, provide a detailed comparison for the following specific apps: **Zelle**, **CashApp**, **Venmo**, and **PayPal**.
+            3. For EACH of those 4 apps, explicitly list the **Pros** and **Cons** relevant to renting out items (focus on chargeback risks, fees, and speed).`;
         default:
             return '';
     }
@@ -72,14 +75,50 @@ const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: str
  * Builds a contextual prompt for specific listing advice.
  */
 const buildListingAdvicePrompt = (listing: Listing, type: string): string => {
-    const listingInfo = `Title: ${listing.title}, Category: ${listing.category}, Description: ${listing.description}, Price per day: $${listing.pricePerDay}`;
+    const locationStr = `${listing.location.city}, ${listing.location.state}, ${listing.location.country}`;
+    const listingInfo = `
+    Item: ${listing.title}
+    Category: ${listing.category}
+    Description: ${listing.description}
+    Price: $${listing.pricePerDay}/day
+    Location: ${locationStr}
+    `;
+
     switch (type) {
         case 'improvement':
-            return `Analyze the following rental listing information: ${listingInfo}. Provide 3 concrete and actionable suggestions to improve the listing's title and description to attract more customers. Format the response as a list.`;
+            return `Role: E-commerce Listing Specialist.
+            Task: Review the following rental listing and provide 3 distinct, actionable tips to increase bookings.
+            Focus on:
+            1. Title attractiveness (SEO and click-through).
+            2. Description clarity and selling points.
+            3. Missing details that renters in ${locationStr} would specifically care about.
+            
+            Listing Data: ${listingInfo}
+            
+            Output: A simple bulleted list of 3 tips.`;
+        
         case 'pricing':
-            return `Analyze the following rental listing information: ${listingInfo}. Based on the item type and its description, provide a pricing strategy. Should they offer discounts for longer rentals? Weekend pricing? Offer 2 ideas.`;
+            return `Role: Pricing Strategy Consultant.
+            Task: Analyze the pricing for this ${listing.category} item in ${locationStr}.
+            Current Price: $${listing.pricePerDay}/day.
+            
+            Provide:
+            1. A quick assessment (Competitive, High, or Low) considering local standards.
+            2. Two specific pricing strategies to maximize revenue (e.g., seasonal adjustments, weekend vs weekday rates, weekly discounts).
+            
+            Listing Data: ${listingInfo}`;
+            
         case 'promotion':
-            return `Based on the following rental listing information: ${listingInfo}. Create a short and engaging social media post (Instagram or Facebook) to promote this rental. Include relevant hashtags.`;
+            return `Role: Social Media Influencer.
+            Task: Write a captivating social media post (Instagram/Facebook style) to market this rental.
+            
+            Requirements:
+            - Highlight the experience of using the item in ${listing.location.city}.
+            - Use emojis.
+            - Include relevant hashtags for the item and the location.
+            
+            Listing Data: ${listingInfo}`;
+            
         default:
             return '';
     }

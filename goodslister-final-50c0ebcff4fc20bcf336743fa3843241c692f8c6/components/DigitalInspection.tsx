@@ -41,7 +41,7 @@ const getRequiredAngles = (category: ListingCategory, subcategory: string = ''):
         ];
     }
 
-    if (category === ListingCategory.RVS || category === ListingCategory.UTVS || category === ListingCategory.MOTORCYCLES) {
+    if (category === ListingCategory.RVS || category === ListingCategory.ATVS_UTVS || category === ListingCategory.MOTORCYCLES) {
         return [
             { id: 'front', label: 'Front', description: 'Front view including headlights.' },
             { id: 'back', label: 'Back', description: 'Rear view including license plate.' },

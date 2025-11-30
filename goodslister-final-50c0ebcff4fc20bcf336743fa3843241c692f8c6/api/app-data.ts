@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     "Winter Sports": 'https://images.unsplash.com/photo-1551690628-99de0e94411e?q=80&w=1974&auto=format&fit=crop',
     "Water Sports": 'https://images.unsplash.com/photo-1570533158623-3a5101657c98?q=80&w=2070&auto=format&fit=crop',
     "RVs": 'https://images.unsplash.com/photo-1558223533-4c5c7f186358?q=80&w=2070&auto=format&fit=crop',
-    "UTVs": 'https://images.unsplash.com/photo-1634567292109-768a4b37f2c9?q=80&w=1974&auto=format&fit=crop',
+    "ATVs & UTVs": 'https://images.unsplash.com/photo-1634567292109-768a4b37f2c9?q=80&w=1974&auto=format&fit=crop',
   };
 
   try {

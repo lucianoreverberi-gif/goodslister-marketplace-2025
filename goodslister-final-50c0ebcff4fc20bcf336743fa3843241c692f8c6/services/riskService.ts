@@ -25,7 +25,7 @@ export class RiskManagerService {
         if (
             listing.category === ListingCategory.MOTORCYCLES ||
             listing.category === ListingCategory.RVS ||
-            listing.category === ListingCategory.UTVS ||
+            listing.category === ListingCategory.ATVS_UTVS ||
             listing.category === ListingCategory.BOATS
         ) {
             return RiskTier.TIER_2_POWERSPORTS;

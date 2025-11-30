@@ -1,3 +1,4 @@
+
 // FIX: Created the main App component, which was previously missing.
 // This component manages the overall application state, including routing,
 // session management, and data handling, resolving module resolution errors.
@@ -15,6 +16,7 @@ import LoginModal from './components/LoginModal';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
+import FloridaCompliancePage from './components/FloridaCompliancePage';
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -279,9 +281,50 @@ const App: React.FC = () => {
         );
         
         // Update app state with the new booking and the updated listing (with new bookedDates)
+        const updatedBookings = [...appData.bookings, result.newBooking];
+        const updatedListings = appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l);
+        
+        // --- NEW: INJECT SYSTEM MESSAGE FOR BAREBOAT CONTRACT ---
+        // Find existing conversation or create new one
+        let conversation = appData.conversations.find((c: Conversation) => 
+            c.listing.id === listingId && c.participants[session.id] && c.participants[result.updatedListing.owner.id]
+        );
+
+        if (!conversation) {
+            conversation = {
+                id: `convo-${Date.now()}`,
+                listing: result.updatedListing,
+                participants: {
+                    [session.id]: session,
+                    [result.updatedListing.owner.id]: result.updatedListing.owner
+                },
+                messages: [],
+            };
+            // Note: We'll add this to the list below
+        }
+
+        const systemMessage: Message = {
+            id: `sys-msg-${Date.now()}`,
+            senderId: 'system-bot', // Special ID for system messages
+            text: "Hi! Here is the standard rental agreement template for your trip: [Link to PDF](/bareboat_rental_agreement.pdf). Please review and sign it together at pickup.",
+            timestamp: new Date().toISOString(),
+        };
+
+        const updatedConversationWithMsg = { 
+            ...conversation, 
+            messages: [...conversation.messages, systemMessage] 
+        };
+
+        const finalConversations = conversation 
+            ? appData.conversations.map((c: Conversation) => c.id === conversation.id ? updatedConversationWithMsg : c)
+            : [...appData.conversations, updatedConversationWithMsg];
+
+        mockApi.updateConversations(finalConversations);
+
         updateAppData({
-            bookings: [...appData.bookings, result.newBooking],
-            listings: appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l)
+            bookings: updatedBookings,
+            listings: updatedListings,
+            conversations: finalConversations
         });
 
         // Send Booking Confirmation Email via Resend
@@ -535,6 +578,8 @@ const App: React.FC = () => {
                 return <PrivacyPolicyPage />;
             case 'howItWorks':
                 return <HowItWorksPage />;
+            case 'floridaCompliance':
+                return <FloridaCompliancePage />;
             case 'home':
             default:
                 return <HomePage 

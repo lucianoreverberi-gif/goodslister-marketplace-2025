@@ -196,7 +196,7 @@ export const initialCategoryImages: CategoryImagesMap = {
     [ListingCategory.WINTER_SPORTS]: 'https://images.unsplash.com/photo-1551690628-99de0e94411e?q=80&w=1974&auto=format&fit=crop',
     [ListingCategory.WATER_SPORTS]: 'https://images.unsplash.com/photo-1570533158623-3a5101657c98?q=80&w=2070&auto=format&fit=crop',
     [ListingCategory.RVS]: 'https://images.unsplash.com/photo-1558223533-4c5c7f186358?q=80&w=2070&auto=format&fit=crop',
-    [ListingCategory.UTVS]: 'https://images.unsplash.com/photo-1634567292109-768a4b37f2c9?q=80&w=1974&auto=format&fit=crop',
+    [ListingCategory.ATVS_UTVS]: 'https://images.unsplash.com/photo-1634567292109-768a4b37f2c9?q=80&w=1974&auto=format&fit=crop',
 };
 
 export const subcategories: { [key in ListingCategory]: string[] } = {
@@ -207,8 +207,7 @@ export const subcategories: { [key in ListingCategory]: string[] } = {
     [ListingCategory.WINTER_SPORTS]: ["Skis", "Snowboard", "Snowshoes", "Sled", "Ice Skates"],
     [ListingCategory.WATER_SPORTS]: ["Kayak", "Surfboard", "Paddleboard", "Wakeboard", "Jet Ski", "Wingfoil", "Kitesurf"],
     [ListingCategory.RVS]: ["Class A", "Class C", "Campervan", "Travel Trailer", "Fifth Wheel"],
-    // FIX: Corrected a typo in the key to match the 'ListingCategory' enum.
-    [ListingCategory.UTVS]: ["Sport", "Utility", "4-Seater", "2-Seater"],
+    [ListingCategory.ATVS_UTVS]: ["Sport ATV (Quad)", "Utility ATV (4x4)", "Sport Side-by-Side (SxS)", "Utility UTV", "4-Seater Crew", "Dune Buggy", "Youth ATV"],
 };
 
 export const mockConversations: Conversation[] = [

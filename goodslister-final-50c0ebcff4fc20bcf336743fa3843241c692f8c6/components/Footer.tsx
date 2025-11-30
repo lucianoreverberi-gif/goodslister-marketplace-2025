@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { FacebookIcon, InstagramIcon, TwitterIcon } from './icons';
 import { Page } from '../types';
@@ -35,10 +36,11 @@ const Footer: React.FC<FooterProps> = ({ logoUrl, onNavigate }) => {
                             </ul>
                         </div>
                         <div>
-                            <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">Legal</h3>
+                            <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">Legal & Compliance</h3>
                             <ul className="mt-4 space-y-4">
                                 <li><button onClick={() => onNavigate('terms')} className="text-base text-gray-600 hover:text-gray-900">Terms &amp; Conditions</button></li>
                                 <li><button onClick={() => onNavigate('privacyPolicy')} className="text-base text-gray-600 hover:text-gray-900">Privacy Policy</button></li>
+                                <li><button onClick={() => onNavigate('floridaCompliance')} className="text-base text-cyan-600 hover:text-cyan-800 font-semibold">Florida Boating Guide</button></li>
                             </ul>
                         </div>
                     </div>

@@ -39,7 +39,7 @@ const SmartAdvisory: React.FC<SmartAdvisoryProps> = ({ category, subcategory, lo
         }
 
         const isPowersport = 
-            category === ListingCategory.UTVS || 
+            category === ListingCategory.ATVS_UTVS || 
             (category === ListingCategory.WATER_SPORTS && (subcategory.includes('Jet Ski') || subcategory.includes('Motor')));
 
         if (isPowersport) {
