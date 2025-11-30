@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { ListingCategory } from '../types';
 import { getAIAdvice } from '../services/geminiService';
 import { BrainCircuitIcon, MapPinIcon, SparklesIcon, LightbulbIcon, ShieldCheckIcon } from './icons';
+
+// API Key for Google Maps (Consistent with other components)
+const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
 
 const AIAssistantPage: React.FC = () => {
     // Form State
@@ -13,6 +17,45 @@ const AIAssistantPage: React.FC = () => {
     // Response State
     const [isLoading, setIsLoading] = useState(false);
     const [advice, setAdvice] = useState('');
+
+    // Google Maps Autocomplete
+    const locationInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const initAutocomplete = () => {
+            if (locationInputRef.current && (window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
+                try {
+                    const autocomplete = new (window as any).google.maps.places.Autocomplete(locationInputRef.current, { types: ['geocode'] });
+                    autocomplete.addListener('place_changed', () => {
+                        const place = autocomplete.getPlace();
+                        if (place.formatted_address) setLocation(place.formatted_address);
+                        else if (place.name) setLocation(place.name);
+                    });
+                } catch (e) {
+                    console.error("Maps Autocomplete init error", e);
+                }
+            }
+        };
+
+        if ((window as any).google && (window as any).google.maps) {
+             initAutocomplete();
+             return;
+        }
+
+        const scriptId = 'google-maps-script-manual';
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement("script");
+            script.id = scriptId;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            script.onload = () => initAutocomplete();
+            document.head.appendChild(script);
+        } else {
+             const existingScript = document.getElementById(scriptId) as HTMLScriptElement;
+             if (existingScript) setTimeout(initAutocomplete, 1000);
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,6 +148,7 @@ const AIAssistantPage: React.FC = () => {
                                         <MapPinIcon className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input
+                                        ref={locationInputRef}
                                         type="text"
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}

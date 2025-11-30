@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Listing } from '../types';
@@ -91,8 +92,28 @@ const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: str
         `;
     }
 
-    // Fallback for legacy calls (though we are moving to consultation)
-    return `Act as the Goodslister Coach. Provide advice for a ${itemType} (${itemDescription})${locContext}.`;
+    switch (topic) {
+        case 'contract':
+            let boatInstruction = '';
+            // Detect if the item is a boat to provide specific legal advice regarding USCG regulations
+            if (itemType === ListingCategory.BOATS || itemType.toLowerCase().includes('boat')) {
+                boatInstruction = `
+                IMPORTANT: Since this is a BOAT rental, you MUST explicitly suggest using a **'Bareboat Charter Agreement' (Demise Charter)**. 
+                Explain that this is critical for compliance with USCG regulations to avoid illegal passenger-for-hire operations. 
+                Clarify that under a Demise Charter, the renter becomes the 'temporary owner' and must hire the crew separately or operate it themselves.`;
+            }
+
+            return `Act as a virtual legal assistant. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, suggest 3-4 important clauses to include in a rental agreement.${boatInstruction} ${location ? `Please consider specific legal nuances or common practices for rentals in ${location}. ` : ''}Briefly explain why each clause is important. Format the response using bold for the clause titles.`;
+        case 'insurance':
+            return `Act as an educational insurance advisor. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, explain in simple terms the types of insurance coverage the owner might consider. ${location ? `Mention any specific insurance types relevant to ${location}. ` : ''}Do not recommend a specific product. The goal is to educate on options. Format the response clearly.`;
+        case 'payment':
+            return `Act as a finance and security expert regarding peer-to-peer rentals. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}:
+            1. Provide 3 essential tips for securely accepting payments.
+            2. Then, provide a detailed comparison for the following specific apps: **Zelle**, **CashApp**, **Venmo**, and **PayPal**.
+            3. For EACH of those 4 apps, explicitly list the **Pros** and **Cons** relevant to renting out items (focus on chargeback risks, fees, and speed).`;
+        default:
+            return `Act as the Goodslister Coach. Provide advice for a ${itemType} (${itemDescription})${locContext}.`;
+    }
 };
 
 /**
