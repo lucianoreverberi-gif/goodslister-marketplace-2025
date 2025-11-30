@@ -47,37 +47,52 @@ You MUST use your knowledge and search capabilities to find interesting tourist 
 1.  **Headline:** A captivating H3 headline (e.g., \`### Headline Here\`).
 2.  **Opening Paragraph:** An engaging paragraph selling the experience, incorporating local details.
 3.  **Highlights Section:** A section titled \`**What you'll love:**\` followed by a bulleted list of benefit-driven points.
-4.  **Call to Action:** A strong, bolded call to action (e.g., \`**Book your adventure today!**\`).`
+4.  **Call to Action:** A strong, bolded call to action (e.g., \`**Book your adventure today!**\`).`,
+    
+    // NEW PERSONA: The Rental Success Coach
+    advisor: `You are the "Goodslister Rental Success Coach". Your mission is to help regular people (Hosts) monetize their recreational assets (boats, jet skis, RVs) confidently.
+    
+    **YOUR IDENTITY:**
+    - You are NOT a lawyer, a warning system, or a "compliance cop". You are a business enabler.
+    - Your goal is to solve the user's hesitation by offering "Smart Legal Structures" and "Best Practices" that make renting possible and safe.
+    - **TONE:** Empowering, knowledgeable, "Insider" (use terms like "Pro-tip", "Smart move", "We've got you covered").
+    - **STRICT RULE:** Never use alarmist words like "Illegal", "Lawsuit", "Severe Risk", or "Danger" in a standalone sentence. Always pair compliance topics with positive framing (e.g., instead of "It is illegal to rent without a license," say "To rent compliantly without a license, simply use our Bareboat Charter tool").
+
+    **YOUR KNOWLEDGE BASE (THE TOOLKIT):**
+    1. **Boats/Marine:** Pivot to "Bareboat/Demise Charter". Explain that Goodslister generates this contract so the renter becomes the temporary owner, meaning the host doesn't need a Captain's license.
+    2. **Insurance:** If they lack commercial insurance, pivot to "Liability Waivers" + "High Security Deposits". Frame this as "Self-Insuring via Contract".
+    3. **Powersports (Jet Skis/ATVs):** Focus on "Assumption of Risk" waivers and "Safety Checklists". Mention Florida SB 606 as a "Quality Standard" rather than a law to fear.
+    4. **Vehicles/RVs:** Mention "Bailment Agreements" (private lending) as a strategy to navigate personal insurance exclusions.
+
+    **OUTPUT FORMAT:**
+    - Start with a direct, encouraging answer to their specific question.
+    - Provide a "Smart Strategy" section with bullet points on how to structure the rental.
+    - End with a motivating Call to Action.`
 };
 
 /**
  * Builds a contextual prompt for AI advice based on the topic.
  */
-const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: string, location: string = ''): string => {
+const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: string, location: string = '', userQuestion: string = ''): string => {
     const locContext = location ? ` located in ${location}` : '';
     
-    switch (topic) {
-        case 'contract':
-            let boatInstruction = '';
-            // Detect if the item is a boat to provide specific legal advice regarding USCG regulations
-            if (itemType === ListingCategory.BOATS || itemType.toLowerCase().includes('boat')) {
-                boatInstruction = `
-                IMPORTANT: Since this is a BOAT rental, you MUST explicitly suggest using a **'Bareboat Charter Agreement' (Demise Charter)**. 
-                Explain that this is critical for compliance with USCG regulations to avoid illegal passenger-for-hire operations. 
-                Clarify that under a Demise Charter, the renter becomes the 'temporary owner' and must hire the crew separately or operate it themselves.`;
-            }
+    if (topic === 'consultation') {
+        return `
+        User Context:
+        - Asset Category: ${itemType}
+        - Asset Details: ${itemDescription}
+        - Location: ${location || "General/Not Specified"}
+        
+        USER QUESTION/CONCERN: "${userQuestion}"
 
-            return `Act as a virtual legal assistant. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, suggest 3-4 important clauses to include in a rental agreement.${boatInstruction} ${location ? `Please consider specific legal nuances or common practices for rentals in ${location}. ` : ''}Briefly explain why each clause is important. Format the response using bold for the clause titles.`;
-        case 'insurance':
-            return `Act as an educational insurance advisor. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, explain in simple terms the types of insurance coverage the owner might consider. ${location ? `Mention any specific insurance types relevant to ${location}. ` : ''}Do not recommend a specific product. The goal is to educate on options. Format the response clearly.`;
-        case 'payment':
-            return `Act as a finance and security expert regarding peer-to-peer rentals. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}:
-            1. Provide 3 essential tips for securely accepting payments.
-            2. Then, provide a detailed comparison for the following specific apps: **Zelle**, **CashApp**, **Venmo**, and **PayPal**.
-            3. For EACH of those 4 apps, explicitly list the **Pros** and **Cons** relevant to renting out items (focus on chargeback risks, fees, and speed).`;
-        default:
-            return '';
+        Please provide a strategic, solution-oriented response. 
+        If the user is asking about risks, pivot immediately to how Goodslister's tools (Contracts, Waivers, Verification) mitigate those risks.
+        If the user is asking about payments, analyze **Zelle, CashApp, Venmo, and PayPal**. List the specific **Pros** and **Cons** of each for this rental scenario.
+        `;
     }
+
+    // Fallback for legacy calls (though we are moving to consultation)
+    return `Act as the Goodslister Coach. Provide advice for a ${itemType} (${itemDescription})${locContext}.`;
 };
 
 /**
@@ -182,10 +197,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             case 'advice': {
-                const { topic, itemType, itemDescription, location } = payload;
-                const prompt = buildAdvicePrompt(topic, itemType, itemDescription, location);
+                // Modified to handle the 'consultation' flow
+                const { topic, itemType, itemDescription, location, userQuestion } = payload;
+                
+                // We map 'consultation' topic to the Advisor Persona
+                const isConsultation = topic === 'consultation';
+                const systemPrompt = isConsultation ? systemInstructions.advisor : undefined;
+                
+                const prompt = buildAdvicePrompt(topic, itemType, itemDescription, location, userQuestion);
+                
                 if (!prompt) return res.status(400).json({ error: 'Invalid advice topic provided.' });
-                const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+                
+                const response = await ai.models.generateContent({ 
+                    model: 'gemini-2.5-flash', 
+                    contents: prompt,
+                    config: systemPrompt ? { systemInstruction: systemPrompt } : undefined
+                });
                 return res.status(200).json({ advice: response.text });
             }
 

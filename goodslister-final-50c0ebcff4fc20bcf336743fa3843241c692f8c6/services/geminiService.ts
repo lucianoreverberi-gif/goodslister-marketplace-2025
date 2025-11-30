@@ -1,8 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { Listing, ListingCategory } from '../types';
-
-// Initialize the Google GenAI SDK directly for client-side use
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 export interface FilterCriteria {
     category?: ListingCategory;
@@ -10,7 +6,7 @@ export interface FilterCriteria {
     text?: string;
 }
 
-export type AdviceTopic = 'contract' | 'insurance' | 'payment';
+export type AdviceTopic = 'contract' | 'insurance' | 'payment' | 'consultation';
 export type ListingAdviceType = 'improvement' | 'pricing' | 'promotion';
 
 export interface ListingDescriptionResult {
@@ -18,186 +14,88 @@ export interface ListingDescriptionResult {
     sources: any[];
 }
 
-// System instructions for various AI tasks
-const systemInstructions = {
-    improve: `You are a writing assistant for 'Goodslister', a rental marketplace. Your task is to proofread and improve the user's text for their listing description.
-- Correct all spelling and grammar mistakes.
-- Enhance clarity and flow.
-- Adjust the tone to be more engaging, friendly, and persuasive for potential renters.
-- Do NOT add new sections like headlines or bullet points if they don't exist. Refine the existing text.
-- Return ONLY the improved text, with no extra comments or apologies.`,
-    shorten: `You are a writing assistant for 'Goodslister', a rental marketplace. Your task is to make the user's listing description more concise and impactful.
-- Shorten the text while preserving the key features and benefits of the item.
-- Remove redundant words and rephrase sentences to be more direct.
-- The goal is a punchier, easier-to-read description.
-- Return ONLY the shortened text, with no extra comments.`,
-    expand: `You are a writing assistant for 'Goodslister', a rental marketplace. Your task is to expand on the user's brief listing description.
-- Elaborate on the provided points, adding more descriptive language and painting a picture of the experience.
-- If the user mentions a feature, describe the benefit of that feature.
-- Make the description more appealing and comprehensive.
-- Return ONLY the expanded text, with no extra comments.`,
-    generate: `You are an expert copywriter and local tour guide for 'Goodslister', an adventure rental marketplace. Your goal is to take a user's basic input and transform it into a stunning, persuasive listing description that sells the *experience*.
-
-**YOUR PROCESS:**
-1.  **Analyze Input:** Review the user's item title, location, and any provided features.
-2.  **Enhance Content:** Correct any spelling/grammar mistakes. Use the location to research and incorporate specific, appealing local details (like famous landmarks, scenic spots, or popular activities related to the item).
-3.  **Craft Description:** Write a compelling description using the structure below.
-
-**CRITICAL INSTRUCTION - ADD LOCAL FLAIR:**
-You MUST use your knowledge and search capabilities to find interesting tourist information about the provided **location**. Weave these details into the description. For example, if the item is a bike in Mendoza, mention the scenic vineyards. If it's a jet ski in Miami, talk about exploring Biscayne Bay. This makes the listing unique and valuable.
-
-**OUTPUT FORMAT (Strict Markdown):**
-1.  **Headline:** A captivating H3 headline (e.g., \`### Headline Here\`).
-2.  **Opening Paragraph:** An engaging paragraph selling the experience, incorporating local details.
-3.  **Highlights Section:** A section titled \`**What you'll love:**\` followed by a bulleted list of benefit-driven points.
-4.  **Call to Action:** A strong, bolded call to action (e.g., \`**Book your adventure today!**\`).`
-};
-
 /**
- * Builds a contextual prompt for AI advice based on the topic.
+ * Helper function to call the serverless AI API.
  */
-const buildAdvicePrompt = (topic: string, itemType: string, itemDescription: string, location: string = ''): string => {
-    const locContext = location ? ` located in ${location}` : '';
-    
-    switch (topic) {
-        case 'contract':
-            return `Act as a virtual legal assistant. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, suggest 3-4 important clauses to include in a rental agreement. ${location ? `Please consider specific legal nuances or common practices for rentals in ${location}. ` : ''}Briefly explain why each clause is important. Format the response using bold for the clause titles.`;
-        case 'insurance':
-            return `Act as an educational insurance advisor. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, explain in simple terms the types of insurance coverage the owner might consider. ${location ? `Mention any specific insurance types relevant to ${location}. ` : ''}Do not recommend a specific product. The goal is to educate on options. Format the response clearly.`;
-        case 'payment':
-            return `Act as a finance and security expert. For a rental item of type "${itemType}" described as "${itemDescription}"${locContext}, provide 3 key tips on best practices for securely accepting payments. Explain the pros and cons of different payment methods (e.g., platform, bank transfer, cash).`;
-        default:
-            return '';
-    }
-};
-
-/**
- * Builds a contextual prompt for specific listing advice.
- */
-const buildListingAdvicePrompt = (listing: Listing, type: string): string => {
-    const listingInfo = `Title: ${listing.title}, Category: ${listing.category}, Description: ${listing.description}, Price per day: $${listing.pricePerDay}`;
-    switch (type) {
-        case 'improvement':
-            return `Analyze the following rental listing information: ${listingInfo}. Provide 3 concrete and actionable suggestions to improve the listing's title and description to attract more customers. Format the response as a list.`;
-        case 'pricing':
-            return `Analyze the following rental listing information: ${listingInfo}. Based on the item type and its description, provide a pricing strategy. Should they offer discounts for longer rentals? Weekend pricing? Offer 2 ideas.`;
-        case 'promotion':
-            return `Based on the following rental listing information: ${listingInfo}. Create a short and engaging social media post (Instagram or Facebook) to promote this rental. Include relevant hashtags.`;
-        default:
-            return '';
+async function callAiApi(action: string, payload: any) {
+    try {
+        const response = await fetch('/api/ai-assistant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, ...payload }),
+        });
+        
+        if (!response.ok) {
+             const err = await response.json().catch(() => ({}));
+             throw new Error(err.error || `AI Service Error: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        console.error(`Error calling AI API [${action}]:`, error);
+        throw error;
     }
 }
 
 /**
- * Processes a natural language search query into structured filter criteria.
+ * Processes a natural language search query into structured filter criteria via API.
  */
 export const processSearchQuery = async (query: string): Promise<FilterCriteria> => {
     try {
-        const categories = Object.values(ListingCategory).join(', ');
-        const prompt = `Analyze the following search query from a user on an equipment rental site and extract it into a JSON format. The query is: "${query}". Valid categories are: ${categories}. Extract the category, location (city or state), and any other general search text.`;
-        
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        category: { type: Type.STRING, enum: Object.values(ListingCategory) },
-                        location: { type: Type.STRING },
-                        text: { type: Type.STRING }
-                    }
-                }
-            }
-        });
-
-        return JSON.parse(response.text!.trim()) as FilterCriteria;
+        const data = await callAiApi('search', { query });
+        return data.criteria;
     } catch (error) {
-        console.error("Error processing search query:", error);
+        // Fallback to simple text search if AI fails
         return { text: query };
     }
 };
 
 /**
- * Generates a compelling listing description by calling Gemini directly.
+ * Generates a listing description via API.
  */
 export const generateListingDescription = async (title: string, location: string, features: string[]): Promise<ListingDescriptionResult> => {
-    const userPrompt = `Generate a description for an item with Title: ${title}, Location: ${location}, Features: ${features?.join(', ') || 'N/A'}`;
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: userPrompt,
-            config: { systemInstruction: systemInstructions.generate, tools: [{googleSearch: {}}] },
-        });
-        return {
-            description: response.text || "",
-            sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? []
-        };
-    } catch (error) {
-        console.error("Generate Description Error:", error);
-        throw new Error("Failed to generate description.");
-    }
+    const data = await callAiApi('generate', { title, location, features });
+    return { description: data.description, sources: data.sources };
 };
 
 /**
- * Provides AI-powered advice on various topics related to listings.
+ * Provides AI-powered advice via API.
+ * Updated to support direct user questions for the 'consultation' topic.
  */
-export const getAIAdvice = async (topic: AdviceTopic, itemType: string, itemDescription: string, location: string = ''): Promise<string> => {
-    try {
-        const prompt = buildAdvicePrompt(topic, itemType, itemDescription, location);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return response.text || "No advice generated.";
-    } catch (error) {
-         console.error("Error getting AI advice:", error);
-         return "Could not generate advice at this time.";
-    }
+export const getAIAdvice = async (topic: AdviceTopic, itemType: string, itemDescription: string, location: string = '', userQuestion: string = ''): Promise<string> => {
+     try {
+         const data = await callAiApi('advice', { topic, itemType, itemDescription, location, userQuestion });
+         return data.advice;
+     } catch (e) {
+         return "Could not generate advice at this time. Please check your connection.";
+     }
 };
 
 /**
- * Provides AI-powered advice for a specific listing.
+ * Provides specific listing advice (Improvement, Pricing, Promotion) via API.
  */
 export const getListingAdvice = async (listing: Listing, type: ListingAdviceType): Promise<string> => {
     try {
-        const prompt = buildListingAdvicePrompt(listing, type);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return response.text || "No advice generated.";
+        const data = await callAiApi('listingAdvice', { listing, adviceType: type });
+        return data.advice;
     } catch (error) {
-        console.error("Error getting listing advice:", error);
         return "Could not generate listing advice. Please try again later.";
     }
 };
 
 /**
- * Translates text from a source language to a target language.
+ * Translates text via API.
  */
 export const translateText = async (text: string, targetLang: string, sourceLang: string): Promise<string> => {
     if (sourceLang.toLowerCase() === targetLang.toLowerCase()) return text;
     try {
-        const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. Only return the translated text.\n\nText: "${text}"`;
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return response.text?.trim() || text;
-    } catch (error) {
-        console.error("Error translating text:", error);
-        return `(Translation Error) ${text}`;
+         const data = await callAiApi('translate', { text, targetLang, sourceLang });
+         return data.translatedText;
+    } catch (e) {
+        return text;
     }
 };
 
-const callAITextManipulation = async (action: 'improve' | 'shorten' | 'expand', text: string): Promise<string> => {
-    if (!text.trim()) return "";
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: text,
-            config: { systemInstruction: systemInstructions[action] },
-        });
-        return response.text?.trim() || text;
-    } catch (error) {
-        console.error(`Error in ${action} text:`, error);
-        throw new Error(`Failed to ${action} text.`);
-    }
-};
-
-export const improveDescription = (text: string) => callAITextManipulation('improve', text);
-export const shortenDescription = (text: string) => callAITextManipulation('shorten', text);
-export const expandDescription = (text: string) => callAITextManipulation('expand', text);
+// Text manipulation helpers
+export const improveDescription = async (text: string) => (await callAiApi('improve', { text })).text;
+export const shortenDescription = async (text: string) => (await callAiApi('shorten', { text })).text;
+export const expandDescription = async (text: string) => (await callAiApi('expand', { text })).text;
