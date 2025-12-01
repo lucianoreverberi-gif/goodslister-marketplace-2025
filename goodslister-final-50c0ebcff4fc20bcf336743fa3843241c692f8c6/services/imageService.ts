@@ -1,7 +1,11 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({apiKey: process.env.API_KEY!});
+// Lazy initialization to prevent app crash on load if env var is missing or undefined at build time
+const getAiClient = () => {
+    const apiKey = process.env.API_KEY || '';
+    return new GoogleGenAI({ apiKey });
+}
 
 /**
  * Generates a high-quality, photorealistic image for a given listing.
@@ -12,6 +16,7 @@ const ai = new GoogleGenAI({apiKey: process.env.API_KEY!});
  */
 export const generateImageForListing = async (title: string, locationContext: string, customPrompt?: string): Promise<string> => {
     try {
+        const ai = getAiClient();
         const prompt = customPrompt || `Professional, photorealistic product shot of a "${title}". The item should be clean, appealing, and centrally featured. The background should be scenic, appropriate for the item, evoking a sense of adventure, such as ${locationContext}. The lighting should be bright and natural, as if taken by a professional photographer for a high-end rental marketplace.`;
         
         const response = await ai.models.generateImages({

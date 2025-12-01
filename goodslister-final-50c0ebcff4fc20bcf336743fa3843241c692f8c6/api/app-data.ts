@@ -5,7 +5,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate');
 
-  const defaultCategoryImages = {
+  const defaultCategoryImages: Record<string, string> = {
     "Motorcycles": 'https://images.unsplash.com/photo-1625043484555-5654b594199c?q=80&w=1974&auto=format&fit=crop',
     "Bikes": 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=2070&auto=format&fit=crop',
     "Boats": 'https://images.unsplash.com/photo-1593853992454-0371391a03a8?q=80&w=2070&auto=format&fit=crop',
@@ -115,12 +115,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         linkUrl: row.link_url || ''
     }));
 
-    let categoryImages = defaultCategoryImages;
+    let categoryImages = { ...defaultCategoryImages };
     if (categoryImagesQuery.rows.length > 0) {
         try {
             const dbImages = JSON.parse(categoryImagesQuery.rows[0].value);
-            categoryImages = { ...defaultCategoryImages, ...dbImages };
+            // Merge DB images, but then filter to ensure no rogue keys (like old "UTVs") exist
+            const merged = { ...defaultCategoryImages, ...dbImages };
+            
+            categoryImages = {};
+            // Only keep keys that are valid in the current schema (based on defaultCategoryImages)
+            for (const key of Object.keys(defaultCategoryImages)) {
+                categoryImages[key] = merged[key] || defaultCategoryImages[key];
+            }
         } catch (e) {
+            console.error("Error parsing category images:", e);
         }
     }
 
