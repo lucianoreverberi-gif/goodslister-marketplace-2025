@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainCircuitIcon, ZapIcon, CheckCircleIcon, MapPinIcon } from './icons';
+import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainIcon, ZapIcon, CheckCircleIcon, MapPinIcon } from './icons';
 import FAQSection from './FAQSection';
 
 // --- Shared Layouts ---
@@ -225,9 +225,9 @@ export const AboutUsPage: React.FC = () => (
                     <p className="text-gray-600">Making the outdoors accessible to everyone, regardless of ownership status.</p>
                 </div>
                 <div className="bg-indigo-50 p-8 rounded-2xl border border-indigo-100">
-                    <BrainCircuitIcon className="h-10 w-10 text-indigo-600 mb-4" />
+                    <BrainIcon className="h-10 w-10 text-indigo-600 mb-4" />
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Innovation</h3>
-                    <p className="text-gray-600">Leveraging AI to remove friction from rentals, from contracts to discovery.</p>
+                    <p className="text-gray-600"> leveraging AI to remove friction from rentals, from contracts to discovery.</p>
                 </div>
                 <div className="bg-green-50 p-8 rounded-2xl border border-green-100">
                     <ShieldCheckIcon className="h-10 w-10 text-green-600 mb-4" />
@@ -281,7 +281,7 @@ export const CareersPage: React.FC = () => (
                         { title: "Innovation", desc: "Work with cutting-edge AI & tech.", icon: ZapIcon },
                         { title: "Equity", desc: "Own a piece of the company.", icon: StarIcon },
                     ].map((perk, idx) => (
-                        <div key={idx} className="flex flex-col items-center text-center p-6 bg-gray-50 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div key={idx} className="flex flex-col items-center text-center p-6 bg-gray-50 rounded-xl">
                             <perk.icon className="h-8 w-8 text-cyan-600 mb-3" />
                             <h3 className="font-bold text-gray-900">{perk.title}</h3>
                             <p className="text-sm text-gray-600 mt-1">{perk.desc}</p>
@@ -343,10 +343,10 @@ export const PressPage: React.FC = () => (
                 </div>
             </div>
 
-            <div className="mt-20 bg-gray-50 p-8 rounded-xl text-center border border-gray-200">
+            <div className="mt-20 bg-gray-50 p-8 rounded-xl text-center">
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Media Inquiries</h3>
                 <p className="text-gray-600 mb-6">For interviews, brand assets, or other inquiries, please contact our team.</p>
-                <a href="mailto:press@goodslister.com" className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors">
+                <a href="mailto:press@goodslister.com" className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100">
                     <MailIcon className="h-5 w-5" />
                     press@goodslister.com
                 </a>
@@ -363,7 +363,7 @@ export const HelpCenterPage: React.FC = () => (
                 <input 
                     type="text" 
                     placeholder="Search for answers (e.g. 'How to refund', 'Insurance policy')..." 
-                    className="w-full py-4 pl-12 pr-4 rounded-full shadow-lg border-none focus:ring-2 focus:ring-cyan-400 text-gray-900 outline-none"
+                    className="w-full py-4 pl-12 pr-4 rounded-full shadow-lg border-none focus:ring-2 focus:ring-cyan-400 text-gray-900"
                 />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                     <SearchIcon className="h-5 w-5" />
@@ -373,7 +373,7 @@ export const HelpCenterPage: React.FC = () => (
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <SmileIcon className="h-6 w-6 text-cyan-600" />
                         For Renters
@@ -400,7 +400,7 @@ export const HelpCenterPage: React.FC = () => (
                     </ul>
                 </div>
 
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <UploadCloudIcon className="h-6 w-6 text-green-600" />
                         For Owners
@@ -430,7 +430,7 @@ export const HelpCenterPage: React.FC = () => (
             
             <div className="text-center mt-12">
                 <p className="text-gray-600 mb-4">Can't find what you're looking for?</p>
-                <a href="/contactUs" className="inline-block px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">Contact Support</a>
+                <a href="/contactUs" className="inline-block px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800">Contact Support</a>
             </div>
         </div>
     </div>
