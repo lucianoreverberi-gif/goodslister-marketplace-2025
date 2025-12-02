@@ -5,7 +5,7 @@ import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useChatSocket } from '../../hooks/useChatSocket';
 import { Conversation, User } from '../../types/chat';
-import { Sparkles, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
+import { Sparkles, ArrowLeft, MoreVertical } from 'lucide-react';
 
 // MOCK DATA
 const MOCK_USER: User = { id: 'me', name: 'John Doe', avatar: '', isOnline: true, locale: 'en-US' };
@@ -106,13 +106,10 @@ const ChatLayout: React.FC = () => {
                   <Sparkles size={14} className={translationEnabled ? 'animate-pulse' : ''} />
                   <span>{translationEnabled ? 'AI On' : 'AI Off'}</span>
                 </button>
-
-                <div className="hidden md:flex text-gray-400 gap-3 border-l pl-3 ml-1">
-                  <Phone size={20} className="hover:text-indigo-600 cursor-pointer" />
-                  <Video size={20} className="hover:text-indigo-600 cursor-pointer" />
-                </div>
                 
-                <MoreVertical size={20} className="text-gray-400 hover:text-gray-600 cursor-pointer" />
+                <div className="hidden md:flex items-center border-l pl-3 ml-1">
+                    <MoreVertical size={20} className="text-gray-400 hover:text-gray-600 cursor-pointer" />
+                </div>
               </div>
             </header>
 
