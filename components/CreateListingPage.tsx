@@ -5,7 +5,6 @@ import { ListingCategory, User, Listing, ListingType, PriceUnit } from '../types
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon } from './icons';
 import SmartAdvisory from './SmartAdvisory';
-import AICoverGeneratorStep from './AICoverGeneratorStep';
 
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
 const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
@@ -193,12 +192,6 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const handleImproveDescription = createTextHandler('improve', improveDescription);
     const handleShortenDescription = createTextHandler('shorten', shortenDescription);
     const handleExpandDescription = createTextHandler('expand', expandDescription);
-
-    // Callback to add the AI generated image
-    const handleAiImageGenerated = (newUrl: string) => {
-        // Add to the beginning so it becomes the cover
-        setImageUrls(prev => [newUrl, ...prev]);
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -434,13 +427,6 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                 </div>
                             )}
                         </div>
-
-                        {/* NEW AI COVER GENERATOR STEP - INJECTED HERE */}
-                        <AICoverGeneratorStep 
-                            category={category as ListingCategory}
-                            realPhotoCount={imageUrls.length}
-                            onImageGenerated={handleAiImageGenerated}
-                        />
 
                         {/* YouTube Video */}
                         <div>

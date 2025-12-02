@@ -1,4 +1,3 @@
-
 // FIX: Created the main App component, which was previously missing.
 // This component manages the overall application state, including routing,
 // session management, and data handling, resolving module resolution errors.
@@ -106,6 +105,35 @@ const App: React.FC = () => {
     const handleSearch = (criteria: FilterCriteria) => {
         setInitialExploreFilters(criteria);
         handleNavigate('explore');
+    };
+
+    const handleToggleFavorite = async (listingId: string) => {
+        if (!session) {
+            setIsLoginModalOpen(true);
+            return;
+        }
+
+        const currentFavorites = session.favorites || [];
+        let newFavorites;
+        
+        if (currentFavorites.includes(listingId)) {
+            newFavorites = currentFavorites.filter(id => id !== listingId);
+            addNotification('info', 'Removed from Saved', 'Listing removed from your favorites.');
+        } else {
+            newFavorites = [...currentFavorites, listingId];
+            addNotification('success', 'Saved!', 'Listing added to your favorites.');
+        }
+
+        // Optimistic UI Update
+        const updatedUser = { ...session, favorites: newFavorites };
+        setSession(updatedUser);
+        
+        // Also update the user in the appData list
+        const updatedUsers = appData.users.map((u: User) => u.id === session.id ? updatedUser : u);
+        updateAppData({ users: updatedUsers });
+
+        // Persist
+        await mockApi.toggleFavorite(session.id, listingId);
     };
 
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
@@ -257,8 +285,7 @@ const App: React.FC = () => {
         startDate: Date, 
         endDate: Date, 
         totalPrice: number, 
-        amountPaidOnline: number, 
-        balanceDueOnSite: number, 
+        paymentMethod: 'platform' | 'direct',
         protectionType: 'waiver' | 'insurance', 
         protectionFee: number
     ): Promise<Booking> => {
@@ -266,6 +293,10 @@ const App: React.FC = () => {
             throw new Error("You must be logged in to book an item.");
         }
         
+        // Determine split amounts based on paymentMethod (Simplified logic)
+        const amountPaidOnline = paymentMethod === 'platform' ? totalPrice : 0;
+        const balanceDueOnSite = paymentMethod === 'direct' ? totalPrice : 0;
+
         // Pass all new parameters to the API/Mock layer
         const result = await mockApi.createBooking(
             listingId, 
@@ -275,7 +306,7 @@ const App: React.FC = () => {
             totalPrice, 
             amountPaidOnline,
             balanceDueOnSite,
-            'platform', // paymentMethod defaulted to platform for online portion
+            paymentMethod,
             protectionType, 
             protectionFee
         );
@@ -334,7 +365,7 @@ const App: React.FC = () => {
             startDate: format(startDate, 'MMM dd, yyyy'),
             endDate: format(endDate, 'MMM dd, yyyy'),
             totalPrice: totalPrice.toFixed(2),
-            paymentMethod: 'platform'
+            paymentMethod: paymentMethod
         }).then(success => {
             if (success) {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
@@ -507,6 +538,8 @@ const App: React.FC = () => {
                     onListingClick={handleListingClick} 
                     initialFilters={initialExploreFilters}
                     onClearInitialFilters={() => setInitialExploreFilters(null)}
+                    favorites={session?.favorites || []}
+                    onToggleFavorite={handleToggleFavorite}
                 />;
             case 'listingDetail':
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
@@ -516,6 +549,8 @@ const App: React.FC = () => {
                     onStartConversation={handleStartConversation}
                     currentUser={session}
                     onCreateBooking={handleCreateBooking}
+                    isFavorite={session?.favorites?.includes(listing.id) || false}
+                    onToggleFavorite={handleToggleFavorite}
                 /> : <p>Listing not found.</p>;
             case 'createListing':
                 return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} onSubmit={handleCreateListing} />;
@@ -557,10 +592,12 @@ const App: React.FC = () => {
                     listings={listings.filter((l: Listing) => l.owner.id === session.id)} 
                     // Pass both bookings where user is the renter OR the owner
                     bookings={bookings.filter((b: Booking) => b.renterId === session.id || b.listing.owner.id === session.id)}
+                    favoriteListings={listings.filter(l => session.favorites?.includes(l.id))}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
                     onListingClick={handleListingClick}
                     onEditListing={handleEditListingClick}
+                    onToggleFavorite={handleToggleFavorite}
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;
@@ -591,6 +628,8 @@ const App: React.FC = () => {
                     heroSlides={heroSlides}
                     banners={banners}
                     categoryImages={categoryImages}
+                    favorites={session?.favorites || []}
+                    onToggleFavorite={handleToggleFavorite}
                 />;
         }
     };
