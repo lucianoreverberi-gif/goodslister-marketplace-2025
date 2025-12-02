@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ListingCategory } from '../types';
-import { WandSparklesIcon, CheckCircleIcon, AlertIcon, UploadCloudIcon, PencilIcon, LightbulbIcon, LockIcon } from './icons';
+import { WandSparklesIcon, CheckCircleIcon, AlertIcon, UploadCloudIcon, PencilIcon, LightbulbIcon, LockIcon, PaletteIcon, TagIcon, CameraIcon } from './icons';
 import { generateImageForListing } from '../services/imageService';
 
 interface AICoverGeneratorStepProps {
@@ -10,29 +10,49 @@ interface AICoverGeneratorStepProps {
     onImageGenerated: (imageUrl: string) => void;
 }
 
-const SETTINGS = [
-    'Tropical Beach', 'Mountain Lake', 'Urban Marina', 'Open Ocean', 
-    'Desert Dunes', 'Forest Trail', 'Snowy Peak', 'City Street', 'Studio Background'
-];
-
-const LIGHTING = [
-    'Golden Hour Sunset', 'Bright Midday Sun', 'Misty Morning', 'Dramatic Cloudy Sky', 'Neon Night', 'Soft Studio Lighting'
-];
-
-const MOODS = [
-    'High Adrenaline Action', 'Peaceful & Relaxing', 'Luxurious & Romantic', 'Fun Family Gathering', 'Cinematic & Epic', 'Minimalist & Clean'
-];
+// Inspiration Chips Configuration
+const INSPIRATION_CHIPS = {
+    vibes: [
+        { label: '🏝️ Tropical Paradise', text: 'situated in a tropical paradise with palm trees and turquoise water' },
+        { label: '⛰️ Mountain Adventure', text: 'parked on a rugged mountain trail with snow-capped peaks in the background' },
+        { label: '🏙️ Urban Luxury', text: 'in a high-end marina with city skyline lights reflecting on the water' },
+        { label: '🌲 Deep Forest', text: 'surrounded by ancient pine trees and ferns in a misty forest' },
+    ],
+    lighting: [
+        { label: '🌅 Golden Hour', text: 'bathed in warm, golden hour sunset lighting' },
+        { label: '🌙 Dramatic Moonlight', text: 'under a dramatic moonlit sky with cinematic shadows' },
+        { label: '☀️ Bright Midday', text: 'under bright, clear blue skies with sharp details' },
+    ],
+    action: [
+        { label: '🌊 Splashing Waves', text: 'splashing through waves with dynamic water spray' },
+        { label: '💨 High Speed', text: 'captured in motion with motion blur background' },
+        { label: '📸 Studio Clean', text: 'isolated on a clean, professional studio infinity background' },
+    ]
+};
 
 const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, realPhotoCount, onImageGenerated }) => {
-    const [itemDetails, setItemDetails] = useState('');
-    const [setting, setSetting] = useState(SETTINGS[0]);
-    const [lighting, setLighting] = useState(LIGHTING[0]);
-    const [mood, setMood] = useState(MOODS[0]);
+    // --- Section 1: Product Realism State ---
+    const [productType, setProductType] = useState('');
+    const [brandModel, setBrandModel] = useState('');
+    const [colorFeatures, setColorFeatures] = useState('');
+
+    // --- Section 2: Creative Vision State ---
+    const [creativeScene, setCreativeScene] = useState('');
     
+    // --- Generation State ---
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
     const [hasAgreed, setHasAgreed] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Pre-fill Product Type if category exists
+    useEffect(() => {
+        if (category && !productType) {
+            // Convert enum to readable string (e.g. "WATER_SPORTS" -> "Water Sports Equipment")
+            const readable = category.toLowerCase().replace('_', ' ');
+            setProductType(readable);
+        }
+    }, [category]);
 
     // TRUST GATE: Strict enforcement
     if (realPhotoCount < 3) {
@@ -76,16 +96,9 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
         );
     }
 
-    const constructAIPrompt = () => {
-        const subject = itemDetails.trim() 
-            ? itemDetails 
-            : (category ? `a ${category.toLowerCase().slice(0, -1)}` : "an item");
-
-        return `Professional, photorealistic lifestyle shot of ${subject}. 
-        The scene is set in a ${setting}. 
-        Lighting condition: ${lighting}. 
-        The overall mood is ${mood}. 
-        High resolution, 4k, highly detailed, cinematic composition.`;
+    const constructAdvancedAIPrompt = () => {
+        // Structure: Realism Core + Creative Scene
+        return `A high-quality, professional lifestyle photograph of a ${colorFeatures} ${brandModel} ${productType}. The item is located in ${creativeScene}. The image should be photorealistic, cinematic, 4k resolution, and highly detailed.`;
     };
 
     const handleGenerate = async () => {
@@ -95,7 +108,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
         setHasAgreed(false);
 
         try {
-            const prompt = constructAIPrompt();
+            const prompt = constructAdvancedAIPrompt();
             // Call the robust Google Gemini service
             const url = await generateImageForListing("", "", prompt); 
             setGeneratedImage(url);
@@ -112,83 +125,132 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
             onImageGenerated(generatedImage);
             setGeneratedImage(null);
             setHasAgreed(false);
-            setItemDetails(''); 
+            // Optional: clear fields or keep them for regeneration
         }
     };
 
+    const addInspiration = (text: string) => {
+        setCreativeScene(prev => {
+            const separator = prev.length > 0 && !prev.endsWith(' ') ? ', ' : '';
+            return prev + separator + text;
+        });
+    };
+
+    const isFormValid = productType.trim() && brandModel.trim() && colorFeatures.trim();
+
     return (
         <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl p-1 border border-purple-100 shadow-md my-8">
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-6">
-                <div className="flex items-center gap-3 mb-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6">
+                
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-8 border-b border-indigo-100 pb-4">
                     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-2.5 rounded-lg text-white shadow-lg">
                         <WandSparklesIcon className="h-6 w-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-indigo-900">AI Hero Image Studio</h3>
-                        <p className="text-xs text-indigo-600 font-medium">Create a click-worthy cover photo in seconds.</p>
+                        <p className="text-xs text-indigo-600 font-medium">Create a stunning cover photo that matches your real item.</p>
                     </div>
                     <span className="ml-auto bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide border border-indigo-200">
                         Unlocked
                     </span>
                 </div>
 
-                {/* Step 1: Description */}
-                <div className="mb-5">
-                    <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                        <PencilIcon className="h-3 w-3" />
-                        1. Describe your Item
-                    </label>
+                {/* Step 1: Product Realism */}
+                <div className="mb-8">
+                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <TagIcon className="h-4 w-4 text-cyan-600" />
+                        Step 1: Describe Your Actual Product
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 mb-1">Product Type <span className="text-red-500">*</span></label>
+                            <input 
+                                type="text" 
+                                value={productType}
+                                onChange={e => setProductType(e.target.value)}
+                                placeholder="e.g. Jet Ski, Mountain Bike"
+                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 mb-1">Brand & Model <span className="text-red-500">*</span></label>
+                            <input 
+                                type="text" 
+                                value={brandModel}
+                                onChange={e => setBrandModel(e.target.value)}
+                                placeholder="e.g. Yamaha VX Cruiser"
+                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 mb-1">Color & Key Features <span className="text-red-500">*</span></label>
+                            <input 
+                                type="text" 
+                                value={colorFeatures}
+                                onChange={e => setColorFeatures(e.target.value)}
+                                placeholder="e.g. Bright blue hull with silver trim"
+                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Step 2: Creative Vision */}
+                <div className="mb-6">
+                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <PaletteIcon className="h-4 w-4 text-purple-600" />
+                        Step 2: Set the Scene & Vibe
+                    </h4>
+                    
                     <div className="relative">
                         <textarea
-                            value={itemDetails}
-                            onChange={(e) => setItemDetails(e.target.value)}
-                            placeholder={`E.g. A 2024 Yamaha Jet Ski, bright red and black, speeding through waves...`}
-                            className="w-full p-4 text-sm border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[80px] shadow-sm bg-white resize-none"
+                            value={creativeScene}
+                            onChange={(e) => setCreativeScene(e.target.value)}
+                            placeholder="E.g., anchored in a crystal clear turquoise bay at sunset, cinematic style..."
+                            className="w-full p-4 text-sm border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[100px] shadow-inner bg-gray-50 resize-none"
                         />
-                        {itemDetails.length === 0 && (
-                            <div className="absolute top-3 right-3 hidden sm:block pointer-events-none opacity-60">
-                                <LightbulbIcon className="h-4 w-4 text-amber-500" />
+                        {creativeScene.length === 0 && (
+                            <div className="absolute top-4 right-4 hidden sm:block pointer-events-none opacity-40">
+                                <LightbulbIcon className="h-5 w-5 text-amber-500" />
                             </div>
                         )}
                     </div>
-                </div>
 
-                {/* Step 2: Vibe Selectors */}
-                <div className="mb-6">
-                    <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                        <WandSparklesIcon className="h-3 w-3" />
-                        2. Set the Scene
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <select 
-                            value={setting} 
-                            onChange={(e) => setSetting(e.target.value)}
-                            className="w-full text-sm border-gray-200 rounded-lg focus:ring-purple-500 bg-white py-2.5 px-3"
-                        >
-                            {SETTINGS.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <select 
-                            value={lighting} 
-                            onChange={(e) => setLighting(e.target.value)}
-                            className="w-full text-sm border-gray-200 rounded-lg focus:ring-purple-500 bg-white py-2.5 px-3"
-                        >
-                            {LIGHTING.map(l => <option key={l} value={l}>{l}</option>)}
-                        </select>
-                        <select 
-                            value={mood} 
-                            onChange={(e) => setMood(e.target.value)}
-                            className="w-full text-sm border-gray-200 rounded-lg focus:ring-purple-500 bg-white py-2.5 px-3"
-                        >
-                            {MOODS.map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
+                    {/* Inspiration Chips */}
+                    <div className="mt-4 space-y-3">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Quick Add Inspiration:</p>
+                        
+                        <div className="flex flex-wrap gap-2">
+                            {INSPIRATION_CHIPS.vibes.map((chip, idx) => (
+                                <button key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
+                                    {chip.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {INSPIRATION_CHIPS.lighting.map((chip, idx) => (
+                                <button key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
+                                    {chip.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {INSPIRATION_CHIPS.action.map((chip, idx) => (
+                                <button key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
+                                    {chip.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
+                {/* Generate Action */}
                 {!generatedImage && (
                     <button 
                         onClick={handleGenerate} 
-                        disabled={isGenerating}
-                        className="w-full py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.01] active:scale-[0.99] flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        disabled={isGenerating || !isFormValid}
+                        className="w-full py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.01] active:scale-[0.99] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
                         {isGenerating ? (
                             <>
@@ -198,12 +260,13 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
                         ) : (
                             <>
                                 <WandSparklesIcon className="h-5 w-5 text-purple-300" />
-                                Generate Cover Image
+                                {isFormValid ? "Generate Cover Image" : "Fill Product Details to Generate"}
                             </>
                         )}
                     </button>
                 )}
 
+                {/* Error Message */}
                 {error && (
                     <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 text-center animate-in fade-in">
                         <div className="flex items-center justify-center gap-2">
@@ -213,8 +276,9 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
                     </div>
                 )}
 
+                {/* Result Preview */}
                 {generatedImage && (
-                    <div className="mt-6 bg-white p-1 rounded-xl border border-gray-200 shadow-lg animate-in fade-in zoom-in-95 duration-300">
+                    <div className="mt-8 bg-white p-1 rounded-xl border border-gray-200 shadow-lg animate-in fade-in zoom-in-95 duration-300">
                         <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-gray-100 group">
                             <img src={generatedImage} alt="AI Generated Cover" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
@@ -223,24 +287,26 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
                         </div>
 
                         <div className="p-4">
-                            <label className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100/50 transition-colors">
-                                <input 
-                                    type="checkbox" 
-                                    checked={hasAgreed} 
-                                    onChange={(e) => setHasAgreed(e.target.checked)}
-                                    className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-xs text-blue-900 leading-snug">
-                                    I acknowledge this is an AI-generated representation. My listing also includes <strong>{realPhotoCount} real photos</strong> of the actual item.
-                                </span>
-                            </label>
+                            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={hasAgreed} 
+                                        onChange={(e) => setHasAgreed(e.target.checked)}
+                                        className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <span className="text-xs text-blue-900 leading-snug">
+                                        I confirm this image reasonably represents the <strong>{colorFeatures} {brandModel}</strong> I am listing. I understand real photos are still required for damage inspection.
+                                    </span>
+                                </label>
+                            </div>
 
-                            <div className="flex gap-3 mt-4">
+                            <div className="flex gap-3">
                                 <button 
                                     onClick={() => setGeneratedImage(null)} 
                                     className="flex-1 py-2.5 border border-gray-300 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                                 >
-                                    Discard
+                                    Discard & Edit
                                 </button>
                                 <button 
                                     onClick={handleApply} 
