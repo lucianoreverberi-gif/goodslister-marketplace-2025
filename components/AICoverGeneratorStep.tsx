@@ -65,7 +65,9 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
     };
 
     const handleGenerate = async () => {
+        // Allow generation if either category is selected OR user typed something
         if (!category && !itemDetails) return;
+        
         setIsGenerating(true);
         setError(null);
         setGeneratedImage(null);
@@ -73,7 +75,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
 
         try {
             const prompt = constructAIPrompt();
-            // We pass the full prompt to the service
+            // We pass the full prompt to the service as the 3rd argument
             const url = await generateImageForListing("", "", prompt); 
             setGeneratedImage(url);
         } catch (err) {
