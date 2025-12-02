@@ -6,7 +6,7 @@ export interface FilterCriteria {
     text?: string;
 }
 
-export type AdviceTopic = 'contract' | 'insurance' | 'payment';
+export type AdviceTopic = 'contract' | 'insurance' | 'payment' | 'consultation';
 export type ListingAdviceType = 'improvement' | 'pricing' | 'promotion';
 
 export interface ListingDescriptionResult {
@@ -60,9 +60,9 @@ export const generateListingDescription = async (title: string, location: string
 /**
  * Provides AI-powered advice via API.
  */
-export const getAIAdvice = async (topic: AdviceTopic, itemType: string, itemDescription: string, location: string = ''): Promise<string> => {
+export const getAIAdvice = async (topic: AdviceTopic, itemType: string, itemDescription: string, location: string = '', userQuestion: string = ''): Promise<string> => {
      try {
-         const data = await callAiApi('advice', { topic, itemType, itemDescription, location });
+         const data = await callAiApi('advice', { topic, itemType, itemDescription, location, userQuestion });
          return data.advice;
      } catch (e) {
          return "Could not generate advice at this time. Please check your connection.";
