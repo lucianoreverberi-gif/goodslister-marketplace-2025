@@ -13,6 +13,7 @@ export const mockUsers: User[] = [
         isIdVerified: false,
         averageRating: 4.8,
         totalReviews: 12,
+        favorites: [],
     },
     {
         id: 'user-2',
@@ -25,6 +26,7 @@ export const mockUsers: User[] = [
         isIdVerified: true,
         averageRating: 4.9,
         totalReviews: 21,
+        favorites: ['listing-1'], // Mock favorite
     },
     {
         id: 'user-3',
@@ -37,6 +39,7 @@ export const mockUsers: User[] = [
         isIdVerified: false,
         averageRating: 5.0,
         totalReviews: 2,
+        favorites: [],
     },
 ];
 

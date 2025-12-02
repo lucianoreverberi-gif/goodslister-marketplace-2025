@@ -5,6 +5,7 @@ import { ListingCategory, User, Listing, ListingType, PriceUnit } from '../types
 import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon } from './icons';
 import SmartAdvisory from './SmartAdvisory';
+import AICoverGeneratorStep from './AICoverGeneratorStep';
 
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
 const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
@@ -192,6 +193,11 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const handleImproveDescription = createTextHandler('improve', improveDescription);
     const handleShortenDescription = createTextHandler('shorten', shortenDescription);
     const handleExpandDescription = createTextHandler('expand', expandDescription);
+
+    const handleAIImageGenerated = (url: string) => {
+        // Prepend the new AI image to the list so it becomes the cover
+        setImageUrls(prev => [url, ...prev]);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -409,10 +415,17 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                         {/* Media */}
                         <div className="space-y-4">
                             <label className="block text-sm font-bold text-gray-800">Images</label>
+                            
+                            {/* AI Hero Generator Component */}
+                            <AICoverGeneratorStep 
+                                realPhotoCount={imageUrls.length}
+                                onImageGenerated={handleAIImageGenerated}
+                            />
+
                             <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex justify-center">
                                 <label className="cursor-pointer text-center">
                                     <UploadCloudIcon className="mx-auto h-12 w-12 text-gray-400" />
-                                    <span className="mt-2 block text-sm font-medium text-cyan-600">Upload images</span>
+                                    <span className="mt-2 block text-sm font-medium text-cyan-600">Upload real photos</span>
                                     <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
                                 </label>
                             </div>
@@ -421,6 +434,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     {imageUrls.map((url, i) => (
                                         <div key={i} className="relative group">
                                             <img src={url} className="h-20 w-full object-cover rounded" />
+                                            {i === 0 && <span className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1 rounded">Cover</span>}
                                             <button type="button" onClick={() => handleRemoveImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100"><XIcon className="h-3 w-3" /></button>
                                         </div>
                                     ))}

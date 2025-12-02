@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Session, Listing, Booking, InspectionPhoto } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon, HeartIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import DigitalInspection from './DigitalInspection';
+import ListingCard from './ListingCard';
 
 // ... (Keep existing interfaces and helper components like InspectionModal, PromotionModal, etc.)
 interface UserDashboardPageProps {
@@ -16,10 +17,13 @@ interface UserDashboardPageProps {
     onUpdateAvatar: (userId: string, newAvatarUrl: string) => Promise<void>;
     onListingClick?: (listingId: string) => void;
     onEditListing?: (listingId: string) => void;
+    favoriteListings?: Listing[];
+    onToggleFavorite: (id: string) => void;
 }
 
-type DashboardTab = 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security';
+type DashboardTab = 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security' | 'favorites';
 
+// ... (existing helper components remain unchanged: InspectionModal, PromotionModal, PhoneVerificationModal, IdVerificationModal, BookingsManager)
 interface PromotionModalProps {
     listing: Listing;
     onClose: () => void;
@@ -256,6 +260,7 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => 
     );
 };
 
+// ... (PhoneVerificationModal, IdVerificationModal, BookingsManager remain unchanged)
 const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => {
     const [step, setStep] = useState<'input' | 'code'>('input');
     const [phone, setPhone] = useState('');
@@ -624,14 +629,19 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
 }
 
 // ... (Rest of UserDashboardPage remains the same)
-const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onListingClick, onEditListing }) => {
+const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onListingClick, onEditListing, favoriteListings = [], onToggleFavorite }) => {
     // ... (keep existing code)
     // Set 'aiAssistant' as the default active tab to fulfill the user's request.
     const [activeTab, setActiveTab] = useState<DashboardTab>('aiAssistant');
 
+    // State for Modals
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [showIdModal, setShowIdModal] = useState(false);
+
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
         { id: 'bookings', name: 'My Bookings', icon: CalendarIcon },
+        { id: 'favorites', name: 'Saved Items', icon: HeartIcon },
         { id: 'security', name: 'Security & Verification', icon: ShieldIcon },
         { id: 'billing', name: 'Billing', icon: DollarSignIcon },
         { id: 'analytics', name: 'Analytics', icon: BarChartIcon },
@@ -957,6 +967,31 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
                 );
             case 'bookings':
                 return <BookingsManager bookings={bookings} userId={user.id} />;
+            case 'favorites':
+                return (
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">Saved Items</h2>
+                        {favoriteListings && favoriteListings.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {favoriteListings.map(listing => (
+                                    <ListingCard 
+                                        key={listing.id} 
+                                        listing={listing} 
+                                        onClick={onListingClick || (() => {})} 
+                                        isFavorite={true}
+                                        onToggleFavorite={onToggleFavorite}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                                <HeartIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-900">No favorites yet</h3>
+                                <p className="text-gray-500 mt-1">Start exploring and save items you love!</p>
+                            </div>
+                        )}
+                    </div>
+                );
             case 'security':
                 return <SecurityTab />;
             case 'billing':
@@ -1066,9 +1101,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ user, listings, b
         }
     };
     
-    // State for Modals
-    const [showPhoneModal, setShowPhoneModal] = useState(false);
-    const [showIdModal, setShowIdModal] = useState(false);
 
     return (
         <div className="bg-gray-50 min-h-screen">

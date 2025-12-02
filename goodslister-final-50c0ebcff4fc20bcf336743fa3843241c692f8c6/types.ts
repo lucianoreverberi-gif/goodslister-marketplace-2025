@@ -35,6 +35,7 @@ export interface User {
     averageRating?: number;
     totalReviews?: number;
     status?: 'active' | 'suspended';
+    favorites: string[]; // List of Listing IDs
 }
 
 export interface Session extends User {

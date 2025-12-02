@@ -1,3 +1,4 @@
+
 // FIX: Created the main App component, which was previously missing.
 // This component manages the overall application state, including routing,
 // session management, and data handling, resolving module resolution errors.
