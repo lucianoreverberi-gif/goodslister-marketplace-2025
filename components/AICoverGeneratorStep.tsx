@@ -66,7 +66,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
     };
 
     const handleGenerate = async () => {
-        // Allow generation if either category is selected OR user typed something
+        // Allow generation if user typed something or category is present
         if (!category && !itemDetails) return;
         
         setIsGenerating(true);
@@ -120,7 +120,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
                         value={itemDetails}
                         onChange={(e) => setItemDetails(e.target.value)}
                         placeholder={`E.g. A 2023 Yamaha Waverunner in bright blue and white, sporty design...`}
-                        className="w-full p-4 text-sm border-purple-200 rounded-lg focus:ring-purple-500 focus:border-purple-500 min-h-[100px] shadow-sm"
+                        className="w-full p-4 text-sm border-purple-200 rounded-lg focus:ring-purple-500 focus:border-purple-500 min-h-[100px] shadow-sm bg-white"
                     />
                     {itemDetails.length === 0 && (
                         <div className="absolute top-3 right-3 p-2 bg-purple-100 rounded-md max-w-[200px] hidden sm:block pointer-events-none">
