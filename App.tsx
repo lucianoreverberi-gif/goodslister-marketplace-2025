@@ -286,8 +286,7 @@ const App: React.FC = () => {
         startDate: Date, 
         endDate: Date, 
         totalPrice: number, 
-        amountPaidOnline: number, 
-        balanceDueOnSite: number, 
+        paymentMethod: 'platform' | 'direct',
         protectionType: 'waiver' | 'insurance', 
         protectionFee: number
     ): Promise<Booking> => {
@@ -295,6 +294,9 @@ const App: React.FC = () => {
             throw new Error("You must be logged in to book an item.");
         }
         
+        const amountPaidOnline = paymentMethod === 'platform' ? totalPrice : 0;
+        const balanceDueOnSite = paymentMethod === 'direct' ? totalPrice : 0;
+
         // Pass all new parameters to the API/Mock layer
         const result = await mockApi.createBooking(
             listingId, 
@@ -304,7 +306,7 @@ const App: React.FC = () => {
             totalPrice, 
             amountPaidOnline,
             balanceDueOnSite,
-            'platform', // paymentMethod defaulted to platform for online portion
+            paymentMethod,
             protectionType, 
             protectionFee
         );
@@ -363,7 +365,7 @@ const App: React.FC = () => {
             startDate: format(startDate, 'MMM dd, yyyy'),
             endDate: format(endDate, 'MMM dd, yyyy'),
             totalPrice: totalPrice.toFixed(2),
-            paymentMethod: 'platform'
+            paymentMethod: paymentMethod
         }).then(success => {
             if (success) {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);

@@ -13,7 +13,8 @@ import AIAssistantPage from './components/AIAssistantPage';
 import AdminPage from './components/AdminPage';
 import UserDashboardPage from './components/UserDashboardPage';
 import LoginModal from './components/LoginModal';
-import ChatInboxModal from './components/ChatModal';
+// import ChatInboxModal from './components/ChatModal'; // Deprecated in favor of ChatLayout
+import ChatLayout from './components/chat/ChatLayout';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
@@ -191,94 +192,13 @@ const App: React.FC = () => {
             setIsLoginModalOpen(true);
             return;
         }
-        
-        const existingConversation = appData.conversations.find((c: Conversation) => 
-            c.listing.id === listing.id && c.participants[session.id] && c.participants[listing.owner.id]
-        );
-
-        if (existingConversation) {
-            setInitialConversationId(existingConversation.id);
-        } else {
-            const newConversation: Conversation = {
-                id: `convo-${Date.now()}`,
-                listing: listing,
-                participants: {
-                    [session.id]: session,
-                    [listing.owner.id]: listing.owner
-                },
-                messages: [],
-            };
-            const updatedConversations = [...appData.conversations, newConversation];
-            mockApi.updateConversations(updatedConversations).then(convos => updateAppData({ conversations: convos }));
-            setInitialConversationId(newConversation.id);
-        }
-        setIsChatInboxOpen(true);
+        // In the new architecture, we just navigate to the inbox
+        // Future todo: pass the target listing/user to ChatLayout to auto-open that conversation
+        handleNavigate('inbox');
     };
 
     const handleSendMessage = async (conversationId: string, text: string) => {
-        if (!session) return;
-
-        const newMessage: Message = {
-            id: `msg-${Date.now()}`,
-            senderId: session.id,
-            text: text,
-            timestamp: new Date().toISOString(),
-        };
-
-        const updatedConversations = appData.conversations.map((c: Conversation) => 
-            c.id === conversationId ? { ...c, messages: [...c.messages, newMessage] } : c
-        );
-        updateAppData({ conversations: updatedConversations }); // Optimistic update
-        mockApi.updateConversations(updatedConversations);
-        
-        // Send Email Notification to the other participant (Simulated sending to current user email for testing)
-        // In production, this would go to the real recipient.
-        const currentConvo = updatedConversations.find((c: Conversation) => c.id === conversationId);
-        if (currentConvo) {
-             const recipient = Object.values(currentConvo.participants).find(p => (p as User).id !== session.id) as User;
-             if (recipient) {
-                 // NOTE: Using session.email for 'to' because we can only send to verified email in Resend Free tier.
-                 // In a real app, use `recipient.email`.
-                 mockApi.sendEmail('message_notification', session.email, {
-                     senderName: session.name,
-                     listingTitle: currentConvo.listing.title,
-                     messagePreview: text.substring(0, 50) + (text.length > 50 ? '...' : '')
-                 });
-             }
-        }
-
-        // Simulate owner's reply.
-        // The reply is always in English; translation is handled client-side in the ChatModal.
-        setTimeout(async () => {
-            const currentConvo = updatedConversations.find((c: Conversation) => c.id === conversationId);
-            if (!currentConvo) return;
-            
-            const owner = Object.values(currentConvo.participants).find(p => (p as User).id !== session.id) as User | undefined;
-            if(!owner) return;
-
-            const originalReply = "Hello! Yes, it's available. How many days would you like to rent it for?";
-            const translatedReply = await translateText(originalReply, userLanguage, 'English');
-
-
-            const replyMessage: Message = {
-                id: `msg-${Date.now() + 1}`,
-                senderId: owner.id,
-                text: translatedReply,
-                originalText: originalReply, // Store original for re-translation
-                timestamp: new Date().toISOString(),
-            };
-            const finalConversations = appData.conversations.map((c: Conversation) => 
-                    c.id === conversationId ? { ...c, messages: [...c.messages, replyMessage] } : c
-                );
-             updateAppData({ conversations: finalConversations }); // Optimistic update
-             mockApi.updateConversations(finalConversations);
-             
-             // Simulate Inbox Notification
-             if (!isChatInboxOpen) {
-                 addNotification('message', `New Message from ${owner.name}`, translatedReply.substring(0, 30) + '...');
-             }
-
-        }, 1500);
+        // ... kept for backward compatibility if needed, but ChatLayout handles this internally now
     };
 
     const handleCreateBooking = async (
@@ -542,6 +462,8 @@ const App: React.FC = () => {
                     favorites={session?.favorites || []}
                     onToggleFavorite={handleToggleFavorite}
                 />;
+            case 'inbox':
+                return <ChatLayout />;
             case 'listingDetail':
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
                 return listing ? <ListingDetailPage 
@@ -668,7 +590,7 @@ const App: React.FC = () => {
                 onNavigate={handleNavigate}
                 onLoginClick={() => setIsLoginModalOpen(true)}
                 onLogoutClick={handleLogout}
-                onOpenChat={() => { setInitialConversationId(null); setIsChatInboxOpen(true); }}
+                onOpenChat={() => handleNavigate('inbox')}
                 session={session}
                 logoUrl={logoUrl}
             />
@@ -685,18 +607,11 @@ const App: React.FC = () => {
                 />
             )}
             
+            {/* Legacy modal removed in favor of new page
             {isChatInboxOpen && session && (
-                 <ChatInboxModal
-                    isOpen={isChatInboxOpen}
-                    onClose={() => setIsChatInboxOpen(false)}
-                    conversations={conversations.filter((c: Conversation) => c.participants[session.id])}
-                    currentUser={session}
-                    onSendMessage={handleSendMessage}
-                    initialConversationId={initialConversationId}
-                    userLanguage={userLanguage}
-                    onLanguageChange={setUserLanguage}
-                />
+                 <ChatInboxModal ... />
             )}
+            */}
         </div>
     );
 };
