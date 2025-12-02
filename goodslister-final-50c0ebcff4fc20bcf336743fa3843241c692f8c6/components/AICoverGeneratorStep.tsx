@@ -43,7 +43,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
     const [hasAgreed, setHasAgreed] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // TRUST GATE: Strict enforcement (Optional based on previous context, but good for quality)
+    // TRUST GATE: Strict enforcement
     if (realPhotoCount < 3) {
         return (
             <div className="relative my-8 rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50">
@@ -86,8 +86,6 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
     }
 
     const constructAdvancedAIPrompt = () => {
-        // Structure: Realism Core + Creative Scene
-        // "A high-quality lifestyle photograph of a [Color] [Brand] [Model] [Product Type], located in [User's Creative Scene Prompt]."
         return `A high-quality, professional lifestyle photograph of a ${colorFeatures} ${brandModel} ${productType}, located in ${creativeScene}. The image should be photorealistic, cinematic, 4k resolution, and highly detailed.`;
     };
 
@@ -99,13 +97,12 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
 
         try {
             const prompt = constructAdvancedAIPrompt();
-            // Call the robust Google Gemini service
             // Passing empty strings for title/location since we are providing a full custom prompt
             const url = await generateImageForListing("", "", prompt); 
             setGeneratedImage(url);
-        } catch (err) {
-            console.error(err);
-            setError("We couldn't generate the image. Please try adjusting your description or try again in a moment.");
+        } catch (err: any) {
+            console.error("AI Generation Error:", err);
+            setError(err.message || "We couldn't generate the image. Please try again.");
         } finally {
             setIsGenerating(false);
         }
@@ -126,7 +123,19 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
         });
     };
 
-    const isFormValid = productType.trim().length > 0 && brandModel.trim().length > 0 && colorFeatures.trim().length > 0;
+    // Validation
+    const hasProductType = productType.trim().length > 0;
+    const hasBrand = brandModel.trim().length > 0;
+    const hasColor = colorFeatures.trim().length > 0;
+    const isFormValid = hasProductType && hasBrand && hasColor;
+
+    const getButtonText = () => {
+        if (isGenerating) return "Designing your image...";
+        if (!hasProductType) return "Enter Product Type to Generate";
+        if (!hasBrand) return "Enter Brand & Model to Generate";
+        if (!hasColor) return "Enter Color/Features to Generate";
+        return "Generate Cover Image";
+    };
 
     return (
         <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl p-1 border border-purple-100 shadow-md my-8">
@@ -160,7 +169,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
                                 value={productType}
                                 onChange={e => setProductType(e.target.value)}
                                 placeholder="e.g. Jet Ski, Mountain Bike"
-                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 p-2.5"
+                                className={`w-full text-sm border rounded-lg p-2.5 focus:ring-purple-500 focus:border-purple-500 ${!hasProductType && productType !== '' ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
                             />
                         </div>
                         <div>
@@ -170,7 +179,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
                                 value={brandModel}
                                 onChange={e => setBrandModel(e.target.value)}
                                 placeholder="e.g. Yamaha VX Cruiser"
-                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 p-2.5"
+                                className={`w-full text-sm border rounded-lg p-2.5 focus:ring-purple-500 focus:border-purple-500 ${!hasBrand && brandModel !== '' ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
                             />
                         </div>
                         <div>
@@ -180,7 +189,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
                                 value={colorFeatures}
                                 onChange={e => setColorFeatures(e.target.value)}
                                 placeholder="e.g. Bright blue hull with silver trim"
-                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 p-2.5"
+                                className={`w-full text-sm border rounded-lg p-2.5 focus:ring-purple-500 focus:border-purple-500 ${!hasColor && colorFeatures !== '' ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
                             />
                         </div>
                     </div>
@@ -250,7 +259,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
                         ) : (
                             <>
                                 <WandSparklesIcon className="h-5 w-5 text-purple-300" />
-                                {isFormValid ? "Generate Cover Image" : "Fill Product Details to Generate"}
+                                {getButtonText()}
                             </>
                         )}
                     </button>

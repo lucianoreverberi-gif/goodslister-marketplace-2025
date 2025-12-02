@@ -14,6 +14,8 @@ interface ExplorePageProps {
     onListingClick: (id: string) => void;
     initialFilters?: FilterCriteria | null;
     onClearInitialFilters: () => void;
+    favorites: string[];
+    onToggleFavorite: (id: string) => void;
 }
 
 type SortOption = 'price_desc' | 'price_asc' | 'rating_desc';
@@ -32,7 +34,7 @@ const defaultCenter = {
   lng: -63.6167
 };
 
-const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, initialFilters, onClearInitialFilters }) => {
+const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, initialFilters, onClearInitialFilters, favorites, onToggleFavorite }) => {
     // Filter and sort state
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
@@ -402,7 +404,12 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                                     onMouseEnter={() => setHoveredListingId(listing.id)}
                                     onMouseLeave={() => setHoveredListingId(null)}
                                 >
-                                    <ListingCard listing={listing} onClick={onListingClick} />
+                                    <ListingCard 
+                                        listing={listing} 
+                                        onClick={onListingClick}
+                                        isFavorite={favorites.includes(listing.id)}
+                                        onToggleFavorite={onToggleFavorite}
+                                    />
                                 </div>
                             ))}
                         </div>

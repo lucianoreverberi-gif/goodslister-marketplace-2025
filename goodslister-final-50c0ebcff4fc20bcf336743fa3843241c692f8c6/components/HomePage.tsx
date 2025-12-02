@@ -24,9 +24,22 @@ interface HomePageProps {
     heroSlides: HeroSlide[];
     banners: Banner[];
     categoryImages: CategoryImagesMap;
+    favorites: string[];
+    onToggleFavorite: (id: string) => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, onSearch, onNavigate, listings, heroSlides, banners, categoryImages }) => {
+const HomePage: React.FC<HomePageProps> = ({ 
+    onListingClick, 
+    onCreateListing, 
+    onSearch, 
+    onNavigate, 
+    listings, 
+    heroSlides, 
+    banners, 
+    categoryImages,
+    favorites, 
+    onToggleFavorite 
+}) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -333,7 +346,7 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                                             <MessageSquareIcon className="h-8 w-8" />
                                         </div>
                                         <h3 className="text-lg font-semibold text-gray-900">2. Accept Bookings</h3>
-                                        <p className="mt-2 text-base text-gray-600">Receive requests from verified users. Chat with them to coordinate pickup and approve the booking.</p>
+                                        <p className="mt-2 text-base text-gray-600">Receive requests from verified renters. Chat directly to coordinate pickup times and answer questions.</p>
                                     </div>
                                     <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                                         <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
@@ -360,7 +373,13 @@ const HomePage: React.FC<HomePageProps> = ({ onListingClick, onCreateListing, on
                             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl text-center mb-12">Featured Goods</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                                 {featuredListings.map(listing => (
-                                    <ListingCard key={listing.id} listing={listing} onClick={onListingClick} />
+                                    <ListingCard 
+                                        key={listing.id} 
+                                        listing={listing} 
+                                        onClick={onListingClick}
+                                        isFavorite={favorites.includes(listing.id)}
+                                        onToggleFavorite={onToggleFavorite}
+                                    />
                                 ))}
                             </div>
                         </div>

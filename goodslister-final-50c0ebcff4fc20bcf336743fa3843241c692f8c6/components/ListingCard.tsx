@@ -1,16 +1,19 @@
+
 import React from 'react';
 import { Listing } from '../types';
-import { MapPinIcon, StarIcon } from './icons';
+import { MapPinIcon, StarIcon, HeartIcon } from './icons';
 
 interface ListingCardProps {
     listing: Listing;
     onClick: (id: string) => void;
+    isFavorite?: boolean;
+    onToggleFavorite?: (id: string) => void;
 }
 
-const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick }) => {
+const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, isFavorite, onToggleFavorite }) => {
     return (
         <div 
-            className="group cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 bg-white flex flex-col"
+            className="group cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 bg-white flex flex-col relative"
             onClick={() => onClick(listing.id)}
         >
             <div className="relative h-56 overflow-hidden">
@@ -19,9 +22,20 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick }) => {
                     alt={listing.title} 
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300"
                 />
-                <div className="absolute top-2 right-2 bg-white/90 text-gray-800 text-sm font-bold px-3 py-1 rounded-full">
+                
+                {/* Favorite Button */}
+                {onToggleFavorite && (
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(listing.id); }}
+                        className="absolute top-2 right-2 p-2 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm transition-colors z-10"
+                    >
+                        <HeartIcon className={`h-5 w-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                    </button>
+                )}
+
+                <div className="absolute top-2 left-2 bg-white/90 text-gray-800 text-xs font-bold px-3 py-1 rounded-full">
                     {listing.pricingType === 'hourly' 
-                        ? `$${listing.pricePerHour}/hour` 
+                        ? `$${listing.pricePerHour}/hr` 
                         : `$${listing.pricePerDay}/day`}
                 </div>
             </div>
