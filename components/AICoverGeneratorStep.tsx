@@ -34,6 +34,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
     const [hasAgreed, setHasAgreed] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // TRUST GATE: Check if user has uploaded real photos
     if (realPhotoCount < 3) {
         return (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center my-6">
@@ -41,8 +42,8 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
                     <AlertIcon className="h-10 w-10" />
                 </div>
                 <h3 className="text-lg font-bold text-amber-900">Unlock AI Hero Generator</h3>
-                <p className="text-amber-800 mt-2 text-sm">
-                    To maintain trust on Goodslister, you must upload at least <strong>3 real photos</strong> of your item's actual condition before you can generate a stunning AI cover image.
+                <p className="text-amber-800 mt-2 text-sm max-w-lg mx-auto">
+                    To maintain trust on Goodslister, you must upload at least <strong>3 real photos</strong> of your item's actual condition before you can generate an AI cover image.
                 </p>
                 <div className="mt-4 inline-flex items-center gap-2 text-amber-700 font-mono text-xs bg-amber-100 px-3 py-1 rounded">
                     <UploadCloudIcon className="h-3 w-3" /> Current count: {realPhotoCount} / 3
@@ -52,7 +53,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ category, r
     }
 
     const constructAIPrompt = () => {
-        // Use user input if available, otherwise fallback to generic
+        // Use user input if available, otherwise fallback to generic based on category
         const subject = itemDetails.trim() 
             ? itemDetails 
             : (category ? `a ${category.toLowerCase().slice(0, -1)}` : "an item");
