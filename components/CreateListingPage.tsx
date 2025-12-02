@@ -105,7 +105,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
     // --- Helpers for Experience Logic ---
     const isCharterStyle = () => {
-        return category === ListingCategory.BOATS || category === ListingCategory.UTVS || (category === ListingCategory.WATER_SPORTS && subcategory.toLowerCase().includes('jet ski'));
+        return category === ListingCategory.BOATS || category === ListingCategory.ATVS_UTVS || (category === ListingCategory.WATER_SPORTS && subcategory.toLowerCase().includes('jet ski'));
     };
 
     const isGuideStyle = () => {

@@ -16,6 +16,7 @@ import LoginModal from './components/LoginModal';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
+import FloridaCompliancePage from './components/FloridaCompliancePage';
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -105,6 +106,35 @@ const App: React.FC = () => {
     const handleSearch = (criteria: FilterCriteria) => {
         setInitialExploreFilters(criteria);
         handleNavigate('explore');
+    };
+
+    const handleToggleFavorite = async (listingId: string) => {
+        if (!session) {
+            setIsLoginModalOpen(true);
+            return;
+        }
+
+        const currentFavorites = session.favorites || [];
+        let newFavorites;
+        
+        if (currentFavorites.includes(listingId)) {
+            newFavorites = currentFavorites.filter(id => id !== listingId);
+            addNotification('info', 'Removed from Saved', 'Listing removed from your favorites.');
+        } else {
+            newFavorites = [...currentFavorites, listingId];
+            addNotification('success', 'Saved!', 'Listing added to your favorites.');
+        }
+
+        // Optimistic UI Update
+        const updatedUser = { ...session, favorites: newFavorites };
+        setSession(updatedUser);
+        
+        // Also update the user in the appData list
+        const updatedUsers = appData.users.map((u: User) => u.id === session.id ? updatedUser : u);
+        updateAppData({ users: updatedUsers });
+
+        // Persist
+        await mockApi.toggleFavorite(session.id, listingId);
     };
 
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
@@ -251,17 +281,79 @@ const App: React.FC = () => {
         }, 1500);
     };
 
-    const handleCreateBooking = async (listingId: string, startDate: Date, endDate: Date, totalPrice: number, paymentMethod: 'platform' | 'direct', protectionType: 'waiver' | 'insurance', protectionFee: number): Promise<Booking> => {
+    const handleCreateBooking = async (
+        listingId: string, 
+        startDate: Date, 
+        endDate: Date, 
+        totalPrice: number, 
+        amountPaidOnline: number, 
+        balanceDueOnSite: number, 
+        protectionType: 'waiver' | 'insurance', 
+        protectionFee: number
+    ): Promise<Booking> => {
         if (!session) {
             throw new Error("You must be logged in to book an item.");
         }
+        
         // Pass all new parameters to the API/Mock layer
-        const result = await mockApi.createBooking(listingId, session.id, startDate, endDate, totalPrice, paymentMethod, protectionType, protectionFee);
+        const result = await mockApi.createBooking(
+            listingId, 
+            session.id, 
+            startDate, 
+            endDate, 
+            totalPrice, 
+            amountPaidOnline,
+            balanceDueOnSite,
+            'platform', // paymentMethod defaulted to platform for online portion
+            protectionType, 
+            protectionFee
+        );
         
         // Update app state with the new booking and the updated listing (with new bookedDates)
+        const updatedBookings = [...appData.bookings, result.newBooking];
+        const updatedListings = appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l);
+        
+        // --- NEW: INJECT SYSTEM MESSAGE FOR BAREBOAT CONTRACT ---
+        // Find existing conversation or create new one
+        let conversation = appData.conversations.find((c: Conversation) => 
+            c.listing.id === listingId && c.participants[session.id] && c.participants[result.updatedListing.owner.id]
+        );
+
+        if (!conversation) {
+            conversation = {
+                id: `convo-${Date.now()}`,
+                listing: result.updatedListing,
+                participants: {
+                    [session.id]: session,
+                    [result.updatedListing.owner.id]: result.updatedListing.owner
+                },
+                messages: [],
+            };
+            // Note: We'll add this to the list below
+        }
+
+        const systemMessage: Message = {
+            id: `sys-msg-${Date.now()}`,
+            senderId: 'system-bot', // Special ID for system messages
+            text: "Hi! Here is the standard rental agreement template for your trip: [Link to PDF](/bareboat_rental_agreement.pdf). Please review and sign it together at pickup.",
+            timestamp: new Date().toISOString(),
+        };
+
+        const updatedConversationWithMsg = { 
+            ...conversation, 
+            messages: [...conversation.messages, systemMessage] 
+        };
+
+        const finalConversations = conversation 
+            ? appData.conversations.map((c: Conversation) => c.id === conversation.id ? updatedConversationWithMsg : c)
+            : [...appData.conversations, updatedConversationWithMsg];
+
+        mockApi.updateConversations(finalConversations);
+
         updateAppData({
-            bookings: [...appData.bookings, result.newBooking],
-            listings: appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l)
+            bookings: updatedBookings,
+            listings: updatedListings,
+            conversations: finalConversations
         });
 
         // Send Booking Confirmation Email via Resend
@@ -271,7 +363,7 @@ const App: React.FC = () => {
             startDate: format(startDate, 'MMM dd, yyyy'),
             endDate: format(endDate, 'MMM dd, yyyy'),
             totalPrice: totalPrice.toFixed(2),
-            paymentMethod
+            paymentMethod: 'platform'
         }).then(success => {
             if (success) {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
@@ -340,13 +432,25 @@ const App: React.FC = () => {
         const updatedLogoUrl = await mockApi.updateLogo(newUrl);
         updateAppData({ logoUrl: updatedLogoUrl });
     };
+
+    // OPTIMISTIC UPDATE FIX for Slides
+    // We update local state immediately and then save to DB in background
+    // This prevents the "resetting" issue when editing multiple items quickly
     const handleUpdateSlide = async (id: string, field: keyof HeroSlide, value: string) => {
-        const slideToUpdate = appData.heroSlides.find((s: HeroSlide) => s.id === id);
+        // 1. Update Local State Immediately
+        const updatedSlides = appData.heroSlides.map((s: HeroSlide) => 
+            s.id === id ? { ...s, [field]: value } : s
+        );
+        updateAppData({ heroSlides: updatedSlides });
+
+        // 2. Persist to Backend (Fire and Forget for UI purposes)
+        const slideToUpdate = updatedSlides.find((s: HeroSlide) => s.id === id);
         if(slideToUpdate) {
-            const updatedSlides = await mockApi.updateSlide({ ...slideToUpdate, [field]: value });
-            updateAppData({ heroSlides: updatedSlides });
+            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
+            await mockApi.updateSlide(slideToUpdate);
         }
     };
+
     const handleAddSlide = async () => {
          const newSlide = { id: `slide-${Date.now()}`, title: 'New Slide', subtitle: 'Subtitle', imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723a9ce6890?q=80&w=2070&auto=format&fit=crop' };
          const updatedSlides = await mockApi.addSlide(newSlide);
@@ -356,13 +460,24 @@ const App: React.FC = () => {
         const updatedSlides = await mockApi.deleteSlide(id);
         updateAppData({ heroSlides: updatedSlides });
     };
+
+    // OPTIMISTIC UPDATE FIX for Banners
+    // Identical strategy to slides: update UI first, save later.
     const handleUpdateBanner = async (id: string, field: keyof Banner, value: string) => {
-        const bannerToUpdate = appData.banners.find((b: Banner) => b.id === id);
+        // 1. Update Local State Immediately
+        const updatedBanners = appData.banners.map((b: Banner) => 
+            b.id === id ? { ...b, [field]: value } : b
+        );
+        updateAppData({ banners: updatedBanners });
+
+        // 2. Persist to Backend
+        const bannerToUpdate = updatedBanners.find((b: Banner) => b.id === id);
         if(bannerToUpdate) {
-            const updatedBanners = await mockApi.updateBanner({ ...bannerToUpdate, [field]: value });
-            updateAppData({ banners: updatedBanners });
+            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
+            await mockApi.updateBanner(bannerToUpdate);
         }
     };
+
     const handleAddBanner = async () => {
         const newBanner = { id: `banner-${Date.now()}`, title: 'New Banner', description: 'Description', buttonText: 'Click', imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop' };
         const updatedBanners = await mockApi.addBanner(newBanner);
@@ -421,6 +536,8 @@ const App: React.FC = () => {
                     onListingClick={handleListingClick} 
                     initialFilters={initialExploreFilters}
                     onClearInitialFilters={() => setInitialExploreFilters(null)}
+                    favorites={session?.favorites || []}
+                    onToggleFavorite={handleToggleFavorite}
                 />;
             case 'listingDetail':
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
@@ -430,6 +547,8 @@ const App: React.FC = () => {
                     onStartConversation={handleStartConversation}
                     currentUser={session}
                     onCreateBooking={handleCreateBooking}
+                    isFavorite={session?.favorites?.includes(listing.id) || false}
+                    onToggleFavorite={handleToggleFavorite}
                 /> : <p>Listing not found.</p>;
             case 'createListing':
                 return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} onSubmit={handleCreateListing} />;
@@ -471,10 +590,12 @@ const App: React.FC = () => {
                     listings={listings.filter((l: Listing) => l.owner.id === session.id)} 
                     // Pass both bookings where user is the renter OR the owner
                     bookings={bookings.filter((b: Booking) => b.renterId === session.id || b.listing.owner.id === session.id)}
+                    favoriteListings={listings.filter(l => session.favorites?.includes(l.id))}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
                     onListingClick={handleListingClick}
                     onEditListing={handleEditListingClick}
+                    onToggleFavorite={handleToggleFavorite}
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;
@@ -490,16 +611,23 @@ const App: React.FC = () => {
                 return <TermsPage />;
             case 'privacyPolicy':
                 return <PrivacyPolicyPage />;
+            case 'howItWorks':
+                return <HowItWorksPage />;
+            case 'floridaCompliance':
+                return <FloridaCompliancePage />;
             case 'home':
             default:
                 return <HomePage 
                     onListingClick={handleListingClick} 
                     onCreateListing={() => handleNavigate('createListing')}
                     onSearch={handleSearch}
+                    onNavigate={handleNavigate}
                     listings={listings}
                     heroSlides={heroSlides}
                     banners={banners}
                     categoryImages={categoryImages}
+                    favorites={session?.favorites || []}
+                    onToggleFavorite={handleToggleFavorite}
                 />;
         }
     };

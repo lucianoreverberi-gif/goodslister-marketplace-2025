@@ -47,6 +47,8 @@ interface ListingDetailPageProps {
         protectionType: 'waiver' | 'insurance',
         protectionFee: number
     ) => Promise<Booking>;
+    isFavorite: boolean;
+    onToggleFavorite: (id: string) => void;
 }
 
 const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
@@ -241,7 +243,7 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
 };
 
 
-const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking }) => {
+const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [range, setRange] = useState<DateRange | undefined>();
     const [isBooking, setIsBooking] = useState(false);
@@ -263,7 +265,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         listing.category === ListingCategory.MOTORCYCLES ||
         listing.category === ListingCategory.BOATS ||
         listing.category === ListingCategory.RVS ||
-        listing.category === ListingCategory.UTVS ||
+        listing.category === ListingCategory.ATVS_UTVS ||
         (listing.category === ListingCategory.WATER_SPORTS && listing.subcategory?.toLowerCase().includes('jet ski'));
 
     // Calculate Totals
@@ -396,8 +398,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     <button className="p-2 bg-white/80 rounded-full text-gray-700 hover:bg-white hover:text-gray-900 transition">
                                         <ShareIcon className="h-5 w-5"/>
                                     </button>
-                                     <button className="p-2 bg-white/80 rounded-full text-gray-700 hover:bg-white hover:text-red-500 transition">
-                                        <HeartIcon className="h-5 w-5"/>
+                                     <button 
+                                        className="p-2 bg-white/80 rounded-full text-gray-700 hover:bg-white transition"
+                                        onClick={() => onToggleFavorite(listing.id)}
+                                    >
+                                        <HeartIcon className={`h-5 w-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
                                     </button>
                                 </div>
                             </div>

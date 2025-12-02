@@ -19,6 +19,7 @@ type AdvisoryContent = {
     actionLabel: string;
     icon: React.ElementType;
     externalLink?: { label: string; url: string };
+    gradient: string;
 };
 
 const SmartAdvisory: React.FC<SmartAdvisoryProps> = ({ category, subcategory, location, onEnable, isEnabled }) => {
@@ -32,12 +33,13 @@ const SmartAdvisory: React.FC<SmartAdvisoryProps> = ({ category, subcategory, lo
                 hack: "We use a 'Demise Charter'. You lease the boat to the renter, making them the 'Temporary Owner'. They can then hire you or a crew member separately.",
                 solution: "We automatically generate a digital 'Bareboat Charter Agreement' for your renter to sign at checkout.",
                 actionLabel: "Enable Bareboat Agreement",
-                icon: AnchorIcon
+                icon: AnchorIcon,
+                gradient: "from-blue-50 to-indigo-100"
             };
         }
 
         const isPowersport = 
-            category === ListingCategory.UTVS || 
+            category === ListingCategory.ATVS_UTVS || 
             (category === ListingCategory.WATER_SPORTS && (subcategory.includes('Jet Ski') || subcategory.includes('Motor')));
 
         if (isPowersport) {
@@ -47,7 +49,8 @@ const SmartAdvisory: React.FC<SmartAdvisoryProps> = ({ category, subcategory, lo
                 hack: "Extreme Assumption of Risk. The renter must acknowledge they understand the danger.",
                 solution: "We provide a 'Liability Release & Safety Checklist'. You must confirm you've explained the 'Kill Switch' and safety features before handing over the keys.",
                 actionLabel: "Enable Liability Waiver",
-                icon: ZapIcon
+                icon: ZapIcon,
+                gradient: "from-amber-50 to-orange-100"
             };
         }
 
@@ -58,8 +61,9 @@ const SmartAdvisory: React.FC<SmartAdvisoryProps> = ({ category, subcategory, lo
                 hack: "We structure this as a 'Private Bailment' (borrowing with a fee), but it's still a grey area.",
                 solution: "For total peace of mind, we recommend purchasing a 'Ghost Policy' for the rental period.",
                 actionLabel: "Enable Bailment Contract",
-                externalLink: { label: "Get Spot Insurance at MBA Insurance", url: "#" },
-                icon: LightbulbIcon
+                externalLink: { label: "Get Spot Insurance at MBA Insurance", url: "https://mbainsurance.net/" },
+                icon: LightbulbIcon,
+                gradient: "from-purple-50 to-fuchsia-100"
             };
         }
 
@@ -73,47 +77,71 @@ const SmartAdvisory: React.FC<SmartAdvisoryProps> = ({ category, subcategory, lo
     const Icon = content.icon;
 
     return (
-        <div className="my-8 rounded-xl overflow-hidden border border-indigo-100 shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div className={`my-8 rounded-xl overflow-hidden border border-gray-200 shadow-md bg-gradient-to-br ${content.gradient} animate-in fade-in slide-in-from-top-4 duration-500`}>
             <div className="p-6">
                 <div className="flex items-start gap-4">
-                    <div className="p-3 bg-white rounded-full shadow-sm text-indigo-600">
+                    <div className="p-3 bg-white rounded-full shadow-sm text-gray-700 ring-1 ring-gray-100">
                         <Icon className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-lg font-bold text-indigo-900">{content.title}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="px-2 py-0.5 rounded-full bg-white/80 text-xs font-bold uppercase tracking-wider text-gray-600 border border-gray-200">Smart Advisory</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900">{content.title}</h3>
                         
-                        <div className="mt-3 space-y-3 text-sm text-indigo-800">
-                            <p>{content.text}</p>
+                        <div className="mt-4 space-y-4 text-sm text-gray-800">
+                            <p className="leading-relaxed">{content.text}</p>
                             
-                            <div className="flex items-start gap-2 bg-white/60 p-3 rounded-lg">
+                            <div className="flex items-start gap-3 bg-white/60 p-4 rounded-lg border border-white/50">
                                 <LightbulbIcon className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                                <p><span className="font-bold text-indigo-900">THE HACK:</span> {content.hack}</p>
+                                <div>
+                                    <span className="font-bold text-gray-900 block mb-1">THE HACK:</span>
+                                    <p className="text-gray-700 leading-snug">{content.hack}</p>
+                                </div>
                             </div>
 
-                            <div className="flex items-start gap-2 bg-white/60 p-3 rounded-lg">
+                            <div className="flex items-start gap-3 bg-white/80 p-4 rounded-lg border border-white/50 shadow-sm">
                                 <ShieldCheckIcon className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                                <p><span className="font-bold text-indigo-900">GOODSLISTER SOLUTION:</span> {content.solution}</p>
+                                <div>
+                                    <span className="font-bold text-gray-900 block mb-1">GOODSLISTER SOLUTION:</span>
+                                    <p className="text-gray-700 leading-snug">{content.solution}</p>
+                                </div>
                             </div>
 
                             {content.externalLink && (
-                                <a href={content.externalLink.url} className="inline-flex items-center gap-1 text-indigo-600 font-semibold hover:underline mt-1" onClick={(e) => e.preventDefault()}>
-                                    {content.externalLink.label}
-                                    <ExternalLinkIcon className="h-4 w-4" />
-                                </a>
+                                <div className="pt-1">
+                                    <a 
+                                        href={content.externalLink.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-md text-gray-700 font-semibold hover:bg-gray-50 hover:text-blue-600 transition-colors text-xs"
+                                    >
+                                        {content.externalLink.label}
+                                        <ExternalLinkIcon className="h-3 w-3" />
+                                    </a>
+                                </div>
                             )}
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div className="bg-indigo-100/50 px-6 py-4 border-t border-indigo-100 flex items-center justify-between cursor-pointer hover:bg-indigo-100 transition-colors" onClick={() => onEnable(!isEnabled)}>
+            <div 
+                className={`px-6 py-4 border-t border-gray-200/50 flex items-center justify-between cursor-pointer transition-colors group ${isEnabled ? 'bg-green-50/80' : 'bg-white/50 hover:bg-white/80'}`} 
+                onClick={() => onEnable(!isEnabled)}
+            >
                 <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${isEnabled ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-indigo-300'}`}>
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${isEnabled ? 'bg-green-500 border-green-500 scale-110' : 'bg-white border-gray-300 group-hover:border-gray-400'}`}>
                         {isEnabled && <CheckCircleIcon className="h-4 w-4 text-white" />}
                     </div>
-                    <span className={`font-bold ${isEnabled ? 'text-indigo-900' : 'text-indigo-700'}`}>{content.actionLabel}</span>
+                    <span className={`font-bold text-sm ${isEnabled ? 'text-green-800' : 'text-gray-600 group-hover:text-gray-800'}`}>{content.actionLabel}</span>
                 </div>
-                {isEnabled && <span className="text-xs font-bold text-indigo-600 bg-indigo-200 px-2 py-1 rounded-full uppercase tracking-wide">Active</span>}
+                {isEnabled && (
+                    <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full uppercase tracking-wide animate-in fade-in">
+                        <ShieldCheckIcon className="h-3 w-3" />
+                        Protection Active
+                    </span>
+                )}
             </div>
         </div>
     );

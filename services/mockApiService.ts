@@ -216,6 +216,20 @@ export const registerUser = async (name: string, email: string): Promise<User | 
     }
 };
 
+export const toggleFavorite = async (userId: string, listingId: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/user/toggle-favorite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, listingId }),
+        });
+        return response.ok;
+    } catch (e) {
+        console.error("Toggle favorite failed:", e);
+        return false;
+    }
+};
+
 export const createListing = async (listing: Listing): Promise<boolean> => {
     try {
         const response = await fetch('/api/listings/create', {
@@ -261,6 +275,8 @@ export const createBooking = async (
     startDate: Date, 
     endDate: Date, 
     totalPrice: number, 
+    amountPaidOnline: number,
+    balanceDueOnSite: number,
     paymentMethod: 'platform' | 'direct',
     protectionType: 'waiver' | 'insurance',
     protectionFee: number
@@ -276,6 +292,8 @@ export const createBooking = async (
                 startDate: startDate.toISOString(), 
                 endDate: endDate.toISOString(), 
                 totalPrice, 
+                amountPaidOnline,
+                balanceDueOnSite,
                 paymentMethod,
                 protectionType,
                 protectionFee
@@ -309,6 +327,8 @@ export const createBooking = async (
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
             totalPrice,
+            amountPaidOnline,
+            balanceDueOnSite,
             paymentMethod,
             status: 'confirmed',
             protectionType,
