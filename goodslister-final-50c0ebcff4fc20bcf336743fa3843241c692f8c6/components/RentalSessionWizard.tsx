@@ -14,14 +14,11 @@ import ReviewWizard from './ReviewWizard';
 type WizardPhase = 'IDLE' | 'HANDOVER' | 'ACTIVE' | 'RETURN' | 'COMPLETED';
 
 type WizardStep = 
-    // Handover Steps
     | 'PAYMENT_CHECK'
     | 'ID_SCAN'
     | 'OUTBOUND_INSPECTION'
     | 'HANDOVER_CONFIRM'
-    // Active
     | 'RENTAL_DASHBOARD'
-    // Return Steps
     | 'INBOUND_INSPECTION'
     | 'DAMAGE_ASSESSMENT'
     | 'REVIEW_CLOSE';
@@ -33,23 +30,19 @@ interface RentalSessionWizardProps {
 }
 
 const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onStatusChange, onComplete }) => {
-    // --- State Machine ---
     const [phase, setPhase] = useState<WizardPhase>('IDLE');
     const [step, setStep] = useState<WizardStep>('PAYMENT_CHECK');
     const [isLoading, setIsLoading] = useState(false);
 
-    // --- Data State ---
+    // Data State
     const [balanceConfirmed, setBalanceConfirmed] = useState(false);
     const [idPhoto, setIdPhoto] = useState<string>('');
     const [outboundPhotos, setOutboundPhotos] = useState<InspectionPhoto[]>([]);
     const [inboundPhotos, setInboundPhotos] = useState<InspectionPhoto[]>([]);
     const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
     const [showIdWarning, setShowIdWarning] = useState(false);
-
-    // --- Inspection Logic ---
     const [inspectionIndex, setInspectionIndex] = useState(0);
     
-    // Get required photos based on category
     const getInspectionPoints = () => {
         const cat = booking.listing.category;
         if (cat === ListingCategory.BOATS || cat === ListingCategory.WATER_SPORTS) {
@@ -68,7 +61,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
     
     const inspectionPoints = getInspectionPoints();
 
-    // --- Initial State Check ---
     useEffect(() => {
         if (booking.status === 'confirmed') {
             setPhase('HANDOVER');
@@ -81,11 +73,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
         }
     }, [booking.status]);
 
-    // --- Handlers ---
-
     const handleStartRental = async () => {
         setIsLoading(true);
-        // Simulate API call to start rental
         setTimeout(() => {
             onStatusChange('active');
             setPhase('ACTIVE');
@@ -97,12 +86,11 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
     const handleEndRental = () => {
         setPhase('RETURN');
         setStep('INBOUND_INSPECTION');
-        setInspectionIndex(0); // Reset for return flow
+        setInspectionIndex(0); 
     };
 
     const handleSessionFinished = async () => {
         setIsLoading(true);
-        // Simulate API call to complete booking and release/freeze deposit
         setTimeout(() => {
             onStatusChange('completed');
             setPhase('COMPLETED');
@@ -110,8 +98,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
             setIsLoading(false);
         }, 2000);
     };
-
-    // --- Helper Components ---
 
     const CountdownTimer = () => {
         const [timeLeft, setTimeLeft] = useState('');
@@ -129,7 +115,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                     const minutes = Math.floor((diff % 3600) / 60);
                     setTimeLeft(`${hours}h ${minutes}m remaining`);
                 }
-            }, 60000); // Update every minute
+            }, 60000); 
             return () => clearInterval(interval);
         }, []);
 
@@ -139,8 +125,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
             </div>
         );
     };
-
-    // --- RENDERERS ---
 
     const renderPaymentCheck = () => {
         const balanceDue = booking.balanceDueOnSite || 0;
@@ -228,7 +212,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
         const point = inspectionPoints[inspectionIndex];
         const isOutbound = type === 'outbound';
         
-        // Ghost Image Logic for Return Phase
         const ghostImage = !isOutbound 
             ? outboundPhotos.find(p => p.angleId === point.id)?.url 
             : null;
@@ -239,8 +222,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                 angleId: point.id,
                 angleLabel: point.label,
                 timestamp: new Date().toISOString(),
-                takenByUserId: 'host', // Simulated
-                latitude: 25.7617, // Simulated GPS
+                takenByUserId: 'host', 
+                latitude: 25.7617, 
                 longitude: -80.1918
             };
 
@@ -250,7 +233,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                 setInboundPhotos(prev => [...prev, newPhoto]);
             }
 
-            // Advance or Finish
             if (inspectionIndex < inspectionPoints.length - 1) {
                 setInspectionIndex(prev => prev + 1);
             } else {
@@ -270,7 +252,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                     </span>
                 </div>
 
-                {/* GHOST COMPARISON VIEW (Only for Return) */}
                 {ghostImage && (
                     <div className="mb-4 bg-gray-100 rounded-lg p-2 border border-dashed border-gray-300">
                         <p className="text-xs font-bold text-gray-500 uppercase mb-1">Reference (Handover):</p>
@@ -392,15 +373,10 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
     );
 
     const renderReviewClose = () => {
-        // If damage was reported, show a warning before proceeding to review
-        if (damageVerdict === 'damage') {
-             // We can still show review, but acknowledge the damage case
-        }
-
         return (
             <ReviewWizard 
                 bookingId={booking.id}
-                authorId={booking.listing.owner.id} // Assuming Host is using this Wizard
+                authorId={booking.listing.owner.id} 
                 targetId={booking.renterId}
                 targetName={`Renter (${booking.renterId})`}
                 role="HOST"
@@ -408,8 +384,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
             />
         );
     };
-
-    // --- MAIN RENDER ---
 
     const getProgress = () => {
         if (phase === 'HANDOVER') return 25;
@@ -420,7 +394,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
 
     return (
         <div className="bg-gray-50 min-h-screen flex flex-col">
-            {/* Wizard Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 py-4">
                 <div className="container mx-auto max-w-md">
                     <div className="flex items-center justify-between mb-2">
@@ -429,7 +402,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                             {phase}
                         </span>
                     </div>
-                    {/* Progress Bar */}
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div 
                             className="h-full bg-cyan-600 transition-all duration-500 ease-out" 
@@ -439,7 +411,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                 </div>
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 container mx-auto max-w-md p-6">
                 {step === 'PAYMENT_CHECK' && renderPaymentCheck()}
                 {step === 'ID_SCAN' && renderIdScan()}

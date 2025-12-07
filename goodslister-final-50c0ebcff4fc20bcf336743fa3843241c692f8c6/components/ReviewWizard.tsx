@@ -4,8 +4,8 @@ import { StarIcon, CheckCircleIcon, MessageSquareIcon, ShieldCheckIcon, AlertIco
 
 interface ReviewWizardProps {
     bookingId: string;
-    authorId: string; // ID of who is writing
-    targetId: string; // ID of who is being reviewed
+    authorId: string; 
+    targetId: string; 
     targetName: string;
     role: 'HOST' | 'RENTER';
     onComplete: () => void;
@@ -20,9 +20,9 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
 
     // Metrics State
     const [metrics, setMetrics] = useState({
-        metric1: 0, // Host: Care of Item / Renter: Accuracy
-        metric2: 0, // Host: Punctuality / Renter: Cleanliness
-        metric3: 0, // Host: Communication / Renter: Safety
+        metric1: 0, 
+        metric2: 0, 
+        metric3: 0,
     });
 
     const isHost = role === 'HOST';
@@ -47,8 +47,6 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
-        
-        // Map generic metric state to DB columns based on role
         const payload = {
             bookingId,
             authorId,
@@ -57,11 +55,10 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
             rating,
             comment,
             privateNote,
-            // Conditional mapping
             careRating: isHost ? metrics.metric1 : undefined,
             cleanRating: !isHost ? metrics.metric2 : undefined,
             accuracyRating: !isHost ? metrics.metric1 : undefined,
-            safetyRating: !isHost ? metrics.metric3 : undefined, // Mapping "Helpfulness" to safety bucket for simplicity or add new col
+            safetyRating: !isHost ? metrics.metric3 : undefined, 
         };
 
         try {
@@ -72,7 +69,6 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
             });
 
             if (response.ok) {
-                const data = await response.json();
                 onComplete();
             } else {
                 alert("Failed to submit review.");
@@ -104,7 +100,6 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
 
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-w-lg w-full mx-auto my-8">
-            {/* Header with Progress */}
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="font-bold text-gray-800">Review {targetName}</h3>
                 <div className="flex gap-1">
@@ -124,9 +119,7 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                             <h2 className="text-2xl font-bold text-gray-900">How was your experience?</h2>
                             <p className="text-gray-500 mt-2">Rate your {isHost ? 'renter' : 'adventure'} overall.</p>
                         </div>
-                        
                         <StarRatingInput value={rating} onChange={setRating} />
-
                         <button 
                             onClick={() => setStep(2)}
                             disabled={rating === 0}
@@ -141,9 +134,7 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
                         <div className="text-center">
                             <h2 className="text-xl font-bold text-gray-900">Details Matter</h2>
-                            <p className="text-sm text-gray-500">Help the community with specifics.</p>
                         </div>
-
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <label className="block text-sm font-bold text-gray-700">{labels.m1}</label>
@@ -158,7 +149,6 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                                 <StarRatingInput value={metrics.metric3} onChange={(v) => setMetrics({...metrics, metric3: v})} size="medium" />
                             </div>
                         </div>
-
                         <div className="flex gap-4">
                             <button onClick={() => setStep(1)} className="px-4 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl">Back</button>
                             <button 
@@ -177,7 +167,6 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                         <div className="text-center mb-6">
                             <h2 className="text-xl font-bold text-gray-900">Final Thoughts</h2>
                         </div>
-
                         <div>
                             <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
                                 <MessageSquareIcon className="h-4 w-4 text-cyan-600" />
@@ -190,7 +179,6 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent min-h-[100px]"
                             />
                         </div>
-
                         <div>
                             <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
                                 <ShieldCheckIcon className="h-4 w-4 text-gray-500" />
@@ -203,14 +191,6 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent bg-gray-50 min-h-[80px]"
                             />
                         </div>
-
-                        <div className="bg-blue-50 p-4 rounded-lg flex gap-3 items-start">
-                            <AlertIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-blue-800 leading-relaxed">
-                                <strong>Double-Blind System:</strong> Your review will be hidden until {targetName} submits theirs, or until 14 days have passed. This ensures honest, unbiased feedback.
-                            </p>
-                        </div>
-
                         <div className="flex gap-4 pt-2">
                             <button onClick={() => setStep(2)} className="px-4 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl">Back</button>
                             <button 

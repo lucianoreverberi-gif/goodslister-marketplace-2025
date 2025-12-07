@@ -1,39 +1,61 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { Message } from '../types/chat';
+import { useState, useEffect, useRef } from 'react';
+import { Message, Conversation } from '../types/chat';
 
-export const useChatSocket = (conversationId: string | null) => {
-  const [isTyping, setIsTyping] = useState(false);
+export const useChatSocket = (currentUserId: string, conversationId: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  
+  // --- POLLING LOGIC ---
+  const fetchMessages = async () => {
+    if (!currentUserId) return;
+    
+    try {
+        const response = await fetch('/api/chat/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId }),
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const conversations = data.conversations;
+            
+            // Filter messages for the ACTIVE conversation
+            if (conversationId) {
+                const activeConvo = conversations.find((c: any) => c.id === conversationId);
+                if (activeConvo && activeConvo.messages) {
+                    const uiMessages: Message[] = activeConvo.messages.map((m: any) => ({
+                        id: m.id,
+                        senderId: m.senderId === currentUserId ? 'me' : m.senderId,
+                        text: m.text,
+                        originalText: m.text,
+                        timestamp: new Date(m.timestamp),
+                        status: 'read',
+                        type: 'text'
+                    }));
+                    setMessages(uiMessages);
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Chat sync error", e);
+    }
+  };
 
-  // Simulation: Receive a message from the "server"
-  const simulateReceiveMessage = useCallback((text: string, originalLang: string) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        senderId: 'partner',
-        text: text,
-        originalText: text,
-        translatedText: "This is a simulated translation of the incoming message.", // Mock AI response
-        detectedLanguage: originalLang,
-        timestamp: new Date(),
-        status: 'read',
-        type: 'text',
-      };
-      setMessages((prev) => [...prev, newMessage]);
-      
-      // Visual notification
-      if (document.hidden) {
-        document.title = `(1) New Message | Goodslister`;
-      }
-    }, 3000); // 3 second delay to simulate typing
-  }, []);
+  // Poll every 3 seconds
+  useEffect(() => {
+    fetchMessages(); // Initial fetch
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [currentUserId, conversationId]);
 
-  const sendMessage = (text: string) => {
+
+  const sendMessage = async (text: string) => {
+    // Optimistic Update
+    const tempId = Date.now().toString();
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: tempId,
       senderId: 'me',
       text,
       originalText: text,
@@ -42,35 +64,27 @@ export const useChatSocket = (conversationId: string | null) => {
       type: 'text',
     };
     setMessages((prev) => [...prev, newMessage]);
-    
-    // Simulate a reply
-    if (Math.random() > 0.5) {
-        simulateReceiveMessage("Hola, ¿está disponible todavía?", "es");
+
+    // Send to Backend
+    try {
+        await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                conversationId,
+                senderId: currentUserId,
+                text
+            })
+        });
+    } catch (e) {
+        console.error("Failed to send", e);
     }
   };
-
-  // Reset messages when changing conversation (Mock logic only)
-  useEffect(() => {
-    if (conversationId) {
-        // Load mock history
-        setMessages([
-            {
-                id: '1',
-                senderId: 'partner',
-                text: 'Is this item still available?',
-                originalText: 'Is this item still available?',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60),
-                status: 'read',
-                type: 'text'
-            }
-        ]);
-    }
-  }, [conversationId]);
 
   return {
     messages,
     sendMessage,
-    isTyping,
+    isTyping: false,
     isConnected: true
   };
 };

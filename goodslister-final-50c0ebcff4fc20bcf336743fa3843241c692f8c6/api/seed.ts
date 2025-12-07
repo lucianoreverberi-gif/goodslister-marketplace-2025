@@ -63,7 +63,7 @@ export default async function handler(
       );
     `;
 
-    // 3. Create Bookings Table with Split Payment support
+    // 3. Create Bookings Table
     await sql`
         CREATE TABLE IF NOT EXISTS bookings (
             id VARCHAR(255) PRIMARY KEY,
@@ -121,6 +121,34 @@ export default async function handler(
         );
     `;
 
+    // 5. CHAT SYSTEM TABLES (Real-time Persistence)
+    await sql`
+        CREATE TABLE IF NOT EXISTS conversations (
+            id VARCHAR(255) PRIMARY KEY,
+            listing_id VARCHAR(255) REFERENCES listings(id),
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
+    await sql`
+        CREATE TABLE IF NOT EXISTS conversation_participants (
+            conversation_id VARCHAR(255) REFERENCES conversations(id),
+            user_id VARCHAR(255) REFERENCES users(id),
+            PRIMARY KEY (conversation_id, user_id)
+        );
+    `;
+
+    await sql`
+        CREATE TABLE IF NOT EXISTS messages (
+            id VARCHAR(255) PRIMARY KEY,
+            conversation_id VARCHAR(255) REFERENCES conversations(id),
+            sender_id VARCHAR(255) REFERENCES users(id),
+            content TEXT,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
     await sql`
         CREATE TABLE IF NOT EXISTS hero_slides (
             id VARCHAR(255) PRIMARY KEY,
@@ -146,7 +174,7 @@ export default async function handler(
         CREATE TABLE IF NOT EXISTS inspections (
             id VARCHAR(255) PRIMARY KEY,
             booking_id VARCHAR(255) REFERENCES bookings(id),
-            status VARCHAR(50), -- 'pending_handover', 'active', 'pending_return', 'completed', 'disputed'
+            status VARCHAR(50), 
             handover_photos JSONB, 
             return_photos JSONB,
             damage_reported BOOLEAN DEFAULT FALSE,
@@ -171,17 +199,15 @@ export default async function handler(
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
-        // Migration for bookings table split payment
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
-        // Migration for favorites
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
     } catch (e) {
         console.log("Migration skipped", e);
     }
 
     // ... (Insert Mock Data logic remains the same)
-    // 4. Insert Mock Users (Only if table is empty to avoid duplicates on re-runs)
+    // 4. Insert Mock Users
     const { rows: userRows } = await sql`SELECT count(*) FROM users`;
     if (parseInt(userRows[0].count) === 0) {
         for (const user of mockUsers) {

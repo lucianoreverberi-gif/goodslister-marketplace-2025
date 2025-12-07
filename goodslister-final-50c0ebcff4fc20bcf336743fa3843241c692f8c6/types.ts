@@ -11,10 +11,9 @@ export enum ListingCategory {
     ATVS_UTVS = "ATVs & UTVs",
 }
 
-// NEW: Define the Risk Tiers for the Hybrid Strategy
 export enum RiskTier {
-    TIER_1_SOFT_GOODS = "SOFT_GOODS",       // Internal Damage Waiver
-    TIER_2_POWERSPORTS = "POWERSPORTS"      // External Insurance
+    TIER_1_SOFT_GOODS = "SOFT_GOODS",       
+    TIER_2_POWERSPORTS = "POWERSPORTS"      
 }
 
 export type ListingType = 'rental' | 'experience';
@@ -30,12 +29,12 @@ export interface User {
     avatarUrl: string;
     isEmailVerified?: boolean;
     isPhoneVerified?: boolean;
-    isIdVerified?: boolean; // Important for Tier 2
-    licenseVerified?: boolean; // NEW: Specific for Powersports/Marine
+    isIdVerified?: boolean;
+    licenseVerified?: boolean;
     averageRating?: number;
     totalReviews?: number;
     status?: 'active' | 'suspended';
-    favorites: string[]; // List of Listing IDs
+    favorites: string[];
 }
 
 export interface Session extends User {
@@ -69,21 +68,16 @@ export interface Listing {
     bookedDates?: string[];
     ownerRules?: string;
     approvalStatus?: 'pending' | 'approved' | 'rejected';
-    // NEW: Hardware check for Tier 2 Assets
     hasGpsTracker?: boolean;
-    
-    // NEW: Safety & Legal Configuration
     hasCommercialInsurance?: boolean;
     securityDeposit?: number;
-
-    // NEW: Experience & Hosting Fields
-    listingType?: ListingType; // 'rental' or 'experience'
+    listingType?: ListingType;
     operatorLicenseId?: string;
     fuelPolicy?: 'included' | 'extra';
     skillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'all_levels';
     whatsIncluded?: string;
     itinerary?: string;
-    priceUnit?: PriceUnit; // 'item' (default), 'person', 'group'
+    priceUnit?: PriceUnit;
 }
 
 export interface HeroSlide {
@@ -113,7 +107,7 @@ export interface Message {
 
 export interface Conversation {
     id: string;
-    participants: { [key: string]: User }; // participantId -> User object
+    participants: { [key: string]: User };
     listing: Listing;
     messages: Message[];
 }
@@ -128,28 +122,19 @@ export interface Booking {
     startDate: string;
     endDate: string;
     totalPrice: number;
-    
-    // REFACTORED: Split protection logic
     protectionType: 'waiver' | 'insurance'; 
-    protectionFee: number; // The 15% or the $35/day
-    insurancePlan?: 'standard' | 'essential' | 'premium'; // Deprecated/Optional now
-    
-    // NEW: Split Payment Fields
-    amountPaidOnline: number; // Service Fee + Protection
-    balanceDueOnSite: number; // Base Rental Price (Paid to host)
-
-    // NEW: Legal Contract Signature
+    protectionFee: number;
+    insurancePlan?: 'standard' | 'essential' | 'premium';
+    amountPaidOnline: number;
+    balanceDueOnSite: number;
     contractSignature?: {
         signedBy: string;
         signedAt: string;
         contractType: string;
     };
-
-    paymentMethod?: 'platform' | 'direct'; // Kept for legacy/analytics, but now mostly 'split'
+    paymentMethod?: 'platform' | 'direct';
     status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
     inspectionResult?: 'clean' | 'damaged';
-    
-    // NEW: Inspection Tracking
     hasHandoverInspection?: boolean;
     hasReturnInspection?: boolean;
 }
@@ -176,7 +161,6 @@ export interface Coupon {
     status: 'active' | 'expired';
 }
 
-// NEW: Inspection Interfaces
 export interface InspectionPhoto {
     url: string;
     angleId: string;
@@ -204,18 +188,15 @@ export interface Review {
     id: string;
     bookingId: string;
     authorId: string;
-    targetId: string; // The user being reviewed
+    targetId: string; 
     role: 'HOST' | 'RENTER';
-    rating: number; // 1-5
-    comment: string; // Public
-    privateNote?: string; // Private
-    
-    // Specific Metrics (Optional depending on role)
-    careRating?: number;    // Renter metric
-    cleanRating?: number;   // Renter metric
-    accuracyRating?: number; // Host metric
-    safetyRating?: number;   // Host metric
-    
+    rating: number; 
+    comment: string; 
+    privateNote?: string; 
+    careRating?: number;    
+    cleanRating?: number;   
+    accuracyRating?: number; 
+    safetyRating?: number;   
     status: ReviewStatus;
     createdAt: string;
 }

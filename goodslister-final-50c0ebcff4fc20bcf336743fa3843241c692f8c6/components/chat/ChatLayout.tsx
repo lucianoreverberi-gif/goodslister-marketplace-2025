@@ -4,49 +4,95 @@ import ConversationList from './ConversationList';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useChatSocket } from '../../hooks/useChatSocket';
-import { Conversation, User } from '../../types/chat';
-import { Sparkles, ArrowLeft, MoreVertical } from 'lucide-react';
-
-// MOCK DATA
-const MOCK_USER: User = { id: 'me', name: 'John Doe', avatar: '', isOnline: true, locale: 'en-US' };
-const MOCK_CONVOS: Conversation[] = [
-  {
-    id: '1',
-    participant: { id: 'p1', name: 'Maria Garcia', avatar: 'https://i.pravatar.cc/150?u=1', isOnline: true, locale: 'es-MX' },
-    lastMessage: { id: 'm1', senderId: 'p1', text: 'Hola, ¿está disponible?', originalText: 'Hola', timestamp: new Date(), status: 'read', type: 'text' },
-    unreadCount: 2,
-  },
-  {
-    id: '2',
-    participant: { id: 'p2', name: 'Pierre Dubois', avatar: 'https://i.pravatar.cc/150?u=2', isOnline: false, locale: 'fr-FR' },
-    lastMessage: { id: 'm2', senderId: 'me', text: 'See you tomorrow!', originalText: 'See you tomorrow!', timestamp: new Date(), status: 'delivered', type: 'text' },
-    unreadCount: 0,
-  }
-];
+import { Conversation, User } from '../../types/chat'; 
+import { Sparkles, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
+import * as mockApi from '../../services/mockApiService';
 
 const ChatLayout: React.FC = () => {
   const [selectedConvoId, setSelectedConvoId] = useState<string | null>(null);
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
+  
+  // Real Data State
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
-  // Hook for window resize listener
+  // 1. Initialize User & Fetch Conversations
   useEffect(() => {
+    const init = async () => {
+        const appData = await mockApi.fetchAllData(); 
+        // HACK for Demo: Use user-1 (Carlos) if no prop provided
+        const loggedInUser = appData.users[0]; 
+        setCurrentUser(loggedInUser);
+
+        // Fetch Conversations for this user
+        try {
+            const res = await fetch('/api/chat/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: loggedInUser.id })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                
+                // Map Backend Conversation to UI Conversation
+                const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
+                     const otherId = Object.keys(c.participants).find(id => id !== loggedInUser.id);
+                     const otherUser = c.participants[otherId || ''];
+                     const lastMsg = c.messages[c.messages.length - 1];
+
+                     return {
+                         id: c.id,
+                         participant: {
+                             id: otherUser?.id || 'unknown',
+                             name: otherUser?.name || 'Unknown User',
+                             avatar: otherUser?.avatarUrl || '',
+                             isOnline: false,
+                             locale: 'en-US'
+                         },
+                         lastMessage: lastMsg ? {
+                             id: lastMsg.id,
+                             senderId: lastMsg.senderId,
+                             text: lastMsg.text,
+                             originalText: lastMsg.text,
+                             timestamp: new Date(lastMsg.timestamp),
+                             status: 'read',
+                             type: 'text'
+                         } : { 
+                             id: 'sys', senderId: 'sys', text: 'New conversation', originalText: '', timestamp: new Date(), status: 'read', type: 'system' 
+                         },
+                         unreadCount: 0
+                     };
+                });
+                setConversations(mappedConvos);
+            }
+        } catch (e) {
+            console.error("Error loading chat list", e);
+        }
+    };
+    init();
+    
+    // Set up polling for the conversation LIST
+    const interval = setInterval(init, 5000); 
+
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
-    handleResize(); // Initial check
+    handleResize(); 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+        window.removeEventListener('resize', handleResize);
+        clearInterval(interval);
+    };
   }, []);
 
-  // Connect to our custom hook
-  const { messages, sendMessage, isTyping } = useChatSocket(selectedConvoId);
+  // Connect to our custom hook for the ACTIVE conversation messages
+  const { messages, sendMessage } = useChatSocket(currentUser?.id, selectedConvoId);
 
-  const activeConvo = MOCK_CONVOS.find(c => c.id === selectedConvoId);
+  const activeConvo = conversations.find(c => c.id === selectedConvoId);
 
-  // UI LOGIC: Mobile vs Desktop
-  // On Desktop: Always show list. Show chat if selected.
-  // On Mobile: Show List IF no conversation selected. Show Chat IF conversation selected.
   const showList = !isMobileView || (isMobileView && !selectedConvoId);
   const showChat = !isMobileView || (isMobileView && selectedConvoId);
+
+  if (!currentUser) return <div className="p-10 text-center">Loading chat...</div>;
 
   return (
     <div className="flex h-[calc(100vh-64px)] bg-gray-50 overflow-hidden rounded-lg shadow-xl border border-gray-200 m-4 max-w-7xl mx-auto">
@@ -54,7 +100,7 @@ const ChatLayout: React.FC = () => {
       {/* LEFT SIDEBAR */}
       <div className={`${showList ? 'block' : 'hidden'} w-full md:w-[350px] lg:w-[400px] h-full`}>
         <ConversationList 
-          conversations={MOCK_CONVOS} 
+          conversations={conversations} 
           activeId={selectedConvoId} 
           onSelect={setSelectedConvoId} 
         />
@@ -62,12 +108,10 @@ const ChatLayout: React.FC = () => {
 
       {/* RIGHT CHAT AREA */}
       <div className={`${showChat ? 'flex' : 'hidden'} flex-1 flex-col h-full bg-[#efeae2] relative`}>
-        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/subtle-dark-vertical.png')]"></div>
 
         {activeConvo ? (
           <>
-            {/* CHAT HEADER */}
             <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-3">
                 {isMobileView && (
@@ -86,15 +130,11 @@ const ChatLayout: React.FC = () => {
                   <h3 className="font-bold text-slate-800 text-sm md:text-base">
                     {activeConvo.participant.name}
                   </h3>
-                  <p className="text-xs text-green-600 font-medium">
-                    {isTyping ? 'Typing...' : (activeConvo.participant.isOnline ? 'Online' : 'Offline')}
-                  </p>
+                  <p className="text-xs text-green-600 font-medium">Online</p>
                 </div>
               </div>
 
-              {/* ACTIONS & TRANSLATION TOGGLE */}
               <div className="flex items-center gap-2 md:gap-4">
-                {/* AI Toggle */}
                 <button 
                   onClick={() => setTranslationEnabled(!translationEnabled)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border
@@ -113,15 +153,7 @@ const ChatLayout: React.FC = () => {
               </div>
             </header>
 
-            {/* MESSAGES SCROLL AREA */}
             <div className="flex-1 overflow-y-auto p-4 z-0">
-                {/* System Message */}
-                <div className="flex justify-center mb-6">
-                    <span className="bg-yellow-100 text-yellow-800 text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide border border-yellow-200">
-                        Listing: {activeConvo.id === '1' ? 'Sea-Doo Spark 2023' : 'Trek Mountain Bike'}
-                    </span>
-                </div>
-
                 {messages.map((msg) => (
                   <MessageBubble 
                     key={msg.id} 
@@ -130,32 +162,17 @@ const ChatLayout: React.FC = () => {
                     globalTranslationEnabled={translationEnabled}
                   />
                 ))}
-                
-                {/* Typing Indicator */}
-                {isTyping && (
-                  <div className="flex justify-start mb-4 animate-in fade-in slide-in-from-left-2">
-                    <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm border border-gray-200">
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></span>
-                      </div>
-                    </div>
-                  </div>
-                )}
             </div>
 
-            {/* INPUT AREA */}
             <ChatInput onSendMessage={sendMessage} />
           </>
         ) : (
-          /* EMPTY STATE */
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
             <div className="w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
               <span className="text-4xl">👋</span>
             </div>
             <h3 className="text-lg font-bold text-gray-600">Select a conversation</h3>
-            <p className="max-w-xs mt-2 text-sm">Choose a chat from the left to start messaging your renters or hosts.</p>
+            <p className="max-w-xs mt-2 text-sm">Choose a chat from the left to start messaging.</p>
           </div>
         )}
       </div>

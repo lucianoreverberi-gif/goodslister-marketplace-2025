@@ -30,8 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const id = `rev-${Date.now()}`;
     let status = 'PENDING';
 
-    // 1. Check if the OTHER party has already left a review for this booking
-    // If yes, we "unlock" (PUBLISH) both reviews immediately.
+    // 1. Check if the OTHER party has already left a review
     const existingReviews = await sql`
         SELECT id FROM reviews 
         WHERE booking_id = ${bookingId} AND author_id != ${authorId}
@@ -39,15 +38,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (existingReviews.rows.length > 0) {
         status = 'PUBLISHED';
-        // Unlock the existing review(s) as well
-        await sql`
-            UPDATE reviews 
-            SET status = 'PUBLISHED' 
-            WHERE booking_id = ${bookingId}
-        `;
+        // Unlock existing
+        await sql`UPDATE reviews SET status = 'PUBLISHED' WHERE booking_id = ${bookingId}`;
     }
 
-    // 2. Insert the new review
+    // 2. Insert new review
     await sql`
         INSERT INTO reviews (
             id, booking_id, author_id, target_id, role, rating, comment, private_note,
@@ -61,32 +56,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         )
     `;
 
-    // 3. If published, update the target user's aggregate rating
+    // 3. Update Aggregate Rating
     if (status === 'PUBLISHED') {
-        // Recalculate average for the target user
         const stats = await sql`
             SELECT AVG(rating) as avg_rating, COUNT(*) as count 
             FROM reviews 
             WHERE target_id = ${targetId} AND status = 'PUBLISHED'
         `;
-        
         if (stats.rows.length > 0) {
             const newAvg = parseFloat(stats.rows[0].avg_rating).toFixed(2);
             const newCount = stats.rows[0].count;
-            await sql`
-                UPDATE users 
-                SET average_rating = ${newAvg}, total_reviews = ${newCount} 
-                WHERE id = ${targetId}
-            `;
+            await sql`UPDATE users SET average_rating = ${newAvg}, total_reviews = ${newCount} WHERE id = ${targetId}`;
         }
     }
 
-    return res.status(200).json({ 
-        success: true, 
-        reviewId: id, 
-        status: status,
-        message: status === 'PUBLISHED' ? "Review published! Both reviews are now visible." : "Review submitted. It will be visible once the other party reviews or in 14 days."
-    });
+    return res.status(200).json({ success: true, reviewId: id, status: status });
 
   } catch (error) {
     console.error('Create review error:', error);
