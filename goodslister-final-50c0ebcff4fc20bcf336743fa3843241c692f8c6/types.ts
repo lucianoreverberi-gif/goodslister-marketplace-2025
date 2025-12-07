@@ -196,3 +196,26 @@ export interface Inspection {
     damageReported: boolean;
     notes: string;
 }
+
+// NEW: Review Interfaces
+export type ReviewStatus = 'PENDING' | 'PUBLISHED' | 'HIDDEN';
+
+export interface Review {
+    id: string;
+    bookingId: string;
+    authorId: string;
+    targetId: string; // The user being reviewed
+    role: 'HOST' | 'RENTER';
+    rating: number; // 1-5
+    comment: string; // Public
+    privateNote?: string; // Private
+    
+    // Specific Metrics (Optional depending on role)
+    careRating?: number;    // Renter metric
+    cleanRating?: number;   // Renter metric
+    accuracyRating?: number; // Host metric
+    safetyRating?: number;   // Host metric
+    
+    status: ReviewStatus;
+    createdAt: string;
+}

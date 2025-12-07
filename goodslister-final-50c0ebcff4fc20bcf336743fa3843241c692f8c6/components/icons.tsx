@@ -661,3 +661,12 @@ export const InfoIcon: React.FC<IconProps> = (props) => (
         <line x1="12" y1="8" x2="12.01" y2="8"></line>
     </svg>
 );
+
+export const FuelIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <line x1="3" y1="22" x2="15" y2="22"></line>
+        <line x1="4" y1="9" x2="14" y2="9"></line>
+        <path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path>
+        <path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42l-1.82-1.82"></path>
+    </svg>
+);

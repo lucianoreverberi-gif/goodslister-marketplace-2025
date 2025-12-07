@@ -21,7 +21,8 @@ export default async function handler(
         is_id_verified BOOLEAN DEFAULT FALSE,
         license_verified BOOLEAN DEFAULT FALSE,
         average_rating NUMERIC(3, 2) DEFAULT 0,
-        total_reviews INTEGER DEFAULT 0
+        total_reviews INTEGER DEFAULT 0,
+        favorites TEXT[] DEFAULT ARRAY[]::TEXT[]
       );
     `;
 
@@ -97,6 +98,29 @@ export default async function handler(
         );
     `;
 
+    // 4. Create Reviews Table (Double-Blind System)
+    await sql`
+        CREATE TABLE IF NOT EXISTS reviews (
+            id VARCHAR(255) PRIMARY KEY,
+            booking_id VARCHAR(255) REFERENCES bookings(id),
+            author_id VARCHAR(255) REFERENCES users(id),
+            target_id VARCHAR(255) REFERENCES users(id),
+            role VARCHAR(20), -- 'HOST' or 'RENTER'
+            rating INTEGER NOT NULL, -- 1-5
+            comment TEXT, -- Public review
+            private_note TEXT, -- Feedback for platform only
+            
+            -- Specific Metrics
+            care_rating INTEGER,    -- For Renter
+            clean_rating INTEGER,   -- For Renter
+            accuracy_rating INTEGER,-- For Host
+            safety_rating INTEGER,  -- For Host
+
+            status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'PUBLISHED', 'HIDDEN'
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
     await sql`
         CREATE TABLE IF NOT EXISTS hero_slides (
             id VARCHAR(255) PRIMARY KEY,
@@ -150,6 +174,8 @@ export default async function handler(
         // Migration for bookings table split payment
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
+        // Migration for favorites
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
     } catch (e) {
         console.log("Migration skipped", e);
     }
@@ -160,8 +186,8 @@ export default async function handler(
     if (parseInt(userRows[0].count) === 0) {
         for (const user of mockUsers) {
             await sql`
-                INSERT INTO users (id, name, email, registered_date, avatar_url, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews)
-                VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate}, ${user.avatarUrl}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews})
+                INSERT INTO users (id, name, email, registered_date, avatar_url, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, favorites)
+                VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate}, ${user.avatarUrl}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any})
             `;
         }
         console.log('Users inserted');
