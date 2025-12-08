@@ -8,14 +8,25 @@ import { Conversation, User } from '../../types/chat';
 import { Sparkles, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
 import * as mockApi from '../../services/mockApiService';
 
-const ChatLayout: React.FC = () => {
-  const [selectedConvoId, setSelectedConvoId] = useState<string | null>(null);
+interface ChatLayoutProps {
+    initialSelectedId?: string | null;
+}
+
+const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
+  const [selectedConvoId, setSelectedConvoId] = useState<string | null>(initialSelectedId || null);
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   
   // Real Data State
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  // Update selected ID if prop changes
+  useEffect(() => {
+      if (initialSelectedId) {
+          setSelectedConvoId(initialSelectedId);
+      }
+  }, [initialSelectedId]);
 
   // 1. Initialize User & Fetch Conversations
   useEffect(() => {

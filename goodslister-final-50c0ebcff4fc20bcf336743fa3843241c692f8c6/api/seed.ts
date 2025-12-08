@@ -63,7 +63,7 @@ export default async function handler(
       );
     `;
 
-    // 3. Create Bookings Table
+    // 3. Create Bookings Table with Split Payment support
     await sql`
         CREATE TABLE IF NOT EXISTS bookings (
             id VARCHAR(255) PRIMARY KEY,
@@ -148,6 +148,7 @@ export default async function handler(
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `;
+
 
     await sql`
         CREATE TABLE IF NOT EXISTS hero_slides (

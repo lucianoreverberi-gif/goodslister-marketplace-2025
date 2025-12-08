@@ -114,6 +114,40 @@ export const sendEmail = async (type: 'welcome' | 'booking_confirmation' | 'mess
     }
 };
 
+/**
+ * Sends a message to the backend API, creating the conversation if needed.
+ */
+export const sendMessageToBackend = async (
+    senderId: string, 
+    text: string, 
+    listingId?: string, 
+    recipientId?: string, 
+    conversationId?: string
+): Promise<{ success: boolean, conversationId?: string }> => {
+    try {
+        const response = await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                conversationId,
+                senderId,
+                text,
+                listingId,
+                recipientId
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return { success: true, conversationId: data.conversationId };
+        }
+        return { success: false };
+    } catch (e) {
+        console.error("Send message failed:", e);
+        return { success: false };
+    }
+};
+
 
 /** Updates a listing's primary image. */
 export const updateListingImage = async (listingId: string, newImageUrl: string): Promise<Listing[]> => {

@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ conversations: [] });
     }
 
-    // 2. Fetch conversations metadata
+    // 2. Fetch Conversation Details + Listings + Participants
     const conversationsResult = await sql`
         SELECT c.id, c.listing_id, c.updated_at
         FROM conversations c
@@ -52,6 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
     
     // Fetch Listing Info
+    // Extract unique listing IDs
     const listingIds = [...new Set(conversationsResult.rows.map(c => c.listing_id))];
     const listingsResult = await sql`
         SELECT id, title, images
@@ -68,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     id: p.id, 
                     name: p.name, 
                     avatarUrl: p.avatar_url,
-                    email: '', 
+                    email: '', // Not exposing email here for privacy in chat object if not needed
                     registeredDate: '',
                     favorites: []
                 };
@@ -80,6 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             id: listingRow.id,
             title: listingRow.title,
             images: listingRow.images || [],
+            // Minimal mock data for required fields
             description: '', category: 'Boats', pricingType: 'daily', location: { city: '', state: '', country: '', latitude: 0, longitude: 0},
             owner: { id: '', name: '', email: '', registeredDate: '', avatarUrl: '', favorites: [] } 
         } : null;

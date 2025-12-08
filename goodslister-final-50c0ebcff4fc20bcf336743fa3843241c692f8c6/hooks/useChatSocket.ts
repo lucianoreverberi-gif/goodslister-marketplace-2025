@@ -2,10 +2,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Message, Conversation } from '../types/chat';
 
+// Map generic app Conversation type to specific Chat UI type if needed
+// For now, we assume strict typing from the API response
 export const useChatSocket = (currentUserId: string, conversationId: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false); // Typing status is harder with polling, keeping false for now
   
+  // Ref to track if we need to scroll down on new message
+  const lastMessageIdRef = useRef<string | null>(null);
+
   // --- POLLING LOGIC ---
   const fetchMessages = async () => {
     if (!currentUserId) return;
@@ -25,15 +30,18 @@ export const useChatSocket = (currentUserId: string, conversationId: string | nu
             if (conversationId) {
                 const activeConvo = conversations.find((c: any) => c.id === conversationId);
                 if (activeConvo && activeConvo.messages) {
+                    // Map DB format to UI format if needed
                     const uiMessages: Message[] = activeConvo.messages.map((m: any) => ({
                         id: m.id,
-                        senderId: m.senderId === currentUserId ? 'me' : m.senderId,
+                        senderId: m.senderId === currentUserId ? 'me' : m.senderId, // UI uses 'me' logic
                         text: m.text,
                         originalText: m.text,
                         timestamp: new Date(m.timestamp),
                         status: 'read',
                         type: 'text'
                     }));
+                    
+                    // Simple dedup check or check length
                     setMessages(uiMessages);
                 }
             }
@@ -76,15 +84,17 @@ export const useChatSocket = (currentUserId: string, conversationId: string | nu
                 text
             })
         });
+        // Polling will pick up the confirmed message shortly
     } catch (e) {
         console.error("Failed to send", e);
+        // Could mark message as failed here
     }
   };
 
   return {
     messages,
     sendMessage,
-    isTyping: false,
+    isTyping: false, // Not supported in simple polling
     isConnected: true
   };
 };

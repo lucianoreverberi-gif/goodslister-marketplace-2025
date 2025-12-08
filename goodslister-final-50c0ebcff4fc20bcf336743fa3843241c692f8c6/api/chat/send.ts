@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         VALUES (${messageId}, ${targetConversationId}, ${senderId}, ${text}, false)
     `;
 
-    // 3. Update Conversation Timestamp
+    // 3. Update Conversation Timestamp (to move it to top)
     await sql`
         UPDATE conversations 
         SET updated_at = CURRENT_TIMESTAMP 

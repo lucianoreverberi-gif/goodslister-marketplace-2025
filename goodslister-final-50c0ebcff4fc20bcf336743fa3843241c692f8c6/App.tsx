@@ -13,7 +13,6 @@ import AIAssistantPage from './components/AIAssistantPage';
 import AdminPage from './components/AdminPage';
 import UserDashboardPage from './components/UserDashboardPage';
 import LoginModal from './components/LoginModal';
-// import ChatInboxModal from './components/ChatModal'; // Deprecated in favor of ChatLayout
 import ChatLayout from './components/chat/ChatLayout';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
@@ -41,9 +40,7 @@ const App: React.FC = () => {
     const [listingToEdit, setListingToEdit] = useState<Listing | undefined>(undefined);
 
     // Chat State
-    const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
     const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
-    const [userLanguage, setUserLanguage] = useState('English');
 
     // Notification System State
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -57,10 +54,6 @@ const App: React.FC = () => {
     // Fetch initial data on mount
     useEffect(() => {
         const loadData = async () => {
-            // The API calls to /api/listings and /api/hello were failing,
-            // likely due to an environment limitation with serverless functions.
-            // This now loads data directly from the client-side mock service
-            // to ensure the app is functional and error-free.
             const allData = await mockApi.fetchAllData();
             setAppData(allData);
         };
@@ -187,18 +180,28 @@ const App: React.FC = () => {
         addNotification('info', 'Logged Out', 'See you next time!');
     };
 
-    const handleStartConversation = (listing: Listing) => {
+    const handleStartConversation = async (listing: Listing) => {
         if (!session) {
             setIsLoginModalOpen(true);
             return;
         }
-        // In the new architecture, we just navigate to the inbox
-        // Future todo: pass the target listing/user to ChatLayout to auto-open that conversation
-        handleNavigate('inbox');
-    };
+        
+        // REAL BACKEND INTEGRATION:
+        // We attempt to create the conversation by sending an initial "system" message or greeting.
+        // This ensures the conversation ID exists in the DB so ChatLayout can fetch it.
+        const result = await mockApi.sendMessageToBackend(
+            session.id, 
+            `Hi! I'm interested in your ${listing.title}. Is it available?`, 
+            listing.id, 
+            listing.owner.id
+        );
 
-    const handleSendMessage = async (conversationId: string, text: string) => {
-        // ... kept for backward compatibility if needed, but ChatLayout handles this internally now
+        if (result.success && result.conversationId) {
+            setInitialConversationId(result.conversationId);
+            handleNavigate('inbox');
+        } else {
+            addNotification('message', 'Error', 'Could not start conversation. Please try again.');
+        }
     };
 
     const handleCreateBooking = async (
@@ -214,7 +217,6 @@ const App: React.FC = () => {
             throw new Error("You must be logged in to book an item.");
         }
         
-        // Determine split amounts based on paymentMethod (Simplified logic)
         const amountPaidOnline = paymentMethod === 'platform' ? totalPrice : 0;
         const balanceDueOnSite = paymentMethod === 'direct' ? totalPrice : 0;
 
@@ -236,47 +238,9 @@ const App: React.FC = () => {
         const updatedBookings = [...appData.bookings, result.newBooking];
         const updatedListings = appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l);
         
-        // --- NEW: INJECT SYSTEM MESSAGE FOR BAREBOAT CONTRACT ---
-        // Find existing conversation or create new one
-        let conversation = appData.conversations.find((c: Conversation) => 
-            c.listing.id === listingId && c.participants[session.id] && c.participants[result.updatedListing.owner.id]
-        );
-
-        if (!conversation) {
-            conversation = {
-                id: `convo-${Date.now()}`,
-                listing: result.updatedListing,
-                participants: {
-                    [session.id]: session,
-                    [result.updatedListing.owner.id]: result.updatedListing.owner
-                },
-                messages: [],
-            };
-            // Note: We'll add this to the list below
-        }
-
-        const systemMessage: Message = {
-            id: `sys-msg-${Date.now()}`,
-            senderId: 'system-bot', // Special ID for system messages
-            text: "Hi! Here is the standard rental agreement template for your trip: [Link to PDF](/bareboat_rental_agreement.pdf). Please review and sign it together at pickup.",
-            timestamp: new Date().toISOString(),
-        };
-
-        const updatedConversationWithMsg = { 
-            ...conversation, 
-            messages: [...conversation.messages, systemMessage] 
-        };
-
-        const finalConversations = conversation 
-            ? appData.conversations.map((c: Conversation) => c.id === conversation.id ? updatedConversationWithMsg : c)
-            : [...appData.conversations, updatedConversationWithMsg];
-
-        mockApi.updateConversations(finalConversations);
-
         updateAppData({
             bookings: updatedBookings,
-            listings: updatedListings,
-            conversations: finalConversations
+            listings: updatedListings
         });
 
         // Send Booking Confirmation Email via Resend
@@ -292,12 +256,6 @@ const App: React.FC = () => {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
             }
         });
-
-        // Simulate Owner Notification (Logic that would happen on server)
-        setTimeout(() => {
-             // In real app, this would be an email to the owner
-             console.log(`System: Email sent to owner of ${result.updatedListing.title} about new booking.`);
-        }, 1000);
 
         return result.newBooking;
     };
@@ -331,8 +289,6 @@ const App: React.FC = () => {
     const handleCreateListing = async (listing: Listing): Promise<boolean> => {
         const success = await mockApi.createListing(listing);
         if (success) {
-            // Optimistic update: add to local list immediately
-            // In a real app, we might refetch
             updateAppData({ listings: [...appData.listings, listing] });
             addNotification('success', 'Listing Published', 'Your item is now live on the marketplace.');
         }
@@ -356,20 +312,14 @@ const App: React.FC = () => {
         updateAppData({ logoUrl: updatedLogoUrl });
     };
 
-    // OPTIMISTIC UPDATE FIX for Slides
-    // We update local state immediately and then save to DB in background
-    // This prevents the "resetting" issue when editing multiple items quickly
     const handleUpdateSlide = async (id: string, field: keyof HeroSlide, value: string) => {
-        // 1. Update Local State Immediately
         const updatedSlides = appData.heroSlides.map((s: HeroSlide) => 
             s.id === id ? { ...s, [field]: value } : s
         );
         updateAppData({ heroSlides: updatedSlides });
 
-        // 2. Persist to Backend (Fire and Forget for UI purposes)
         const slideToUpdate = updatedSlides.find((s: HeroSlide) => s.id === id);
         if(slideToUpdate) {
-            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
             await mockApi.updateSlide(slideToUpdate);
         }
     };
@@ -384,19 +334,14 @@ const App: React.FC = () => {
         updateAppData({ heroSlides: updatedSlides });
     };
 
-    // OPTIMISTIC UPDATE FIX for Banners
-    // Identical strategy to slides: update UI first, save later.
     const handleUpdateBanner = async (id: string, field: keyof Banner, value: string) => {
-        // 1. Update Local State Immediately
         const updatedBanners = appData.banners.map((b: Banner) => 
             b.id === id ? { ...b, [field]: value } : b
         );
         updateAppData({ banners: updatedBanners });
 
-        // 2. Persist to Backend
         const bannerToUpdate = updatedBanners.find((b: Banner) => b.id === id);
         if(bannerToUpdate) {
-            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
             await mockApi.updateBanner(bannerToUpdate);
         }
     };
@@ -447,7 +392,6 @@ const App: React.FC = () => {
         categoryImages,
         logoUrl,
         paymentApiKey,
-        conversations,
         bookings,
     } = appData;
 
@@ -463,7 +407,7 @@ const App: React.FC = () => {
                     onToggleFavorite={handleToggleFavorite}
                 />;
             case 'inbox':
-                return <ChatLayout />;
+                return <ChatLayout initialSelectedId={initialConversationId} />;
             case 'listingDetail':
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
                 return listing ? <ListingDetailPage 
@@ -590,7 +534,7 @@ const App: React.FC = () => {
                 onNavigate={handleNavigate}
                 onLoginClick={() => setIsLoginModalOpen(true)}
                 onLogoutClick={handleLogout}
-                onOpenChat={() => handleNavigate('inbox')}
+                onOpenChat={() => { setInitialConversationId(null); handleNavigate('inbox'); }}
                 session={session}
                 logoUrl={logoUrl}
             />
@@ -606,12 +550,6 @@ const App: React.FC = () => {
                     onClose={() => setIsLoginModalOpen(false)} 
                 />
             )}
-            
-            {/* Legacy modal removed in favor of new page
-            {isChatInboxOpen && session && (
-                 <ChatInboxModal ... />
-            )}
-            */}
         </div>
     );
 };
