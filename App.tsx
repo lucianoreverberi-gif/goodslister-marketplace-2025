@@ -41,7 +41,7 @@ const App: React.FC = () => {
 
     // Chat State
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
-    const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
+    const [chatContext, setChatContext] = useState<{ listing?: Listing, recipient?: User, conversationId?: string } | null>(null);
     const [userLanguage, setUserLanguage] = useState('English');
 
     // Notification System State
@@ -56,10 +56,6 @@ const App: React.FC = () => {
     // Fetch initial data on mount
     useEffect(() => {
         const loadData = async () => {
-            // The API calls to /api/listings and /api/hello were failing,
-            // likely due to an environment limitation with serverless functions.
-            // This now loads data directly from the client-side mock service
-            // to ensure the app is functional and error-free.
             const allData = await mockApi.fetchAllData();
             setAppData(allData);
         };
@@ -192,93 +188,14 @@ const App: React.FC = () => {
             return;
         }
         
-        const existingConversation = appData.conversations.find((c: Conversation) => 
-            c.listing.id === listing.id && c.participants[session.id] && c.participants[listing.owner.id]
-        );
-
-        if (existingConversation) {
-            setInitialConversationId(existingConversation.id);
-        } else {
-            const newConversation: Conversation = {
-                id: `convo-${Date.now()}`,
-                listing: listing,
-                participants: {
-                    [session.id]: session,
-                    [listing.owner.id]: listing.owner
-                },
-                messages: [],
-            };
-            const updatedConversations = [...appData.conversations, newConversation];
-            mockApi.updateConversations(updatedConversations).then(convos => updateAppData({ conversations: convos }));
-            setInitialConversationId(newConversation.id);
-        }
-        setIsChatInboxOpen(true);
-    };
-
-    const handleSendMessage = async (conversationId: string, text: string) => {
-        if (!session) return;
-
-        const newMessage: Message = {
-            id: `msg-${Date.now()}`,
-            senderId: session.id,
-            text: text,
-            timestamp: new Date().toISOString(),
-        };
-
-        const updatedConversations = appData.conversations.map((c: Conversation) => 
-            c.id === conversationId ? { ...c, messages: [...c.messages, newMessage] } : c
-        );
-        updateAppData({ conversations: updatedConversations }); // Optimistic update
-        mockApi.updateConversations(updatedConversations);
+        // Setup context for the chat modal.
+        // It will decide if it needs to fetch an existing convo or create a new one.
+        setChatContext({
+            listing: listing,
+            recipient: listing.owner
+        });
         
-        // Send Email Notification to the other participant (Simulated sending to current user email for testing)
-        // In production, this would go to the real recipient.
-        const currentConvo = updatedConversations.find((c: Conversation) => c.id === conversationId);
-        if (currentConvo) {
-             const recipient = Object.values(currentConvo.participants).find(p => (p as User).id !== session.id) as User;
-             if (recipient) {
-                 // NOTE: Using session.email for 'to' because we can only send to verified email in Resend Free tier.
-                 // In a real app, use `recipient.email`.
-                 mockApi.sendEmail('message_notification', session.email, {
-                     senderName: session.name,
-                     listingTitle: currentConvo.listing.title,
-                     messagePreview: text.substring(0, 50) + (text.length > 50 ? '...' : '')
-                 });
-             }
-        }
-
-        // Simulate owner's reply.
-        // The reply is always in English; translation is handled client-side in the ChatModal.
-        setTimeout(async () => {
-            const currentConvo = updatedConversations.find((c: Conversation) => c.id === conversationId);
-            if (!currentConvo) return;
-            
-            const owner = Object.values(currentConvo.participants).find(p => (p as User).id !== session.id) as User | undefined;
-            if(!owner) return;
-
-            const originalReply = "Hello! Yes, it's available. How many days would you like to rent it for?";
-            const translatedReply = await translateText(originalReply, userLanguage, 'English');
-
-
-            const replyMessage: Message = {
-                id: `msg-${Date.now() + 1}`,
-                senderId: owner.id,
-                text: translatedReply,
-                originalText: originalReply, // Store original for re-translation
-                timestamp: new Date().toISOString(),
-            };
-            const finalConversations = appData.conversations.map((c: Conversation) => 
-                    c.id === conversationId ? { ...c, messages: [...c.messages, replyMessage] } : c
-                );
-             updateAppData({ conversations: finalConversations }); // Optimistic update
-             mockApi.updateConversations(finalConversations);
-             
-             // Simulate Inbox Notification
-             if (!isChatInboxOpen) {
-                 addNotification('message', `New Message from ${owner.name}`, translatedReply.substring(0, 30) + '...');
-             }
-
-        }, 1500);
+        setIsChatInboxOpen(true);
     };
 
     const handleCreateBooking = async (
@@ -315,47 +232,9 @@ const App: React.FC = () => {
         const updatedBookings = [...appData.bookings, result.newBooking];
         const updatedListings = appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l);
         
-        // --- NEW: INJECT SYSTEM MESSAGE FOR BAREBOAT CONTRACT ---
-        // Find existing conversation or create new one
-        let conversation = appData.conversations.find((c: Conversation) => 
-            c.listing.id === listingId && c.participants[session.id] && c.participants[result.updatedListing.owner.id]
-        );
-
-        if (!conversation) {
-            conversation = {
-                id: `convo-${Date.now()}`,
-                listing: result.updatedListing,
-                participants: {
-                    [session.id]: session,
-                    [result.updatedListing.owner.id]: result.updatedListing.owner
-                },
-                messages: [],
-            };
-            // Note: We'll add this to the list below
-        }
-
-        const systemMessage: Message = {
-            id: `sys-msg-${Date.now()}`,
-            senderId: 'system-bot', // Special ID for system messages
-            text: "Hi! Here is the standard rental agreement template for your trip: [Link to PDF](/bareboat_rental_agreement.pdf). Please review and sign it together at pickup.",
-            timestamp: new Date().toISOString(),
-        };
-
-        const updatedConversationWithMsg = { 
-            ...conversation, 
-            messages: [...conversation.messages, systemMessage] 
-        };
-
-        const finalConversations = conversation 
-            ? appData.conversations.map((c: Conversation) => c.id === conversation.id ? updatedConversationWithMsg : c)
-            : [...appData.conversations, updatedConversationWithMsg];
-
-        mockApi.updateConversations(finalConversations);
-
         updateAppData({
             bookings: updatedBookings,
-            listings: updatedListings,
-            conversations: finalConversations
+            listings: updatedListings
         });
 
         // Send Booking Confirmation Email via Resend
@@ -371,12 +250,6 @@ const App: React.FC = () => {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
             }
         });
-
-        // Simulate Owner Notification (Logic that would happen on server)
-        setTimeout(() => {
-             // In real app, this would be an email to the owner
-             console.log(`System: Email sent to owner of ${result.updatedListing.title} about new booking.`);
-        }, 1000);
 
         return result.newBooking;
     };
@@ -410,8 +283,6 @@ const App: React.FC = () => {
     const handleCreateListing = async (listing: Listing): Promise<boolean> => {
         const success = await mockApi.createListing(listing);
         if (success) {
-            // Optimistic update: add to local list immediately
-            // In a real app, we might refetch
             updateAppData({ listings: [...appData.listings, listing] });
             addNotification('success', 'Listing Published', 'Your item is now live on the marketplace.');
         }
@@ -435,20 +306,14 @@ const App: React.FC = () => {
         updateAppData({ logoUrl: updatedLogoUrl });
     };
 
-    // OPTIMISTIC UPDATE FIX for Slides
-    // We update local state immediately and then save to DB in background
-    // This prevents the "resetting" issue when editing multiple items quickly
     const handleUpdateSlide = async (id: string, field: keyof HeroSlide, value: string) => {
-        // 1. Update Local State Immediately
         const updatedSlides = appData.heroSlides.map((s: HeroSlide) => 
             s.id === id ? { ...s, [field]: value } : s
         );
         updateAppData({ heroSlides: updatedSlides });
 
-        // 2. Persist to Backend (Fire and Forget for UI purposes)
         const slideToUpdate = updatedSlides.find((s: HeroSlide) => s.id === id);
         if(slideToUpdate) {
-            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
             await mockApi.updateSlide(slideToUpdate);
         }
     };
@@ -463,19 +328,14 @@ const App: React.FC = () => {
         updateAppData({ heroSlides: updatedSlides });
     };
 
-    // OPTIMISTIC UPDATE FIX for Banners
-    // Identical strategy to slides: update UI first, save later.
     const handleUpdateBanner = async (id: string, field: keyof Banner, value: string) => {
-        // 1. Update Local State Immediately
         const updatedBanners = appData.banners.map((b: Banner) => 
             b.id === id ? { ...b, [field]: value } : b
         );
         updateAppData({ banners: updatedBanners });
 
-        // 2. Persist to Backend
         const bannerToUpdate = updatedBanners.find((b: Banner) => b.id === id);
         if(bannerToUpdate) {
-            // We ignore the return value here to avoid overwriting our optimistic state with stale data from server cache
             await mockApi.updateBanner(bannerToUpdate);
         }
     };
@@ -526,7 +386,6 @@ const App: React.FC = () => {
         categoryImages,
         logoUrl,
         paymentApiKey,
-        conversations,
         bookings,
     } = appData;
 
@@ -667,7 +526,10 @@ const App: React.FC = () => {
                 onNavigate={handleNavigate}
                 onLoginClick={() => setIsLoginModalOpen(true)}
                 onLogoutClick={handleLogout}
-                onOpenChat={() => { setInitialConversationId(null); setIsChatInboxOpen(true); }}
+                onOpenChat={() => { 
+                    setChatContext(null); // No specific context, just open inbox
+                    setIsChatInboxOpen(true); 
+                }}
                 session={session}
                 logoUrl={logoUrl}
             />
@@ -688,10 +550,8 @@ const App: React.FC = () => {
                  <ChatInboxModal
                     isOpen={isChatInboxOpen}
                     onClose={() => setIsChatInboxOpen(false)}
-                    conversations={conversations.filter((c: Conversation) => c.participants[session.id])}
                     currentUser={session}
-                    onSendMessage={handleSendMessage}
-                    initialConversationId={initialConversationId}
+                    initialContext={chatContext}
                     userLanguage={userLanguage}
                     onLanguageChange={setUserLanguage}
                 />

@@ -1,76 +1,150 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { Message } from '../types/chat';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Message, Conversation } from '../types/chat';
 
-export const useChatSocket = (conversationId: string | null) => {
-  const [isTyping, setIsTyping] = useState(false);
+export const useChatSocket = (currentUserId: string | undefined, conversationId?: string | null) => {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Simulation: Receive a message from the "server"
-  const simulateReceiveMessage = useCallback((text: string, originalLang: string) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        senderId: 'partner',
-        text: text,
-        originalText: text,
-        translatedText: "This is a simulated translation of the incoming message.", // Mock AI response
-        detectedLanguage: originalLang,
-        timestamp: new Date(),
-        status: 'read',
-        type: 'text',
-      };
-      setMessages((prev) => [...prev, newMessage]);
-      
-      // Visual notification
-      if (document.hidden) {
-        document.title = `(1) New Message | Goodslister`;
+  const fetchConversations = useCallback(async () => {
+    if (!currentUserId) return;
+
+    try {
+      const response = await fetch('/api/chat/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Map API response to UI types
+        const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
+            const otherId = Object.keys(c.participants).find(id => id !== currentUserId);
+            const otherUser = c.participants[otherId || ''];
+            
+            // Safe fallback if data is incomplete
+            const participantName = otherUser?.name || 'Unknown User';
+            const participantAvatar = otherUser?.avatarUrl || 'https://i.pravatar.cc/150?u=unknown';
+
+            // Find last message
+            const lastMsgObj = c.messages && c.messages.length > 0 
+                ? c.messages[c.messages.length - 1] 
+                : null;
+
+            const lastMessage: Message = lastMsgObj ? {
+                id: lastMsgObj.id,
+                senderId: lastMsgObj.senderId,
+                text: lastMsgObj.text,
+                originalText: lastMsgObj.text,
+                timestamp: new Date(lastMsgObj.timestamp),
+                status: 'read',
+                type: 'text'
+            } : {
+                id: `sys-${c.id}`,
+                senderId: 'system',
+                text: 'Start the conversation...',
+                originalText: '',
+                timestamp: new Date(c.updated_at || Date.now()),
+                status: 'read',
+                type: 'system'
+            };
+
+            const fullMessages = c.messages ? c.messages.map((m: any) => ({
+                id: m.id,
+                senderId: m.senderId === currentUserId ? 'me' : m.senderId,
+                text: m.text,
+                originalText: m.text,
+                timestamp: new Date(m.timestamp),
+                status: 'read',
+                type: 'text'
+            })) : [];
+
+            return {
+                id: c.id,
+                participant: {
+                    id: otherUser?.id || 'unknown',
+                    name: participantName,
+                    avatar: participantAvatar,
+                    isOnline: false, // Online status requires websockets, skipping for polling MVP
+                    locale: 'en-US'
+                },
+                lastMessage: lastMessage,
+                unreadCount: 0,
+                fullMessages: fullMessages,
+                listing: c.listing // Keep reference to listing
+            };
+        });
+
+        setConversations(mappedConvos);
+
+        if (conversationId) {
+            const active = mappedConvos.find(c => c.id === conversationId);
+            if (active && active.fullMessages) {
+                setMessages(active.fullMessages);
+            } else {
+                setMessages([]);
+            }
+        }
       }
-    }, 3000); // 3 second delay to simulate typing
-  }, []);
+    } catch (error) {
+      console.error("Chat sync error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUserId, conversationId]);
 
-  const sendMessage = (text: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      senderId: 'me',
-      text,
-      originalText: text,
-      timestamp: new Date(),
-      status: 'sent',
-      type: 'text',
-    };
-    setMessages((prev) => [...prev, newMessage]);
+  // Polling Interval
+  useEffect(() => {
+    if (!currentUserId) return;
     
-    // Simulate a reply
-    if (Math.random() > 0.5) {
-        simulateReceiveMessage("Hola, ¿está disponible todavía?", "es");
+    fetchConversations(); // Initial fetch
+    
+    const intervalId = setInterval(() => {
+        fetchConversations();
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(intervalId);
+  }, [currentUserId, conversationId, fetchConversations]);
+
+  const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string) => {
+    if (!currentUserId) return;
+
+    // Use specific conversation ID or the one from hook params
+    const targetConvoId = convId || conversationId;
+
+    try {
+        const payload = {
+            senderId: currentUserId,
+            text,
+            conversationId: targetConvoId,
+            listingId,
+            recipientId
+        };
+
+        const res = await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            // Immediate re-fetch to update UI
+            fetchConversations();
+        }
+    } catch (e) {
+        console.error("Send failed", e);
     }
   };
 
-  // Reset messages when changing conversation (Mock logic only)
-  useEffect(() => {
-    if (conversationId) {
-        // Load mock history
-        setMessages([
-            {
-                id: '1',
-                senderId: 'partner',
-                text: 'Is this item still available?',
-                originalText: 'Is this item still available?',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60),
-                status: 'read',
-                type: 'text'
-            }
-        ]);
-    }
-  }, [conversationId]);
-
   return {
+    conversations,
     messages,
     sendMessage,
     isTyping,
-    isConnected: true
+    loading
   };
 };

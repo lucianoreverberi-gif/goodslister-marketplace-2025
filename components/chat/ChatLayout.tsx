@@ -38,7 +38,8 @@ const ChatLayout: React.FC = () => {
   }, []);
 
   // Connect to our custom hook
-  const { messages, sendMessage, isTyping } = useChatSocket(selectedConvoId);
+  // We use 'user-1' as the current user ID to simulate a logged-in user in this standalone component context
+  const { messages, sendMessage, isTyping } = useChatSocket('user-1', selectedConvoId);
 
   const activeConvo = MOCK_CONVOS.find(c => c.id === selectedConvoId);
 

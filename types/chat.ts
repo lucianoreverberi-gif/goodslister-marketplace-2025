@@ -25,4 +25,6 @@ export interface Conversation {
   lastMessage: Message;
   unreadCount: number;
   isTyping?: boolean;
+  fullMessages?: Message[];
+  listing?: any; // Added to support listing details in conversation
 }
