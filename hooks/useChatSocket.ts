@@ -8,6 +8,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Create a stable fetch function
   const fetchConversations = useCallback(async () => {
     if (!currentUserId) return;
 
@@ -23,8 +24,11 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         
         // Map API response to UI types
         const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
+            // Determine who the OTHER participant is
             const otherId = Object.keys(c.participants).find(id => id !== currentUserId);
-            const otherUser = c.participants[otherId || ''];
+            // Fallback: if user is talking to themselves (testing) or data error, pick first
+            const validOtherId = otherId || Object.keys(c.participants)[0];
+            const otherUser = c.participants[validOtherId];
             
             // Safe fallback if data is incomplete
             const participantName = otherUser?.name || 'Unknown User';
@@ -46,7 +50,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
             } : {
                 id: `sys-${c.id}`,
                 senderId: 'system',
-                text: 'Start the conversation...',
+                text: 'New conversation started',
                 originalText: '',
                 timestamp: new Date(c.updated_at || Date.now()),
                 status: 'read',
@@ -69,18 +73,19 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
                     id: otherUser?.id || 'unknown',
                     name: participantName,
                     avatar: participantAvatar,
-                    isOnline: false, // Online status requires websockets, skipping for polling MVP
+                    isOnline: false, 
                     locale: 'en-US'
                 },
                 lastMessage: lastMessage,
                 unreadCount: 0,
                 fullMessages: fullMessages,
-                listing: c.listing // Keep reference to listing
+                listing: c.listing 
             };
         });
 
         setConversations(mappedConvos);
 
+        // If a specific conversation is selected, update the messages state
         if (conversationId) {
             const active = mappedConvos.find(c => c.id === conversationId);
             if (active && active.fullMessages) {
@@ -105,7 +110,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
     
     const intervalId = setInterval(() => {
         fetchConversations();
-    }, 3000); // Poll every 3 seconds
+    }, 2500); // Poll frequently for real-time feel
 
     return () => clearInterval(intervalId);
   }, [currentUserId, conversationId, fetchConversations]);
@@ -113,7 +118,6 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
   const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string) => {
     if (!currentUserId) return;
 
-    // Use specific conversation ID or the one from hook params
     const targetConvoId = convId || conversationId;
 
     try {
@@ -132,7 +136,8 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         });
 
         if (res.ok) {
-            // Immediate re-fetch to update UI
+            // Optimistic update handled by rapid polling for now, 
+            // or we could push to state immediately here.
             fetchConversations();
         }
     } catch (e) {
