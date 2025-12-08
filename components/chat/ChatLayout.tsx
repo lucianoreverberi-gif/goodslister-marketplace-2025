@@ -6,22 +6,19 @@ import ChatInput from './ChatInput';
 import { useChatSocket } from '../../hooks/useChatSocket';
 import { Conversation, User } from '../../types/chat'; 
 import { Sparkles, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
-import * as mockApi from '../../services/mockApiService';
+import { Session } from '../../types';
 
 interface ChatLayoutProps {
     initialSelectedId?: string | null;
+    currentUser: Session | null; // Pass session directly
 }
 
-const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
+const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser }) => {
   const [selectedConvoId, setSelectedConvoId] = useState<string | null>(initialSelectedId || null);
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   
-  // Real Data State
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
   // Connect to our custom hook for Real-Time Polling
-  // We pass the currentUser ID once loaded.
   const { conversations, messages, sendMessage, isTyping, loading } = useChatSocket(currentUser?.id, selectedConvoId);
 
   const activeConvo = conversations.find(c => c.id === selectedConvoId);
@@ -33,31 +30,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
       }
   }, [initialSelectedId]);
 
-  // Initialize User
   useEffect(() => {
-    const initUser = async () => {
-        const appData = await mockApi.fetchAllData(); 
-        
-        // LOGIC: Check if we have a session in localStorage or use the demo user
-        // For this specific view, we assume the App.tsx has handled auth, 
-        // but since this component mounts independently, we grab the "Demo User" (Carlos) 
-        // if no session logic is passed down. 
-        // In a perfect world, current user comes from Context, but this works for your request.
-        
-        // We'll try to find the user that matches 'user-1' (Carlos) for the demo owner side,
-        // OR simply grab the first user if testing as someone else.
-        // NOTE: To test as "Luciano", you must log in via the LoginModal in App.tsx, 
-        // which updates the global session. 
-        // However, for this layout to know who "Me" is, we need to pass the session user.
-        // As a fallback for the direct component load:
-        
-        // This effectively defaults to "Carlos" for the demo if accessed directly,
-        // but relies on the parent passing props or session storage in a real auth flow.
-        const defaultUser = appData.users.find(u => u.email === 'carlos.gomez@example.com') || appData.users[0];
-        setCurrentUser(defaultUser);
-    };
-    initUser();
-
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
     handleResize(); 
     window.addEventListener('resize', handleResize);
@@ -68,11 +41,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
   const showChat = !isMobileView || (isMobileView && selectedConvoId);
 
   if (!currentUser) return (
-      <div className="flex items-center justify-center h-[60vh] text-gray-500">
-          <div className="animate-pulse flex flex-col items-center">
-              <div className="h-10 w-10 bg-gray-200 rounded-full mb-2"></div>
-              <p>Loading your secure chats...</p>
-          </div>
+      <div className="flex items-center justify-center h-[60vh] flex-col text-gray-500">
+          <h2 className="text-xl font-bold mb-2">Please Log In</h2>
+          <p>You need to be logged in to view your messages.</p>
       </div>
   );
 
@@ -88,6 +59,12 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
         />
         {loading && conversations.length === 0 && (
              <div className="p-4 text-center text-xs text-gray-400">Syncing messages...</div>
+        )}
+        {!loading && conversations.length === 0 && (
+             <div className="p-8 text-center text-gray-500 flex flex-col items-center">
+                 <p className="font-semibold">No messages yet</p>
+                 <p className="text-sm text-gray-400 mt-1">Start a conversation from a listing page!</p>
+             </div>
         )}
       </div>
 

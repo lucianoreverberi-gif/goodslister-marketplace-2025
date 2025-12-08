@@ -5,10 +5,9 @@ import { Message, Conversation } from '../types/chat';
 export const useChatSocket = (currentUserId: string | undefined, conversationId?: string | null) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Create a stable fetch function
+  // 1. Fetch Conversations from Real DB
   const fetchConversations = useCallback(async () => {
     if (!currentUserId) return;
 
@@ -26,7 +25,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
             // Determine who the OTHER participant is
             const otherId = Object.keys(c.participants).find(id => id !== currentUserId);
-            // Fallback: if user is talking to themselves (testing) or data error, pick first
+            // Fallback safety: pick the first one if logic fails, but try to be accurate
             const validOtherId = otherId || Object.keys(c.participants)[0];
             const otherUser = c.participants[validOtherId];
             
@@ -57,6 +56,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
                 type: 'system'
             };
 
+            // Map all messages for the active view
             const fullMessages = c.messages ? c.messages.map((m: any) => ({
                 id: m.id,
                 senderId: m.senderId === currentUserId ? 'me' : m.senderId,
@@ -85,7 +85,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
 
         setConversations(mappedConvos);
 
-        // If a specific conversation is selected, update the messages state
+        // If a specific conversation is selected, update the messages state immediately
         if (conversationId) {
             const active = mappedConvos.find(c => c.id === conversationId);
             if (active && active.fullMessages) {
@@ -102,23 +102,37 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
     }
   }, [currentUserId, conversationId]);
 
-  // Polling Interval
+  // 2. Polling Interval (Real-time simulation)
   useEffect(() => {
     if (!currentUserId) return;
     
     fetchConversations(); // Initial fetch
     
+    // Poll every 3 seconds to get new messages from DB
     const intervalId = setInterval(() => {
         fetchConversations();
-    }, 2500); // Poll frequently for real-time feel
+    }, 3000); 
 
     return () => clearInterval(intervalId);
   }, [currentUserId, conversationId, fetchConversations]);
 
+  // 3. Send Message Function
   const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string) => {
     if (!currentUserId) return;
 
     const targetConvoId = convId || conversationId;
+
+    // Optimistic Update (shows message immediately before DB confirms)
+    const tempMsg: Message = {
+        id: `temp-${Date.now()}`,
+        senderId: 'me',
+        text: text,
+        originalText: text,
+        timestamp: new Date(),
+        status: 'sent',
+        type: 'text'
+    };
+    setMessages(prev => [...prev, tempMsg]);
 
     try {
         const payload = {
@@ -136,8 +150,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         });
 
         if (res.ok) {
-            // Optimistic update handled by rapid polling for now, 
-            // or we could push to state immediately here.
+            // The polling will pick up the real message ID shortly and replace the temp one
             fetchConversations();
         }
     } catch (e) {
@@ -149,7 +162,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
     conversations,
     messages,
     sendMessage,
-    isTyping,
+    isTyping: false,
     loading
   };
 };

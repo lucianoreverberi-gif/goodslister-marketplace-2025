@@ -13,6 +13,7 @@ import AIAssistantPage from './components/AIAssistantPage';
 import AdminPage from './components/AdminPage';
 import UserDashboardPage from './components/UserDashboardPage';
 import LoginModal from './components/LoginModal';
+import ChatLayout from './components/chat/ChatLayout';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
@@ -43,6 +44,8 @@ const App: React.FC = () => {
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
     const [chatContext, setChatContext] = useState<{ listing?: Listing, recipient?: User, conversationId?: string } | null>(null);
     const [userLanguage, setUserLanguage] = useState('English');
+    // Deep linking for main layout chat
+    const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
 
     // Notification System State
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -400,6 +403,11 @@ const App: React.FC = () => {
                     favorites={session?.favorites || []}
                     onToggleFavorite={handleToggleFavorite}
                 />;
+            case 'inbox':
+                return <ChatLayout 
+                            initialSelectedId={initialConversationId} 
+                            currentUser={session} 
+                       />;
             case 'listingDetail':
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
                 return listing ? <ListingDetailPage 
@@ -527,8 +535,13 @@ const App: React.FC = () => {
                 onLoginClick={() => setIsLoginModalOpen(true)}
                 onLogoutClick={handleLogout}
                 onOpenChat={() => { 
-                    setChatContext(null); // No specific context, just open inbox
-                    setIsChatInboxOpen(true); 
+                    setInitialConversationId(null); 
+                    setChatContext(null);
+                    if (session) {
+                        handleNavigate('inbox');
+                    } else {
+                        setIsLoginModalOpen(true);
+                    }
                 }}
                 session={session}
                 logoUrl={logoUrl}
