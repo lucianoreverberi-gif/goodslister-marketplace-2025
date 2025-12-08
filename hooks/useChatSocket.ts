@@ -24,13 +24,21 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         // Map API response to UI types
         const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
             // Determine who the OTHER participant is
-            const otherId = Object.keys(c.participants).find(id => id !== currentUserId);
-            // If we can't find another ID, it might be a self-chat or bug, but we take the first available key that isn't me
-            const validOtherId = otherId || Object.keys(c.participants)[0];
-            const otherUser = c.participants[validOtherId];
+            const allParticipantIds = Object.keys(c.participants);
+            const otherId = allParticipantIds.find(id => id !== currentUserId);
             
-            const participantName = otherUser?.name || 'Unknown User';
-            const participantAvatar = otherUser?.avatarUrl || 'https://i.pravatar.cc/150?u=unknown';
+            // Fallback: If for some reason we can't find 'other' (e.g. self-chat or data error), pick the first one
+            const validOtherId = otherId || allParticipantIds[0];
+            
+            // Get user object or create placeholder if missing from map
+            const otherUser = c.participants[validOtherId] || {
+                id: validOtherId || 'unknown',
+                name: 'Unknown User',
+                avatarUrl: 'https://i.pravatar.cc/150?u=unknown'
+            };
+            
+            const participantName = otherUser.name || 'Unknown User';
+            const participantAvatar = otherUser.avatarUrl || 'https://i.pravatar.cc/150?u=unknown';
 
             // Find last message
             const lastMsgObj = c.messages && c.messages.length > 0 
@@ -69,7 +77,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
             return {
                 id: c.id,
                 participant: {
-                    id: otherUser?.id || 'unknown',
+                    id: otherUser.id,
                     name: participantName,
                     avatar: participantAvatar,
                     isOnline: false, 
