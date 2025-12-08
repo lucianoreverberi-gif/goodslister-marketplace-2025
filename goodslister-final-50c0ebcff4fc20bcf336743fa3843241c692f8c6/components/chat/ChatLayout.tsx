@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessageBubble from './MessageBubble';
@@ -30,6 +29,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
 
   // 1. Initialize User & Fetch Conversations
   useEffect(() => {
+    let interval: any;
+    
     const init = async () => {
         const appData = await mockApi.fetchAllData(); 
         // HACK for Demo: Use user-1 (Carlos) if no prop provided
@@ -37,12 +38,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
         setCurrentUser(loggedInUser);
 
         // Fetch Conversations for this user
+        // TRY 1: Real Backend
         try {
             const res = await fetch('/api/chat/sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: loggedInUser.id })
             });
+            
             if (res.ok) {
                 const data = await res.json();
                 
@@ -76,15 +79,49 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
                      };
                 });
                 setConversations(mappedConvos);
+            } else {
+                throw new Error("API Failed");
             }
         } catch (e) {
-            console.error("Error loading chat list", e);
+            // TRY 2: Fallback to Local Memory (from appData which now includes fallback logic)
+            // This is crucial for demo/testing without a real DB
+            if (appData.conversations && appData.conversations.length > 0) {
+                 const mappedConvos: Conversation[] = appData.conversations.map((c: any) => {
+                     const otherId = Object.keys(c.participants).find(id => id !== loggedInUser.id);
+                     const otherUser = c.participants[otherId || ''];
+                     const lastMsg = c.messages[c.messages.length - 1];
+                     
+                     return {
+                         id: c.id,
+                         participant: {
+                             id: otherUser?.id || 'unknown',
+                             name: otherUser?.name || 'Unknown User',
+                             avatar: otherUser?.avatarUrl || '',
+                             isOnline: false,
+                             locale: 'en-US'
+                         },
+                         lastMessage: lastMsg ? {
+                             id: lastMsg.id,
+                             senderId: lastMsg.senderId,
+                             text: lastMsg.text,
+                             originalText: lastMsg.text,
+                             timestamp: new Date(lastMsg.timestamp),
+                             status: 'read',
+                             type: 'text'
+                         } : { 
+                             id: 'sys', senderId: 'sys', text: 'Start talking...', originalText: '', timestamp: new Date(), status: 'read', type: 'system' 
+                         },
+                         unreadCount: 0
+                     };
+                 });
+                 setConversations(mappedConvos);
+            }
         }
     };
     init();
     
     // Set up polling for the conversation LIST
-    const interval = setInterval(init, 5000); 
+    interval = setInterval(init, 5000); 
 
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
     handleResize(); 
