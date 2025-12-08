@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Message, Conversation } from '../types/chat';
 
 export const useChatSocket = (currentUserId: string | undefined, conversationId?: string | null) => {
@@ -7,7 +7,7 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch Conversations from Real DB
+  // 1. Fetch Conversations from Real DB ONLY
   const fetchConversations = useCallback(async () => {
     if (!currentUserId) return;
 
@@ -25,11 +25,10 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
             // Determine who the OTHER participant is
             const otherId = Object.keys(c.participants).find(id => id !== currentUserId);
-            // Fallback safety: pick the first one if logic fails, but try to be accurate
+            // If we can't find another ID, it might be a self-chat or bug, but we take the first available key that isn't me
             const validOtherId = otherId || Object.keys(c.participants)[0];
             const otherUser = c.participants[validOtherId];
             
-            // Safe fallback if data is incomplete
             const participantName = otherUser?.name || 'Unknown User';
             const participantAvatar = otherUser?.avatarUrl || 'https://i.pravatar.cc/150?u=unknown';
 
@@ -94,6 +93,8 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
                 setMessages([]);
             }
         }
+      } else {
+          console.error("Failed to sync chat from DB");
       }
     } catch (error) {
       console.error("Chat sync error:", error);
@@ -104,7 +105,10 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
 
   // 2. Polling Interval (Real-time simulation)
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+        setLoading(false);
+        return;
+    }
     
     fetchConversations(); // Initial fetch
     
@@ -152,6 +156,8 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         if (res.ok) {
             // The polling will pick up the real message ID shortly and replace the temp one
             fetchConversations();
+        } else {
+            console.error("Send API failed");
         }
     } catch (e) {
         console.error("Send failed", e);

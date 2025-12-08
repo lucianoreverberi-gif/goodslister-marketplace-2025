@@ -4,13 +4,12 @@ import ConversationList from './ConversationList';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useChatSocket } from '../../hooks/useChatSocket';
-import { Conversation, User } from '../../types/chat'; 
 import { Sparkles, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
 import { Session } from '../../types';
 
 interface ChatLayoutProps {
     initialSelectedId?: string | null;
-    currentUser: Session | null; // Pass session directly
+    currentUser: Session | null;
 }
 
 const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser }) => {
@@ -18,7 +17,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   
-  // Connect to our custom hook for Real-Time Polling
+  // STRICTLY use the hook. No side-loading of mock data.
   const { conversations, messages, sendMessage, isTyping, loading } = useChatSocket(currentUser?.id, selectedConvoId);
 
   const activeConvo = conversations.find(c => c.id === selectedConvoId);
@@ -43,7 +42,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
   if (!currentUser) return (
       <div className="flex items-center justify-center h-[60vh] flex-col text-gray-500">
           <h2 className="text-xl font-bold mb-2">Please Log In</h2>
-          <p>You need to be logged in to view your messages.</p>
+          <p>You need to be logged in to view your inbox.</p>
       </div>
   );
 
@@ -62,8 +61,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
         )}
         {!loading && conversations.length === 0 && (
              <div className="p-8 text-center text-gray-500 flex flex-col items-center">
-                 <p className="font-semibold">No messages yet</p>
-                 <p className="text-sm text-gray-400 mt-1">Start a conversation from a listing page!</p>
+                 <p className="font-semibold">No messages found</p>
+                 <p className="text-sm text-gray-400 mt-1">
+                    Your inbox is empty. Start a chat from a listing!
+                 </p>
              </div>
         )}
       </div>
@@ -136,7 +137,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
                   <MessageBubble 
                     key={msg.id} 
                     message={msg} 
-                    isOwnMessage={msg.senderId === 'me' || msg.senderId === currentUser.id}
+                    isOwnMessage={msg.senderId === 'me' || msg.senderId === currentUser?.id}
                     globalTranslationEnabled={translationEnabled}
                   />
                 ))}
@@ -158,11 +159,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
-            <div className="w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center animate-bounce">
+            <div className="w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
               <span className="text-4xl">👋</span>
             </div>
             <h3 className="text-lg font-bold text-gray-600">Welcome to your Inbox</h3>
-            <p className="max-w-xs mt-2 text-sm">Select a conversation from the left to verify user details and coordinate rentals safely.</p>
+            <p className="max-w-xs mt-2 text-sm">Select a conversation from the left to coordinate rentals safely.</p>
           </div>
         )}
       </div>
