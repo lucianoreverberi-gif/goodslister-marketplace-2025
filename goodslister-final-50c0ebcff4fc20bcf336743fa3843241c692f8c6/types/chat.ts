@@ -10,7 +10,7 @@ export interface User {
 export interface Message {
   id: string;
   senderId: string;
-  text: string; // The text to display (dynamic based on translation setting)
+  text: string;
   originalText: string;
   translatedText?: string;
   detectedLanguage?: string;
@@ -25,4 +25,6 @@ export interface Conversation {
   lastMessage: Message;
   unreadCount: number;
   isTyping?: boolean;
+  fullMessages?: Message[];
+  listing?: any;
 }

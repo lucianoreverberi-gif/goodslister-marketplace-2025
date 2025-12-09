@@ -1,16 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Conversation, User, Message } from '../types';
-import { XIcon, SendIcon, LanguagesIcon, ChevronLeftIcon } from './icons';
-import { translateText } from '../services/geminiService';
 
-// FIX: Added `userLanguage` and `onLanguageChange` to the props interface to allow language state to be managed by the parent component, resolving a type error in `App.tsx`.
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Listing } from '../types';
+import { XIcon, SendIcon, LanguagesIcon, ChevronLeftIcon, MessageSquareIcon } from './icons';
+import { translateText } from '../services/geminiService';
+import { useChatSocket } from '../hooks/useChatSocket';
+
 interface ChatInboxModalProps {
     isOpen: boolean;
     onClose: () => void;
-    conversations: Conversation[];
     currentUser: User;
-    onSendMessage: (conversationId: string, text: string) => void;
-    initialConversationId?: string | null;
+    // Context for starting a new chat
+    initialContext?: {
+        listing?: Listing;
+        recipient?: User;
+        conversationId?: string;
+    } | null;
     userLanguage: string;
     onLanguageChange: (lang: string) => void;
 }
@@ -22,58 +26,80 @@ const LanguageSelector: React.FC<{ selectedLang: string, onChange: (lang: string
              <select 
                 value={selectedLang} 
                 onChange={e => onChange(e.target.value)}
-                className="block appearance-none w-full bg-white border border-gray-300 hover:border-gray-400 px-3 py-1 pr-8 rounded-md shadow-sm text-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500"
+                className="block appearance-none w-full bg-white border border-gray-200 text-gray-700 py-1 px-3 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-cyan-500 text-xs"
             >
                 {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
         </div>
     );
 };
 
-// FIX: Refactored component to use `userLanguage` and `onLanguageChange` props instead of its own local state for language selection.
-const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, conversations, currentUser, onSendMessage, initialConversationId, userLanguage, onLanguageChange }) => {
-    const [activeConversationId, setActiveConversationId] = useState<string | null>(initialConversationId || null);
+const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, currentUser, initialContext, userLanguage, onLanguageChange }) => {
+    // 1. Hook into real backend data
+    const { conversations, sendMessage, loading } = useChatSocket(currentUser.id);
+    
+    // 2. Local State
+    const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
     const [messageInput, setMessageInput] = useState('');
     const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
     const [isTranslating, setIsTranslating] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const activeConversation = conversations.find(c => c.id === activeConversationId);
-
+    // 3. Handle Initial Context (Deep Linking from "Chat with Owner")
     useEffect(() => {
-        if (initialConversationId) {
-            setActiveConversationId(initialConversationId);
+        if (isOpen && initialContext) {
+            if (initialContext.conversationId) {
+                // If we know the ID, just open it
+                setActiveConversationId(initialContext.conversationId);
+            } else if (initialContext.listing && initialContext.recipient) {
+                // Check if we already have a conversation for this listing
+                const existing = conversations.find((c: any) => 
+                    c.listing?.id === initialContext.listing?.id
+                );
+                if (existing) {
+                    setActiveConversationId(existing.id);
+                } else {
+                    // We are in "Draft" mode (New Conversation)
+                    setActiveConversationId('NEW_DRAFT');
+                }
+            }
         }
-    }, [initialConversationId]);
-    
+    }, [isOpen, initialContext, conversations]); // conversations dependency ensures we react when data loads
+
+    // 4. Determine Active Data
+    // Can be a real existing conversation OR a draft
+    const activeConversation = activeConversationId !== 'NEW_DRAFT' 
+        ? conversations.find(c => c.id === activeConversationId)
+        : null;
+
+    const draftRecipient = activeConversationId === 'NEW_DRAFT' ? initialContext?.recipient : null;
+    const draftListing = activeConversationId === 'NEW_DRAFT' ? initialContext?.listing : null;
+
+    // 5. Scroll to bottom
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [activeConversation?.messages, translatedMessages]);
+    }, [activeConversation?.fullMessages, activeConversationId]);
 
-    // Effect to translate messages when conversation or language changes
+    // 6. Translation Effect
     useEffect(() => {
-        if (!activeConversation) return;
+        if (!activeConversation || !activeConversation.fullMessages) return;
 
         const translateAllMessages = async () => {
-            // For this app, we assume the other participant (owner) always writes in English.
-            // No need to translate if the target is English.
             if (userLanguage === 'English') {
-                 setTranslatedMessages({}); // Clear previous translations
+                 setTranslatedMessages({}); 
                  return;
             }
 
             setIsTranslating(true);
             const translations: Record<string, string> = {};
-            const messagesToTranslate = activeConversation.messages.filter(
-                msg => msg.senderId !== currentUser.id
+            // Filter messages not from me
+            const messagesToTranslate = activeConversation.fullMessages.filter(
+                (msg: any) => msg.senderId !== currentUser.id && msg.text
             );
 
-            await Promise.all(messagesToTranslate.map(async (msg) => {
+            await Promise.all(messagesToTranslate.map(async (msg: any) => {
                 const translatedText = await translateText(msg.text, userLanguage, "English");
                 translations[msg.id] = translatedText;
             }));
@@ -85,124 +111,174 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, conver
         translateAllMessages();
     }, [activeConversation, userLanguage, currentUser.id]);
 
+    const handleSend = async () => {
+        if (!messageInput.trim()) return;
 
-    if (!isOpen) return null;
-
-    const getOtherParticipant = (convo: Conversation) => {
-        const otherId = Object.keys(convo.participants).find(id => id !== currentUser.id);
-        return otherId ? convo.participants[otherId] : null;
-    };
-
-    const handleSend = () => {
-        if (messageInput.trim() && activeConversationId) {
-            onSendMessage(activeConversationId, messageInput);
+        if (activeConversationId === 'NEW_DRAFT' && draftListing && draftRecipient) {
+            // Sending first message creates the conversation in backend
+            await sendMessage(messageInput, undefined, draftListing.id, draftRecipient.id);
+            // After sending, the next poll will pick up the new conversation
+            // We temporarily clear input and wait for sync
+            setMessageInput('');
+            // Optional: Optimistically switch to a 'loading' state or wait for the conversation to appear in list
+        } else if (activeConversationId) {
+            await sendMessage(messageInput, activeConversationId);
             setMessageInput('');
         }
     };
-    
-    return (
-         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg h-[80vh] flex flex-col relative overflow-hidden">
-                {!activeConversation ? (
-                    <>
-                        <header className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
-                            <h2 className="text-xl font-bold text-gray-800">Messages</h2>
-                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                                <XIcon className="h-6 w-6" />
-                            </button>
-                        </header>
-                        <div className="flex-1 overflow-y-auto">
-                            {conversations.length > 0 ? (
-                                <ul>
-                                    {conversations.map(convo => {
-                                        const otherUser = getOtherParticipant(convo);
-                                        const lastMessage = convo.messages[convo.messages.length - 1];
-                                        return (
-                                            <li key={convo.id} onClick={() => setActiveConversationId(convo.id)} className="p-4 flex items-center space-x-4 cursor-pointer hover:bg-gray-50 border-b">
-                                                <img src={otherUser?.avatarUrl} alt={otherUser?.name} className="w-12 h-12 rounded-full" />
-                                                <div className="flex-1 overflow-hidden">
-                                                    <div className="flex justify-between">
-                                                        <p className="font-semibold text-gray-800 truncate">{otherUser?.name}</p>
-                                                        {/* Could add message timestamp here */}
-                                                    </div>
-                                                    <p className="text-sm text-gray-500 truncate">{lastMessage?.text || `Conversation about "${convo.listing.title}"`}</p>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            ) : (
-                                <div className="text-center p-10 text-gray-600">
-                                    <p>You don't have any conversations yet.</p>
-                                </div>
-                            )}
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <header className="flex items-center justify-between p-3 border-b sticky top-0 bg-white z-10">
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setActiveConversationId(null)} className="text-gray-500 hover:text-gray-800 p-1">
-                                    <ChevronLeftIcon className="h-6 w-6" />
-                                </button>
-                                <img src={getOtherParticipant(activeConversation)?.avatarUrl} alt="" className="w-8 h-8 rounded-full" />
-                                <div>
-                                    <h3 className="font-bold text-gray-800 text-sm leading-tight">{getOtherParticipant(activeConversation)?.name}</h3>
-                                    <p className="text-xs text-gray-500 truncate leading-tight">{activeConversation.listing.title}</p>
-                                </div>
-                            </div>
-                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                                <XIcon className="h-6 w-6" />
-                            </button>
-                        </header>
-                        <div className="p-4 flex items-center justify-between border-b bg-gray-50 text-sm">
-                            <div className="flex items-center gap-2 text-gray-600">
-                                <LanguagesIcon className="h-5 w-5" />
-                                <span>Translate conversation to:</span>
-                            </div>
-                             <div className="flex items-center gap-2">
-                                {isTranslating && <span className="text-xs text-gray-500 animate-pulse">Translating...</span>}
-                                <LanguageSelector selectedLang={userLanguage} onChange={onLanguageChange} />
-                            </div>
-                        </div>
-                        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-100">
-                            {activeConversation.messages.map(msg => {
-                                const messageText = msg.senderId === currentUser.id
-                                    ? msg.text
-                                    : translatedMessages[msg.id] || msg.text;
-                                
-                                const isTranslated = msg.senderId !== currentUser.id &&
-                                                     translatedMessages[msg.id] &&
-                                                     translatedMessages[msg.id] !== msg.text;
 
-                                return (
-                                    <div key={msg.id} className={`flex flex-col ${msg.senderId === currentUser.id ? 'items-end' : 'items-start'}`}>
-                                        <div className={`max-w-[80%] p-3 rounded-xl ${msg.senderId === currentUser.id ? 'bg-cyan-600 text-white' : 'bg-white text-gray-800 shadow-sm'}`}>
-                                            <p className="text-sm">{messageText}</p>
+    if (!isOpen) return null;
+
+    return (
+         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-[80vh] flex overflow-hidden border border-gray-200">
+                
+                {/* SIDEBAR (List) */}
+                <div className={`w-full md:w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col ${activeConversationId || activeConversationId === 'NEW_DRAFT' ? 'hidden md:flex' : 'flex'}`}>
+                    <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
+                        <h2 className="text-xl font-bold text-gray-800">Inbox</h2>
+                        <button onClick={onClose} className="md:hidden text-gray-500">
+                            <XIcon className="h-6 w-6" />
+                        </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto">
+                        {loading && conversations.length === 0 && (
+                            <div className="p-8 text-center text-gray-400 text-sm">Loading chats...</div>
+                        )}
+                        
+                        {!loading && conversations.length === 0 && (
+                            <div className="p-8 text-center text-gray-500">
+                                <MessageSquareIcon className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                                <p>No messages yet.</p>
+                            </div>
+                        )}
+
+                        {conversations.map(convo => (
+                            <div 
+                                key={convo.id} 
+                                onClick={() => setActiveConversationId(convo.id)} 
+                                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors ${activeConversationId === convo.id ? 'bg-white border-l-4 border-l-cyan-600 shadow-sm' : ''}`}
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <img src={convo.participant.avatar} alt="" className="w-10 h-10 rounded-full object-cover bg-gray-200" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-baseline">
+                                            <h3 className="text-sm font-bold text-gray-900 truncate">{convo.participant.name}</h3>
+                                            <span className="text-xs text-gray-400">
+                                                {new Date(convo.lastMessage.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric'})}
+                                            </span>
                                         </div>
-                                        {isTranslated && (
-                                            <p className="text-xs text-gray-400 mt-1 italic">Original: "{msg.text}"</p>
-                                        )}
+                                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                                            {convo.listing?.title && <span className="text-cyan-600 font-medium">[{convo.listing.title}] </span>}
+                                            {convo.lastMessage.text}
+                                        </p>
                                     </div>
-                                );
-                            })}
-                            <div ref={messagesEndRef} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* CHAT AREA */}
+                <div className={`flex-1 flex flex-col bg-white ${!activeConversationId && activeConversationId !== 'NEW_DRAFT' ? 'hidden md:flex' : 'flex'}`}>
+                    
+                    {/* Chat Header */}
+                    {activeConversationId ? (
+                        <>
+                            <header className="p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => setActiveConversationId(null)} className="md:hidden text-gray-500">
+                                        <ChevronLeftIcon className="h-6 w-6" />
+                                    </button>
+                                    
+                                    <img 
+                                        src={activeConversation ? activeConversation.participant.avatar : draftRecipient?.avatarUrl} 
+                                        alt="" 
+                                        className="w-10 h-10 rounded-full border border-gray-200" 
+                                    />
+                                    <div>
+                                        <h3 className="font-bold text-gray-900">
+                                            {activeConversation ? activeConversation.participant.name : draftRecipient?.name}
+                                        </h3>
+                                        <p className="text-xs text-cyan-600 font-medium truncate max-w-[200px]">
+                                            {activeConversation?.listing?.title || draftListing?.title}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border">
+                                        <LanguagesIcon className="h-4 w-4 text-gray-500" />
+                                        <LanguageSelector selectedLang={userLanguage} onChange={onLanguageChange} />
+                                    </div>
+                                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                                        <XIcon className="h-6 w-6" />
+                                    </button>
+                                </div>
+                            </header>
+
+                            {/* Messages */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+                                {activeConversationId === 'NEW_DRAFT' && (
+                                    <div className="text-center py-10 text-gray-400 text-sm">
+                                        <p>This is the start of your conversation with {draftRecipient?.name} regarding <strong>{draftListing?.title}</strong>.</p>
+                                        <p className="mt-2 text-xs">Say hi! 👋</p>
+                                    </div>
+                                )}
+
+                                {activeConversation && activeConversation.fullMessages?.map((msg: any) => {
+                                    const isMe = msg.senderId === currentUser.id;
+                                    const translated = translatedMessages[msg.id];
+                                    
+                                    return (
+                                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm relative ${isMe ? 'bg-cyan-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'}`}>
+                                                <p className="text-sm leading-relaxed">{translated || msg.text}</p>
+                                                {translated && (
+                                                    <p className="text-[10px] mt-1 opacity-70 italic border-t border-white/20 pt-1">
+                                                        Original: "{msg.text}"
+                                                    </p>
+                                                )}
+                                                <span className={`text-[10px] block mt-1 text-right ${isMe ? 'text-cyan-100' : 'text-gray-400'}`}>
+                                                    {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Input */}
+                            <div className="p-4 border-t border-gray-200 bg-white">
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="text"
+                                        value={messageInput}
+                                        onChange={(e) => setMessageInput(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                                        placeholder="Type a message..."
+                                        className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent focus:bg-white focus:border-cyan-500 focus:ring-0 rounded-full transition-all text-sm"
+                                    />
+                                    <button 
+                                        onClick={handleSend}
+                                        disabled={!messageInput.trim()} 
+                                        className="absolute right-2 p-2 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <SendIcon className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <MessageSquareIcon className="h-10 w-10 text-gray-300" />
+                            </div>
+                            <p className="font-medium">Select a conversation to start chatting</p>
                         </div>
-                        <div className="p-4 border-t flex items-center bg-white">
-                            <input
-                                type="text"
-                                value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                placeholder="Type your message..."
-                                className="w-full border-gray-300 rounded-full shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-4 py-2"
-                            />
-                            <button onClick={handleSend} className="ml-2 flex-shrink-0 p-2 text-white bg-cyan-600 rounded-full hover:bg-cyan-700">
-                                <SendIcon className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

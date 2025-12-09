@@ -4,7 +4,7 @@ import {
     User, Listing, HeroSlide, Banner, Conversation, 
     CategoryImagesMap, ListingCategory, Booking 
 } from '../types';
-import { mockConversations, initialCategoryImages, mockUsers, mockListings, initialHeroSlides, initialBanners, mockBookings } from '../constants';
+import { initialCategoryImages, mockUsers, mockListings, initialHeroSlides, initialBanners, mockBookings } from '../constants';
 import { format, eachDayOfInterval } from 'date-fns';
 
 // The entire structure of our "database"
@@ -44,7 +44,7 @@ export const fetchAllData = async (): Promise<AppData> => {
             categoryImages: data.categoryImages || initialCategoryImages,
             logoUrl: data.logoUrl || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
             paymentApiKey: data.paymentApiKey || '',
-            conversations: mockConversations, // Chat still local for MVP
+            conversations: [], // STRICT REAL MODE: No mock conversations
             bookings: data.bookings.length ? data.bookings : mockBookings,
         };
     } catch (error) {
@@ -65,7 +65,7 @@ export const fetchAllData = async (): Promise<AppData> => {
             categoryImages: initialCategoryImages,
             logoUrl: 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
             paymentApiKey: '',
-            conversations: mockConversations,
+            conversations: [], // Empty conversations for fallback
             bookings: mockBookings,
         };
     }
@@ -111,6 +111,42 @@ export const sendEmail = async (type: 'welcome' | 'booking_confirmation' | 'mess
     } catch (e) {
         console.warn("Email sending failed (Network error):", e);
         return false;
+    }
+};
+
+/**
+ * Sends a message to the backend API.
+ * REMOVED: Fallback to local fake data. Now forces DB usage.
+ */
+export const sendMessageToBackend = async (
+    senderId: string, 
+    text: string, 
+    listingId?: string, 
+    recipientId?: string, 
+    conversationId?: string
+): Promise<{ success: boolean, conversationId?: string }> => {
+    try {
+        const response = await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                conversationId,
+                senderId,
+                text,
+                listingId,
+                recipientId
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return { success: true, conversationId: data.conversationId };
+        }
+        console.error("Chat backend failed", await response.text());
+        return { success: false };
+    } catch (e) {
+        console.error("Chat backend unavailable:", e);
+        return { success: false };
     }
 };
 
@@ -265,7 +301,7 @@ export const updatePaymentApiKey = async (newKey: string): Promise<string> => {
 };
 
 export const updateConversations = async (updatedConversations: Conversation[]): Promise<Conversation[]> => {
-    // Chat stored in memory for demo
+    // Deprecated for real-time DB sync
     return updatedConversations;
 };
 

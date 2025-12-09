@@ -14,6 +14,7 @@ import AdminPage from './components/AdminPage';
 import UserDashboardPage from './components/UserDashboardPage';
 import LoginModal from './components/LoginModal';
 import ChatLayout from './components/chat/ChatLayout';
+import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
@@ -40,6 +41,10 @@ const App: React.FC = () => {
     const [listingToEdit, setListingToEdit] = useState<Listing | undefined>(undefined);
 
     // Chat State
+    const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
+    const [chatContext, setChatContext] = useState<{ listing?: Listing, recipient?: User, conversationId?: string } | null>(null);
+    const [userLanguage, setUserLanguage] = useState('English');
+    // Deep linking for main layout chat
     const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
 
     // Notification System State
@@ -180,28 +185,20 @@ const App: React.FC = () => {
         addNotification('info', 'Logged Out', 'See you next time!');
     };
 
-    const handleStartConversation = async (listing: Listing) => {
+    const handleStartConversation = (listing: Listing) => {
         if (!session) {
             setIsLoginModalOpen(true);
             return;
         }
         
-        // REAL BACKEND INTEGRATION:
-        // We attempt to create the conversation by sending an initial "system" message or greeting.
-        // This ensures the conversation ID exists in the DB so ChatLayout can fetch it.
-        const result = await mockApi.sendMessageToBackend(
-            session.id, 
-            `Hi! I'm interested in your ${listing.title}. Is it available?`, 
-            listing.id, 
-            listing.owner.id
-        );
-
-        if (result.success && result.conversationId) {
-            setInitialConversationId(result.conversationId);
-            handleNavigate('inbox');
-        } else {
-            addNotification('message', 'Error', 'Could not start conversation. Please try again.');
-        }
+        // Setup context for the chat modal.
+        // It will decide if it needs to fetch an existing convo or create a new one.
+        setChatContext({
+            listing: listing,
+            recipient: listing.owner
+        });
+        
+        setIsChatInboxOpen(true);
     };
 
     const handleCreateBooking = async (
@@ -407,7 +404,10 @@ const App: React.FC = () => {
                     onToggleFavorite={handleToggleFavorite}
                 />;
             case 'inbox':
-                return <ChatLayout initialSelectedId={initialConversationId} />;
+                return <ChatLayout 
+                            initialSelectedId={initialConversationId} 
+                            currentUser={session} 
+                       />;
             case 'listingDetail':
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
                 return listing ? <ListingDetailPage 
@@ -534,7 +534,15 @@ const App: React.FC = () => {
                 onNavigate={handleNavigate}
                 onLoginClick={() => setIsLoginModalOpen(true)}
                 onLogoutClick={handleLogout}
-                onOpenChat={() => { setInitialConversationId(null); handleNavigate('inbox'); }}
+                onOpenChat={() => { 
+                    setInitialConversationId(null); 
+                    setChatContext(null);
+                    if (session) {
+                        handleNavigate('inbox');
+                    } else {
+                        setIsLoginModalOpen(true);
+                    }
+                }}
                 session={session}
                 logoUrl={logoUrl}
             />
@@ -548,6 +556,17 @@ const App: React.FC = () => {
                     onLogin={handleLogin}
                     onRegister={handleRegister}
                     onClose={() => setIsLoginModalOpen(false)} 
+                />
+            )}
+            
+            {isChatInboxOpen && session && (
+                 <ChatInboxModal
+                    isOpen={isChatInboxOpen}
+                    onClose={() => setIsChatInboxOpen(false)}
+                    currentUser={session}
+                    initialContext={chatContext}
+                    userLanguage={userLanguage}
+                    onLanguageChange={setUserLanguage}
                 />
             )}
         </div>

@@ -1,157 +1,72 @@
+
 import React, { useState, useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useChatSocket } from '../../hooks/useChatSocket';
-import { Conversation, User } from '../../types/chat'; 
 import { Sparkles, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
-import * as mockApi from '../../services/mockApiService';
+import { Session } from '../../types';
 
 interface ChatLayoutProps {
     initialSelectedId?: string | null;
+    currentUser: Session | null;
 }
 
-const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
+const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser }) => {
   const [selectedConvoId, setSelectedConvoId] = useState<string | null>(initialSelectedId || null);
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   
-  // Real Data State
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  // STRICTLY use the hook. No side-loading of mock data.
+  const { conversations, messages, sendMessage, isTyping, loading } = useChatSocket(currentUser?.id, selectedConvoId);
 
-  // Update selected ID if prop changes
+  const activeConvo = conversations.find(c => c.id === selectedConvoId);
+
+  // Update selected ID if prop changes (deep linking from listing page)
   useEffect(() => {
       if (initialSelectedId) {
           setSelectedConvoId(initialSelectedId);
       }
   }, [initialSelectedId]);
 
-  // 1. Initialize User & Fetch Conversations
   useEffect(() => {
-    let interval: any;
-    
-    const init = async () => {
-        const appData = await mockApi.fetchAllData(); 
-        // HACK for Demo: Use user-1 (Carlos) if no prop provided
-        const loggedInUser = appData.users[0]; 
-        setCurrentUser(loggedInUser);
-
-        // Fetch Conversations for this user
-        // TRY 1: Real Backend
-        try {
-            const res = await fetch('/api/chat/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: loggedInUser.id })
-            });
-            
-            if (res.ok) {
-                const data = await res.json();
-                
-                // Map Backend Conversation to UI Conversation
-                const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
-                     const otherId = Object.keys(c.participants).find(id => id !== loggedInUser.id);
-                     const otherUser = c.participants[otherId || ''];
-                     const lastMsg = c.messages[c.messages.length - 1];
-
-                     return {
-                         id: c.id,
-                         participant: {
-                             id: otherUser?.id || 'unknown',
-                             name: otherUser?.name || 'Unknown User',
-                             avatar: otherUser?.avatarUrl || '',
-                             isOnline: false,
-                             locale: 'en-US'
-                         },
-                         lastMessage: lastMsg ? {
-                             id: lastMsg.id,
-                             senderId: lastMsg.senderId,
-                             text: lastMsg.text,
-                             originalText: lastMsg.text,
-                             timestamp: new Date(lastMsg.timestamp),
-                             status: 'read',
-                             type: 'text'
-                         } : { 
-                             id: 'sys', senderId: 'sys', text: 'New conversation', originalText: '', timestamp: new Date(), status: 'read', type: 'system' 
-                         },
-                         unreadCount: 0
-                     };
-                });
-                setConversations(mappedConvos);
-            } else {
-                throw new Error("API Failed");
-            }
-        } catch (e) {
-            // TRY 2: Fallback to Local Memory (from appData which now includes fallback logic)
-            // This is crucial for demo/testing without a real DB
-            if (appData.conversations && appData.conversations.length > 0) {
-                 const mappedConvos: Conversation[] = appData.conversations.map((c: any) => {
-                     const otherId = Object.keys(c.participants).find(id => id !== loggedInUser.id);
-                     const otherUser = c.participants[otherId || ''];
-                     const lastMsg = c.messages[c.messages.length - 1];
-                     
-                     return {
-                         id: c.id,
-                         participant: {
-                             id: otherUser?.id || 'unknown',
-                             name: otherUser?.name || 'Unknown User',
-                             avatar: otherUser?.avatarUrl || '',
-                             isOnline: false,
-                             locale: 'en-US'
-                         },
-                         lastMessage: lastMsg ? {
-                             id: lastMsg.id,
-                             senderId: lastMsg.senderId,
-                             text: lastMsg.text,
-                             originalText: lastMsg.text,
-                             timestamp: new Date(lastMsg.timestamp),
-                             status: 'read',
-                             type: 'text'
-                         } : { 
-                             id: 'sys', senderId: 'sys', text: 'Start talking...', originalText: '', timestamp: new Date(), status: 'read', type: 'system' 
-                         },
-                         unreadCount: 0
-                     };
-                 });
-                 setConversations(mappedConvos);
-            }
-        }
-    };
-    init();
-    
-    // Set up polling for the conversation LIST
-    interval = setInterval(init, 5000); 
-
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
     handleResize(); 
     window.addEventListener('resize', handleResize);
-    return () => {
-        window.removeEventListener('resize', handleResize);
-        clearInterval(interval);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Connect to our custom hook for the ACTIVE conversation messages
-  const { messages, sendMessage } = useChatSocket(currentUser?.id, selectedConvoId);
-
-  const activeConvo = conversations.find(c => c.id === selectedConvoId);
 
   const showList = !isMobileView || (isMobileView && !selectedConvoId);
   const showChat = !isMobileView || (isMobileView && selectedConvoId);
 
-  if (!currentUser) return <div className="p-10 text-center">Loading chat...</div>;
+  if (!currentUser) return (
+      <div className="flex items-center justify-center h-[60vh] flex-col text-gray-500">
+          <h2 className="text-xl font-bold mb-2">Please Log In</h2>
+          <p>You need to be logged in to view your inbox.</p>
+      </div>
+  );
 
   return (
     <div className="flex h-[calc(100vh-64px)] bg-gray-50 overflow-hidden rounded-lg shadow-xl border border-gray-200 m-4 max-w-7xl mx-auto">
       
       {/* LEFT SIDEBAR */}
-      <div className={`${showList ? 'block' : 'hidden'} w-full md:w-[350px] lg:w-[400px] h-full`}>
+      <div className={`${showList ? 'block' : 'hidden'} w-full md:w-[350px] lg:w-[400px] h-full flex flex-col border-r border-gray-200 bg-white`}>
         <ConversationList 
           conversations={conversations} 
           activeId={selectedConvoId} 
           onSelect={setSelectedConvoId} 
         />
+        {loading && conversations.length === 0 && (
+             <div className="p-4 text-center text-xs text-gray-400">Syncing messages...</div>
+        )}
+        {!loading && conversations.length === 0 && (
+             <div className="p-8 text-center text-gray-500 flex flex-col items-center">
+                 <p className="font-semibold">No messages found</p>
+                 <p className="text-sm text-gray-400 mt-1">
+                    Your inbox is empty. Start a chat from a listing!
+                 </p>
+             </div>
+        )}
       </div>
 
       {/* RIGHT CHAT AREA */}
@@ -170,15 +85,20 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
                 
                 <img 
                   src={activeConvo.participant.avatar} 
-                  className="w-10 h-10 rounded-full border border-gray-100" 
-                  alt="" 
+                  className="w-10 h-10 rounded-full border border-gray-100 object-cover" 
+                  alt={activeConvo.participant.name} 
                 />
                 
                 <div>
                   <h3 className="font-bold text-slate-800 text-sm md:text-base">
                     {activeConvo.participant.name}
                   </h3>
-                  <p className="text-xs text-green-600 font-medium">Online</p>
+                  <div className="flex items-center gap-2">
+                      <p className="text-xs text-green-600 font-medium">Online</p>
+                      {activeConvo.listing && (
+                          <span className="text-xs text-gray-400">• {activeConvo.listing.title}</span>
+                      )}
+                  </div>
                 </div>
               </div>
 
@@ -195,21 +115,44 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
                   <span>{translationEnabled ? 'AI On' : 'AI Off'}</span>
                 </button>
                 
-                <div className="hidden md:flex items-center border-l pl-3 ml-1">
+                <div className="hidden md:flex items-center border-l pl-3 ml-1 gap-3">
+                    <Phone size={20} className="text-gray-400 hover:text-indigo-600 cursor-pointer" />
+                    <Video size={20} className="text-gray-400 hover:text-indigo-600 cursor-pointer" />
                     <MoreVertical size={20} className="text-gray-400 hover:text-gray-600 cursor-pointer" />
                 </div>
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4 z-0">
+            <div className="flex-1 overflow-y-auto p-4 z-0 space-y-4">
+                {/* Listing Context Bubble if available */}
+                {activeConvo.listing && (
+                    <div className="flex justify-center mb-4">
+                        <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200 shadow-sm flex items-center gap-2 text-xs text-gray-600">
+                            <span>Inquiry regarding: <strong>{activeConvo.listing.title}</strong></span>
+                        </div>
+                    </div>
+                )}
+
                 {messages.map((msg) => (
                   <MessageBubble 
                     key={msg.id} 
                     message={msg} 
-                    isOwnMessage={msg.senderId === 'me'}
+                    isOwnMessage={msg.senderId === 'me' || msg.senderId === currentUser?.id}
                     globalTranslationEnabled={translationEnabled}
                   />
                 ))}
+                
+                {isTyping && (
+                    <div className="flex justify-start">
+                        <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm border border-gray-200">
+                            <div className="flex gap-1">
+                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></span>
+                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <ChatInput onSendMessage={sendMessage} />
@@ -219,8 +162,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId }) => {
             <div className="w-24 h-24 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
               <span className="text-4xl">👋</span>
             </div>
-            <h3 className="text-lg font-bold text-gray-600">Select a conversation</h3>
-            <p className="max-w-xs mt-2 text-sm">Choose a chat from the left to start messaging.</p>
+            <h3 className="text-lg font-bold text-gray-600">Welcome to your Inbox</h3>
+            <p className="max-w-xs mt-2 text-sm">Select a conversation from the left to coordinate rentals safely.</p>
           </div>
         )}
       </div>

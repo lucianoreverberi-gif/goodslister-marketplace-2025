@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ conversations: [] });
     }
 
-    // 2. Fetch Conversation Details + Listings + Participants
+    // 2. Fetch Conversation Details
     const conversationsResult = await sql`
         SELECT c.id, c.listing_id, c.updated_at
         FROM conversations c
@@ -43,33 +43,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ORDER BY created_at ASC
     `;
 
-    // Fetch Participants Info
+    // Fetch Participants Info (ROBUST FIX: LEFT JOIN)
+    // We select cp.user_id as the primary ID to ensure we get a participant even if the user record is missing
     const participantsResult = await sql`
-        SELECT cp.conversation_id, u.id, u.name, u.avatar_url
+        SELECT cp.conversation_id, cp.user_id as id, u.name, u.avatar_url
         FROM conversation_participants cp
-        JOIN users u ON cp.user_id = u.id
+        LEFT JOIN users u ON cp.user_id = u.id
         WHERE cp.conversation_id = ANY(${convoIds as any})
     `;
     
     // Fetch Listing Info
-    // Extract unique listing IDs
-    const listingIds = [...new Set(conversationsResult.rows.map(c => c.listing_id))];
-    const listingsResult = await sql`
-        SELECT id, title, images
-        FROM listings
-        WHERE id = ANY(${listingIds as any})
-    `;
+    const listingIds = [...new Set(conversationsResult.rows.map(c => c.listing_id))].filter(id => id);
+    let listingsResult = { rows: [] };
+    
+    if (listingIds.length > 0) {
+        listingsResult = await sql`
+            SELECT id, title, images
+            FROM listings
+            WHERE id = ANY(${listingIds as any})
+        `;
+    }
 
-    // 3. Reconstruct the Data Structure expected by Frontend (Conversation Interface)
+    // 3. Reconstruct Data
     const conversations = conversationsResult.rows.map(convo => {
         const participants = participantsResult.rows
             .filter(p => p.conversation_id === convo.id)
             .reduce((acc, p) => {
+                // Fallback if name is missing from DB join
+                const displayName = p.name || `User ${p.id.substring(0, 5)}`;
+                const displayAvatar = p.avatar_url || `https://i.pravatar.cc/150?u=${p.id}`;
+                
                 acc[p.id] = { 
                     id: p.id, 
-                    name: p.name, 
-                    avatarUrl: p.avatar_url,
-                    email: '', // Not exposing email here for privacy in chat object if not needed
+                    name: displayName, 
+                    avatarUrl: displayAvatar,
+                    email: '', 
                     registeredDate: '',
                     favorites: []
                 };
@@ -81,7 +89,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             id: listingRow.id,
             title: listingRow.title,
             images: listingRow.images || [],
-            // Minimal mock data for required fields
             description: '', category: 'Boats', pricingType: 'daily', location: { city: '', state: '', country: '', latitude: 0, longitude: 0},
             owner: { id: '', name: '', email: '', registeredDate: '', avatarUrl: '', favorites: [] } 
         } : null;
