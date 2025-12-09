@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Message, Conversation } from '../types/chat';
 
@@ -14,7 +15,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     isPollingRef.current = true;
 
     try {
-      // CACHE BUSTING: Add ?t=timestamp to force fresh request
+      // CACHE BUSTING: Add ?t=timestamp to force fresh request to Vercel
       const response = await fetch(`/api/chat/sync?t=${Date.now()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,9 +115,9 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     };
   }, [currentUserId, fetchConversations]);
 
-  // 3. Send Message
-  const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string) => {
-    if (!currentUserId) return;
+  // 3. Send Message - Now returns Promise<string | null> (The New Conversation ID)
+  const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string): Promise<string | null> => {
+    if (!currentUserId) return null;
 
     const tempId = `temp-${Date.now()}`;
     const targetConvoId = convId || activeConversationId;
@@ -131,6 +132,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         type: 'text'
     };
 
+    // If it's a draft, use 'NEW_DRAFT' so the UI shows it optimistically
     const localConvoId = targetConvoId || 'NEW_DRAFT';
     setLocalMessages(prev => [...prev, { ...tempMsg, conversationId: localConvoId } as any]);
 
@@ -138,6 +140,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         const payload = {
             senderId: currentUserId,
             text,
+            // If it's a new draft, don't send 'NEW_DRAFT' to backend, send undefined so backend creates new
             conversationId: targetConvoId === 'NEW_DRAFT' ? undefined : targetConvoId,
             listingId,
             recipientId
@@ -150,15 +153,29 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         });
 
         if (res.ok) {
-            await fetchConversations();
+            const data = await responseData(res);
+            
+            // Force immediate sync to get the server's version of the message
+            fetchConversations();
+            
+            // Remove optimistic message once synced
             setLocalMessages(prev => prev.filter(m => m.id !== tempId));
+            
+            // Return the actual conversation ID created by the server
+            return data.conversationId; 
         } else {
             console.error("Send failed");
+            return null;
         }
     } catch (e) {
         console.error("Send network error", e);
+        return null;
     }
   };
+
+  const responseData = async(res: Response) => {
+      try { return await res.json(); } catch(e) { return {}; }
+  }
 
   const getActiveMessages = () => {
       if (!activeConversationId) return [];
@@ -166,7 +183,13 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
       const convo = conversations.find(c => c.id === activeConversationId);
       const dbMessages = convo ? (convo.fullMessages || []) : [];
       
-      const pendingMessages = localMessages.filter(m => (m as any).conversationId === activeConversationId);
+      // Filter local messages. 
+      // If we are in 'NEW_DRAFT' mode, show 'NEW_DRAFT' local messages.
+      // If we are in real ID mode, show messages for that ID.
+      const pendingMessages = localMessages.filter(m => 
+          (m as any).conversationId === activeConversationId || 
+          (activeConversationId === 'NEW_DRAFT' && (m as any).conversationId === 'NEW_DRAFT')
+      );
       
       return [...dbMessages, ...pendingMessages];
   };
@@ -175,7 +198,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     conversations,
     messages: getActiveMessages(),
     sendMessage,
-    refresh: fetchConversations, // Export manual refresh capability
+    refresh: fetchConversations,
     isTyping: false,
     loading
   };

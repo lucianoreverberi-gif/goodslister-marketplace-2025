@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessageBubble from './MessageBubble';
@@ -33,6 +34,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleSendMessage = async (text: string) => {
+      // FIX: Capture new ID if created and switch view immediately
+      const newId = await sendMessage(text, selectedConvoId!);
+      if (newId && selectedConvoId !== newId) {
+          setSelectedConvoId(newId);
+      }
+  };
 
   const showList = !isMobileView || (isMobileView && !selectedConvoId);
   const showChat = !isMobileView || (isMobileView && selectedConvoId);
@@ -150,7 +159,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
                 ))}
             </div>
 
-            <ChatInput onSendMessage={(text) => sendMessage(text, selectedConvoId!)} />
+            <ChatInput onSendMessage={handleSendMessage} />
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">

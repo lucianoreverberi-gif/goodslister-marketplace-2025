@@ -34,7 +34,7 @@ const LanguageSelector: React.FC<{ selectedLang: string, onChange: (lang: string
 };
 
 const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, currentUser, initialContext, userLanguage, onLanguageChange }) => {
-    // Local State for Selection
+    // Local State
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
     
     // Hook: Pass active ID so it returns the correct merged message stream
@@ -45,7 +45,7 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
     const [isTranslating, setIsTranslating] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Handle Initial Context / Deep Linking
+    // Handle Initial Context
     useEffect(() => {
         if (isOpen && initialContext) {
             if (initialContext.conversationId) {
@@ -64,7 +64,6 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
         }
     }, [isOpen, initialContext, conversations.length]); // Check conversations length to see if sync finished
 
-    // Identify Active Conversation Object (for header info)
     const activeConversation = activeConversationId !== 'NEW_DRAFT' 
         ? conversations.find(c => c.id === activeConversationId)
         : null;
@@ -72,22 +71,49 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
     const draftRecipient = activeConversationId === 'NEW_DRAFT' ? initialContext?.recipient : null;
     const draftListing = activeConversationId === 'NEW_DRAFT' ? initialContext?.listing : null;
 
-    // Scroll to bottom when messages change
+    // Scroll to bottom
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages.length, activeConversationId]);
 
+    // Translation Logic
+    useEffect(() => {
+        if (!activeConversation || !activeConversation.fullMessages) return;
+        const translateAllMessages = async () => {
+            if (userLanguage === 'English') {
+                 setTranslatedMessages({}); 
+                 return;
+            }
+            setIsTranslating(true);
+            const translations: Record<string, string> = {};
+            const messagesToTranslate = activeConversation.fullMessages!.filter(
+                (msg: any) => msg.senderId !== currentUser.id && msg.text
+            );
+            await Promise.all(messagesToTranslate.map(async (msg: any) => {
+                const translatedText = await translateText(msg.text, userLanguage, "English");
+                translations[msg.id] = translatedText;
+            }));
+            setTranslatedMessages(translations);
+            setIsTranslating(false);
+        };
+        translateAllMessages();
+    }, [activeConversation, userLanguage, currentUser.id]);
+
     const handleSend = async () => {
         if (!messageInput.trim()) return;
+        
         const text = messageInput;
         setMessageInput(''); // Clear immediately for UX
 
         if (activeConversationId === 'NEW_DRAFT' && draftListing && draftRecipient) {
-            await sendMessage(text, undefined, draftListing.id, draftRecipient.id);
-            // We stay in NEW_DRAFT state visually, but the hook handles the optimistic update
-            // Once the poll happens, it will sync the real conversation
+            // FIX: Wait for the new ID and update state immediately
+            const newId = await sendMessage(text, undefined, draftListing.id, draftRecipient.id);
+            if (newId) {
+                // Switch context to the real conversation ID immediately
+                setActiveConversationId(newId);
+            }
         } else if (activeConversationId) {
             await sendMessage(text, activeConversationId);
         }
@@ -149,7 +175,6 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
                 {/* CHAT AREA */}
                 <div className={`flex-1 flex flex-col bg-white ${!activeConversationId ? 'hidden md:flex' : 'flex'}`}>
                     
-                    {/* Chat Header */}
                     {activeConversationId ? (
                         <>
                             <header className="p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10 bg-white">
