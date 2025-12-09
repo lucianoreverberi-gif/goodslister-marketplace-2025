@@ -49,6 +49,7 @@ interface ListingDetailPageProps {
     ) => Promise<Booking>;
     isFavorite: boolean;
     onToggleFavorite: (id: string) => void;
+    onViewOwnerProfile?: () => void; // New Prop
 }
 
 const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
@@ -243,7 +244,7 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
 };
 
 
-const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite }) => {
+const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [range, setRange] = useState<DateRange | undefined>();
     const [isBooking, setIsBooking] = useState(false);
@@ -453,10 +454,13 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                              <div className="mt-6 pt-6 border-t border-gray-200">
                                 <div className="flex items-center justify-between">
                                      <h2 className="text-lg font-semibold text-gray-800">Owner</h2>
-                                      <div className="flex items-center text-right">
+                                      <div 
+                                        className="flex items-center text-right cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={onViewOwnerProfile}
+                                      >
                                         <img src={listing.owner.avatarUrl} alt={listing.owner.name} className="w-10 h-10 rounded-full mr-2"/>
                                         <div>
-                                            <p className="font-semibold text-gray-800">{listing.owner.name}</p>
+                                            <p className="font-semibold text-gray-800 hover:text-cyan-600 transition-colors">{listing.owner.name}</p>
                                         </div>
                                     </div>
                                 </div>

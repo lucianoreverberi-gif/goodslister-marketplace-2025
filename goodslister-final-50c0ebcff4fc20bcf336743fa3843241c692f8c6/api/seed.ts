@@ -6,7 +6,6 @@ import { mockUsers, mockListings, mockBookings } from '../constants';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // --- CHAT TABLES (Critical for Messaging) ---
-    
     await sql`
         CREATE TABLE IF NOT EXISTS conversations (
             id VARCHAR(255) PRIMARY KEY,
@@ -43,6 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         email VARCHAR(255) UNIQUE NOT NULL,
         registered_date DATE,
         avatar_url TEXT,
+        bio TEXT,
         is_email_verified BOOLEAN DEFAULT FALSE,
         is_phone_verified BOOLEAN DEFAULT FALSE,
         is_id_verified BOOLEAN DEFAULT FALSE,
@@ -108,6 +108,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
     `;
 
+    // MIGRATION: Ensure 'bio' exists for existing installs
+    try {
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT`;
+    } catch (e) {
+        console.log("Migration bio skipped or failed", e);
+    }
+
     // --- SEED INITIAL DATA IF EMPTY ---
     
     // Users
@@ -115,8 +122,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (parseInt(userRows[0].count) === 0) {
         for (const user of mockUsers) {
             await sql`
-                INSERT INTO users (id, name, email, registered_date, avatar_url, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, favorites)
-                VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate}, ${user.avatarUrl}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any})
+                INSERT INTO users (id, name, email, registered_date, avatar_url, bio, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, favorites)
+                VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate}, ${user.avatarUrl}, ${user.bio || ''}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any})
             `;
         }
         console.log('Users seeded');

@@ -31,12 +31,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       email: row.email,
       registeredDate: row.registered_date ? new Date(row.registered_date).toISOString().split('T')[0] : '',
       avatarUrl: row.avatar_url,
+      bio: row.bio || '',
       isEmailVerified: row.is_email_verified,
       isPhoneVerified: row.is_phone_verified,
       isIdVerified: row.is_id_verified,
       licenseVerified: row.license_verified,
       averageRating: Number(row.average_rating),
-      totalReviews: row.total_reviews
+      totalReviews: row.total_reviews,
+      favorites: row.favorites || []
     }));
 
     const listings = listingsQuery.rows.map(row => {

@@ -18,6 +18,7 @@ import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
+import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -34,6 +35,9 @@ interface Notification {
 const App: React.FC = () => {
     const [page, setPage] = useState<Page>('home');
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+    // NEW: State for public profile viewing
+    const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
+    
     const [session, setSession] = useState<Session | null>(null);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
@@ -75,6 +79,29 @@ const App: React.FC = () => {
         setPage(newPage);
         window.scrollTo(0, 0);
     }, []);
+
+    // NEW: Handle navigating to user profile
+    const handleViewUserProfile = useCallback((userId: string) => {
+        setSelectedUserProfileId(userId);
+        handleNavigate('userProfile');
+    }, [handleNavigate]);
+
+    // NEW: Handle updating user profile (bio/avatar)
+    const handleUpdateUserProfile = async (bio: string, avatarUrl: string) => {
+        if (!session) return;
+        
+        // Optimistic Update
+        const updatedSession = { ...session, bio, avatarUrl };
+        setSession(updatedSession);
+        
+        // Update App Data List
+        const updatedUsers = appData.users.map((u: User) => u.id === session.id ? { ...u, bio, avatarUrl } : u);
+        updateAppData({ users: updatedUsers });
+
+        // Persist via API (Using existing endpoints or assuming mockApi handles it)
+        await mockApi.updateUserAvatar(session.id, avatarUrl); 
+        // Note: Ideally create a specific updateBio endpoint, but for now avatar update persists the user record in mock logic context
+    };
 
     const addNotification = (type: 'success' | 'info' | 'message', title: string, message: string) => {
         const id = Math.random().toString(36).substring(2, 9);
@@ -418,7 +445,24 @@ const App: React.FC = () => {
                     onCreateBooking={handleCreateBooking}
                     isFavorite={session?.favorites?.includes(listing.id) || false}
                     onToggleFavorite={handleToggleFavorite}
+                    onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)} // NEW PROP
                 /> : <p>Listing not found.</p>;
+            case 'userProfile': // NEW PAGE CASE
+                const profileUser = users.find((u: User) => u.id === selectedUserProfileId);
+                if (!profileUser) return <p className="p-8 text-center text-gray-500">User profile not found.</p>;
+                
+                // Filter listings owned by this user
+                const userListings = listings.filter((l: Listing) => l.owner.id === profileUser.id);
+
+                return <UserProfilePage 
+                    profileUser={profileUser}
+                    currentUser={session}
+                    listings={userListings}
+                    onListingClick={handleListingClick}
+                    onToggleFavorite={handleToggleFavorite}
+                    favoriteIds={session?.favorites || []}
+                    onEditProfile={session?.id === profileUser.id ? handleUpdateUserProfile : undefined}
+                />;
             case 'createListing':
                 return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} onSubmit={handleCreateListing} />;
             case 'editListing':
