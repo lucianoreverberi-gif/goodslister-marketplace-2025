@@ -3,7 +3,7 @@ import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 1. Force Fresh Data (No Caching)
+  // 1. Force Fresh Data
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -19,8 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 2. Get Conversations for User
-    // We use DISTINCT to avoid duplicates if the participants table has messy data
+    // 2. Get Conversations (Using DISTINCT to avoid duplicate ghost chats)
     const convoIdsResult = await sql`
         SELECT DISTINCT conversation_id 
         FROM conversation_participants 
@@ -33,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ conversations: [] });
     }
 
-    // 3. Fetch Details
+    // 3. Fetch Conversation Metadata
     const conversationsResult = await sql`
         SELECT id, listing_id, updated_at
         FROM conversations 
@@ -41,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ORDER BY updated_at DESC
     `;
 
-    // 4. Fetch Messages
+    // 4. Fetch All Messages for these chats
     const messagesResult = await sql`
         SELECT id, conversation_id, sender_id, content, created_at
         FROM messages
@@ -49,7 +48,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ORDER BY created_at ASC
     `;
 
-    // 5. Fetch Participants (LEFT JOIN to never crash if user missing)
+    // 5. Fetch Participants (Fault Tolerant)
+    // We grab the user info directly. If the JOIN fails, we still get the ID from the participant table.
     const participantsResult = await sql`
         SELECT cp.conversation_id, cp.user_id as id, u.name, u.avatar_url
         FROM conversation_participants cp
@@ -68,14 +68,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
     }
 
-    // 7. Assemble Data
+    // 7. Assemble Logic
     const conversations = conversationsResult.rows.map(convo => {
-        // Participants Map
+        // Build Participant Map
         const participants = participantsResult.rows
             .filter(p => p.conversation_id === convo.id)
             .reduce((acc, p) => {
-                const displayName = p.name || 'Unknown User';
-                const displayAvatar = p.avatar_url || 'https://i.pravatar.cc/150?u=unknown';
+                const displayName = p.name || `User ${p.id.substring(0, 4)}`;
+                const displayAvatar = p.avatar_url || `https://i.pravatar.cc/150?u=${p.id}`;
                 
                 acc[p.id] = { 
                     id: p.id, 
@@ -85,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return acc;
             }, {} as any);
 
-        // Listing Data
+        // Attach Listing
         const listingRow = listingsResult.rows.find(l => l.id === convo.listing_id);
         const listing = listingRow ? {
             id: listingRow.id,
@@ -93,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             images: listingRow.images || []
         } : null;
 
-        // Messages
+        // Attach Messages
         const messages = messagesResult.rows
             .filter(m => m.conversation_id === convo.id)
             .map(m => ({

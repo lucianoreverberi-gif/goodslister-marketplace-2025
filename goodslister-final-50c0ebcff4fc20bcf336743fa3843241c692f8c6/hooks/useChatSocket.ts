@@ -8,14 +8,13 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
   const [loading, setLoading] = useState(true);
   const isPollingRef = useRef(false);
 
-  // 1. SYNC: Fetch Conversations from Real DB
+  // 1. SYNC
   const fetchConversations = useCallback(async () => {
     if (!currentUserId || isPollingRef.current) return;
     
     isPollingRef.current = true;
 
     try {
-      // CACHE BUSTING: Add timestamp to force fresh request
       const response = await fetch(`/api/chat/sync?t=${Date.now()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,7 +34,6 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 avatarUrl: 'https://i.pravatar.cc/150?u=unknown'
             };
             
-            // Robust last message check
             const lastMsgObj = c.messages && c.messages.length > 0 
                 ? c.messages[c.messages.length - 1] 
                 : null;
@@ -94,7 +92,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     }
   }, [currentUserId]);
 
-  // 2. Polling Interval
+  // 2. Polling
   useEffect(() => {
     if (!currentUserId) {
         setLoading(false);
@@ -102,7 +100,8 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     }
     
     fetchConversations();
-    const intervalId = setInterval(fetchConversations, 3000); // 3s Poll
+    // Aggressive polling to ensure liveness
+    const intervalId = setInterval(fetchConversations, 2000); 
     
     const handleFocus = () => fetchConversations();
     window.addEventListener('focus', handleFocus);
@@ -113,11 +112,10 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     };
   }, [currentUserId, fetchConversations]);
 
-  // 3. SEND: High Reliability Send Function
+  // 3. SEND
   const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string): Promise<string | null> => {
     if (!currentUserId) return null;
 
-    // Optimistic UI update
     const tempId = `temp-${Date.now()}`;
     const targetConvoId = convId || activeConversationId;
     
@@ -131,19 +129,17 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         type: 'text'
     };
 
-    // Show message locally immediately
     const localConvoId = targetConvoId || 'NEW_DRAFT';
     setLocalMessages(prev => [...prev, { ...tempMsg, conversationId: localConvoId } as any]);
 
-    // Data Prep for Backend
+    // Data Prep: Try to find missing IDs if not provided
     let finalRecipientId = recipientId;
     let finalListingId = listingId;
 
-    // If replying to existing chat, try to fill in missing details from local state
-    // so the backend can perform its 'Self-Healing' link logic
     if (targetConvoId && targetConvoId !== 'NEW_DRAFT') {
         const existingConvo = conversations.find(c => c.id === targetConvoId);
         if (existingConvo) {
+            // CRITICAL: Always send recipient ID to enable backend self-healing
             if (!finalRecipientId) finalRecipientId = existingConvo.participant.id;
             if (!finalListingId && existingConvo.listing) finalListingId = existingConvo.listing.id;
         }
@@ -166,12 +162,8 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
 
         if (res.ok) {
             const data = await res.json();
-            // Force a sync to see the message confirmed from server
-            setTimeout(() => fetchConversations(), 200); 
-            
-            // Remove optimistic message
+            setTimeout(() => fetchConversations(), 300); // Quick sync
             setLocalMessages(prev => prev.filter(m => m.id !== tempId));
-            
             return data.conversationId;
         } else {
             console.error("Send failed");
