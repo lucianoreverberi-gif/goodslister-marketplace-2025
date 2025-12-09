@@ -19,9 +19,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 2. Get all conversations ID the user is part of
+    // 2. Get DISTINCT conversation IDs the user is part of
+    // The DISTINCT is crucial here to prevent duplicate keys on the frontend
     const convoIdsResult = await sql`
-        SELECT conversation_id 
+        SELECT DISTINCT conversation_id 
         FROM conversation_participants 
         WHERE user_id = ${userId}
     `;
@@ -49,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     // Fetch Participants Info (ROBUST FIX: LEFT JOIN)
-    // We select cp.user_id as the primary ID to ensure we get a participant even if the user record is missing
     const participantsResult = await sql`
         SELECT cp.conversation_id, cp.user_id as id, u.name, u.avatar_url
         FROM conversation_participants cp
@@ -74,7 +74,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const participants = participantsResult.rows
             .filter(p => p.conversation_id === convo.id)
             .reduce((acc, p) => {
-                // Fallback if name is missing from DB join
                 const displayName = p.name || `User ${p.id.substring(0, 5)}`;
                 const displayAvatar = p.avatar_url || `https://i.pravatar.cc/150?u=${p.id}`;
                 
@@ -104,6 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 id: m.id,
                 senderId: m.sender_id,
                 text: m.content,
+                originalText: m.content, // Ensure both exist for compatibility
                 timestamp: m.created_at
             }));
 
@@ -111,7 +111,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             id: convo.id,
             listing: listing,
             participants,
-            messages
+            messages,
+            lastMessage: messages.length > 0 ? messages[messages.length - 1] : null
         };
     });
 

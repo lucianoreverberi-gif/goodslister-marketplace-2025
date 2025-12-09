@@ -3,6 +3,8 @@ import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -45,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         VALUES (${messageId}, ${targetConversationId}, ${senderId}, ${text}, false)
     `;
 
-    // 3. Update Conversation Timestamp (to move it to top)
+    // 3. Update Conversation Timestamp
     await sql`
         UPDATE conversations 
         SET updated_at = CURRENT_TIMESTAMP 

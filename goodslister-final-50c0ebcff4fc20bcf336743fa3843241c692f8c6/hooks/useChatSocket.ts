@@ -15,7 +15,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     isPollingRef.current = true;
 
     try {
-      // CACHE BUSTING: Add ?t=timestamp to force fresh request to Vercel
+      // CACHE BUSTING: Add ?t=timestamp to force fresh request
       const response = await fetch(`/api/chat/sync?t=${Date.now()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,7 +115,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     };
   }, [currentUserId, fetchConversations]);
 
-  // 3. Send Message - Now returns Promise<string | null> (The New Conversation ID)
+  // 3. Send Message - Now returns the new conversation ID if created
   const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string): Promise<string | null> => {
     if (!currentUserId) return null;
 
@@ -132,7 +132,6 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         type: 'text'
     };
 
-    // If it's a draft, use 'NEW_DRAFT' so the UI shows it optimistically
     const localConvoId = targetConvoId || 'NEW_DRAFT';
     setLocalMessages(prev => [...prev, { ...tempMsg, conversationId: localConvoId } as any]);
 
@@ -140,7 +139,6 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         const payload = {
             senderId: currentUserId,
             text,
-            // If it's a new draft, don't send 'NEW_DRAFT' to backend, send undefined so backend creates new
             conversationId: targetConvoId === 'NEW_DRAFT' ? undefined : targetConvoId,
             listingId,
             recipientId
@@ -153,16 +151,16 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         });
 
         if (res.ok) {
-            const data = await responseData(res);
+            const data = await res.json();
+            // Critical Fix: Sync immediately after send to get the server message
+            // Wait slightly for DB propagation
+            setTimeout(() => fetchConversations(), 500); 
             
-            // Force immediate sync to get the server's version of the message
-            fetchConversations();
-            
-            // Remove optimistic message once synced
+            // Clean up optimistic message
             setLocalMessages(prev => prev.filter(m => m.id !== tempId));
             
-            // Return the actual conversation ID created by the server
-            return data.conversationId; 
+            // Return the real conversation ID so UI can update
+            return data.conversationId;
         } else {
             console.error("Send failed");
             return null;
@@ -173,19 +171,13 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     }
   };
 
-  const responseData = async(res: Response) => {
-      try { return await res.json(); } catch(e) { return {}; }
-  }
-
   const getActiveMessages = () => {
       if (!activeConversationId) return [];
       
       const convo = conversations.find(c => c.id === activeConversationId);
       const dbMessages = convo ? (convo.fullMessages || []) : [];
       
-      // Filter local messages. 
-      // If we are in 'NEW_DRAFT' mode, show 'NEW_DRAFT' local messages.
-      // If we are in real ID mode, show messages for that ID.
+      // Filter local messages that match the active ID OR are generic drafts if we are in draft mode
       const pendingMessages = localMessages.filter(m => 
           (m as any).conversationId === activeConversationId || 
           (activeConversationId === 'NEW_DRAFT' && (m as any).conversationId === 'NEW_DRAFT')
