@@ -3,12 +3,39 @@ import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { mockUsers, mockListings, mockBookings } from '../constants';
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse,
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    // 1. Create Users Table
+    // --- CHAT TABLES (Critical for Messaging) ---
+    
+    await sql`
+        CREATE TABLE IF NOT EXISTS conversations (
+            id VARCHAR(255) PRIMARY KEY,
+            listing_id VARCHAR(255),
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
+    await sql`
+        CREATE TABLE IF NOT EXISTS conversation_participants (
+            conversation_id VARCHAR(255) REFERENCES conversations(id),
+            user_id VARCHAR(255),
+            PRIMARY KEY (conversation_id, user_id)
+        );
+    `;
+
+    await sql`
+        CREATE TABLE IF NOT EXISTS messages (
+            id VARCHAR(255) PRIMARY KEY,
+            conversation_id VARCHAR(255) REFERENCES conversations(id),
+            sender_id VARCHAR(255),
+            content TEXT,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
+    // --- CORE TABLES ---
+
     await sql`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(255) PRIMARY KEY,
@@ -26,7 +53,6 @@ export default async function handler(
       );
     `;
 
-    // 2. Create Listings Table
     await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id VARCHAR(255) PRIMARY KEY,
@@ -42,7 +68,7 @@ export default async function handler(
         location_country VARCHAR(100),
         location_lat NUMERIC,
         location_lng NUMERIC,
-        owner_id VARCHAR(255) REFERENCES users(id),
+        owner_id VARCHAR(255), -- Removed ref check for seed robustness
         images TEXT[], 
         video_url TEXT,
         is_featured BOOLEAN DEFAULT FALSE,
@@ -63,12 +89,11 @@ export default async function handler(
       );
     `;
 
-    // 3. Create Bookings Table with Split Payment support
     await sql`
         CREATE TABLE IF NOT EXISTS bookings (
             id VARCHAR(255) PRIMARY KEY,
-            listing_id VARCHAR(255) REFERENCES listings(id),
-            renter_id VARCHAR(255) REFERENCES users(id),
+            listing_id VARCHAR(255),
+            renter_id VARCHAR(255),
             start_date TIMESTAMP,
             end_date TIMESTAMP,
             total_price NUMERIC(10, 2),
@@ -83,132 +108,9 @@ export default async function handler(
         );
     `;
 
-    await sql`
-        CREATE TABLE IF NOT EXISTS payments (
-            id VARCHAR(255) PRIMARY KEY,
-            booking_id VARCHAR(255) REFERENCES bookings(id),
-            payer_id VARCHAR(255) REFERENCES users(id),
-            payee_id VARCHAR(255) REFERENCES users(id),
-            amount NUMERIC(10, 2),
-            platform_fee NUMERIC(10, 2),
-            protection_fee NUMERIC(10, 2),
-            owner_payout NUMERIC(10, 2),
-            status VARCHAR(20),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    // 4. Create Reviews Table (Double-Blind System)
-    await sql`
-        CREATE TABLE IF NOT EXISTS reviews (
-            id VARCHAR(255) PRIMARY KEY,
-            booking_id VARCHAR(255) REFERENCES bookings(id),
-            author_id VARCHAR(255) REFERENCES users(id),
-            target_id VARCHAR(255) REFERENCES users(id),
-            role VARCHAR(20), -- 'HOST' or 'RENTER'
-            rating INTEGER NOT NULL, -- 1-5
-            comment TEXT, -- Public review
-            private_note TEXT, -- Feedback for platform only
-            
-            -- Specific Metrics
-            care_rating INTEGER,    -- For Renter
-            clean_rating INTEGER,   -- For Renter
-            accuracy_rating INTEGER,-- For Host
-            safety_rating INTEGER,  -- For Host
-
-            status VARCHAR(20) DEFAULT 'PENDING', -- 'PENDING', 'PUBLISHED', 'HIDDEN'
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    // 5. CHAT SYSTEM TABLES (Real-time Persistence)
-    await sql`
-        CREATE TABLE IF NOT EXISTS conversations (
-            id VARCHAR(255) PRIMARY KEY,
-            listing_id VARCHAR(255) REFERENCES listings(id),
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS conversation_participants (
-            conversation_id VARCHAR(255) REFERENCES conversations(id),
-            user_id VARCHAR(255) REFERENCES users(id),
-            PRIMARY KEY (conversation_id, user_id)
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS messages (
-            id VARCHAR(255) PRIMARY KEY,
-            conversation_id VARCHAR(255) REFERENCES conversations(id),
-            sender_id VARCHAR(255) REFERENCES users(id),
-            content TEXT,
-            is_read BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS hero_slides (
-            id VARCHAR(255) PRIMARY KEY,
-            title TEXT,
-            subtitle TEXT,
-            image_url TEXT
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS banners (
-            id VARCHAR(255) PRIMARY KEY,
-            title TEXT,
-            description TEXT,
-            button_text TEXT,
-            image_url TEXT,
-            layout TEXT DEFAULT 'overlay',
-            link_url TEXT
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS inspections (
-            id VARCHAR(255) PRIMARY KEY,
-            booking_id VARCHAR(255) REFERENCES bookings(id),
-            status VARCHAR(50), 
-            handover_photos JSONB, 
-            return_photos JSONB,
-            damage_reported BOOLEAN DEFAULT FALSE,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS site_config (
-            key VARCHAR(255) PRIMARY KEY,
-            value TEXT
-        );
-    `;
-
-    // Run migrations for existing columns if needed
-    try {
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS listing_type VARCHAR(20) DEFAULT 'rental'`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS operator_license_id TEXT`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS fuel_policy VARCHAR(20)`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS skill_level VARCHAR(20)`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
-        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
-        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
-        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
-    } catch (e) {
-        console.log("Migration skipped", e);
-    }
-
-    // ... (Insert Mock Data logic remains the same)
-    // 4. Insert Mock Users
+    // --- SEED INITIAL DATA IF EMPTY ---
+    
+    // Users
     const { rows: userRows } = await sql`SELECT count(*) FROM users`;
     if (parseInt(userRows[0].count) === 0) {
         for (const user of mockUsers) {
@@ -217,10 +119,10 @@ export default async function handler(
                 VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate}, ${user.avatarUrl}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any})
             `;
         }
-        console.log('Users inserted');
+        console.log('Users seeded');
     }
 
-    // 5. Insert Mock Listings
+    // Listings
     const { rows: listingRows } = await sql`SELECT count(*) FROM listings`;
     if (parseInt(listingRows[0].count) === 0) {
         for (const listing of mockListings) {
@@ -242,10 +144,10 @@ export default async function handler(
                 )
             `;
         }
-        console.log('Listings inserted');
+        console.log('Listings seeded');
     }
 
-    return res.status(200).json({ message: 'Database seeded successfully', details: 'Tables created and initial data inserted.' });
+    return res.status(200).json({ message: 'Database schema verified and seeded.' });
   } catch (error) {
     console.error('Seeding error:', error);
     return res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });

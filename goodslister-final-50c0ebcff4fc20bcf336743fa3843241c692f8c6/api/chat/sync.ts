@@ -3,7 +3,7 @@ import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 1. CRITICAL: Disable Caching for Real-Time Chat
+  // 1. Force Fresh Data (No Caching)
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -19,8 +19,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 2. Get DISTINCT conversation IDs the user is part of
-    // The DISTINCT is crucial here to prevent duplicate keys on the frontend
+    // 2. Get Conversations for User
+    // We use DISTINCT to avoid duplicates if the participants table has messy data
     const convoIdsResult = await sql`
         SELECT DISTINCT conversation_id 
         FROM conversation_participants 
@@ -33,24 +33,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ conversations: [] });
     }
 
-    // 3. Fetch Conversation Details
+    // 3. Fetch Details
     const conversationsResult = await sql`
-        SELECT c.id, c.listing_id, c.updated_at
-        FROM conversations c
-        WHERE c.id = ANY(${convoIds as any})
-        ORDER BY c.updated_at DESC
+        SELECT id, listing_id, updated_at
+        FROM conversations 
+        WHERE id = ANY(${convoIds as any})
+        ORDER BY updated_at DESC
     `;
 
-    // Fetch Messages
+    // 4. Fetch Messages
     const messagesResult = await sql`
-        SELECT id, conversation_id, sender_id, content, is_read, created_at
+        SELECT id, conversation_id, sender_id, content, created_at
         FROM messages
         WHERE conversation_id = ANY(${convoIds as any})
         ORDER BY created_at ASC
     `;
 
-    // Fetch Participants Info (ROBUST FIX: LEFT JOIN)
-    // We select cp.user_id as the primary ID to ensure we get a participant even if the user record is missing
+    // 5. Fetch Participants (LEFT JOIN to never crash if user missing)
     const participantsResult = await sql`
         SELECT cp.conversation_id, cp.user_id as id, u.name, u.avatar_url
         FROM conversation_participants cp
@@ -58,10 +57,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         WHERE cp.conversation_id = ANY(${convoIds as any})
     `;
     
-    // Fetch Listing Info
+    // 6. Fetch Listings
     const listingIds = [...new Set(conversationsResult.rows.map(c => c.listing_id))].filter(id => id);
     let listingsResult = { rows: [] };
-    
     if (listingIds.length > 0) {
         listingsResult = await sql`
             SELECT id, title, images
@@ -70,41 +68,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
     }
 
-    // 4. Reconstruct Data
+    // 7. Assemble Data
     const conversations = conversationsResult.rows.map(convo => {
+        // Participants Map
         const participants = participantsResult.rows
             .filter(p => p.conversation_id === convo.id)
             .reduce((acc, p) => {
-                const displayName = p.name || `User ${p.id.substring(0, 5)}`;
-                const displayAvatar = p.avatar_url || `https://i.pravatar.cc/150?u=${p.id}`;
+                const displayName = p.name || 'Unknown User';
+                const displayAvatar = p.avatar_url || 'https://i.pravatar.cc/150?u=unknown';
                 
                 acc[p.id] = { 
                     id: p.id, 
                     name: displayName, 
-                    avatarUrl: displayAvatar,
-                    email: '', 
-                    registeredDate: '',
-                    favorites: []
+                    avatarUrl: displayAvatar
                 };
                 return acc;
             }, {} as any);
 
+        // Listing Data
         const listingRow = listingsResult.rows.find(l => l.id === convo.listing_id);
         const listing = listingRow ? {
             id: listingRow.id,
             title: listingRow.title,
-            images: listingRow.images || [],
-            description: '', category: 'Boats', pricingType: 'daily', location: { city: '', state: '', country: '', latitude: 0, longitude: 0},
-            owner: { id: '', name: '', email: '', registeredDate: '', avatarUrl: '', favorites: [] } 
+            images: listingRow.images || []
         } : null;
 
+        // Messages
         const messages = messagesResult.rows
             .filter(m => m.conversation_id === convo.id)
             .map(m => ({
                 id: m.id,
                 senderId: m.sender_id,
                 text: m.content,
-                originalText: m.content, // Ensure both exist for compatibility
+                originalText: m.content,
                 timestamp: m.created_at
             }));
 
@@ -112,8 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             id: convo.id,
             listing: listing,
             participants,
-            messages,
-            lastMessage: messages.length > 0 ? messages[messages.length - 1] : null
+            messages
         };
     });
 

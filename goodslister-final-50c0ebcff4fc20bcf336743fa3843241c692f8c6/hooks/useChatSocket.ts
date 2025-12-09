@@ -8,14 +8,14 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
   const [loading, setLoading] = useState(true);
   const isPollingRef = useRef(false);
 
-  // 1. Fetch Conversations from Real DB
+  // 1. SYNC: Fetch Conversations from Real DB
   const fetchConversations = useCallback(async () => {
     if (!currentUserId || isPollingRef.current) return;
     
     isPollingRef.current = true;
 
     try {
-      // CACHE BUSTING: Add ?t=timestamp to force fresh request
+      // CACHE BUSTING: Add timestamp to force fresh request
       const response = await fetch(`/api/chat/sync?t=${Date.now()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -25,7 +25,6 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
       if (response.ok) {
         const data = await response.json();
         
-        // Map API response to UI types
         const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
             const allParticipantIds = Object.keys(c.participants);
             const otherId = allParticipantIds.find(id => id !== currentUserId) || allParticipantIds[0];
@@ -36,6 +35,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 avatarUrl: 'https://i.pravatar.cc/150?u=unknown'
             };
             
+            // Robust last message check
             const lastMsgObj = c.messages && c.messages.length > 0 
                 ? c.messages[c.messages.length - 1] 
                 : null;
@@ -51,7 +51,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
             } : {
                 id: `sys-${c.id}`,
                 senderId: 'system',
-                text: 'New conversation started',
+                text: 'New conversation',
                 originalText: '',
                 timestamp: new Date(c.updated_at || Date.now()),
                 status: 'read',
@@ -102,10 +102,8 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     }
     
     fetchConversations();
-    // Poll every 3 seconds
-    const intervalId = setInterval(fetchConversations, 3000); 
+    const intervalId = setInterval(fetchConversations, 3000); // 3s Poll
     
-    // Also poll when window regains focus (user comes back to tab)
     const handleFocus = () => fetchConversations();
     window.addEventListener('focus', handleFocus);
 
@@ -115,13 +113,14 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     };
   }, [currentUserId, fetchConversations]);
 
-  // 3. Send Message - Now returns the new conversation ID if created
+  // 3. SEND: High Reliability Send Function
   const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string): Promise<string | null> => {
     if (!currentUserId) return null;
 
+    // Optimistic UI update
     const tempId = `temp-${Date.now()}`;
     const targetConvoId = convId || activeConversationId;
-
+    
     const tempMsg: Message = {
         id: tempId,
         senderId: 'me',
@@ -132,20 +131,21 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         type: 'text'
     };
 
+    // Show message locally immediately
     const localConvoId = targetConvoId || 'NEW_DRAFT';
     setLocalMessages(prev => [...prev, { ...tempMsg, conversationId: localConvoId } as any]);
 
-    // --- AUTO-REPAIR LOGIC ---
-    // If we are in an existing chat but recipientId wasn't passed explicitly (common in UI),
-    // we MUST look it up from the loaded conversations. 
-    // This allows the backend to re-link broken participants.
-    let targetRecipientId = recipientId;
-    
-    // If we don't have a recipient ID explicitly passed, try to find it from our active conversation list
-    if (!targetRecipientId && targetConvoId && targetConvoId !== 'NEW_DRAFT') {
-        const activeConvo = conversations.find(c => c.id === targetConvoId);
-        if (activeConvo) {
-            targetRecipientId = activeConvo.participant.id;
+    // Data Prep for Backend
+    let finalRecipientId = recipientId;
+    let finalListingId = listingId;
+
+    // If replying to existing chat, try to fill in missing details from local state
+    // so the backend can perform its 'Self-Healing' link logic
+    if (targetConvoId && targetConvoId !== 'NEW_DRAFT') {
+        const existingConvo = conversations.find(c => c.id === targetConvoId);
+        if (existingConvo) {
+            if (!finalRecipientId) finalRecipientId = existingConvo.participant.id;
+            if (!finalListingId && existingConvo.listing) finalListingId = existingConvo.listing.id;
         }
     }
 
@@ -154,9 +154,8 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
             senderId: currentUserId,
             text,
             conversationId: targetConvoId === 'NEW_DRAFT' ? undefined : targetConvoId,
-            listingId,
-            // CRITICAL: Always send the recipient ID if we found it. This triggers the DB "Self-Healing".
-            recipientId: targetRecipientId 
+            listingId: finalListingId,
+            recipientId: finalRecipientId
         };
 
         const res = await fetch('/api/chat/send', {
@@ -167,14 +166,12 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
 
         if (res.ok) {
             const data = await res.json();
-            // Critical Fix: Sync immediately after send to get the server message
-            // Wait slightly for DB propagation
-            setTimeout(() => fetchConversations(), 500); 
+            // Force a sync to see the message confirmed from server
+            setTimeout(() => fetchConversations(), 200); 
             
-            // Clean up optimistic message
+            // Remove optimistic message
             setLocalMessages(prev => prev.filter(m => m.id !== tempId));
             
-            // Return the real conversation ID so UI can update
             return data.conversationId;
         } else {
             console.error("Send failed");
@@ -192,7 +189,6 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
       const convo = conversations.find(c => c.id === activeConversationId);
       const dbMessages = convo ? (convo.fullMessages || []) : [];
       
-      // Filter local messages that match the active ID OR are generic drafts if we are in draft mode
       const pendingMessages = localMessages.filter(m => 
           (m as any).conversationId === activeConversationId || 
           (activeConversationId === 'NEW_DRAFT' && (m as any).conversationId === 'NEW_DRAFT')
