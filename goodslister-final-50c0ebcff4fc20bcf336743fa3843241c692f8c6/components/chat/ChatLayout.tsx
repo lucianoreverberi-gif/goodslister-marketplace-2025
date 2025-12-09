@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useChatSocket } from '../../hooks/useChatSocket';
-import { Sparkles, ArrowLeft, Phone, Video, MoreVertical } from 'lucide-react';
+import { Sparkles, ArrowLeft, Phone, Video, MoreVertical, RefreshCw } from 'lucide-react';
 import { Session } from '../../types';
 
 interface ChatLayoutProps {
@@ -17,8 +16,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   
-  // Use the hook with the active conversation ID to get the merged message stream
-  const { conversations, messages, sendMessage, isTyping, loading } = useChatSocket(currentUser?.id, selectedConvoId);
+  // Use the hook with the active conversation ID
+  const { conversations, messages, sendMessage, refresh, loading } = useChatSocket(currentUser?.id, selectedConvoId);
 
   const activeConvo = conversations.find(c => c.id === selectedConvoId);
 
@@ -50,14 +49,23 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
       
       {/* LEFT SIDEBAR */}
       <div className={`${showList ? 'block' : 'hidden'} w-full md:w-[350px] lg:w-[400px] h-full flex flex-col border-r border-gray-200 bg-white`}>
+        {/* Header with Refresh */}
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <h2 className="font-bold text-gray-700">Messages</h2>
+            <button 
+                onClick={() => refresh()} 
+                className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-white rounded-full transition-all"
+                title="Refresh Messages"
+            >
+                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </button>
+        </div>
+
         <ConversationList 
           conversations={conversations} 
           activeId={selectedConvoId} 
           onSelect={setSelectedConvoId} 
         />
-        {loading && conversations.length === 0 && (
-             <div className="p-4 text-center text-xs text-gray-400">Syncing messages...</div>
-        )}
         {!loading && conversations.length === 0 && (
              <div className="p-8 text-center text-gray-500 flex flex-col items-center">
                  <p className="font-semibold">No messages found</p>
@@ -140,18 +148,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
                     globalTranslationEnabled={translationEnabled}
                   />
                 ))}
-                
-                {isTyping && (
-                    <div className="flex justify-start">
-                        <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm border border-gray-200">
-                            <div className="flex gap-1">
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></span>
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></span>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
 
             <ChatInput onSendMessage={(text) => sendMessage(text, selectedConvoId!)} />

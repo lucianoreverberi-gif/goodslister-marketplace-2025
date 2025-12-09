@@ -1,8 +1,12 @@
-
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // 1. CRITICAL: Disable Caching for Real-Time Chat
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 1. Get all conversations ID the user is part of
+    // 2. Get all conversations ID the user is part of
     const convoIdsResult = await sql`
         SELECT conversation_id 
         FROM conversation_participants 
@@ -27,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ conversations: [] });
     }
 
-    // 2. Fetch Conversation Details
+    // 3. Fetch Conversation Details
     const conversationsResult = await sql`
         SELECT c.id, c.listing_id, c.updated_at
         FROM conversations c
@@ -44,7 +48,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     // Fetch Participants Info (ROBUST FIX: LEFT JOIN)
-    // We select cp.user_id as the primary ID to ensure we get a participant even if the user record is missing
     const participantsResult = await sql`
         SELECT cp.conversation_id, cp.user_id as id, u.name, u.avatar_url
         FROM conversation_participants cp
@@ -64,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
     }
 
-    // 3. Reconstruct Data
+    // 4. Reconstruct Data
     const conversations = conversationsResult.rows.map(convo => {
         const participants = participantsResult.rows
             .filter(p => p.conversation_id === convo.id)
