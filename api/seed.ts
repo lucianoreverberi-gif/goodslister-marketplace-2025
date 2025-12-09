@@ -139,6 +139,35 @@ export default async function handler(
         );
     `;
 
+     // 7. Create Chat Tables for messaging
+  await sql`
+  CREATE TABLE IF NOT EXISTS conversations (
+    id VARCHAR(255) PRIMARY KEY,
+    listing_id VARCHAR(255) REFERENCES listings(id),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  `;
+
+  await sql`
+  CREATE TABLE IF NOT EXISTS conversation_participants (
+    conversation_id VARCHAR(255) REFERENCES conversations(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (conversation_id, user_id)
+  );
+  `;
+
+  await sql`
+  CREATE TABLE IF NOT EXISTS messages (
+    id VARCHAR(255) PRIMARY KEY,
+    conversation_id VARCHAR(255) REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id VARCHAR(255) REFERENCES users(id),
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  `;
+
+
     // Run migrations for existing columns if needed
     try {
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS listing_type VARCHAR(20) DEFAULT 'rental'`;
