@@ -19,21 +19,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let targetConversationId = conversationId;
 
     // 1. Create Conversation if it doesn't exist (First message)
-    if (!targetConversationId && listingId && recipientId) {
-        targetConversationId = `convo-${Date.now()}`;
-        
-        await sql`
-            INSERT INTO conversations (id, listing_id)
-            VALUES (${targetConversationId}, ${listingId})
-        `;
-    }
-
     if (!targetConversationId) {
-        return res.status(400).json({ error: 'Missing conversationId or listing/recipient info' });
+        if (listingId) {
+             targetConversationId = `convo-${Date.now()}`;
+             await sql`
+                INSERT INTO conversations (id, listing_id)
+                VALUES (${targetConversationId}, ${listingId})
+            `;
+        } else {
+             // Fallback for direct messages without listing context (rare)
+             return res.status(400).json({ error: 'Missing conversationId or listing info' });
+        }
     }
 
     // 2. SELF-HEALING: Always attempt to ensure participants are linked.
-    // If 'conversation_participants' row is missing, this fixes the "empty inbox" bug.
+    // Even if the conversation exists, we run this to repair any broken links (e.g. missing recipient in inbox).
     // We use ON CONFLICT DO NOTHING to make it safe to run every time.
     if (recipientId) {
         await sql`
@@ -41,6 +41,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             VALUES 
                 (${targetConversationId}, ${senderId}),
                 (${targetConversationId}, ${recipientId})
+            ON CONFLICT DO NOTHING
+        `;
+    } else {
+        // If we don't have recipientId, just ensure sender is linked (bare minimum)
+        await sql`
+            INSERT INTO conversation_participants (conversation_id, user_id)
+            VALUES (${targetConversationId}, ${senderId})
             ON CONFLICT DO NOTHING
         `;
     }
@@ -52,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         VALUES (${messageId}, ${targetConversationId}, ${senderId}, ${text}, false)
     `;
 
-    // 4. Update Conversation Timestamp
+    // 4. Update Conversation Timestamp (To float to top of inbox)
     await sql`
         UPDATE conversations 
         SET updated_at = CURRENT_TIMESTAMP 

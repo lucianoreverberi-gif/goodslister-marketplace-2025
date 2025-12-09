@@ -50,6 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     // Fetch Participants Info (ROBUST FIX: LEFT JOIN)
+    // We select cp.user_id as the primary ID to ensure we get a participant even if the user record is missing
     const participantsResult = await sql`
         SELECT cp.conversation_id, cp.user_id as id, u.name, u.avatar_url
         FROM conversation_participants cp
