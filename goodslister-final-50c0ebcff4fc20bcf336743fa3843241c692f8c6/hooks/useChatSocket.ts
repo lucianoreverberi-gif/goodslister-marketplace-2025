@@ -1,15 +1,18 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Message, Conversation } from '../types/chat';
 
-export const useChatSocket = (currentUserId: string | undefined, conversationId?: string | null) => {
+export const useChatSocket = (currentUserId: string | undefined, activeConversationId?: string | null) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]); // Store optimistic messages here
   const [loading, setLoading] = useState(true);
+  const isPollingRef = useRef(false);
 
-  // 1. Fetch Conversations from Real DB ONLY
+  // 1. Fetch Conversations from Real DB
   const fetchConversations = useCallback(async () => {
-    if (!currentUserId) return;
+    if (!currentUserId || isPollingRef.current) return;
+    
+    isPollingRef.current = true;
 
     try {
       const response = await fetch('/api/chat/sync', {
@@ -23,22 +26,17 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         
         // Map API response to UI types
         const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
-            // Determine who the OTHER participant is
             const allParticipantIds = Object.keys(c.participants);
-            const otherId = allParticipantIds.find(id => id !== currentUserId);
-            // Fallback to first available if exact match fails
-            const validOtherId = otherId || allParticipantIds[0];
+            // Find partner ID
+            const otherId = allParticipantIds.find(id => id !== currentUserId) || allParticipantIds[0];
             
-            const otherUser = c.participants[validOtherId] || {
-                id: validOtherId || 'unknown',
+            const otherUser = c.participants[otherId] || {
+                id: otherId || 'unknown',
                 name: 'Unknown User',
                 avatarUrl: 'https://i.pravatar.cc/150?u=unknown'
             };
             
-            const participantName = otherUser.name || 'Unknown User';
-            const participantAvatar = otherUser.avatarUrl || 'https://i.pravatar.cc/150?u=unknown';
-
-            // Find last message
+            // Safe last message parsing
             const lastMsgObj = c.messages && c.messages.length > 0 
                 ? c.messages[c.messages.length - 1] 
                 : null;
@@ -61,7 +59,6 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
                 type: 'system'
             };
 
-            // Map all messages for the active view
             const fullMessages = c.messages ? c.messages.map((m: any) => ({
                 id: m.id,
                 senderId: m.senderId === currentUserId ? 'me' : m.senderId,
@@ -76,8 +73,8 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
                 id: c.id,
                 participant: {
                     id: otherUser.id,
-                    name: participantName,
-                    avatar: participantAvatar,
+                    name: otherUser.name || 'User',
+                    avatar: otherUser.avatarUrl,
                     isOnline: false, 
                     locale: 'en-US'
                 },
@@ -89,66 +86,56 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         });
 
         setConversations(mappedConvos);
-
-        // If a specific conversation is selected, update the messages state immediately
-        if (conversationId) {
-            const active = mappedConvos.find(c => c.id === conversationId);
-            if (active && active.fullMessages) {
-                setMessages(active.fullMessages);
-            } else {
-                setMessages([]);
-            }
-        }
-      } else {
-          console.error("Failed to sync chat from DB");
       }
     } catch (error) {
       console.error("Chat sync error:", error);
     } finally {
       setLoading(false);
+      isPollingRef.current = false;
     }
-  }, [currentUserId, conversationId]);
+  }, [currentUserId]);
 
-  // 2. Polling Interval (Real-time simulation)
+  // 2. Polling Interval
   useEffect(() => {
     if (!currentUserId) {
         setLoading(false);
         return;
     }
     
-    fetchConversations(); // Initial fetch
-    
-    // Poll every 3 seconds to get new messages from DB
-    const intervalId = setInterval(() => {
-        fetchConversations();
-    }, 3000); 
-
+    fetchConversations();
+    const intervalId = setInterval(fetchConversations, 3000); 
     return () => clearInterval(intervalId);
-  }, [currentUserId, conversationId, fetchConversations]);
+  }, [currentUserId, fetchConversations]);
 
-  // 3. Send Message Function
+  // 3. Send Message (Optimistic UI)
   const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string) => {
     if (!currentUserId) return;
 
-    const targetConvoId = convId || conversationId;
+    // Create a temporary ID
+    const tempId = `temp-${Date.now()}`;
+    const targetConvoId = convId || activeConversationId;
 
-    // Optimistic Update
+    // Create optimistic message
     const tempMsg: Message = {
-        id: `temp-${Date.now()}`,
-        senderId: 'me',
+        id: tempId,
+        senderId: 'me', // UI treats 'me' as current user
         text: text,
         originalText: text,
         timestamp: new Date(),
         status: 'sent',
         type: 'text'
     };
-    setMessages(prev => [...prev, tempMsg]);
+
+    // Add to local state immediately
+    // If it's a new draft (no conversation ID yet), we mark it with 'NEW_DRAFT' so we can show it
+    const localConvoId = targetConvoId || 'NEW_DRAFT';
+    setLocalMessages(prev => [...prev, { ...tempMsg, conversationId: localConvoId } as any]);
 
     try {
         const payload = {
             senderId: currentUserId,
             text,
-            conversationId: targetConvoId,
+            conversationId: targetConvoId === 'NEW_DRAFT' ? undefined : targetConvoId,
             listingId,
             recipientId
         };
@@ -160,19 +147,37 @@ export const useChatSocket = (currentUserId: string | undefined, conversationId?
         });
 
         if (res.ok) {
-            // The polling will pick up the real message ID shortly and replace the temp one
-            fetchConversations();
+            // Force a sync to get the real ID back and clear the optimistic one effectively
+            await fetchConversations();
+            // Clear this specific local message since DB has it now
+            setLocalMessages(prev => prev.filter(m => m.id !== tempId));
         } else {
-            console.error("Send API failed");
+            console.error("Send failed");
+            // Optionally set status to 'error'
         }
     } catch (e) {
-        console.error("Send failed", e);
+        console.error("Send network error", e);
     }
+  };
+
+  // 4. Compute Active Messages (DB + Local)
+  // We grab the DB messages for the active conversation and append any local pending messages for it
+  const getActiveMessages = () => {
+      // If no active conversation, return empty
+      if (!activeConversationId) return [];
+      
+      const convo = conversations.find(c => c.id === activeConversationId);
+      const dbMessages = convo ? (convo.fullMessages || []) : [];
+      
+      // Filter local messages that belong to this conversation
+      const pendingMessages = localMessages.filter(m => (m as any).conversationId === activeConversationId);
+      
+      return [...dbMessages, ...pendingMessages];
   };
 
   return {
     conversations,
-    messages,
+    messages: getActiveMessages(), // Always return combined list
     sendMessage,
     isTyping: false,
     loading

@@ -4,7 +4,7 @@ import ConversationList from './ConversationList';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useChatSocket } from '../../hooks/useChatSocket';
-import { Sparkles, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
+import { Sparkles, ArrowLeft, Phone, Video, MoreVertical } from 'lucide-react';
 import { Session } from '../../types';
 
 interface ChatLayoutProps {
@@ -17,12 +17,11 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   
-  // STRICTLY use the hook. No side-loading of mock data.
+  // Use the hook with the active conversation ID to get the merged message stream
   const { conversations, messages, sendMessage, isTyping, loading } = useChatSocket(currentUser?.id, selectedConvoId);
 
   const activeConvo = conversations.find(c => c.id === selectedConvoId);
 
-  // Update selected ID if prop changes (deep linking from listing page)
   useEffect(() => {
       if (initialSelectedId) {
           setSelectedConvoId(initialSelectedId);
@@ -155,7 +154,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser 
                 )}
             </div>
 
-            <ChatInput onSendMessage={sendMessage} />
+            <ChatInput onSendMessage={(text) => sendMessage(text, selectedConvoId!)} />
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
