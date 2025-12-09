@@ -3,7 +3,7 @@ import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 1. Force Fresh Data
+  // 1. Disable Cache - Force fresh data every time
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -19,20 +19,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 2. Get Conversations (Using DISTINCT to avoid duplicate ghost chats)
-    const convoIdsResult = await sql`
-        SELECT DISTINCT conversation_id 
-        FROM conversation_participants 
-        WHERE user_id = ${userId}
+    // --- STEP 1: AGGRESSIVE DISCOVERY (The Fix) ---
+    // Find conversation IDs where:
+    // A. I am explicitly listed as a participant (Standard)
+    // B. OR I am the OWNER of the listing being discussed (Recovery)
+    // C. OR I have sent messages in that conversation history (Recovery)
+    
+    const discoveryResult = await sql`
+        SELECT DISTINCT c.id as conversation_id
+        FROM conversations c
+        LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id
+        LEFT JOIN listings l ON c.listing_id = l.id
+        LEFT JOIN messages m ON c.id = m.conversation_id
+        WHERE 
+            cp.user_id = ${userId} 
+            OR l.owner_id = ${userId}
+            OR m.sender_id = ${userId}
     `;
     
-    const convoIds = convoIdsResult.rows.map(r => r.conversation_id);
+    const convoIds = discoveryResult.rows.map(r => r.conversation_id);
 
     if (convoIds.length === 0) {
         return res.status(200).json({ conversations: [] });
     }
 
-    // 3. Fetch Conversation Metadata
+    // --- STEP 2: SELF-HEALING (Auto-Repair) ---
+    // If we found a chat via ownership/history but the 'participant' link is missing,
+    // insert it now so it shows up in the inbox correctly next time.
+    for (const convoId of convoIds) {
+        await sql`
+            INSERT INTO conversation_participants (conversation_id, user_id)
+            VALUES (${convoId}, ${userId})
+            ON CONFLICT (conversation_id, user_id) DO NOTHING
+        `;
+    }
+
+    // --- STEP 3: FETCH DATA ---
+    
+    // Fetch Conversation Metadata
     const conversationsResult = await sql`
         SELECT id, listing_id, updated_at
         FROM conversations 
@@ -40,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ORDER BY updated_at DESC
     `;
 
-    // 4. Fetch All Messages for these chats
+    // Fetch All Messages
     const messagesResult = await sql`
         SELECT id, conversation_id, sender_id, content, created_at
         FROM messages
@@ -48,8 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ORDER BY created_at ASC
     `;
 
-    // 5. Fetch Participants (Fault Tolerant)
-    // We grab the user info directly. If the JOIN fails, we still get the ID from the participant table.
+    // Fetch Participants
+    // We get ALL participants for these conversations to show the other person's face
     const participantsResult = await sql`
         SELECT cp.conversation_id, cp.user_id as id, u.name, u.avatar_url
         FROM conversation_participants cp
@@ -57,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         WHERE cp.conversation_id = ANY(${convoIds as any})
     `;
     
-    // 6. Fetch Listings
+    // Fetch Listings
     const listingIds = [...new Set(conversationsResult.rows.map(c => c.listing_id))].filter(id => id);
     let listingsResult = { rows: [] };
     if (listingIds.length > 0) {
@@ -68,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
     }
 
-    // 7. Assemble Logic
+    // --- STEP 4: ASSEMBLE ---
     const conversations = conversationsResult.rows.map(convo => {
         // Build Participant Map
         const participants = participantsResult.rows

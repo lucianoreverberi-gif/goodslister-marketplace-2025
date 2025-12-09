@@ -3,7 +3,7 @@ import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 1. Disable Cache completely
+  // 1. Disable Cache
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   
   if (req.method !== 'POST') {
@@ -20,7 +20,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let finalConversationId = conversationId;
 
     // 2. ID Resolution & Creation
-    // If we don't have a valid ID, or it's a draft, try to FIND it or CREATE it.
     if (!finalConversationId || finalConversationId === 'NEW_DRAFT') {
         
         if (!listingId || !recipientId) {
@@ -28,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Check for existing conversation loosely (just by participants and listing)
-        // This prevents creating duplicate chats if the frontend state was lost
         const existing = await sql`
             SELECT c.id 
             FROM conversations c
@@ -43,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (existing.rows.length > 0) {
             finalConversationId = existing.rows[0].id;
         } else {
-            // Create NEW Conversation
+            // Create NEW
             finalConversationId = `convo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
             await sql`
                 INSERT INTO conversations (id, listing_id, updated_at)
@@ -54,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 3. SELF-HEALING MECHANISM (The Critical Fix)
     // We forcefully ensure BOTH participants are linked to this conversation ID.
-    // This fixes the issue where a chat exists but one user cannot see it in their inbox.
+    // This fixes the issue where a chat exists but one user cannot see it.
     
     // Link Sender
     await sql`
