@@ -44,18 +44,19 @@ export const fetchAllData = async (): Promise<AppData> => {
             categoryImages: data.categoryImages || initialCategoryImages,
             logoUrl: data.logoUrl || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
             paymentApiKey: data.paymentApiKey || '',
-            conversations: [], // STRICT REAL MODE: No mock conversations from here
+            conversations: [], // STRICT REAL MODE: No mock conversations
             bookings: data.bookings.length ? data.bookings : mockBookings,
         };
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        // Only log error if it's not the expected local mode 404
         if (!message.includes("Local Mode")) {
             console.error("Failed to fetch live data, falling back to local mode:", error);
         } else {
             console.log("Running in Local Mode (using mock data)");
         }
         
-        // Fallback
+        // Fallback for development if DB isn't connected
         return {
             users: mockUsers,
             listings: mockListings,
@@ -80,14 +81,20 @@ const sendAdminAction = async (action: string, payload: any) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action, payload }),
         });
-        if (!response.ok && response.status !== 404) {
+        if (!response.ok) {
+            // If it fails (e.g. locally), we just log and rely on optimistic UI updates
+             if (response.status === 404) return; // Local mode, do nothing
              console.error("Failed to save admin action:", await response.text());
         }
     } catch (e) {
+        // Ignore network errors in local/fallback mode
         console.warn("Could not save to backend (likely local mode).");
     }
 };
 
+/**
+ * Sends a transactional email via the backend API.
+ */
 export const sendEmail = async (type: 'welcome' | 'booking_confirmation' | 'message_notification', to: string, data: any) => {
     try {
         const response = await fetch('/api/send-email', {
@@ -95,13 +102,22 @@ export const sendEmail = async (type: 'welcome' | 'booking_confirmation' | 'mess
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type, to, data }),
         });
-        if (!response.ok) return false;
+        
+        if (!response.ok) {
+            console.warn("Email sending failed (API error):", await response.text());
+            return false;
+        }
         return true;
     } catch (e) {
+        console.warn("Email sending failed (Network error):", e);
         return false;
     }
 };
 
+/**
+ * Sends a message to the backend API.
+ * REMOVED: Fallback to local fake data. Now forces DB usage.
+ */
 export const sendMessageToBackend = async (
     senderId: string, 
     text: string, 
@@ -126,6 +142,7 @@ export const sendMessageToBackend = async (
             const data = await response.json();
             return { success: true, conversationId: data.conversationId };
         }
+        console.error("Chat backend failed", await response.text());
         return { success: false };
     } catch (e) {
         console.error("Chat backend unavailable:", e);
@@ -133,12 +150,17 @@ export const sendMessageToBackend = async (
     }
 };
 
+
+/** Updates a listing's primary image. */
 export const updateListingImage = async (listingId: string, newImageUrl: string): Promise<Listing[]> => {
     await sendAdminAction('updateListingImage', { listingId, newImageUrl });
+    // Optimistic return: In a real app we'd re-fetch, but here we simulate the update for UI responsiveness
     const data = await fetchAllData(); 
+    // Manually patch the specific listing in case the fetch hasn't propagated or for speed
     return data.listings.map(l => l.id === listingId ? { ...l, images: [newImageUrl, ...l.images.slice(1)] } : l);
 };
 
+/** Updates the site logo. */
 export const updateLogo = async (newUrl: string): Promise<string> => {
     await sendAdminAction('updateLogo', { url: newUrl });
     return newUrl;
@@ -195,7 +217,7 @@ export const updateCategoryImage = async (category: ListingCategory, newUrl: str
 export const updateUserVerification = async (userId: string, verificationType: 'email' | 'phone' | 'id'): Promise<User[]> => {
     await sendAdminAction('updateUserVerification', { userId, type: verificationType });
     const data = await fetchAllData();
-    return data.users;
+    return data.users; // Simplified for speed
 };
 
 export const updateUserAvatar = async (userId: string, newAvatarUrl: string): Promise<User[]> => {
@@ -203,6 +225,15 @@ export const updateUserAvatar = async (userId: string, newAvatarUrl: string): Pr
     const data = await fetchAllData();
     return data.users;
 };
+
+// NEW: Full profile update (Bio + Avatar)
+export const updateUserProfile = async (userId: string, bio: string, avatarUrl: string): Promise<User[]> => {
+    await sendAdminAction('updateUserProfile', { userId, bio, avatarUrl });
+    const data = await fetchAllData();
+    return data.users;
+};
+
+// --- User & Listing Actions (Real Backend) ---
 
 export const loginUser = async (email: string): Promise<User | null> => {
     const data = await fetchAllData();
@@ -270,11 +301,14 @@ export const updateListing = async (listing: Listing): Promise<boolean> => {
     }
 };
 
+
 export const updatePaymentApiKey = async (newKey: string): Promise<string> => {
+    // Client-side state only for security demo
     return newKey;
 };
 
 export const updateConversations = async (updatedConversations: Conversation[]): Promise<Conversation[]> => {
+    // Deprecated for real-time DB sync
     return updatedConversations;
 };
 
@@ -290,6 +324,7 @@ export const createBooking = async (
     protectionType: 'waiver' | 'insurance',
     protectionFee: number
 ): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
+    // --- LIVE BACKEND INTEGRATION ---
     try {
         const response = await fetch('/api/bookings/create', {
             method: 'POST',
@@ -322,9 +357,11 @@ export const createBooking = async (
         }
     } catch (e) {
         console.error("Booking API Error:", e);
-        // Minimal fallback for local dev
+        
+        // --- FALLBACK FOR LOCAL/DEMO MODE ---
         const data = await fetchAllData();
         const listing = data.listings.find(l => l.id === listingId)!;
+        
         const newBooking: Booking = {
             id: `booking-${Date.now()}`,
             listingId,
@@ -340,8 +377,10 @@ export const createBooking = async (
             protectionType,
             protectionFee
         };
+        
         const newBookedDates = eachDayOfInterval({ start: startDate, end: endDate }).map(d => format(d, 'yyyy-MM-dd'));
         const updatedListing = { ...listing, bookedDates: [...(listing.bookedDates || []), ...newBookedDates] };
+
         return { newBooking, updatedListing };
     }
 };

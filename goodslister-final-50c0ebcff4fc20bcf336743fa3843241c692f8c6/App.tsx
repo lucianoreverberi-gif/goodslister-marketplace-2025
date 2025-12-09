@@ -86,6 +86,15 @@ const App: React.FC = () => {
         handleNavigate('userProfile');
     }, [handleNavigate]);
 
+    const addNotification = (type: 'success' | 'info' | 'message', title: string, message: string) => {
+        const id = Math.random().toString(36).substring(2, 9);
+        setNotifications(prev => [...prev, { id, type, title, message }]);
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            setNotifications(prev => prev.filter(n => n.id !== id));
+        }, 5000);
+    };
+
     // NEW: Handle updating user profile (bio/avatar)
     const handleUpdateUserProfile = async (bio: string, avatarUrl: string) => {
         if (!session) return;
@@ -98,18 +107,10 @@ const App: React.FC = () => {
         const updatedUsers = appData.users.map((u: User) => u.id === session.id ? { ...u, bio, avatarUrl } : u);
         updateAppData({ users: updatedUsers });
 
-        // Persist via API (Using existing endpoints or assuming mockApi handles it)
-        await mockApi.updateUserAvatar(session.id, avatarUrl); 
-        // Note: Ideally create a specific updateBio endpoint, but for now avatar update persists the user record in mock logic context
-    };
-
-    const addNotification = (type: 'success' | 'info' | 'message', title: string, message: string) => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setNotifications(prev => [...prev, { id, type, title, message }]);
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            setNotifications(prev => prev.filter(n => n.id !== id));
-        }, 5000);
+        // CALL NEW API
+        await mockApi.updateUserProfile(session.id, bio, avatarUrl); 
+        
+        addNotification('success', 'Profile Saved', 'Your bio and avatar have been updated.');
     };
 
     const removeNotification = (id: string) => {
@@ -506,9 +507,11 @@ const App: React.FC = () => {
                     favoriteListings={listings.filter(l => session.favorites?.includes(l.id))}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
+                    onUpdateProfile={handleUpdateUserProfile} // Pass the handler
                     onListingClick={handleListingClick}
                     onEditListing={handleEditListingClick}
                     onToggleFavorite={handleToggleFavorite}
+                    onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;

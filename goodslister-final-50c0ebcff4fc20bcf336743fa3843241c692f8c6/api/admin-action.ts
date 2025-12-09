@@ -12,7 +12,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     switch (action) {
         case 'updateLogo':
-            // Upsert logic for site config
             const logoExists = await sql`SELECT key FROM site_config WHERE key = 'logo_url'`;
             if (logoExists.rows.length > 0) {
                 await sql`UPDATE site_config SET value = ${payload.url} WHERE key = 'logo_url'`;
@@ -22,8 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ success: true });
 
         case 'updateListingImage':
-            // Postgres arrays are 1-indexed, but here we replace the whole array to be safe
-            // First get existing images
             const listingResult = await sql`SELECT images FROM listings WHERE id = ${payload.listingId}`;
             if (listingResult.rows.length > 0) {
                 const currentImages = listingResult.rows[0].images || [];
@@ -56,9 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ success: true });
 
         case 'updateBanner':
-             // FIX: Handle full banner object update. 
-             // The frontend sends the complete banner object as 'payload'.
-             // We update all fields to ensure consistency and avoid "missing field" logic errors.
              await sql`
                 UPDATE banners SET 
                     title=${payload.title}, 
@@ -83,7 +77,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
            return res.status(200).json({ success: true });
 
         case 'updateCategoryImage':
-            // Fetch current config map, update it, save it back
             const configRes = await sql`SELECT value FROM site_config WHERE key = 'category_images'`;
             let currentMap = {};
             if (configRes.rows.length > 0) {
@@ -99,14 +92,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ success: true });
 
         case 'updateUserVerification':
-             // Dynamic update based on type
              if (payload.type === 'email') await sql`UPDATE users SET is_email_verified = true WHERE id = ${payload.userId}`;
              if (payload.type === 'phone') await sql`UPDATE users SET is_phone_verified = true WHERE id = ${payload.userId}`;
              if (payload.type === 'id') await sql`UPDATE users SET is_id_verified = true WHERE id = ${payload.userId}`;
              return res.status(200).json({ success: true });
 
         case 'updateUserAvatar':
+            // Legacy support
             await sql`UPDATE users SET avatar_url = ${payload.url} WHERE id = ${payload.userId}`;
+            return res.status(200).json({ success: true });
+
+        case 'updateUserProfile':
+            // NEW: Updates both bio and avatar
+            await sql`
+                UPDATE users 
+                SET bio = ${payload.bio}, avatar_url = ${payload.avatarUrl}
+                WHERE id = ${payload.userId}
+            `;
             return res.status(200).json({ success: true });
         
         default:
