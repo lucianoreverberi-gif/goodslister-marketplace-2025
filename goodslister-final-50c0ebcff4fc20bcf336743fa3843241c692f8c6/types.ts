@@ -1,4 +1,3 @@
-
 // types.ts
 export enum ListingCategory {
     MOTORCYCLES = "Motorcycles",
