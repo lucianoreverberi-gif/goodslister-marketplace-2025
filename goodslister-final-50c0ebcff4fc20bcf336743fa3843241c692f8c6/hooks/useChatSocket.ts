@@ -135,13 +135,25 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     const localConvoId = targetConvoId || 'NEW_DRAFT';
     setLocalMessages(prev => [...prev, { ...tempMsg, conversationId: localConvoId } as any]);
 
+    // AUTO-REPAIR LOGIC:
+    // If we are in an existing chat but recipientId wasn't passed explicitly,
+    // look it up from the loaded conversations. This ensures the backend
+    // can re-link the participants if the DB link was broken.
+    let targetRecipientId = recipientId;
+    if (!targetRecipientId && targetConvoId && targetConvoId !== 'NEW_DRAFT') {
+        const activeConvo = conversations.find(c => c.id === targetConvoId);
+        if (activeConvo) {
+            targetRecipientId = activeConvo.participant.id;
+        }
+    }
+
     try {
         const payload = {
             senderId: currentUserId,
             text,
             conversationId: targetConvoId === 'NEW_DRAFT' ? undefined : targetConvoId,
             listingId,
-            recipientId
+            recipientId: targetRecipientId // Always send this if found
         };
 
         const res = await fetch('/api/chat/send', {
