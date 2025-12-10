@@ -5,7 +5,7 @@ import {
     CameraIcon, CheckCircleIcon, AlertTriangleIcon, ClockIcon, 
     SmartphoneIcon, MapPinIcon, ShieldIcon, ShieldCheckIcon, 
     ChevronRightIcon, LockIcon, DollarSignIcon, StarIcon, 
-    RefreshCwIcon, FuelIcon, AnchorIcon 
+    RefreshCwIcon, FuelIcon, AnchorIcon, FileSignatureIcon, PlusIcon, TrashIcon
 } from './icons';
 import ImageUploader from './ImageUploader';
 import { format, differenceInSeconds } from 'date-fns';
@@ -17,8 +17,7 @@ type WizardStep =
     // Handover Steps
     | 'PAYMENT_CHECK'
     | 'ID_SCAN'
-    | 'OUTBOUND_INSPECTION'
-    | 'HANDOVER_CONFIRM'
+    | 'HANDOVER_DOCUMENTATION' // New consolidated step
     // Active
     | 'RENTAL_DASHBOARD'
     // Return Steps
@@ -40,17 +39,24 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
 
     // --- Data State ---
     const [balanceConfirmed, setBalanceConfirmed] = useState(false);
-    const [idPhoto, setIdPhoto] = useState<string>('');
-    const [outboundPhotos, setOutboundPhotos] = useState<InspectionPhoto[]>([]);
-    const [inboundPhotos, setInboundPhotos] = useState<InspectionPhoto[]>([]);
-    const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
+    
+    // Step 1: ID Data
+    const [idFront, setIdFront] = useState<string>('');
+    const [idBack, setIdBack] = useState<string>('');
     const [showIdWarning, setShowIdWarning] = useState(false);
 
-    // --- Inspection Logic ---
+    // Step 2: Handover Data
+    const [outboundPhotos, setOutboundPhotos] = useState<string[]>([]);
+    const [waiverSigned, setWaiverSigned] = useState(false);
+
+    // Return Data
+    const [inboundPhotos, setInboundPhotos] = useState<InspectionPhoto[]>([]);
+    const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
+
+    // --- Inspection Logic (For Return Phase Only now) ---
     const [inspectionIndex, setInspectionIndex] = useState(0);
     
-    // Get required photos based on category
-    const getInspectionPoints = () => {
+    const getReturnInspectionPoints = () => {
         const cat = booking.listing.category;
         if (cat === ListingCategory.BOATS || cat === ListingCategory.WATER_SPORTS) {
             return [
@@ -66,7 +72,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
         ];
     };
     
-    const inspectionPoints = getInspectionPoints();
+    const returnInspectionPoints = getReturnInspectionPoints();
 
     // --- Initial State Check ---
     useEffect(() => {
@@ -97,7 +103,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
     const handleEndRental = () => {
         setPhase('RETURN');
         setStep('INBOUND_INSPECTION');
-        setInspectionIndex(0); // Reset for return flow
+        setInspectionIndex(0); 
     };
 
     const handleSessionFinished = async () => {
@@ -176,7 +182,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                     disabled={!balanceConfirmed}
                     className="w-full py-4 bg-cyan-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                    Confirm & Next <ChevronRightIcon className="h-5 w-5" />
+                    Next Step <ChevronRightIcon className="h-5 w-5" />
                 </button>
             </div>
         );
@@ -184,22 +190,48 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
 
     const renderIdScan = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-8">
-            <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
-                    <SmartphoneIcon className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Scan Renter ID</h3>
-                <p className="text-gray-500 mt-2">Take a clear photo of the renter's Driver's License or Passport for insurance validation.</p>
+            <div className="text-center mb-2">
+                <h3 className="text-xl font-bold text-gray-900">Step 1: Validate ID</h3>
+                <p className="text-gray-500 mt-1 text-sm">Take clear photos of the renter's Driver's License or Passport.</p>
             </div>
 
-            <ImageUploader 
-                label="Capture ID"
-                currentImageUrl={idPhoto}
-                onImageChange={(url) => {
-                    setIdPhoto(url);
-                    setShowIdWarning(true);
-                }}
-            />
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase">Front of ID</label>
+                    <ImageUploader 
+                        label="Front"
+                        currentImageUrl={idFront}
+                        onImageChange={setIdFront}
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase">Back of ID</label>
+                    <ImageUploader 
+                        label="Back"
+                        currentImageUrl={idBack}
+                        onImageChange={setIdBack}
+                    />
+                </div>
+            </div>
+
+            {idFront && idBack && !showIdWarning && (
+                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                    <p className="font-bold mb-1">Verify Information:</p>
+                    <ul className="list-disc list-inside">
+                        <li>Does the name match the booking?</li>
+                        <li>Is the ID valid and not expired?</li>
+                        <li>Is the photo clearly the person in front of you?</li>
+                    </ul>
+                 </div>
+            )}
+
+            <button 
+                onClick={() => setShowIdWarning(true)}
+                disabled={!idFront || !idBack}
+                className="w-full py-4 bg-cyan-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+                ID Verified - Next <ChevronRightIcon className="h-5 w-5" />
+            </button>
 
             {showIdWarning && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -207,12 +239,12 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                         <AlertTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
                         <h4 className="text-xl font-bold text-gray-900 mb-2">RETURN THE ID!</h4>
                         <p className="text-gray-600 mb-6">
-                            Do not keep the renter's physical ID. We have secured a digital copy. Please hand it back now.
+                            Do not keep the renter's physical ID. We have secured digital copies. Please hand it back now.
                         </p>
                         <button 
                             onClick={() => {
                                 setShowIdWarning(false);
-                                setStep('OUTBOUND_INSPECTION');
+                                setStep('HANDOVER_DOCUMENTATION');
                             }}
                             className="w-full py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700"
                         >
@@ -224,37 +256,110 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
         </div>
     );
 
-    const renderInspection = (type: 'outbound' | 'inbound') => {
-        const point = inspectionPoints[inspectionIndex];
-        const isOutbound = type === 'outbound';
-        
-        // Ghost Image Logic for Return Phase
-        const ghostImage = !isOutbound 
-            ? outboundPhotos.find(p => p.angleId === point.id)?.url 
-            : null;
+    const renderHandoverDocumentation = () => {
+        const handleAddPhoto = (url: string) => {
+            setOutboundPhotos(prev => [...prev, url]);
+        };
 
+        const handleRemovePhoto = (index: number) => {
+            setOutboundPhotos(prev => prev.filter((_, i) => i !== index));
+        };
+
+        const canStart = outboundPhotos.length >= 2 && waiverSigned;
+
+        return (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-8 pb-20">
+                <div className="text-center">
+                    <h3 className="text-xl font-bold text-gray-900">Step 2: Document Condition</h3>
+                    <p className="text-gray-500 mt-1 text-sm">Take 2 to 8 photos of the item before handing it over.</p>
+                </div>
+
+                {/* Photo Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                    {outboundPhotos.map((url, idx) => (
+                        <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 shadow-sm group">
+                            <img src={url} className="w-full h-full object-cover" alt={`Handover ${idx}`} />
+                            <button 
+                                onClick={() => handleRemovePhoto(idx)}
+                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                <TrashIcon className="h-3 w-3" />
+                            </button>
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                Photo {idx + 1}
+                            </span>
+                        </div>
+                    ))}
+                    
+                    {outboundPhotos.length < 8 && (
+                        <div className="aspect-video">
+                           <ImageUploader 
+                                label={outboundPhotos.length === 0 ? "Add Photo 1" : "+ Add Photo"}
+                                currentImageUrl=""
+                                onImageChange={handleAddPhoto}
+                           />
+                        </div>
+                    )}
+                </div>
+
+                {outboundPhotos.length < 2 && (
+                    <p className="text-xs text-red-500 text-center font-medium">
+                        * Minimum 2 photos required to proceed (Current: {outboundPhotos.length})
+                    </p>
+                )}
+
+                <div className="border-t border-gray-200 pt-6 mt-6">
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                            <div className="pt-0.5">
+                                <input 
+                                    type="checkbox" 
+                                    checked={waiverSigned}
+                                    onChange={(e) => setWaiverSigned(e.target.checked)}
+                                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                                />
+                            </div>
+                            <div className="text-sm">
+                                <span className="font-bold text-blue-900 block mb-1">Legal Verification</span>
+                                <span className="text-blue-800">
+                                    I confirm that the Renter has signed the <strong>Liability Waiver</strong> and <strong>Rental Agreement</strong>.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <button 
+                        onClick={handleStartRental}
+                        disabled={!canStart || isLoading}
+                        className="w-full py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                    >
+                         {isLoading ? 'Starting Rental...' : 'Start Rental Session 🚀'}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderReturnInspection = () => {
+        const point = returnInspectionPoints[inspectionIndex];
+        
         const handlePhotoTaken = (url: string) => {
             const newPhoto: InspectionPhoto = {
                 url,
                 angleId: point.id,
                 angleLabel: point.label,
                 timestamp: new Date().toISOString(),
-                takenByUserId: 'host', // Simulated
-                latitude: 25.7617, // Simulated GPS
+                takenByUserId: 'host',
+                latitude: 25.7617,
                 longitude: -80.1918
             };
 
-            if (isOutbound) {
-                setOutboundPhotos(prev => [...prev, newPhoto]);
-            } else {
-                setInboundPhotos(prev => [...prev, newPhoto]);
-            }
+            setInboundPhotos(prev => [...prev, newPhoto]);
 
-            // Advance or Finish
-            if (inspectionIndex < inspectionPoints.length - 1) {
+            if (inspectionIndex < returnInspectionPoints.length - 1) {
                 setInspectionIndex(prev => prev + 1);
             } else {
-                setStep(isOutbound ? 'HANDOVER_CONFIRM' : 'DAMAGE_ASSESSMENT');
+                setStep('DAMAGE_ASSESSMENT');
             }
         };
 
@@ -266,22 +371,14 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
                         {point.label}
                     </h3>
                     <span className="text-xs font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded">
-                        Step {inspectionIndex + 1}/{inspectionPoints.length}
+                        Return Step {inspectionIndex + 1}/{returnInspectionPoints.length}
                     </span>
                 </div>
-
-                {/* GHOST COMPARISON VIEW (Only for Return) */}
-                {ghostImage && (
-                    <div className="mb-4 bg-gray-100 rounded-lg p-2 border border-dashed border-gray-300">
-                        <p className="text-xs font-bold text-gray-500 uppercase mb-1">Reference (Handover):</p>
-                        <img src={ghostImage} alt="Ghost reference" className="h-32 w-full object-cover rounded opacity-75" />
-                    </div>
-                )}
 
                 <div className="flex-1 bg-black rounded-2xl overflow-hidden relative min-h-[300px]">
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-50">
                         <p className="text-white text-xs uppercase tracking-widest bg-black/50 px-2 rounded">
-                            {type === 'outbound' ? 'Document Current Condition' : 'Check for New Damages'}
+                            Check for New Damages
                         </p>
                     </div>
                     <div className="h-full w-full bg-gray-900 flex items-center justify-center">
@@ -300,25 +397,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
             </div>
         );
     };
-
-    const renderHandoverConfirm = () => (
-        <div className="text-center py-8 space-y-6 animate-in zoom-in-95">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 mb-6">
-                <CheckCircleIcon className="h-10 w-10" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Ready for Handover</h2>
-            <p className="text-gray-600 max-w-xs mx-auto">
-                Payment collected, ID scanned, and condition documented. You are ready to start the timer.
-            </p>
-            <button 
-                onClick={handleStartRental}
-                disabled={isLoading}
-                className="w-full py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition-all transform hover:scale-105"
-            >
-                {isLoading ? 'Starting Session...' : 'Confirm Handoff & Start Timer ⏱️'}
-            </button>
-        </div>
-    );
 
     const renderActiveDashboard = () => (
         <div className="space-y-8 animate-in fade-in">
@@ -392,15 +470,10 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
     );
 
     const renderReviewClose = () => {
-        // If damage was reported, show a warning before proceeding to review
-        if (damageVerdict === 'damage') {
-             // We can still show review, but acknowledge the damage case
-        }
-
         return (
             <ReviewWizard 
                 bookingId={booking.id}
-                authorId={booking.listing.owner.id} // Assuming Host is using this Wizard
+                authorId={booking.listing.owner.id} 
                 targetId={booking.renterId}
                 targetName={`Renter (${booking.renterId})`}
                 role="HOST"
@@ -412,7 +485,11 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
     // --- MAIN RENDER ---
 
     const getProgress = () => {
-        if (phase === 'HANDOVER') return 25;
+        if (phase === 'HANDOVER') {
+            if (step === 'PAYMENT_CHECK') return 10;
+            if (step === 'ID_SCAN') return 20;
+            if (step === 'HANDOVER_DOCUMENTATION') return 30;
+        }
         if (phase === 'ACTIVE') return 50;
         if (phase === 'RETURN') return 75;
         return 100;
@@ -443,12 +520,11 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, onSt
             <div className="flex-1 container mx-auto max-w-md p-6">
                 {step === 'PAYMENT_CHECK' && renderPaymentCheck()}
                 {step === 'ID_SCAN' && renderIdScan()}
-                {step === 'OUTBOUND_INSPECTION' && renderInspection('outbound')}
-                {step === 'HANDOVER_CONFIRM' && renderHandoverConfirm()}
+                {step === 'HANDOVER_DOCUMENTATION' && renderHandoverDocumentation()}
                 
                 {step === 'RENTAL_DASHBOARD' && renderActiveDashboard()}
                 
-                {step === 'INBOUND_INSPECTION' && renderInspection('inbound')}
+                {step === 'INBOUND_INSPECTION' && renderReturnInspection()}
                 {step === 'DAMAGE_ASSESSMENT' && renderDamageAssessment()}
                 {step === 'REVIEW_CLOSE' && renderReviewClose()}
                 
