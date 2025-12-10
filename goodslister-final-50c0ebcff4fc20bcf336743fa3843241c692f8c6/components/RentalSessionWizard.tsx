@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Booking, InspectionPhoto } from '../types';
 import { 
-    ChevronRightIcon, AlertTriangleIcon, RefreshCwIcon, FuelIcon, 
-    ShieldCheckIcon, TrashIcon, CameraIcon 
+    CameraIcon, RefreshCwIcon, FuelIcon, 
+    ShieldCheckIcon, TrashIcon, AlertTriangleIcon 
 } from './icons';
 import ImageUploader from './ImageUploader';
 import { differenceInSeconds } from 'date-fns';
@@ -23,7 +23,7 @@ type WizardStep =
 
 interface RentalSessionWizardProps {
     booking: Booking;
-    initialMode?: 'handover' | 'return'; // NEW PROP
+    initialMode?: 'handover' | 'return';
     onStatusChange: (newStatus: string) => void;
     onComplete: () => void;
 }
@@ -47,16 +47,14 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     const [damageNotes, setDamageNotes] = useState('');
     const [showInspectionModal, setShowInspectionModal] = useState(false);
 
-    // Initialize State based on booking or prop
+    // Initialize State
     useEffect(() => {
-        // If explicitly requested to start RETURN
         if (initialMode === 'return' || booking.status === 'active') {
             setPhase('RETURN');
             setStep('INBOUND_INSPECTION');
             return;
         }
         
-        // Normal state flow
         if (booking.status === 'confirmed') {
             setPhase('HANDOVER');
             setStep('PAYMENT_CHECK');
@@ -65,7 +63,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         }
     }, [booking.status, initialMode]);
 
-    // ... [Handlers] ...
     const handleStartRental = async () => {
         setIsLoading(true);
         setTimeout(() => {
@@ -90,7 +87,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         onComplete();
     };
     
-    // --- Helper Components ---
     const CountdownTimer = () => {
         const [timeLeft, setTimeLeft] = useState('');
         useEffect(() => {
@@ -120,8 +116,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
             <div className="space-y-6 animate-in fade-in pb-20">
                 <div className="text-center">
                     <h3 className="text-xl font-bold">Step 2: Document Condition</h3>
-                    <p className="text-gray-500 text-sm">Take 2 to 8 photos.</p>
-
+                    <p className="text-gray-500 text-sm">Take 2 to 8 photos of the item.</p>
+                    
                     {/* NEW: Dynamic Fuel Tip */}
                     <div className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium border border-blue-100">
                         <FuelIcon className="h-3 w-3" />
@@ -130,7 +126,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
-                    {/* Render existing photos */}
                     {outboundPhotos.map((url, idx) => (
                         <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border">
                             <img src={url} className="w-full h-full object-cover" />
@@ -141,7 +136,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         </div>
                     ))}
                     
-                    {/* Render Next Slot */}
                     {outboundPhotos.length < 8 && (
                         <div className="aspect-video">
                             <ImageUploader 
@@ -178,7 +172,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                 </button>
             </div>
         );
-        
+        // REMOVED FUEL_CHECK STEP HERE
         if (step === 'DAMAGE_ASSESSMENT') return (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                 <h3 className="text-xl font-bold text-center">Verdict</h3>
@@ -206,7 +200,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         return null;
     };
     
-    // Render Handover steps if not in Return/Active mode
+    // Render Handover steps
     const renderHandoverStep = () => {
          if (step === 'PAYMENT_CHECK') return (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
@@ -249,7 +243,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
             
             {(phase === 'HANDOVER' || phase === 'IDLE') && renderHandoverStep()}
             
-            {/* Active Dashboard & Return Flow */}
             {step === 'RENTAL_DASHBOARD' && (
                 <div className="space-y-8 animate-in fade-in">
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
