@@ -18,7 +18,6 @@ type WizardStep =
     | 'HANDOVER_DOCUMENTATION'
     | 'RENTAL_DASHBOARD'
     | 'INBOUND_INSPECTION'
-    | 'FUEL_CHECK'
     | 'DAMAGE_ASSESSMENT'
     | 'REVIEW_CLOSE';
 
@@ -44,7 +43,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
 
     // Return Data
     const [inboundPhotos, setInboundPhotos] = useState<InspectionPhoto[]>([]);
-    const [fuelLevel, setFuelLevel] = useState<number>(100);
     const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
     const [damageNotes, setDamageNotes] = useState('');
     const [showInspectionModal, setShowInspectionModal] = useState(false);
@@ -82,7 +80,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         setInboundPhotos(photos);
         setDamageVerdict(reportedDamage ? 'damage' : 'clean');
         setShowInspectionModal(false);
-        setStep('FUEL_CHECK');
+        // FIX: Skip fuel check slider, go straight to verdict
+        setStep('DAMAGE_ASSESSMENT');
     };
 
     const handleSessionFinished = () => {
@@ -122,6 +121,12 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                 <div className="text-center">
                     <h3 className="text-xl font-bold">Step 2: Document Condition</h3>
                     <p className="text-gray-500 text-sm">Take 2 to 8 photos.</p>
+
+                    {/* NEW: Dynamic Fuel Tip */}
+                    <div className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium border border-blue-100">
+                        <FuelIcon className="h-3 w-3" />
+                        <span>Tip: If it has an engine, include a photo of the fuel gauge.</span>
+                    </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
@@ -147,7 +152,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         </div>
                     )}
                 </div>
-                {outboundPhotos.length < 2 && <p className="text-xs text-red-500 text-center font-medium">* Minimum 2 photos required to proceed (Current: {outboundPhotos.length})</p>}
+                {outboundPhotos.length < 2 && <p className="text-xs text-red-500 text-center font-medium">* Minimum 2 photos required to proceed</p>}
                 
                 <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <label className="flex items-start gap-3 cursor-pointer">
@@ -173,23 +178,26 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                 </button>
             </div>
         );
-        if (step === 'FUEL_CHECK') return (
-            <div className="bg-white p-6 rounded-xl border shadow-sm animate-in fade-in slide-in-from-right-4">
-                <h3 className="font-bold mb-4 flex gap-2"><FuelIcon className="h-5 w-5"/> Fuel Check</h3>
-                <input type="range" value={fuelLevel} onChange={e => setFuelLevel(Number(e.target.value))} className="w-full" step="25" />
-                <div className="text-center font-bold text-xl mt-2">{fuelLevel}%</div>
-                <button onClick={() => setStep('DAMAGE_ASSESSMENT')} className="w-full mt-6 py-3 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition-colors">Next</button>
-            </div>
-        );
+        
         if (step === 'DAMAGE_ASSESSMENT') return (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                 <h3 className="text-xl font-bold text-center">Verdict</h3>
-                <button onClick={() => { setDamageVerdict('clean'); setStep('REVIEW_CLOSE'); }} className="w-full p-4 border-2 border-green-500 bg-green-50 rounded-xl font-bold text-green-800 hover:bg-green-100 transition-colors">All Clean - Release Deposit</button>
-                <button onClick={() => setDamageVerdict('damage')} className="w-full p-4 border-2 border-red-500 bg-red-50 rounded-xl font-bold text-red-800 hover:bg-red-100 transition-colors">Damage Reported - Freeze Deposit</button>
+                <p className="text-center text-gray-500 text-sm mb-4">Based on your inspection comparison.</p>
+                
+                <button onClick={() => { setDamageVerdict('clean'); setStep('REVIEW_CLOSE'); }} className="w-full p-6 border-2 border-green-500 bg-green-50 rounded-xl font-bold text-green-800 hover:bg-green-100 transition-colors text-lg flex items-center justify-between">
+                    <span>All Clean</span>
+                    <span className="text-sm font-normal bg-green-200 px-2 py-1 rounded">Release Deposit</span>
+                </button>
+
+                <button onClick={() => setDamageVerdict('damage')} className="w-full p-6 border-2 border-red-500 bg-red-50 rounded-xl font-bold text-red-800 hover:bg-red-100 transition-colors text-lg flex items-center justify-between">
+                    <span>Damage / Fuel Issue</span>
+                    <span className="text-sm font-normal bg-red-200 px-2 py-1 rounded">Freeze Deposit</span>
+                </button>
+
                 {damageVerdict === 'damage' && (
-                    <div className="animate-in fade-in">
-                        <textarea value={damageNotes} onChange={e => setDamageNotes(e.target.value)} className="w-full border p-3 rounded-lg focus:ring-red-500" placeholder="Describe damage..." rows={3} />
-                        <button onClick={() => setStep('REVIEW_CLOSE')} className="w-full mt-2 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors">File Claim</button>
+                    <div className="animate-in fade-in mt-4">
+                        <textarea value={damageNotes} onChange={e => setDamageNotes(e.target.value)} className="w-full border p-3 rounded-lg focus:ring-red-500" placeholder="Describe damage or missing fuel..." rows={3} />
+                        <button onClick={() => setStep('REVIEW_CLOSE')} className="w-full mt-4 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors">File Claim & Continue</button>
                     </div>
                 )}
             </div>

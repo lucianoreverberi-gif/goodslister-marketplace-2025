@@ -23,9 +23,19 @@ interface AngleConfig {
 const getRequiredAngles = (category: ListingCategory, subcategory: string = ''): AngleConfig[] => {
     const sub = subcategory.toLowerCase();
     
+    // Helper to determine if we need fuel check
+    const needsFuelCheck = 
+        category === ListingCategory.BOATS || 
+        category === ListingCategory.ATVS_UTVS || 
+        category === ListingCategory.RVS || 
+        category === ListingCategory.MOTORCYCLES || 
+        (category === ListingCategory.WATER_SPORTS && (sub.includes('jet') || sub.includes('ski')));
+
+    let angles: AngleConfig[] = [];
+
     // Marine Logic
     if (category === ListingCategory.BOATS || (category === ListingCategory.WATER_SPORTS && (sub.includes('jet') || sub.includes('ski')))) {
-        return [
+        angles = [
             { id: 'bow', label: 'Hull (Front/Bow)', description: 'Capture the nose and front hull for impact marks.', overlayPath: 'M12 2 L2 22 L22 22 Z' },
             { id: 'hull_bottom', label: 'Hull (Underside)', description: 'Check underneath for beaching scratches.', overlayPath: 'M2 12 Q12 22 22 12' },
             { id: 'prop', label: 'Propeller/Intake', description: 'CRITICAL: Check blades for chips or bends.', overlayPath: 'M12 12 m-5 0 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0' },
@@ -33,10 +43,9 @@ const getRequiredAngles = (category: ListingCategory, subcategory: string = ''):
             { id: 'port', label: 'Left Side', description: 'Full length view.', overlayPath: 'M2 10 L22 10' },
         ];
     }
-
     // Vehicle Logic
-    if (category === ListingCategory.RVS || category === ListingCategory.ATVS_UTVS || category === ListingCategory.MOTORCYCLES) {
-        return [
+    else if (category === ListingCategory.RVS || category === ListingCategory.ATVS_UTVS || category === ListingCategory.MOTORCYCLES) {
+        angles = [
             { id: 'front', label: 'Front', description: 'Front view including headlights.' },
             { id: 'driver_side', label: 'Driver Side', description: 'Full side view, check panels.' },
             { id: 'passenger_side', label: 'Passenger Side', description: 'Full side view.' },
@@ -44,12 +53,24 @@ const getRequiredAngles = (category: ListingCategory, subcategory: string = ''):
             { id: 'wheels', label: 'Wheels/Tires', description: 'Check rims for curb rash.' }
         ];
     }
-
     // Default Generic
-    return [
-        { id: 'overall', label: 'Overall Item', description: 'Full view of the item.' },
-        { id: 'detail_1', label: 'Detail / Accessories', description: 'Any included accessories.' }
-    ];
+    else {
+        angles = [
+            { id: 'overall', label: 'Overall Item', description: 'Full view of the item.' },
+            { id: 'detail_1', label: 'Detail / Accessories', description: 'Any included accessories (paddles, etc).' }
+        ];
+    }
+
+    // FIX: Dynamically add Fuel Check for motorized items
+    if (needsFuelCheck) {
+        angles.push({ 
+            id: 'fuel_dash', 
+            label: 'Fuel Gauge / Dash', 
+            description: 'Capture the fuel level and mileage/hours.' 
+        });
+    }
+
+    return angles;
 };
 
 const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, handoverReferencePhotos, onComplete, onCancel }) => {

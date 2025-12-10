@@ -180,7 +180,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, ${listing.subcategory},
                     ${listing.pricePerDay || 0}, ${listing.pricePerHour || 0}, ${listing.pricingType},
                     ${listing.location.city}, ${listing.location.state}, ${listing.location.country}, ${listing.location.latitude}, ${listing.location.longitude},
-                    ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount || 0}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, 
+                    ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, 
                     ${listing.hasGpsTracker || false}, ${listing.hasCommercialInsurance || false}, ${listing.securityDeposit || 0},
                     ${listing.listingType || 'rental'}, ${listing.priceUnit || 'item'}
                 )
