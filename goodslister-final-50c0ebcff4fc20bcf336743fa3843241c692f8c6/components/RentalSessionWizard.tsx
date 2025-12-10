@@ -6,7 +6,7 @@ import {
     ShieldCheckIcon, TrashIcon, AlertTriangleIcon 
 } from './icons';
 import ImageUploader from './ImageUploader';
-import { differenceInSeconds } from 'date-fns';
+import { differenceInSeconds, isValid } from 'date-fns';
 import ReviewWizard from './ReviewWizard';
 import DigitalInspection from './DigitalInspection';
 
@@ -77,7 +77,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         setInboundPhotos(photos);
         setDamageVerdict(reportedDamage ? 'damage' : 'clean');
         setShowInspectionModal(false);
-        // FIX: Skip fuel check slider, go straight to verdict
+        // FIX: Skip fuel check slider, go straight to verdict for simpler UX
         setStep('DAMAGE_ASSESSMENT');
     };
 
@@ -88,22 +88,32 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     };
     
     const CountdownTimer = () => {
-        const [timeLeft, setTimeLeft] = useState('');
+        const [timeLeft, setTimeLeft] = useState('Loading...');
+        
         useEffect(() => {
-            const interval = setInterval(() => {
+            const calculateTime = () => {
+                if (!booking.endDate) return "Unknown";
                 const end = new Date(booking.endDate);
+                if (!isValid(end)) return "Invalid Date";
+                
                 const now = new Date();
                 const diff = differenceInSeconds(end, now);
-                if (diff <= 0) setTimeLeft('Overdue');
-                else {
-                    const hours = Math.floor(diff / 3600);
-                    const minutes = Math.floor((diff % 3600) / 60);
-                    setTimeLeft(`${hours}h ${minutes}m remaining`);
-                }
+                
+                if (diff <= 0) return 'Rental Ended';
+                
+                const hours = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60);
+                return `${hours}h ${minutes}m remaining`;
+            };
+
+            setTimeLeft(calculateTime());
+            const interval = setInterval(() => {
+                setTimeLeft(calculateTime());
             }, 60000);
             return () => clearInterval(interval);
-        }, []);
-        return <div className="text-3xl font-mono font-bold text-gray-900 tracking-tight">{timeLeft || "Calculating..."}</div>;
+        }, [booking.endDate]);
+
+        return <div className="text-3xl font-mono font-bold text-gray-900 tracking-tight">{timeLeft}</div>;
     };
 
     // Renders
