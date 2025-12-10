@@ -33,6 +33,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
     `;
 
+    // --- REVIEWS TABLE (Critical for Trust) ---
+    await sql`
+        CREATE TABLE IF NOT EXISTS reviews (
+            id VARCHAR(255) PRIMARY KEY,
+            booking_id VARCHAR(255) REFERENCES bookings(id),
+            author_id VARCHAR(255) REFERENCES users(id),
+            target_id VARCHAR(255) REFERENCES users(id),
+            role VARCHAR(20),
+            rating NUMERIC(3, 2),
+            comment TEXT,
+            private_note TEXT,
+            care_rating NUMERIC(3, 2),
+            clean_rating NUMERIC(3, 2),
+            accuracy_rating NUMERIC(3, 2),
+            safety_rating NUMERIC(3, 2),
+            status VARCHAR(20),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
     // --- CORE TABLES ---
 
     await sql`
@@ -109,20 +129,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     // --- MIGRATIONS ---
-    // Fix for "column does not exist" errors on existing tables
     try {
         console.log("Running migrations...");
-        
-        // 1. Fix User Columns
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT`;
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
-        
-        // 2. Fix Listings Columns (The specific error you saw)
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_gps_tracker BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_commercial_insurance BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS security_deposit NUMERIC(10, 2) DEFAULT 0`;
-        
-        // 3. Ensure other fields exist (just in case)
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS listing_type VARCHAR(20) DEFAULT 'rental'`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS operator_license_id TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS fuel_policy VARCHAR(20)`;
@@ -130,11 +143,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
-        
-        // 4. Fix Bookings
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
-        
         console.log("Migrations completed.");
     } catch (e) {
         console.log("Migration error (might be ignored if columns exist):", e);
