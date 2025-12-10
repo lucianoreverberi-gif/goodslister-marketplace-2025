@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Session, Listing, Booking, InspectionPhoto } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon, HeartIcon, UserCheckIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon, HeartIcon, UserCheckIcon, TrashIcon, AlertTriangleIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import DigitalInspection from './DigitalInspection';
@@ -21,6 +21,7 @@ interface UserDashboardPageProps {
     favoriteListings?: Listing[];
     onToggleFavorite: (id: string) => void;
     onViewPublicProfile: (userId: string) => void; // NEW: Link to public view
+    onDeleteListing: (listingId: string) => Promise<void>; // NEW: Handler for delete action
 }
 
 type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security' | 'favorites';
@@ -605,7 +606,7 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ 
     user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onUpdateProfile,
-    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile 
+    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing 
 }) => {
     // Default to 'profile' so the user sees it first based on their request
     const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
@@ -613,6 +614,10 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
     // State for Modals
     const [showPhoneModal, setShowPhoneModal] = useState(false);
     const [showIdModal, setShowIdModal] = useState(false);
+    
+    // NEW: Delete Confirmation State
+    const [listingToDelete, setListingToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
         { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon }, // NEW TAB
@@ -624,6 +629,21 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
         { id: 'analytics', name: 'Analytics', icon: BarChartIcon },
         { id: 'aiAssistant', name: 'AI Assistant', icon: BrainCircuitIcon },
     ];
+    
+    // NEW: Handle Delete
+    const handleDeleteConfirm = async () => {
+        if (!listingToDelete) return;
+        setIsDeleting(true);
+        try {
+            await onDeleteListing(listingToDelete);
+            setListingToDelete(null); // Close modal
+        } catch (e) {
+            console.error(e);
+            alert("Failed to delete listing.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
     
     // NEW: Profile Settings Tab Component
     const ProfileSettingsTab: React.FC = () => {
@@ -969,11 +989,56 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
     const renderContent = () => {
         switch (activeTab) {
             case 'profile': return <ProfileSettingsTab />;
-            case 'listings': return (<div><h2 className="text-2xl font-bold mb-6">My Listings</h2><div className="bg-white p-4 rounded-lg shadow overflow-x-auto">{listings.length > 0 ? (<table className="w-full text-sm text-left"><thead className="bg-gray-50"><tr><th className="p-3">Title</th><th className="p-3">Category</th><th className="p-3">Price/day</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{listings.map(listing => (<tr key={listing.id} className="border-b"><td className="p-3 font-medium">{listing.title}</td><td className="p-3">{listing.category}</td><td className="p-3">${listing.pricePerDay}</td><td className="p-3"><span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Active</span></td><td className="p-3 flex justify-end gap-2"><button onClick={() => onListingClick && onListingClick(listing.id)} className="p-1 text-gray-500 hover:text-cyan-600 hover:bg-gray-100 rounded" title="View Listing"><EyeIcon className="h-5 w-5" /></button><button onClick={() => onEditListing && onEditListing(listing.id)} className="p-1 text-gray-500 hover:text-cyan-600 hover:bg-gray-100 rounded" title="Edit Listing"><PencilIcon className="h-5 w-5" /></button></td></tr>))}</tbody></table>) : <p className="text-center p-8 text-gray-600">You haven't listed any items yet.</p>}</div></div>);
+            case 'listings': return (
+                <div>
+                    <h2 className="text-2xl font-bold mb-6">My Listings</h2>
+                    <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                        {listings.length > 0 ? (
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="p-3">Title</th>
+                                        <th className="p-3">Category</th>
+                                        <th className="p-3">Price/day</th>
+                                        <th className="p-3">Status</th>
+                                        <th className="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {listings.map(listing => (
+                                        <tr key={listing.id} className="border-b">
+                                            <td className="p-3 font-medium">{listing.title}</td>
+                                            <td className="p-3">{listing.category}</td>
+                                            <td className="p-3">${listing.pricePerDay}</td>
+                                            <td className="p-3"><span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Active</span></td>
+                                            <td className="p-3 flex justify-end gap-2">
+                                                <button onClick={() => onListingClick && onListingClick(listing.id)} className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors" title="View">
+                                                    <EyeIcon className="h-5 w-5" />
+                                                </button>
+                                                <button onClick={() => onEditListing && onEditListing(listing.id)} className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors" title="Edit">
+                                                    <PencilIcon className="h-5 w-5" />
+                                                </button>
+                                                {/* DELETE BUTTON */}
+                                                <button 
+                                                    onClick={() => setListingToDelete(listing.id)} 
+                                                    className="p-2 text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 rounded transition-colors" 
+                                                    title="Delete Listing"
+                                                >
+                                                    <TrashIcon className="h-5 w-5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : <p className="text-center p-8 text-gray-600">You haven't listed any items yet.</p>}
+                    </div>
+                </div>
+            );
             case 'bookings': return <BookingsManager bookings={bookings} userId={user.id} />;
             case 'favorites': return (<div><h2 className="text-2xl font-bold mb-6">Saved Items</h2>{favoriteListings && favoriteListings.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{favoriteListings.map(listing => (<ListingCard key={listing.id} listing={listing} onClick={onListingClick || (() => {})} isFavorite={true} onToggleFavorite={onToggleFavorite} />))}</div>) : (<div className="text-center py-12 bg-white rounded-lg border border-gray-200"><HeartIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" /><h3 className="text-lg font-semibold text-gray-900">No favorites yet</h3><p className="text-gray-500 mt-1">Start exploring and save items you love!</p></div>)}</div>);
             case 'security': return <SecurityTab />;
-            case 'billing': return (<div><h2 className="text-2xl font-bold mb-6">Billing</h2><FeeStrategyAdvisor /><div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"><div className="bg-white p-6 rounded-lg shadow flex flex-col justify-between h-full"><div><div className="flex justify-between items-start mb-4"><h3 className="text-lg font-semibold text-gray-800">Wallet Balance</h3><span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Active</span></div><p className="text-4xl font-bold text-gray-900">$1,250.00</p><p className="text-sm text-gray-500 mt-1">Available for payout</p></div><div className="mt-6 pt-6 border-t"><button className="w-full py-2 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center gap-2"><LandmarkIcon className="h-4 w-4" /> Withdraw to Bank</button></div></div><div className="bg-white p-6 rounded-lg shadow border border-dashed border-gray-300 flex flex-col items-center justify-center text-center"><div className="bg-gray-100 p-3 rounded-full mb-4"><LandmarkIcon className="h-8 w-8 text-gray-500" /></div><h3 className="text-lg font-semibold text-gray-800">Payout Method</h3><p className="text-gray-500 text-sm mt-1 max-w-xs">Connect your bank account via Stripe to receive automatic payouts from rentals.</p><button className="mt-4 px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">Connect with Stripe</button></div></div><div className="bg-white p-6 rounded-lg shadow"><h3 className="text-lg font-semibold mb-4">Transaction History</h3>{bookings.length > 0 ? (<table className="w-full text-sm text-left"><thead className="bg-gray-50"><tr><th className="p-3">Date</th><th className="p-3">Description</th><th className="p-3">Type</th><th className="p-3 text-right">Amount</th></tr></thead><tbody>{bookings.map(booking => (<tr key={booking.id} className="border-b last:border-0"><td className="p-3 text-gray-600">{format(new Date(booking.startDate), 'MMM dd, yyyy')}</td><td className="p-3"><div className="font-medium text-gray-900">{booking.renterId === user.id ? `Payment for ${booking.listing.title}` : `Payout for ${booking.listing.title}`}</div><div className="text-xs text-gray-500">ID: {booking.id}</div></td><td className="p-3"><span className={`px-2 py-1 text-xs rounded-full ${booking.renterId === user.id ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{booking.renterId === user.id ? 'Payment' : 'Payout'}</span></td><td className={`p-3 text-right font-bold ${booking.renterId === user.id ? 'text-gray-900' : 'text-green-600'}`}>{booking.renterId === user.id ? '-' : '+'}${booking.totalPrice.toFixed(2)}</td></tr>))}</tbody></table>) : (<p className="text-gray-500 italic">No transactions recorded yet.</p>)}</div></div>);
+            case 'billing': return (<div><h2 className="text-2xl font-bold mb-6">Billing</h2><FeeStrategyAdvisor /><div className="bg-white p-6 rounded-lg shadow"><p className="text-gray-500">Transaction history and payouts.</p></div></div>);
             case 'analytics': return (<div><h2 className="text-2xl font-bold mb-6">Listing Analytics</h2><div className="bg-white p-6 rounded-lg shadow text-center"><p className="text-gray-500">Analytics are simulated in this demo.</p></div></div>);
             case 'aiAssistant': return <AIOptimizer />;
         }
@@ -1012,6 +1077,36 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
             </div>
             {showPhoneModal && <PhoneVerificationModal onClose={() => setShowPhoneModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'phone')} />}
             {showIdModal && <IdVerificationModal onClose={() => setShowIdModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'id')} />}
+            
+            {/* DELETE CONFIRMATION MODAL */}
+            {listingToDelete && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center animate-in zoom-in-95">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600">
+                            <AlertTriangleIcon className="h-8 w-8" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Listing?</h3>
+                        <p className="text-gray-600 mb-6 text-sm">
+                            Are you sure you want to delete this listing? This action <strong>cannot be undone</strong> and the item will be removed from the marketplace immediately.
+                        </p>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setListingToDelete(null)}
+                                className="flex-1 py-3 px-4 border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleDeleteConfirm}
+                                disabled={isDeleting}
+                                className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
