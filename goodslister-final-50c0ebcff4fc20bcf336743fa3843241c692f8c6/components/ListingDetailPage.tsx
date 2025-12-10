@@ -304,6 +304,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             rentalTotal = basePrice * unitCount;
         }
         
+        // Logic: Platform insurance only applies to non-high-risk items.
+        // For High Risk items, protectionFee is 0 because it's handled directly/externally.
         let protectionFee = 0;
         if (!isHighRisk) {
             if (insurancePlan === 'standard') {
@@ -311,6 +313,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             } else if (insurancePlan === 'premium') {
                 protectionFee = rentalTotal * 0.20; // 20% for premium
             }
+            // 'none' is 0
         }
         
         const totalPrice = rentalTotal + protectionFee;
@@ -331,11 +334,13 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         if (isHourly && !hourlyDate) return;
         if (!isHourly && (!range?.from || !range?.to)) return;
 
+        // Trigger Contract Signing first
         setShowContractModal(true);
     };
 
     const handleContractSigned = () => {
         setShowContractModal(false);
+        // Trigger Payment
         setShowPaymentModal(true);
     };
 
@@ -361,6 +366,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         setIsBooking(true);
         setBookingError(null);
 
+        // Simulate slight delay for UX
         if (paymentMethod === 'platform') {
             await new Promise(resolve => setTimeout(resolve, 1500)); 
         }
