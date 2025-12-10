@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         location_country VARCHAR(100),
         location_lat NUMERIC,
         location_lng NUMERIC,
-        owner_id VARCHAR(255), -- Removed ref check for seed robustness
+        owner_id VARCHAR(255),
         images TEXT[], 
         video_url TEXT,
         is_featured BOOLEAN DEFAULT FALSE,
@@ -108,11 +108,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
     `;
 
-    // MIGRATION: Ensure 'bio' exists for existing installs
+    // --- MIGRATIONS ---
+    // Fix for "column does not exist" errors on existing tables
     try {
+        console.log("Running migrations...");
+        
+        // 1. Fix User Columns
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT`;
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
+        
+        // 2. Fix Listings Columns (The specific error you saw)
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_gps_tracker BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_commercial_insurance BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS security_deposit NUMERIC(10, 2) DEFAULT 0`;
+        
+        // 3. Ensure other fields exist (just in case)
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS listing_type VARCHAR(20) DEFAULT 'rental'`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS operator_license_id TEXT`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS fuel_policy VARCHAR(20)`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS skill_level VARCHAR(20)`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
+        
+        // 4. Fix Bookings
+        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
+        await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
+        
+        console.log("Migrations completed.");
     } catch (e) {
-        console.log("Migration bio skipped or failed", e);
+        console.log("Migration error (might be ignored if columns exist):", e);
     }
 
     // --- SEED INITIAL DATA IF EMPTY ---
@@ -145,7 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, ${listing.subcategory},
                     ${listing.pricePerDay || 0}, ${listing.pricePerHour || 0}, ${listing.pricingType},
                     ${listing.location.city}, ${listing.location.state}, ${listing.location.country}, ${listing.location.latitude}, ${listing.location.longitude},
-                    ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, 
+                    ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount || 0}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, 
                     ${listing.hasGpsTracker || false}, ${listing.hasCommercialInsurance || false}, ${listing.securityDeposit || 0},
                     ${listing.listingType || 'rental'}, ${listing.priceUnit || 'item'}
                 )
@@ -154,7 +179,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('Listings seeded');
     }
 
-    return res.status(200).json({ message: 'Database schema verified and seeded.' });
+    return res.status(200).json({ message: 'Database schema verified, migrated, and seeded.' });
   } catch (error) {
     console.error('Seeding error:', error);
     return res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
