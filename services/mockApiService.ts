@@ -226,6 +226,13 @@ export const updateUserAvatar = async (userId: string, newAvatarUrl: string): Pr
     return data.users;
 };
 
+// NEW: Full profile update (Bio + Avatar)
+export const updateUserProfile = async (userId: string, bio: string, avatarUrl: string): Promise<User[]> => {
+    await sendAdminAction('updateUserProfile', { userId, bio, avatarUrl });
+    const data = await fetchAllData();
+    return data.users;
+};
+
 // --- User & Listing Actions (Real Backend) ---
 
 export const loginUser = async (email: string): Promise<User | null> => {
@@ -290,6 +297,20 @@ export const updateListing = async (listing: Listing): Promise<boolean> => {
         return response.ok;
     } catch (e) {
         console.error("Failed to update listing:", e);
+        return false;
+    }
+};
+
+export const deleteListing = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/listings/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+        });
+        return response.ok;
+    } catch (e) {
+        console.error("Failed to delete listing:", e);
         return false;
     }
 };

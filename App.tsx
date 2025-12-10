@@ -18,6 +18,7 @@ import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
+import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -34,6 +35,9 @@ interface Notification {
 const App: React.FC = () => {
     const [page, setPage] = useState<Page>('home');
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+    // NEW: State for public profile viewing
+    const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
+    
     const [session, setSession] = useState<Session | null>(null);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
@@ -76,6 +80,12 @@ const App: React.FC = () => {
         window.scrollTo(0, 0);
     }, []);
 
+    // NEW: Handle navigating to user profile
+    const handleViewUserProfile = useCallback((userId: string) => {
+        setSelectedUserProfileId(userId);
+        handleNavigate('userProfile');
+    }, [handleNavigate]);
+
     const addNotification = (type: 'success' | 'info' | 'message', title: string, message: string) => {
         const id = Math.random().toString(36).substring(2, 9);
         setNotifications(prev => [...prev, { id, type, title, message }]);
@@ -83,6 +93,24 @@ const App: React.FC = () => {
         setTimeout(() => {
             setNotifications(prev => prev.filter(n => n.id !== id));
         }, 5000);
+    };
+
+    // NEW: Handle updating user profile (bio/avatar)
+    const handleUpdateUserProfile = async (bio: string, avatarUrl: string) => {
+        if (!session) return;
+        
+        // Optimistic Update
+        const updatedSession = { ...session, bio, avatarUrl };
+        setSession(updatedSession);
+        
+        // Update App Data List
+        const updatedUsers = appData.users.map((u: User) => u.id === session.id ? { ...u, bio, avatarUrl } : u);
+        updateAppData({ users: updatedUsers });
+
+        // CALL NEW API
+        await mockApi.updateUserProfile(session.id, bio, avatarUrl); 
+        
+        addNotification('success', 'Profile Saved', 'Your bio and avatar have been updated.');
     };
 
     const removeNotification = (id: string) => {
@@ -303,6 +331,19 @@ const App: React.FC = () => {
         return success;
     };
 
+    const handleDeleteListing = async (listingId: string): Promise<void> => {
+        const success = await mockApi.deleteListing(listingId);
+        if (success) {
+            // Remove from local state immediately
+            updateAppData({
+                listings: appData.listings.filter((l: Listing) => l.id !== listingId)
+            });
+            addNotification('success', 'Listing Deleted', 'The item has been removed.');
+        } else {
+            addNotification('message', 'Error', 'Could not delete listing. It may have active bookings.');
+        }
+    };
+
     // --- Admin content handlers ---
     const handleUpdateLogo = async (newUrl: string) => {
         const updatedLogoUrl = await mockApi.updateLogo(newUrl);
@@ -418,7 +459,24 @@ const App: React.FC = () => {
                     onCreateBooking={handleCreateBooking}
                     isFavorite={session?.favorites?.includes(listing.id) || false}
                     onToggleFavorite={handleToggleFavorite}
+                    onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)} // NEW PROP
                 /> : <p>Listing not found.</p>;
+            case 'userProfile': // NEW PAGE CASE
+                const profileUser = users.find((u: User) => u.id === selectedUserProfileId);
+                if (!profileUser) return <p className="p-8 text-center text-gray-500">User profile not found.</p>;
+                
+                // Filter listings owned by this user
+                const userListings = listings.filter((l: Listing) => l.owner.id === profileUser.id);
+
+                return <UserProfilePage 
+                    profileUser={profileUser}
+                    currentUser={session}
+                    listings={userListings}
+                    onListingClick={handleListingClick}
+                    onToggleFavorite={handleToggleFavorite}
+                    favoriteIds={session?.favorites || []}
+                    onEditProfile={session?.id === profileUser.id ? handleUpdateUserProfile : undefined}
+                />;
             case 'createListing':
                 return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} onSubmit={handleCreateListing} />;
             case 'editListing':
@@ -462,9 +520,12 @@ const App: React.FC = () => {
                     favoriteListings={listings.filter(l => session.favorites?.includes(l.id))}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
+                    onUpdateProfile={handleUpdateUserProfile} // Pass the handler
                     onListingClick={handleListingClick}
                     onEditListing={handleEditListingClick}
                     onToggleFavorite={handleToggleFavorite}
+                    onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
+                    onDeleteListing={handleDeleteListing} // NEW PROP
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;
