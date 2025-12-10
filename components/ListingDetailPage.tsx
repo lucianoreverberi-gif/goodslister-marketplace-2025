@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
-import { differenceInCalendarDays, format } from 'date-fns';
+import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
 import { LegalService } from '../services/legalService';
 import ImageUploader from './ImageUploader'; 
 
@@ -49,6 +49,7 @@ interface ListingDetailPageProps {
     ) => Promise<Booking>;
     isFavorite: boolean;
     onToggleFavorite: (id: string) => void;
+    onViewOwnerProfile?: () => void;
 }
 
 const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
@@ -61,7 +62,7 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
             <h2 className="text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
             <p className="text-gray-600 mt-2">Your reservation for the <span className="font-semibold">{booking.listing.title}</span> is complete.</p>
             <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
-                <p><strong>Dates:</strong> {format(new Date(booking.startDate), 'LLL dd, yyyy')} - {format(new Date(booking.endDate), 'LLL dd, yyyy')}</p>
+                <p><strong>Dates:</strong> {format(new Date(booking.startDate), 'LLL dd, h:mm a')} - {format(new Date(booking.endDate), 'h:mm a')}</p>
                 <div className="flex items-center justify-between mt-2">
                     <strong>Total Price:</strong> 
                     <span className="text-lg font-bold text-cyan-700">${booking.totalPrice.toFixed(2)}</span>
@@ -243,9 +244,16 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
 };
 
 
-const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite }) => {
+const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    // Daily State
     const [range, setRange] = useState<DateRange | undefined>();
+    
+    // Hourly State (NEW)
+    const [hourlyDate, setHourlyDate] = useState<Date | undefined>(undefined);
+    const [startTime, setStartTime] = useState<string>('09:00');
+    const [durationHours, setDurationHours] = useState<number>(1);
+    
     const [isBooking, setIsBooking] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
@@ -259,6 +267,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const isOwner = currentUser?.id === listing.owner.id;
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
+    const isHourly = listing.pricingType === 'hourly';
 
     // Identify high-risk categories where insurance is handled directly (not via platform add-on)
     const isHighRisk = 
@@ -268,13 +277,32 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         listing.category === ListingCategory.ATVS_UTVS ||
         (listing.category === ListingCategory.WATER_SPORTS && listing.subcategory?.toLowerCase().includes('jet ski'));
 
-    // Calculate Totals
+    // Helper: Generate Time Options (08:00 to 18:00)
+    const timeOptions = Array.from({ length: 11 }, (_, i) => {
+        const hour = i + 8;
+        return `${hour < 10 ? '0' : ''}${hour}:00`;
+    });
+
+    // Helper: Generate Duration Options
+    const durationOptions = [1, 2, 3, 4, 5, 6, 8, 24];
+
+    // Calculate Totals (Updated for both Daily and Hourly)
     const getPriceDetails = () => {
-        if (!range?.from || !range?.to) return null;
-        const days = differenceInCalendarDays(range.to, range.from) + 1;
-        const basePrice = listing.pricingType === 'daily' ? (listing.pricePerDay || 0) : 0;
-        
-        const rentalTotal = basePrice * days;
+        let rentalTotal = 0;
+        let unitCount = 0; // days or hours
+
+        if (isHourly) {
+            if (!hourlyDate) return null;
+            unitCount = durationHours;
+            const basePrice = listing.pricePerHour || 0;
+            rentalTotal = basePrice * unitCount;
+        } else {
+            // Daily
+            if (!range?.from || !range?.to) return null;
+            unitCount = differenceInCalendarDays(range.to, range.from) + 1;
+            const basePrice = listing.pricePerDay || 0;
+            rentalTotal = basePrice * unitCount;
+        }
         
         // Logic: Platform insurance only applies to non-high-risk items.
         // For High Risk items, protectionFee is 0 because it's handled directly/externally.
@@ -291,7 +319,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         const totalPrice = rentalTotal + protectionFee;
 
         return {
-            days,
+            unitCount,
             rentalTotal,
             protectionFee,
             totalPrice
@@ -301,7 +329,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const priceDetails = getPriceDetails();
 
     const handleBookClick = () => {
-        if (!currentUser || !range?.from || !range?.to || isOwner) return;
+        if (!currentUser || isOwner || !priceDetails) return;
+        // Validate dates
+        if (isHourly && !hourlyDate) return;
+        if (!isHourly && (!range?.from || !range?.to)) return;
+
         // Trigger Contract Signing first
         setShowContractModal(true);
     };
@@ -313,7 +345,23 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     };
 
     const handleConfirmBooking = async (paymentMethod: 'platform' | 'direct') => {
-        if (!range?.from || !range?.to || !priceDetails) return;
+        if (!priceDetails) return;
+        
+        // Calculate Exact Dates based on Pricing Model
+        let finalStartDate: Date;
+        let finalEndDate: Date;
+
+        if (isHourly && hourlyDate) {
+            const [hours, mins] = startTime.split(':').map(Number);
+            finalStartDate = setMinutes(setHours(new Date(hourlyDate), hours), mins);
+            finalEndDate = addHours(finalStartDate, durationHours);
+        } else if (range?.from && range?.to) {
+            finalStartDate = range.from;
+            finalEndDate = range.to;
+            // Set end date to end of day for cleaner logic if needed
+        } else {
+            return;
+        }
         
         setIsBooking(true);
         setBookingError(null);
@@ -326,15 +374,16 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         try {
             const newBooking = await onCreateBooking(
                 listing.id, 
-                range.from, 
-                range.to, 
+                finalStartDate, 
+                finalEndDate, 
                 priceDetails.totalPrice, 
                 paymentMethod,
                 (!isHighRisk && (insurancePlan === 'premium' || insurancePlan === 'standard')) ? 'insurance' : 'waiver',
                 priceDetails.protectionFee
             );
             setSuccessfulBooking(newBooking);
-            setRange(undefined); // Reset calendar
+            setRange(undefined); 
+            setHourlyDate(undefined);
             setShowPaymentModal(false);
         } catch (error) {
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -353,15 +402,19 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
       disabled: { textDecoration: 'line-through', opacity: 0.5 }
     };
 
+    // Calculate Modal Dates for passing props safely
+    const contractStartDate = isHourly && hourlyDate ? setHours(new Date(hourlyDate), parseInt(startTime.split(':')[0])) : range?.from || new Date();
+    const contractEndDate = isHourly && hourlyDate ? addHours(contractStartDate, durationHours) : range?.to || new Date();
+
     return (
         <div className="bg-gray-50">
             {/* Contract Modal - Step 1 of Checkout */}
-            {showContractModal && currentUser && priceDetails && range?.from && range?.to && (
+            {showContractModal && currentUser && priceDetails && (
                 <ContractSigningModal 
                     listing={listing} 
                     renter={currentUser}
-                    startDate={range.from}
-                    endDate={range.to}
+                    startDate={contractStartDate}
+                    endDate={contractEndDate}
                     totalPrice={priceDetails.totalPrice}
                     onSign={handleContractSigned}
                     onClose={() => setShowContractModal(false)}
@@ -401,7 +454,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                      <button 
                                         className="p-2 bg-white/80 rounded-full text-gray-700 hover:bg-white transition"
                                         onClick={() => onToggleFavorite(listing.id)}
-                                    >
+                                     >
                                         <HeartIcon className={`h-5 w-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
                                     </button>
                                 </div>
@@ -453,10 +506,13 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                              <div className="mt-6 pt-6 border-t border-gray-200">
                                 <div className="flex items-center justify-between">
                                      <h2 className="text-lg font-semibold text-gray-800">Owner</h2>
-                                      <div className="flex items-center text-right">
+                                      <div 
+                                        className="flex items-center text-right cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={onViewOwnerProfile}
+                                      >
                                         <img src={listing.owner.avatarUrl} alt={listing.owner.name} className="w-10 h-10 rounded-full mr-2"/>
                                         <div>
-                                            <p className="font-semibold text-gray-800">{listing.owner.name}</p>
+                                            <p className="font-semibold text-gray-800 hover:text-cyan-600 transition-colors">{listing.owner.name}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -482,9 +538,53 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                             {/* Booking Section */}
                             <div className="mt-auto pt-8">
                                 {bookingError && <p className="text-sm text-red-600 text-center mb-4">{bookingError}</p>}
-                                {listing.pricingType === 'daily' ? (
-                                    <>
-                                        <div className="bg-gray-50 rounded-lg p-4 border flex justify-center">
+                                
+                                <div className="bg-gray-50 rounded-lg p-4 border">
+                                    {isHourly ? (
+                                        // HOURLY SELECTOR
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                                                <ClockIcon className="h-5 w-5 text-cyan-600" /> 
+                                                Select Date & Time
+                                            </h3>
+                                            <div className="flex justify-center">
+                                                <DayPicker
+                                                    mode="single"
+                                                    selected={hourlyDate}
+                                                    onSelect={setHourlyDate}
+                                                    disabled={disabledDays}
+                                                    numberOfMonths={1}
+                                                    modifiersStyles={modifiersStyles}
+                                                />
+                                            </div>
+                                            {hourlyDate && (
+                                                <div className="grid grid-cols-2 gap-4 animate-in fade-in">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Start Time</label>
+                                                        <select 
+                                                            value={startTime} 
+                                                            onChange={(e) => setStartTime(e.target.value)}
+                                                            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                                        >
+                                                            {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Duration</label>
+                                                        <select 
+                                                            value={durationHours} 
+                                                            onChange={(e) => setDurationHours(Number(e.target.value))}
+                                                            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                                        >
+                                                            {durationOptions.map(d => <option key={d} value={d}>{d} Hour{d > 1 ? 's' : ''}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        // DAILY SELECTOR (Existing)
+                                        <div className="flex justify-center">
                                             <DayPicker
                                                 mode="range"
                                                 selected={range}
@@ -497,118 +597,106 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                 modifiersStyles={modifiersStyles}
                                             />
                                         </div>
-                                        
-                                        {/* Price Summary & Insurance Section */}
-                                        {priceDetails && (
-                                            <div className="mt-4 space-y-4">
-                                                {isHighRisk ? (
-                                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
-                                                        <div className="flex items-center gap-2 font-bold mb-1">
-                                                            <ShieldIcon className="h-4 w-4 text-amber-700" />
-                                                            Direct Insurance
+                                    )}
+                                </div>
+                                
+                                {/* Price Summary & Insurance Section */}
+                                {priceDetails && (
+                                    <div className="mt-4 space-y-4">
+                                        {isHighRisk ? (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
+                                                <div className="flex items-center gap-2 font-bold mb-1">
+                                                    <ShieldIcon className="h-4 w-4 text-amber-700" />
+                                                    Direct Insurance
+                                                </div>
+                                                <p>For this high-value item, insurance and damage policies are handled directly with the owner. Please review the contract before signing.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                                <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                                    <ShieldCheckIcon className="h-5 w-5 text-cyan-600" />
+                                                    Protection Plan
+                                                </h3>
+                                                <div className="space-y-3">
+                                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'none' ? 'bg-gray-100 border-gray-300' : 'hover:bg-gray-50'}`}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="insurance" 
+                                                            value="none" 
+                                                            checked={insurancePlan === 'none'}
+                                                            onChange={() => setInsurancePlan('none')}
+                                                            className="mt-1 text-gray-500 focus:ring-gray-400"
+                                                        />
+                                                        <div>
+                                                            <span className="font-bold text-gray-900 block">No Insurance (Free)</span>
+                                                            <span className="text-xs text-gray-500">You are fully responsible for all damages.</span>
                                                         </div>
-                                                        <p>For this high-value item, insurance and damage policies are handled directly with the owner. Please review the contract before signing.</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                                                        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                                            <ShieldCheckIcon className="h-5 w-5 text-cyan-600" />
-                                                            Protection Plan
-                                                        </h3>
-                                                        <div className="space-y-3">
-                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'none' ? 'bg-gray-100 border-gray-300' : 'hover:bg-gray-50'}`}>
-                                                                <input 
-                                                                    type="radio" 
-                                                                    name="insurance" 
-                                                                    value="none" 
-                                                                    checked={insurancePlan === 'none'}
-                                                                    onChange={() => setInsurancePlan('none')}
-                                                                    className="mt-1 text-gray-500 focus:ring-gray-400"
-                                                                />
-                                                                <div>
-                                                                    <span className="font-bold text-gray-900 block">No Insurance (Free)</span>
-                                                                    <span className="text-xs text-gray-500">You are fully responsible for all damages.</span>
-                                                                </div>
-                                                            </label>
-                                                            
-                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
-                                                                <input 
-                                                                    type="radio" 
-                                                                    name="insurance" 
-                                                                    value="standard" 
-                                                                    checked={insurancePlan === 'standard'}
-                                                                    onChange={() => setInsurancePlan('standard')}
-                                                                    className="mt-1 text-cyan-600 focus:ring-cyan-500"
-                                                                />
-                                                                <div>
-                                                                    <span className="font-bold text-gray-900 block">Standard (+10%)</span>
-                                                                    <span className="text-xs text-gray-500">Basic coverage. $500 deductible.</span>
-                                                                </div>
-                                                            </label>
-                                                            
-                                                            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
-                                                                <input 
-                                                                    type="radio" 
-                                                                    name="insurance" 
-                                                                    value="premium" 
-                                                                    checked={insurancePlan === 'premium'}
-                                                                    onChange={() => setInsurancePlan('premium')}
-                                                                    className="mt-1 text-cyan-600 focus:ring-cyan-500"
-                                                                />
-                                                                <div>
-                                                                    <span className="font-bold text-gray-900 block">Premium (+20%)</span>
-                                                                    <span className="text-xs text-gray-500">Full coverage, theft protection, $0 deductible.</span>
-                                                                </div>
-                                                            </label>
+                                                    </label>
+                                                    
+                                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'standard' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="insurance" 
+                                                            value="standard" 
+                                                            checked={insurancePlan === 'standard'}
+                                                            onChange={() => setInsurancePlan('standard')}
+                                                            className="mt-1 text-cyan-600 focus:ring-cyan-500"
+                                                        />
+                                                        <div>
+                                                            <span className="font-bold text-gray-900 block">Standard (+10%)</span>
+                                                            <span className="text-xs text-gray-500">Basic coverage. $500 deductible.</span>
                                                         </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
-                                                    <div className="flex justify-between items-center text-gray-700">
-                                                        <span>Rental (${(listing.pricePerDay || 0)} x {priceDetails.days} days)</span>
-                                                        <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
-                                                    </div>
-                                                    {priceDetails.protectionFee > 0 && (
-                                                        <div className="flex justify-between items-center text-gray-700 text-sm">
-                                                            <span className="flex items-center gap-1">
-                                                                <UmbrellaIcon className="h-3 w-3" /> 
-                                                                Protection Fee
-                                                            </span>
-                                                            <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
+                                                    </label>
+                                                    
+                                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${insurancePlan === 'premium' ? 'bg-cyan-50 border-cyan-200' : 'hover:bg-gray-50'}`}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="insurance" 
+                                                            value="premium" 
+                                                            checked={insurancePlan === 'premium'}
+                                                            onChange={() => setInsurancePlan('premium')}
+                                                            className="mt-1 text-cyan-600 focus:ring-cyan-500"
+                                                        />
+                                                        <div>
+                                                            <span className="font-bold text-gray-900 block">Premium (+20%)</span>
+                                                            <span className="text-xs text-gray-500">Full coverage, theft protection, $0 deductible.</span>
                                                         </div>
-                                                    )}
-                                                    <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
-                                                        <span>Total</span>
-                                                        <span>${priceDetails.totalPrice.toFixed(2)}</span>
-                                                    </div>
+                                                    </label>
                                                 </div>
                                             </div>
                                         )}
 
-                                        <button
-                                            onClick={handleBookClick}
-                                            disabled={!currentUser || isOwner || !priceDetails || isBooking}
-                                            className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isOwner ? "This is your listing" : (currentUser ? (priceDetails ? "Book Now" : "Select dates to book") : "Log in to book")}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="bg-gray-50 rounded-lg p-6 border text-center">
-                                            <h3 className="font-semibold text-gray-800">Hourly Rental</h3>
-                                            <p className="text-sm text-gray-600 mt-2">This item is rented by the hour. Please contact the owner directly to arrange booking times and details.</p>
+                                        <div className="p-4 bg-gray-50 rounded-lg border space-y-2">
+                                            <div className="flex justify-between items-center text-gray-700">
+                                                <span>
+                                                    Rental (${isHourly ? listing.pricePerHour : listing.pricePerDay} x {priceDetails.unitCount} {isHourly ? 'hrs' : 'days'})
+                                                </span>
+                                                <span className="font-medium">${priceDetails.rentalTotal.toFixed(2)}</span>
+                                            </div>
+                                            {priceDetails.protectionFee > 0 && (
+                                                <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                    <span className="flex items-center gap-1">
+                                                        <UmbrellaIcon className="h-3 w-3" /> 
+                                                        Protection Fee
+                                                    </span>
+                                                    <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
+                                                <span>Total</span>
+                                                <span>${priceDetails.totalPrice.toFixed(2)}</span>
+                                            </div>
                                         </div>
-                                        <button
-                                            onClick={() => onStartConversation(listing)}
-                                            disabled={!currentUser || isOwner}
-                                            className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isOwner ? "This is your listing" : (currentUser ? "Contact Owner to Book" : "Log in to contact owner")}
-                                        </button>
-                                    </>
+                                    </div>
                                 )}
+
+                                <button
+                                    onClick={handleBookClick}
+                                    disabled={!currentUser || isOwner || !priceDetails || isBooking}
+                                    className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isOwner ? "This is your listing" : (currentUser ? (priceDetails ? "Book Now" : "Select date/time to book") : "Log in to book")}
+                                </button>
                             </div>
                         </div>
                     </div>
