@@ -146,7 +146,6 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
                             <span>Photos Captured</span>
                             <span className="text-white">{photos.length} / {angles.length}</span>
                         </div>
-                        {/* GPS Stamp Removed */}
                     </div>
 
                     {mode === 'return' && (
