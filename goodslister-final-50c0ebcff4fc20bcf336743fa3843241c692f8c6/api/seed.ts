@@ -21,7 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await sql`CREATE TABLE IF NOT EXISTS bookings (id VARCHAR(255) PRIMARY KEY, listing_id VARCHAR(255), renter_id VARCHAR(255), start_date TIMESTAMP, end_date TIMESTAMP, total_price NUMERIC(10, 2), amount_paid_online NUMERIC(10, 2) DEFAULT 0, balance_due_on_site NUMERIC(10, 2) DEFAULT 0, status VARCHAR(20), protection_type VARCHAR(20), protection_fee NUMERIC(10, 2), payment_method VARCHAR(50), has_handover_inspection BOOLEAN DEFAULT FALSE, has_return_inspection BOOLEAN DEFAULT FALSE)`;
 
     // --- SEEDING STRATEGY: UPSERT (Insert if not exists) ---
-    // This fixes the issue where mock data (like booking-1) was missing because the table wasn't empty, causing FK errors.
     
     // 1. Users
     for (const user of mockUsers) {

@@ -55,7 +55,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let status = 'PENDING';
 
         // 1. Check if the OTHER party has already left a review for this booking
-        // If yes, we "unlock" (PUBLISH) both reviews immediately.
         const existingReviews = await sql`
             SELECT id FROM reviews 
             WHERE booking_id = ${bookingId} AND author_id != ${authorId}
@@ -63,7 +62,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (existingReviews.rows.length > 0) {
             status = 'PUBLISHED';
-            // Unlock the existing review(s) as well
             await sql`
                 UPDATE reviews 
                 SET status = 'PUBLISHED' 
@@ -87,7 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // 3. If published, update the target user's aggregate rating
         if (status === 'PUBLISHED') {
-            // Recalculate average for the target user
             const stats = await sql`
                 SELECT AVG(rating) as avg_rating, COUNT(*) as count 
                 FROM reviews 
