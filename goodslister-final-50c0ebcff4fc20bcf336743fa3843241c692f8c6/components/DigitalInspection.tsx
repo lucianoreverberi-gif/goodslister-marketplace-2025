@@ -8,6 +8,8 @@ interface DigitalInspectionProps {
     booking: Booking;
     mode: 'handover' | 'return';
     currentUserLocation?: { lat: number, lng: number };
+    // NEW: Optional reference photos for side-by-side comparison
+    handoverReferencePhotos?: string[]; 
     onComplete: (photos: InspectionPhoto[], damageReported: boolean) => void;
     onCancel: () => void;
 }
@@ -16,38 +18,31 @@ interface AngleConfig {
     id: string;
     label: string;
     description: string;
-    overlayPath?: string; // Simulated SVG path for ghost overlay
+    overlayPath?: string;
 }
 
 const getRequiredAngles = (category: ListingCategory, subcategory: string = ''): AngleConfig[] => {
     const sub = subcategory.toLowerCase();
     
-    if (category === ListingCategory.BOATS) {
+    // Marine Logic
+    if (category === ListingCategory.BOATS || (category === ListingCategory.WATER_SPORTS && (sub.includes('jet') || sub.includes('ski')))) {
         return [
-            { id: 'bow', label: 'Bow (Front)', description: 'Capture the entire front hull.', overlayPath: 'M12 2 L2 22 L22 22 Z' },
-            { id: 'stern', label: 'Stern (Back)', description: 'Capture the back and engine mount.', overlayPath: 'M2 2 L22 2 L12 22 Z' },
-            { id: 'prop', label: 'Propeller', description: 'CRITICAL: Close up of propeller blades.', overlayPath: 'M12 12 m-5 0 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0' },
-            { id: 'port', label: 'Port Side (Left)', description: 'Full length of the left side.', overlayPath: 'M2 10 L22 10' },
-            { id: 'starboard', label: 'Starboard (Right)', description: 'Full length of the right side.', overlayPath: 'M2 10 L22 10' },
-        ];
-    }
-    
-    if (category === ListingCategory.WATER_SPORTS && (sub.includes('jet') || sub.includes('ski'))) {
-        return [
-            { id: 'hull_bottom', label: 'Hull Bottom', description: 'Check for scratches on the underside.', overlayPath: 'M2 12 Q12 22 22 12' },
-            { id: 'handlebars', label: 'Controls', description: 'Dashboard, handlebars and mirrors.' },
-            { id: 'safety_lanyard', label: 'Safety Lanyard', description: 'Photo of the kill switch cord.' },
-            { id: 'intake', label: 'Jet Intake', description: 'Check the grate for debris.' }
+            { id: 'bow', label: 'Hull (Front/Bow)', description: 'Capture the nose and front hull for impact marks.', overlayPath: 'M12 2 L2 22 L22 22 Z' },
+            { id: 'hull_bottom', label: 'Hull (Underside)', description: 'Check underneath for beaching scratches.', overlayPath: 'M2 12 Q12 22 22 12' },
+            { id: 'prop', label: 'Propeller/Intake', description: 'CRITICAL: Check blades for chips or bends.', overlayPath: 'M12 12 m-5 0 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0' },
+            { id: 'starboard', label: 'Right Side', description: 'Full length view.', overlayPath: 'M2 10 L22 10' },
+            { id: 'port', label: 'Left Side', description: 'Full length view.', overlayPath: 'M2 10 L22 10' },
         ];
     }
 
+    // Vehicle Logic
     if (category === ListingCategory.RVS || category === ListingCategory.ATVS_UTVS || category === ListingCategory.MOTORCYCLES) {
         return [
             { id: 'front', label: 'Front', description: 'Front view including headlights.' },
-            { id: 'back', label: 'Back', description: 'Rear view including license plate.' },
-            { id: 'driver_side', label: 'Driver Side', description: 'Full side view.' },
+            { id: 'driver_side', label: 'Driver Side', description: 'Full side view, check panels.' },
             { id: 'passenger_side', label: 'Passenger Side', description: 'Full side view.' },
-            { id: 'tires', label: 'Tires/Wheels', description: 'Condition of tires.' }
+            { id: 'rear', label: 'Rear', description: 'Back view and exhaust.' },
+            { id: 'wheels', label: 'Wheels/Tires', description: 'Check rims for curb rash.' }
         ];
     }
 
@@ -58,7 +53,7 @@ const getRequiredAngles = (category: ListingCategory, subcategory: string = ''):
     ];
 };
 
-const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, onComplete, onCancel }) => {
+const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, handoverReferencePhotos, onComplete, onCancel }) => {
     const [step, setStep] = useState(0);
     const [photos, setPhotos] = useState<InspectionPhoto[]>([]);
     const [currentLocation, setCurrentLocation] = useState<{ lat: number, lng: number } | null>(null);
@@ -70,13 +65,11 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, on
     const currentAngle = angles[step];
     const isComplete = step >= angles.length;
 
-    // Mock previous photos for Return mode comparison
-    // In a real app, these would come from the `booking` prop via DB
-    const handoverPhotosMock: Record<string, string> = {
-        'bow': 'https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?q=80&w=1000&auto=format&fit=crop',
-        'prop': 'https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?q=80&w=1000&auto=format&fit=crop', // Placeholders
-        'hull_bottom': 'https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?q=80&w=1000&auto=format&fit=crop'
-    };
+    // Determine specific reference photo for this step (if available)
+    // In a real app, you'd map by ID. Here we map by index for simplicity if array lengths match, or just show general.
+    const currentReferencePhoto = handoverReferencePhotos && handoverReferencePhotos[step] 
+        ? handoverReferencePhotos[step] 
+        : null;
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -97,11 +90,10 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, on
             timestamp: new Date().toISOString(),
             latitude: currentLocation?.lat,
             longitude: currentLocation?.lng,
-            takenByUserId: 'current-user-id' // In real app, get from session
+            takenByUserId: 'current-user-id'
         };
 
         const updatedPhotos = [...photos];
-        // Replace if retaking, otherwise append
         const existingIndex = updatedPhotos.findIndex(p => p.angleId === currentAngle.id);
         if (existingIndex >= 0) {
             updatedPhotos[existingIndex] = newPhoto;
@@ -110,33 +102,21 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, on
         }
         setPhotos(updatedPhotos);
         
-        // Auto advance after short delay for UX
         setTimeout(() => {
             if (step < angles.length) setStep(s => s + 1);
         }, 800);
     };
 
-    const handleRetake = (index: number) => {
-        setStep(index);
-    };
-
     const handleSubmit = () => {
         setIsSubmitting(true);
-        // Simulate API call
         setTimeout(() => {
             onComplete(photos, damageReported);
         }, 1500);
     };
 
-    // -- UI: Welcome Screen --
-    if (step === -1) { // Not implemented, but useful concept. We start at 0.
-        return null; 
-    }
-
-    // -- UI: Summary / Submit Screen --
     if (isComplete) {
         return (
-            <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4 text-white">
+            <div className="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4 text-white">
                 <div className="max-w-md w-full bg-gray-900 rounded-xl p-6 border border-gray-700">
                     <div className="flex items-center gap-3 mb-6">
                         <ShieldIcon className="h-8 w-8 text-green-500" />
@@ -154,31 +134,27 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, on
                                 {currentLocation ? "✓ Locked" : "Missing"}
                             </span>
                         </div>
-                        <div className="flex justify-between text-sm text-gray-400 border-b border-gray-800 pb-2">
-                            <span>Time Stamp</span>
-                            <span className="text-white">UTC {new Date().toLocaleTimeString()}</span>
-                        </div>
                     </div>
 
                     {mode === 'return' && (
                         <div className="mb-8 bg-gray-800 p-4 rounded-lg border border-gray-700">
                             <h3 className="font-bold mb-3 flex items-center gap-2">
                                 <AlertCircleIcon className="h-5 w-5 text-yellow-500" />
-                                Damage Assessment
+                                Preliminary Damage Check
                             </h3>
-                            <p className="text-sm text-gray-300 mb-4">Based on your visual inspection compared to handover photos:</p>
+                            <p className="text-sm text-gray-300 mb-4">Did you notice any obvious new damage during the scan?</p>
                             <div className="flex gap-3">
                                 <button 
                                     onClick={() => setDamageReported(false)}
                                     className={`flex-1 py-3 rounded-lg font-medium border transition-colors ${!damageReported ? 'bg-green-600 border-green-500 text-white' : 'bg-transparent border-gray-600 text-gray-400'}`}
                                 >
-                                    All Good
+                                    Looks Clean
                                 </button>
                                 <button 
                                     onClick={() => setDamageReported(true)}
                                     className={`flex-1 py-3 rounded-lg font-medium border transition-colors ${damageReported ? 'bg-red-600 border-red-500 text-white' : 'bg-transparent border-gray-600 text-gray-400'}`}
                                 >
-                                    Damage Found
+                                    Possible Damage
                                 </button>
                             </div>
                         </div>
@@ -191,56 +167,47 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, on
                     >
                         {isSubmitting ? 'Securing Evidence...' : `Sign & Complete ${mode === 'handover' ? 'Handover' : 'Return'}`}
                     </button>
-                    <button onClick={() => setStep(0)} className="w-full mt-4 text-gray-400 hover:text-white text-sm">Review Photos</button>
                 </div>
             </div>
         );
     }
 
-    // -- UI: Wizard Step --
     return (
         <div className="fixed inset-0 bg-black z-50 flex flex-col">
             {/* Header */}
-            <div className="bg-gray-900 p-4 flex justify-between items-center text-white">
+            <div className="bg-gray-900 p-4 flex justify-between items-center text-white border-b border-gray-800">
                 <div className="flex items-center gap-2">
-                    <span className="bg-cyan-600 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">{mode}</span>
+                    <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wide ${mode === 'return' ? 'bg-orange-600' : 'bg-cyan-600'}`}>{mode}</span>
                     <span className="text-sm font-medium text-gray-300">Step {step + 1} of {angles.length}</span>
                 </div>
                 <button onClick={onCancel} className="text-gray-400 hover:text-white"><XIcon className="h-6 w-6" /></button>
             </div>
 
-            {/* Main Area */}
-            <div className="flex-1 relative flex flex-col md:flex-row">
+            {/* Split View for Return Mode */}
+            <div className="flex-1 relative flex flex-col md:flex-row bg-black">
                 
-                {/* Comparison View (Left Side - Only in Return Mode) */}
-                {mode === 'return' && (
-                    <div className="hidden md:flex md:w-1/2 bg-gray-800 items-center justify-center border-r border-gray-700 relative">
-                        <div className="absolute top-4 left-4 bg-black/50 px-3 py-1 rounded text-white text-xs font-bold">
-                            ORIGINAL HANDOVER PHOTO
+                {/* Reference Photo (Comparison) */}
+                {mode === 'return' && currentReferencePhoto && (
+                    <div className="h-1/3 md:h-auto md:w-1/2 bg-gray-900 border-b md:border-b-0 md:border-r border-gray-700 relative overflow-hidden">
+                        <img src={currentReferencePhoto} className="w-full h-full object-contain opacity-90" alt="Reference" />
+                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-white text-[10px] font-bold uppercase border border-white/20">
+                            Reference (Handover)
                         </div>
-                        {handoverPhotosMock[currentAngle.id] ? (
-                            <img src={handoverPhotosMock[currentAngle.id]} alt="Original" className="max-h-full max-w-full object-contain opacity-80" />
-                        ) : (
-                            <div className="text-gray-500 text-center p-8">
-                                <p>No handover photo available for this angle.</p>
-                            </div>
-                        )}
                     </div>
                 )}
 
                 {/* Active Camera/Upload Area */}
-                <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                <div className="flex-1 relative flex items-center justify-center overflow-hidden">
                     {/* Ghost Overlay */}
                     {currentAngle.overlayPath && (
                         <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-30">
                             <svg viewBox="0 0 24 24" className="w-64 h-64 stroke-white stroke-[0.5] fill-none">
                                 <path d={currentAngle.overlayPath} />
                             </svg>
-                            <p className="absolute bottom-1/4 text-white text-xs font-mono tracking-widest uppercase opacity-70">Align Here</p>
+                            <p className="absolute bottom-10 text-white text-xs font-mono tracking-widest uppercase opacity-70">Align Here</p>
                         </div>
                     )}
 
-                    {/* Current Photo or Uploader */}
                     {photos[step] ? (
                         <div className="relative w-full h-full">
                             <img src={photos[step].url} alt="Current" className="w-full h-full object-contain" />
@@ -261,21 +228,17 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, on
                         <div className="w-full max-w-sm p-4 z-20">
                             <div className="text-center mb-8">
                                 <h2 className="text-2xl font-bold text-white mb-2">{currentAngle.label}</h2>
-                                <p className="text-gray-400">{currentAngle.description}</p>
+                                <p className="text-gray-400 text-sm">{currentAngle.description}</p>
                                 {locationError && <p className="text-red-400 text-xs mt-2 flex items-center justify-center gap-1"><AlertCircleIcon className="h-3 w-3"/> {locationError}</p>}
                             </div>
                             
-                            <ImageUploader 
-                                label=""
-                                currentImageUrl=""
-                                onImageChange={handlePhotoUpload}
-                            />
-                            
-                            {mode === 'return' && (
-                                <div className="md:hidden mt-4 text-center">
-                                    <p className="text-xs text-gray-500">Tip: Refer to handover photos in dashboard if unsure of original condition.</p>
-                                </div>
-                            )}
+                            <div className="bg-gray-800/50 p-2 rounded-xl backdrop-blur-sm border border-white/10">
+                                <ImageUploader 
+                                    label=""
+                                    currentImageUrl=""
+                                    onImageChange={handlePhotoUpload}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
