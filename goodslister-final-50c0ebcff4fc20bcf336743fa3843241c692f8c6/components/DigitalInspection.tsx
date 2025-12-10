@@ -8,7 +8,6 @@ interface DigitalInspectionProps {
     booking: Booking;
     mode: 'handover' | 'return';
     currentUserLocation?: { lat: number, lng: number };
-    // NEW: Optional reference photos for side-by-side comparison
     handoverReferencePhotos?: string[]; 
     onComplete: (photos: InspectionPhoto[], damageReported: boolean) => void;
     onCancel: () => void;
@@ -65,8 +64,6 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
     const currentAngle = angles[step];
     const isComplete = step >= angles.length;
 
-    // Determine specific reference photo for this step (if available)
-    // In a real app, you'd map by ID. Here we map by index for simplicity if array lengths match, or just show general.
     const currentReferencePhoto = handoverReferencePhotos && handoverReferencePhotos[step] 
         ? handoverReferencePhotos[step] 
         : null;
