@@ -189,6 +189,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('Listings seeded');
     }
 
+    // Bookings (CRITICAL FIX for Review Logic)
+    const { rows: bookingRows } = await sql`SELECT count(*) FROM bookings`;
+    if (parseInt(bookingRows[0].count) === 0) {
+        for (const booking of mockBookings) {
+            // Check if listing owner exists first to avoid FK error
+            const listingExists = await sql`SELECT id FROM listings WHERE id=${booking.listingId}`;
+            if (listingExists.rows.length > 0) {
+                 await sql`
+                    INSERT INTO bookings (id, listing_id, renter_id, start_date, end_date, total_price, status, protection_type, protection_fee, payment_method, amount_paid_online, balance_due_on_site)
+                    VALUES (${booking.id}, ${booking.listingId}, ${booking.renterId}, ${booking.startDate}, ${booking.endDate}, ${booking.totalPrice}, ${booking.status}, ${booking.protectionType}, ${booking.protectionFee}, ${booking.paymentMethod || 'platform'}, ${booking.amountPaidOnline || 0}, ${booking.balanceDueOnSite || 0})
+                `;
+            }
+        }
+        console.log('Bookings seeded');
+    }
+
     return res.status(200).json({ message: 'Database schema verified, migrated, and seeded.' });
   } catch (error) {
     console.error('Seeding error:', error);

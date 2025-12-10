@@ -146,12 +146,7 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
                             <span>Photos Captured</span>
                             <span className="text-white">{photos.length} / {angles.length}</span>
                         </div>
-                        <div className="flex justify-between text-sm text-gray-400 border-b border-gray-800 pb-2">
-                            <span>GPS Stamp</span>
-                            <span className={currentLocation ? "text-green-400" : "text-red-400"}>
-                                {currentLocation ? "✓ Locked" : "Missing"}
-                            </span>
-                        </div>
+                        {/* GPS Stamp Removed per request */}
                     </div>
 
                     {mode === 'return' && (

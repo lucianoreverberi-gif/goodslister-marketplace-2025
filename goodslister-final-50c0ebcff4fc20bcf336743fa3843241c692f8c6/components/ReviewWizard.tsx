@@ -75,11 +75,12 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                 const data = await response.json();
                 onComplete();
             } else {
-                alert("Failed to submit review.");
+                const err = await response.json();
+                alert(`Failed to submit review: ${err.error || 'Unknown error'}`);
             }
         } catch (e) {
             console.error(e);
-            alert("Error submitting review.");
+            alert("Error submitting review. Please check your connection.");
         } finally {
             setIsSubmitting(false);
         }
