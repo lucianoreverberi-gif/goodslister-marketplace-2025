@@ -20,7 +20,7 @@ export enum RiskTier {
 export type ListingType = 'rental' | 'experience';
 export type PriceUnit = 'item' | 'person' | 'group';
 
-export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks' | 'floridaCompliance' | 'inbox';
+export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks' | 'floridaCompliance' | 'inbox' | 'userProfile';
 
 export interface User {
     id: string;
@@ -28,6 +28,7 @@ export interface User {
     email: string;
     registeredDate: string;
     avatarUrl: string;
+    bio?: string;
     isEmailVerified?: boolean;
     isPhoneVerified?: boolean;
     isIdVerified?: boolean; // Important for Tier 2

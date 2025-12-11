@@ -28,6 +28,16 @@ async function repairMissingDependencies(bookingId: string, authorId: string, ta
     console.log(`Self-healing: Repairing dependencies for booking ${bookingId}...`);
     
     try {
+        // 0. SELF-HEAL SCHEMA: Ensure columns exist before inserting
+        // This fixes the "column payment_method does not exist" error seen in logs
+        try {
+             await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`;
+             await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
+             await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
+        } catch (e) {
+            console.log("Schema migration in self-heal skipped/failed (might already exist)", e);
+        }
+
         // 1. Ensure Tables Exist (In case they were deleted or never created)
         await sql`CREATE TABLE IF NOT EXISTS users (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), registered_date DATE, avatar_url TEXT, bio TEXT, is_email_verified BOOLEAN, is_phone_verified BOOLEAN, is_id_verified BOOLEAN, license_verified BOOLEAN, average_rating NUMERIC, total_reviews INTEGER, favorites TEXT[])`;
         
