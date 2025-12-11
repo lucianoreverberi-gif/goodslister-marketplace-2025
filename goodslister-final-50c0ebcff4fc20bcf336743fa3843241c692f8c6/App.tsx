@@ -285,6 +285,20 @@ const App: React.FC = () => {
         return result.newBooking;
     };
 
+    // NEW: Handle Booking Status Update (Real-Time Sync)
+    const handleBookingStatusUpdate = async (bookingId: string, newStatus: string) => {
+        // 1. Optimistic Update Local State
+        const updatedBookings = appData.bookings.map((b: Booking) => 
+            b.id === bookingId ? { ...b, status: newStatus as any } : b
+        );
+        updateAppData({ bookings: updatedBookings });
+
+        // 2. Persist to API
+        await mockApi.updateBookingStatus(bookingId, newStatus);
+        
+        addNotification('success', 'Status Updated', `Booking marked as ${newStatus}.`);
+    };
+
     const handleVerificationUpdate = async (userId: string, verificationType: 'email' | 'phone' | 'id') => {
         const updatedUsers = await mockApi.updateUserVerification(userId, verificationType);
         updateAppData({ users: updatedUsers });
@@ -329,6 +343,19 @@ const App: React.FC = () => {
             addNotification('success', 'Listing Updated', 'Changes saved successfully.');
         }
         return success;
+    };
+
+    const handleDeleteListing = async (listingId: string): Promise<void> => {
+        const success = await mockApi.deleteListing(listingId);
+        if (success) {
+            // Remove from local state immediately
+            updateAppData({
+                listings: appData.listings.filter((l: Listing) => l.id !== listingId)
+            });
+            addNotification('success', 'Listing Deleted', 'The item has been removed.');
+        } else {
+            addNotification('message', 'Error', 'Could not delete listing. It may have active bookings.');
+        }
     };
 
     // --- Admin content handlers ---
@@ -512,6 +539,8 @@ const App: React.FC = () => {
                     onEditListing={handleEditListingClick}
                     onToggleFavorite={handleToggleFavorite}
                     onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
+                    onDeleteListing={handleDeleteListing} // NEW PROP
+                    onBookingStatusUpdate={handleBookingStatusUpdate} // NEW PROP
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;

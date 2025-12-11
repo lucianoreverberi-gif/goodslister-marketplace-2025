@@ -301,6 +301,20 @@ export const updateListing = async (listing: Listing): Promise<boolean> => {
     }
 };
 
+export const deleteListing = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/listings/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+        });
+        return response.ok;
+    } catch (e) {
+        console.error("Failed to delete listing:", e);
+        return false;
+    }
+};
+
 
 export const updatePaymentApiKey = async (newKey: string): Promise<string> => {
     // Client-side state only for security demo
@@ -382,5 +396,20 @@ export const createBooking = async (
         const updatedListing = { ...listing, bookedDates: [...(listing.bookedDates || []), ...newBookedDates] };
 
         return { newBooking, updatedListing };
+    }
+};
+
+// NEW: Update Booking Status (for moving between tabs like Upcoming -> Active -> History)
+export const updateBookingStatus = async (bookingId: string, status: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/bookings/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId, status }),
+        });
+        return response.ok;
+    } catch (e) {
+        console.error("Failed to update booking status:", e);
+        return false;
     }
 };

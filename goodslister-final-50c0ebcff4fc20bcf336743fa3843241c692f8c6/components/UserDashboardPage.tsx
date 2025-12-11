@@ -22,6 +22,7 @@ interface UserDashboardPageProps {
     onToggleFavorite: (id: string) => void;
     onViewPublicProfile: (userId: string) => void;
     onDeleteListing: (listingId: string) => Promise<void>;
+    onBookingStatusUpdate: (bookingId: string, status: string) => Promise<void>; // NEW PROP
 }
 
 type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security' | 'favorites';
@@ -34,7 +35,7 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
 const IdVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => { return null; };
 
 
-const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bookings, userId }) => {
+const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusUpdate: (id: string, status: string) => Promise<void> }> = ({ bookings, userId, onStatusUpdate }) => {
     const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
     const [isCalendarConnected, setIsCalendarConnected] = useState(false);
     
@@ -71,7 +72,6 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
 
     const handleSessionComplete = () => {
         setActiveSessionBooking(null);
-        // In a real app, trigger a refresh of bookings here
     };
 
     const renderBookingTable = (title: string, data: Booking[], emptyMsg: string, isHighlight = false) => (
@@ -156,7 +156,7 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
                      <RentalSessionWizard 
                         booking={activeSessionBooking}
                         initialMode={sessionInitialMode}
-                        onStatusChange={(status) => console.log("Status update:", status)}
+                        onStatusChange={(status) => onStatusUpdate(activeSessionBooking.id, status)} // CONNECTED
                         onComplete={handleSessionComplete}
                      />
                  </div>
@@ -203,7 +203,7 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string }> = ({ bo
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ 
     user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onUpdateProfile,
-    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing 
+    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate 
 }) => {
     const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
     const [showPhoneModal, setShowPhoneModal] = useState(false);
@@ -351,7 +351,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                     </div>
                 </div>
             );
-            case 'bookings': return <BookingsManager bookings={bookings} userId={user.id} />;
+            case 'bookings': return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
             case 'favorites': return (<div><h2 className="text-2xl font-bold mb-6">Saved Items</h2>{favoriteListings && favoriteListings.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{favoriteListings.map(listing => (<ListingCard key={listing.id} listing={listing} onClick={onListingClick || (() => {})} isFavorite={true} onToggleFavorite={onToggleFavorite} />))}</div>) : (<div className="text-center py-12 bg-white rounded-lg border border-gray-200"><HeartIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" /><h3 className="text-lg font-semibold text-gray-900">No favorites yet</h3><p className="text-gray-500 mt-1">Start exploring and save items you love!</p></div>)}</div>);
             case 'security': return <SecurityTab />;
             case 'billing': return (<div><h2 className="text-2xl font-bold mb-6">Billing</h2><FeeStrategyAdvisor /><div className="bg-white p-6 rounded-lg shadow"><p className="text-gray-500">Transaction history and payouts.</p></div></div>);
