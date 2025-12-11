@@ -1,4 +1,3 @@
-
 // FIX: Created the main App component, which was previously missing.
 // This component manages the overall application state, including routing,
 // session management, and data handling, resolving module resolution errors.
@@ -285,6 +284,20 @@ const App: React.FC = () => {
         return result.newBooking;
     };
 
+    // NEW: Handle Booking Status Update (Real-Time Sync)
+    const handleBookingStatusUpdate = async (bookingId: string, newStatus: string) => {
+        // 1. Optimistic Update Local State
+        const updatedBookings = appData.bookings.map((b: Booking) => 
+            b.id === bookingId ? { ...b, status: newStatus as any } : b
+        );
+        updateAppData({ bookings: updatedBookings });
+
+        // 2. Persist to API
+        await mockApi.updateBookingStatus(bookingId, newStatus);
+        
+        addNotification('success', 'Status Updated', `Booking marked as ${newStatus}.`);
+    };
+
     const handleVerificationUpdate = async (userId: string, verificationType: 'email' | 'phone' | 'id') => {
         const updatedUsers = await mockApi.updateUserVerification(userId, verificationType);
         updateAppData({ users: updatedUsers });
@@ -526,6 +539,7 @@ const App: React.FC = () => {
                     onToggleFavorite={handleToggleFavorite}
                     onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
                     onDeleteListing={handleDeleteListing} // NEW PROP
+                    onBookingStatusUpdate={handleBookingStatusUpdate} // NEW PROP ADDED
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;
