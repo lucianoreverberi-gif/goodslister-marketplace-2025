@@ -9,10 +9,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { action, phoneNumber, code } = req.body;
 
-  // --- MOCK MODE (If credentials are missing) ---
-  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_SERVICE_SID) {
-      console.log("Twilio credentials missing. Running in MOCK mode.");
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+  // IMPORTANT: Ensure these are set in Vercel Settings
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const serviceSid = process.env.TWILIO_SERVICE_SID;
+
+  if (!accountSid || !authToken || !serviceSid) {
+      console.error("Twilio credentials missing in Environment Variables.");
+      // Fallback to mock behavior if env vars are missing (for local dev safety)
+      // BUT for production, you must set them.
+      console.log("Running in MOCK mode due to missing credentials.");
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       if (action === 'send') {
           return res.status(200).json({ success: true, message: 'Mock code sent (use 123456)' });
@@ -26,14 +34,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid action' });
   }
 
-  // --- REAL TWILIO MODE ---
-  const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-  const serviceSid = process.env.TWILIO_SERVICE_SID;
+  // Real Twilio Client
+  const client = new Twilio(accountSid, authToken);
 
   try {
       if (action === 'send') {
           if (!phoneNumber) return res.status(400).json({ error: 'Phone number required' });
           
+          // Note: phoneNumber must be E.164 format (e.g. +14155552671)
           const verification = await client.verify.v2.services(serviceSid)
             .verifications
             .create({ to: phoneNumber, channel: 'sms' });
@@ -59,6 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
       console.error('Twilio Error:', error);
+      // Return a safe error message to client
       return res.status(500).json({ error: error.message || 'Twilio verification failed' });
   }
 }
