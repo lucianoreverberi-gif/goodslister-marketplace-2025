@@ -219,11 +219,17 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
         setError('');
         setIsLoading(true);
 
+        // FORMATTING: Clean the number to E.164 format for Twilio
+        // 1. Remove non-digits
+        const cleaned = phone.replace(/\D/g, '');
+        // 2. Add US country code if missing (assuming US/CA for now)
+        const formattedPhone = cleaned.length === 10 ? `+1${cleaned}` : `+${cleaned}`;
+
         try {
             const res = await fetch('/api/verify/phone', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'send', phoneNumber: phone })
+                body: JSON.stringify({ action: 'send', phoneNumber: formattedPhone })
             });
             const data = await res.json();
             
@@ -247,11 +253,15 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
         setError('');
         setIsLoading(true);
 
+        // Same formatting for verification
+        const cleaned = phone.replace(/\D/g, '');
+        const formattedPhone = cleaned.length === 10 ? `+1${cleaned}` : `+${cleaned}`;
+
         try {
             const res = await fetch('/api/verify/phone', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'verify', phoneNumber: phone, code })
+                body: JSON.stringify({ action: 'verify', phoneNumber: formattedPhone, code })
             });
             const data = await res.json();
 

@@ -1,6 +1,6 @@
 {
   "name": "goodslister-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -13,6 +13,8 @@
     "@react-google-maps/api": "^2.19.2",
     "@vercel/node": "^5.5.5",
     "resend": "^3.2.0",
+    "twilio": "^5.0.0",
+    "stripe": "^14.0.0",
     "lucide-react": "^0.344.0"
   },
   "devDependencies": {
