@@ -15,6 +15,7 @@ interface UserDashboardPageProps {
     bookings: Booking[];
     onVerificationUpdate: (userId: string, verificationType: 'email' | 'phone' | 'id') => void;
     onUpdateAvatar: (userId: string, newAvatarUrl: string) => Promise<void>;
+    // NEW: Prop for full profile update
     onUpdateProfile: (bio: string, avatarUrl: string) => Promise<void>;
     onListingClick?: (listingId: string) => void;
     onEditListing?: (listingId: string) => void;
@@ -156,7 +157,7 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusU
                      <RentalSessionWizard 
                         booking={activeSessionBooking}
                         initialMode={sessionInitialMode}
-                        onStatusChange={(status) => onStatusUpdate(activeSessionBooking.id, status)} // CONNECTED
+                        onStatusChange={(status) => onStatusUpdate(activeSessionBooking.id, status)}
                         onComplete={handleSessionComplete}
                      />
                  </div>
@@ -298,8 +299,101 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
         );
     };
 
+    const VerificationItem: React.FC<{icon: React.ElementType, text: string, isVerified: boolean, onVerify: () => void}> = ({ icon: Icon, text, isVerified, onVerify }) => (
+         <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+                <Icon className={`w-5 h-5 mr-3 ${isVerified ? 'text-green-600' : 'text-gray-500'}`} />
+                <span className="font-medium text-gray-800">{text}</span>
+            </div>
+            {isVerified ? (
+                <div className="flex items-center text-green-600 font-semibold text-sm">
+                    <CheckCircleIcon className="w-5 h-5 mr-1.5" />
+                    Verified
+                </div>
+            ) : (
+                <button onClick={onVerify} className="px-3 py-1 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700 rounded-full">
+                    Verify now
+                </button>
+            )}
+        </li>
+    );
+
+    const SecurityTab: React.FC = () => {
+        const getTrustScore = () => {
+            let score = 25; // Base score
+            if (user.isEmailVerified) score += 25;
+            if (user.isPhoneVerified) score += 25;
+            if (user.isIdVerified) score += 25;
+            return score;
+        };
+
+        const score = getTrustScore();
+        const circumference = 2 * Math.PI * 45; // 2 * pi * radius
+        const offset = circumference - (score / 100) * circumference;
+
+        return (
+            <div>
+                 <h2 className="text-2xl font-bold mb-6">Security & Verification</h2>
+                 <div className="bg-white p-6 rounded-lg shadow grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r pb-6 md:pb-0 md:pr-8">
+                        <div className="relative w-28 h-28">
+                            <svg className="w-full h-full" viewBox="0 0 100 100">
+                                <circle className="text-gray-200" strokeWidth="10" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                                <circle
+                                    className="text-green-500"
+                                    strokeWidth="10"
+                                    strokeLinecap="round"
+                                    stroke="currentColor"
+                                    fill="transparent"
+                                    r="45"
+                                    cx="50"
+                                    cy="50"
+                                    style={{ strokeDasharray: circumference, strokeDashoffset: offset, transition: 'stroke-dashoffset 0.5s ease-out' }}
+                                    transform="rotate(-90 50 50)"
+                                />
+                                <text x="50" y="55" fontFamily="Verdana" fontSize="24" textAnchor="middle" fill="currentColor" className="font-bold">{score}%</text>
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-bold mt-4">Trust Score</h3>
+                        <p className="text-sm text-gray-600 mt-1">Complete your profile to increase your score and build more trust.</p>
+                    </div>
+                     <div className="md:col-span-2">
+                        <h3 className="text-lg font-semibold mb-4">Complete your profile</h3>
+                        <ul className="space-y-4">
+                            <VerificationItem 
+                                icon={MailIcon} 
+                                text="Email address verified" 
+                                isVerified={!!user.isEmailVerified} 
+                                onVerify={() => onVerificationUpdate(user.id, 'email')} 
+                            />
+                            <VerificationItem 
+                                icon={PhoneIcon} 
+                                text="Phone Number" 
+                                isVerified={!!user.isPhoneVerified} 
+                                onVerify={() => setShowPhoneModal(true)} 
+                            />
+                            <VerificationItem 
+                                icon={CreditCardIcon} 
+                                text="Identity Document" 
+                                isVerified={!!user.isIdVerified} 
+                                onVerify={() => setShowIdModal(true)} 
+                            />
+                        </ul>
+                         <div className="mt-6 pt-6 border-t">
+                            <h3 className="text-lg font-semibold mb-2">Reputation</h3>
+                            <div className="flex items-center">
+                                <StarIcon className="w-5 h-5 text-yellow-400 mr-1" />
+                                <span className="font-bold text-gray-800">{user.averageRating?.toFixed(1) || 'N/A'}</span>
+                                <span className="text-sm text-gray-600 ml-2">({user.totalReviews || 0} reviews)</span>
+                            </div>
+                         </div>
+                    </div>
+                 </div>
+            </div>
+        )
+    };
+
     const AIOptimizer = () => <div className="p-6 bg-white rounded-lg shadow">AI Assistant Placeholder</div>;
-    const SecurityTab = () => <div className="p-6 bg-white rounded-lg shadow">Security Settings Placeholder</div>;
     const FeeStrategyAdvisor = () => <div className="p-6 bg-white rounded-lg shadow mb-6">Billing & Fees Placeholder</div>;
 
     const renderContent = () => {
@@ -334,7 +428,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                                 <button onClick={() => onEditListing && onEditListing(listing.id)} className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors" title="Edit">
                                                     <PencilIcon className="h-5 w-5" />
                                                 </button>
-                                                {/* DELETE BUTTON - VISIBLE RED */}
                                                 <button 
                                                     onClick={() => setListingToDelete(listing.id)} 
                                                     className="p-2 text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 rounded transition-colors" 
