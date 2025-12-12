@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainCircuitIcon, ZapIcon, CheckCircleIcon, MapPinIcon } from './icons';
+import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainCircuitIcon, ZapIcon, CheckCircleIcon, MapPinIcon, BrainIcon } from './icons';
 import FAQSection from './FAQSection';
 
 // --- Shared Layouts ---
@@ -191,7 +191,7 @@ export const HowItWorksPage: React.FC = () => (
                     <a href="/explore" className="px-6 py-3 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition-colors">
                         Explore Gear
                     </a>
-                    <a href="/createListing" className="px-6 py-3 bg-white text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors">
+                    <a href="/create-listing" className="px-6 py-3 bg-white text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors">
                         List Your Item
                     </a>
                 </div>
@@ -430,7 +430,7 @@ export const HelpCenterPage: React.FC = () => (
             
             <div className="text-center mt-12">
                 <p className="text-gray-600 mb-4">Can't find what you're looking for?</p>
-                <a href="/contactUs" className="inline-block px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">Contact Support</a>
+                <a href="/contact" className="inline-block px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors">Contact Support</a>
             </div>
         </div>
     </div>

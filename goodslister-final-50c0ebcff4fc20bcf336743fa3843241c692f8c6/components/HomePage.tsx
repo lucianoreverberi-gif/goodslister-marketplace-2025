@@ -76,11 +76,8 @@ const HomePage: React.FC<HomePageProps> = ({
             return;
         }
 
-        // Explicitly request microphone permission to improve reliability and provide clearer error messages.
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            // The stream is only used to trigger the permission prompt. We should stop the tracks immediately
-            // to turn off the microphone indicator in the browser.
             stream.getTracks().forEach(track => track.stop());
         } catch (err) {
             console.error("Microphone permission error:", err);
@@ -107,7 +104,6 @@ const HomePage: React.FC<HomePageProps> = ({
 
             recognition.onerror = (event: any) => {
                 console.error("Voice recognition error:", event.error);
-                // The main permission error is now caught by getUserMedia, but this is a fallback.
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     alert('Permission to use the microphone was denied. Please enable it in your browser settings.');
                 } else {
@@ -134,30 +130,36 @@ const HomePage: React.FC<HomePageProps> = ({
 
     const featuredListings = listings.filter(l => l.isFeatured);
 
-    const handleBannerClick = (banner: Banner) => {
+    const handleBannerClick = (e: React.MouseEvent, banner: Banner) => {
+        // Allow default for external links or if modifier keys are pressed
+        if (banner.linkUrl?.startsWith('http') || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        
+        e.preventDefault();
+        
         if (banner.linkUrl) {
-            if (banner.linkUrl.startsWith('http')) {
-                window.open(banner.linkUrl, '_blank');
-            } else {
-                const path = banner.linkUrl.startsWith('/') ? banner.linkUrl.substring(1) : banner.linkUrl;
-                
-                // Map common paths to page IDs
-                if (path === 'explore') onNavigate('explore');
-                else if (path === 'createListing') onNavigate('createListing');
-                else if (path === 'aiAssistant') onNavigate('aiAssistant');
-                else if (path === 'userDashboard') onNavigate('userDashboard');
-                else {
-                    // Fallback: try to use it as a page ID directly if it matches Page type
-                    onNavigate(path as Page); 
-                }
+            const path = banner.linkUrl.startsWith('/') ? banner.linkUrl.substring(1) : banner.linkUrl;
+            
+            if (path === 'explore') onNavigate('explore');
+            else if (path === 'createListing' || path === 'create-listing') onNavigate('createListing');
+            else if (path === 'aiAssistant' || path === 'ai-assistant') onNavigate('aiAssistant');
+            else if (path === 'userDashboard' || path === 'dashboard') onNavigate('userDashboard');
+            else {
+                onNavigate(path as Page); 
             }
         } else {
-            onCreateListing(); // Default action
+            onCreateListing(); 
         }
+    };
+
+    // Helper to get HREF for banners
+    const getBannerHref = (banner: Banner) => {
+        if (!banner.linkUrl) return '/create-listing';
+        return banner.linkUrl;
     };
 
     const renderBanner = (banner: Banner) => {
         const layout = banner.layout || 'overlay';
+        const href = getBannerHref(banner);
 
         if (layout === 'split') {
             return (
@@ -169,9 +171,9 @@ const HomePage: React.FC<HomePageProps> = ({
                         <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{banner.title}</h2>
                         <p className="mt-4 text-lg text-gray-300">{banner.description}</p>
                         <div className="mt-8">
-                            <button onClick={() => handleBannerClick(banner)} className="inline-block py-3 px-8 text-gray-900 font-semibold rounded-lg bg-white hover:bg-gray-100 transition-colors shadow-lg">
+                            <a href={href} onClick={(e) => handleBannerClick(e, banner)} className="inline-block py-3 px-8 text-gray-900 font-semibold rounded-lg bg-white hover:bg-gray-100 transition-colors shadow-lg">
                                 {banner.buttonText}
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -194,9 +196,9 @@ const HomePage: React.FC<HomePageProps> = ({
                                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{banner.title}</h2>
                                 <p className="mt-2 text-gray-600 max-w-2xl">{banner.description}</p>
                             </div>
-                            <button onClick={() => handleBannerClick(banner)} className="flex-shrink-0 py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors whitespace-nowrap">
+                            <a href={href} onClick={(e) => handleBannerClick(e, banner)} className="flex-shrink-0 py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors whitespace-nowrap">
                                 {banner.buttonText}
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -217,13 +219,20 @@ const HomePage: React.FC<HomePageProps> = ({
                     <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-200">
                         {banner.description}
                     </p>
-                    <button onClick={() => handleBannerClick(banner)} className="mt-8 inline-block py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
+                    <a href={href} onClick={(e) => handleBannerClick(e, banner)} className="mt-8 inline-block py-3 px-8 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
                         {banner.buttonText}
-                    </button>
+                    </a>
                 </div>
             </div>
         );
     };
+
+    // Helper for navigation links in grid
+    const handleGridLinkClick = (e: React.MouseEvent, page: Page) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+        e.preventDefault();
+        onNavigate(page);
+    }
 
     return (
         <main>
@@ -346,7 +355,7 @@ const HomePage: React.FC<HomePageProps> = ({
                                             <MessageSquareIcon className="h-8 w-8" />
                                         </div>
                                         <h3 className="text-lg font-semibold text-gray-900">2. Accept Bookings</h3>
-                                        <p className="mt-2 text-base text-gray-600">Receive requests from verified renters. Chat directly to coordinate pickup times and answer questions.</p>
+                                        <p className="mt-2 text-base text-gray-600">Receive requests from verified users. Chat with them to coordinate pickup and approve the booking.</p>
                                     </div>
                                     <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                                         <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
@@ -359,9 +368,9 @@ const HomePage: React.FC<HomePageProps> = ({
                             )}
                         </div>
                         <div className="mt-12">
-                            <button onClick={() => onNavigate('howItWorks')} className="text-cyan-600 hover:text-cyan-800 font-semibold hover:underline">
+                            <a href="/how-it-works" onClick={(e) => handleGridLinkClick(e, 'howItWorks')} className="text-cyan-600 hover:text-cyan-800 font-semibold hover:underline">
                                 Learn more details &rarr;
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -422,8 +431,9 @@ const HomePage: React.FC<HomePageProps> = ({
                                 <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Neural Search</h3>
                                 <p className="mt-2 text-base text-gray-600">Describe what you're looking for in your own words. Our AI interprets your intent to find the perfect gear.</p>
                             </div>
-                            <div 
-                                onClick={() => onNavigate('aiAssistant')}
+                            <a 
+                                href="/ai-assistant"
+                                onClick={(e) => handleGridLinkClick(e, 'aiAssistant')}
                                 className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
                             >
                                 <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
@@ -431,9 +441,10 @@ const HomePage: React.FC<HomePageProps> = ({
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Smart Contracts</h3>
                                 <p className="mt-2 text-base text-gray-600">Generate detailed rental agreements in seconds. AI protects your interests with clear and concise clauses.</p>
-                            </div>
-                            <div 
-                                onClick={onCreateListing}
+                            </a>
+                            <a 
+                                href="/create-listing"
+                                onClick={(e) => handleGridLinkClick(e, 'createListing')}
                                 className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
                             >
                                 <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
@@ -441,9 +452,10 @@ const HomePage: React.FC<HomePageProps> = ({
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Optimized Listings</h3>
                                 <p className="mt-2 text-base text-gray-600">Create high-impact listings with a single click. Our AI writes descriptions that capture attention and convert.</p>
-                            </div>
-                            <div 
-                                onClick={() => onNavigate('explore')}
+                            </a>
+                            <a 
+                                href="/explore"
+                                onClick={(e) => handleGridLinkClick(e, 'explore')}
                                 className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
                             >
                                 <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
@@ -451,9 +463,10 @@ const HomePage: React.FC<HomePageProps> = ({
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Multilingual Chat</h3>
                                 <p className="mt-2 text-base text-gray-600">Communicate globally with instant AI-powered translations directly in your chat conversations.</p>
-                            </div>
-                            <div 
-                                onClick={() => onNavigate('userDashboard')}
+                            </a>
+                            <a 
+                                href="/dashboard"
+                                onClick={(e) => handleGridLinkClick(e, 'userDashboard')}
                                 className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
                             >
                                 <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
@@ -461,7 +474,7 @@ const HomePage: React.FC<HomePageProps> = ({
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">AI Smart Inspector</h3>
                                 <p className="mt-2 text-base text-gray-600">Automatically compare before/after photos to detect damage and process claims fairly in seconds.</p>
-                            </div>
+                            </a>
                         </div>
                     </div>
                 </div>

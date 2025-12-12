@@ -15,7 +15,11 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick, onOpenChat, session, logoUrl }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const handleNavigation = (page: Page) => {
+    const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, page: Page) => {
+        // Allow default browser behavior for modifier keys (Ctrl/Cmd+Click -> New Tab)
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+        
+        e.preventDefault();
         onNavigate(page);
         setIsMenuOpen(false);
     };
@@ -25,25 +29,20 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
         return () => { document.body.style.overflow = 'unset'; };
     }, [isMenuOpen]);
 
-    const NavLinks: React.FC<{ mobile?: boolean }> = ({ mobile }) => {
-        const commonClass = "font-medium transition-colors";
+    const NavLink = ({ href, page, label, mobile }: { href: string, page: Page, label: string, mobile?: boolean }) => {
+        const commonClass = "font-medium transition-colors block";
         const desktopClass = "text-sm text-gray-500 hover:text-gray-900";
-        const mobileClass = "block py-3 px-4 text-lg text-gray-700 hover:bg-gray-100 rounded-lg";
+        const mobileClass = "py-3 px-4 text-lg text-gray-700 hover:bg-gray-100 rounded-lg";
         const className = mobile ? `${commonClass} ${mobileClass}` : `${commonClass} ${desktopClass}`;
 
         return (
-            <>
-                <button onClick={() => handleNavigation('explore')} className={className}>Explore</button>
-                <button onClick={() => handleNavigation('createListing')} className={className}>List Your Item</button>
-                <button onClick={() => handleNavigation('howItWorks')} className={className}>How It Works</button>
-                <button onClick={() => handleNavigation('aiAssistant')} className={className}>AI Assistant</button>
-                {session?.isAdmin && (
-                    <button onClick={() => handleNavigation('admin')} className={`${className} text-cyan-600 hover:text-cyan-800`}>Admin</button>
-                )}
-                {session && !session.isAdmin && (
-                    <button onClick={() => handleNavigation('userDashboard')} className={`${className} text-cyan-600 hover:text-cyan-800`}>My Dashboard</button>
-                )}
-            </>
+            <a 
+                href={href} 
+                onClick={(e) => handleNavigation(e, page)} 
+                className={className}
+            >
+                {label}
+            </a>
         );
     };
 
@@ -53,14 +52,27 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
-                        <button onClick={() => handleNavigation('home')} className="flex-shrink-0">
+                        <a 
+                            href="/" 
+                            onClick={(e) => handleNavigation(e, 'home')} 
+                            className="flex-shrink-0"
+                        >
                             <img src={logoUrl} alt="Goodslister logo" className="h-8 w-auto" />
-                        </button>
+                        </a>
 
                         {/* Desktop Nav & Auth */}
                         <div className="hidden md:flex items-center space-x-4">
                             <nav className="flex space-x-8 items-center">
-                                <NavLinks />
+                                <NavLink href="/explore" page="explore" label="Explore" />
+                                <NavLink href="/create-listing" page="createListing" label="List Your Item" />
+                                <NavLink href="/how-it-works" page="howItWorks" label="How It Works" />
+                                <NavLink href="/ai-assistant" page="aiAssistant" label="AI Assistant" />
+                                {session?.isAdmin && (
+                                    <a href="/admin" onClick={(e) => handleNavigation(e, 'admin')} className="text-sm font-medium text-cyan-600 hover:text-cyan-800 transition-colors">Admin</a>
+                                )}
+                                {session && !session.isAdmin && (
+                                    <a href="/dashboard" onClick={(e) => handleNavigation(e, 'userDashboard')} className="text-sm font-medium text-cyan-600 hover:text-cyan-800 transition-colors">My Dashboard</a>
+                                )}
                             </nav>
                             <div className="w-px h-6 bg-gray-200"></div>
                             {session ? (
@@ -68,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
                                     <button onClick={onOpenChat} className="text-gray-500 hover:text-gray-900 p-1 rounded-full">
                                         <MessageSquareIcon className="h-6 w-6" />
                                     </button>
-                                    <img src={session.avatarUrl} alt={session.name} className="w-8 h-8 rounded-full" />
+                                    <img src={session.avatarUrl} alt={session.name} className="w-8 h-8 rounded-full object-cover" />
                                     <button onClick={onLogoutClick} className="text-sm font-medium text-gray-500 hover:text-gray-900">
                                         Log Out
                                     </button>
@@ -107,7 +119,16 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
 
                     {/* Nav Links */}
                     <nav className="mt-8 flex-1 flex flex-col space-y-2">
-                        <NavLinks mobile />
+                        <NavLink href="/explore" page="explore" label="Explore" mobile />
+                        <NavLink href="/create-listing" page="createListing" label="List Your Item" mobile />
+                        <NavLink href="/how-it-works" page="howItWorks" label="How It Works" mobile />
+                        <NavLink href="/ai-assistant" page="aiAssistant" label="AI Assistant" mobile />
+                        {session?.isAdmin && (
+                            <NavLink href="/admin" page="admin" label="Admin Panel" mobile />
+                        )}
+                        {session && !session.isAdmin && (
+                            <NavLink href="/dashboard" page="userDashboard" label="My Dashboard" mobile />
+                        )}
                     </nav>
 
                     {/* Auth & Actions */}
@@ -115,7 +136,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
                         {session ? (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3 px-4 py-2">
-                                    <img src={session.avatarUrl} alt={session.name} className="w-10 h-10 rounded-full" />
+                                    <img src={session.avatarUrl} alt={session.name} className="w-10 h-10 rounded-full object-cover" />
                                     <div>
                                         <p className="font-semibold text-gray-800">{session.name}</p>
                                         <p className="text-sm text-gray-500">{session.email}</p>

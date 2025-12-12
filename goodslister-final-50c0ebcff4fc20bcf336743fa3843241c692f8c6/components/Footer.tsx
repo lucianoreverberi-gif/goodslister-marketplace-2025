@@ -9,6 +9,13 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ logoUrl, onNavigate }) => {
+    
+    const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, page: Page) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+        e.preventDefault();
+        onNavigate(page);
+    };
+
     return (
         <footer className="bg-white border-t border-gray-200">
             <div className="container mx-auto py-16 px-4 sm:px-6 lg:px-8">
@@ -23,24 +30,24 @@ const Footer: React.FC<FooterProps> = ({ logoUrl, onNavigate }) => {
                         <div>
                             <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">Company</h3>
                             <ul className="mt-4 space-y-4">
-                                <li><button onClick={() => onNavigate('aboutUs')} className="text-base text-gray-600 hover:text-gray-900">About Us</button></li>
-                                <li><button onClick={() => onNavigate('careers')} className="text-base text-gray-600 hover:text-gray-900">Careers</button></li>
-                                <li><button onClick={() => onNavigate('press')} className="text-base text-gray-600 hover:text-gray-900">Press</button></li>
+                                <li><a href="/about" onClick={(e) => handleLinkClick(e, 'aboutUs')} className="text-base text-gray-600 hover:text-gray-900">About Us</a></li>
+                                <li><a href="/careers" onClick={(e) => handleLinkClick(e, 'careers')} className="text-base text-gray-600 hover:text-gray-900">Careers</a></li>
+                                <li><a href="/press" onClick={(e) => handleLinkClick(e, 'press')} className="text-base text-gray-600 hover:text-gray-900">Press</a></li>
                             </ul>
                         </div>
                         <div>
                             <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">Support</h3>
                             <ul className="mt-4 space-y-4">
-                                <li><button onClick={() => onNavigate('helpCenter')} className="text-base text-gray-600 hover:text-gray-900">Help Center</button></li>
-                                <li><button onClick={() => onNavigate('contactUs')} className="text-base text-gray-600 hover:text-gray-900">Contact Us</button></li>
+                                <li><a href="/help" onClick={(e) => handleLinkClick(e, 'helpCenter')} className="text-base text-gray-600 hover:text-gray-900">Help Center</a></li>
+                                <li><a href="/contact" onClick={(e) => handleLinkClick(e, 'contactUs')} className="text-base text-gray-600 hover:text-gray-900">Contact Us</a></li>
                             </ul>
                         </div>
                         <div>
                             <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">Legal & Compliance</h3>
                             <ul className="mt-4 space-y-4">
-                                <li><button onClick={() => onNavigate('terms')} className="text-base text-gray-600 hover:text-gray-900">Terms &amp; Conditions</button></li>
-                                <li><button onClick={() => onNavigate('privacyPolicy')} className="text-base text-gray-600 hover:text-gray-900">Privacy Policy</button></li>
-                                <li><button onClick={() => onNavigate('floridaCompliance')} className="text-base text-cyan-600 hover:text-cyan-800 font-semibold">Florida Boating Guide</button></li>
+                                <li><a href="/terms" onClick={(e) => handleLinkClick(e, 'terms')} className="text-base text-gray-600 hover:text-gray-900">Terms &amp; Conditions</a></li>
+                                <li><a href="/privacy" onClick={(e) => handleLinkClick(e, 'privacyPolicy')} className="text-base text-gray-600 hover:text-gray-900">Privacy Policy</a></li>
+                                <li><a href="/florida-compliance" onClick={(e) => handleLinkClick(e, 'floridaCompliance')} className="text-base text-cyan-600 hover:text-cyan-800 font-semibold">Florida Boating Guide</a></li>
                             </ul>
                         </div>
                     </div>
