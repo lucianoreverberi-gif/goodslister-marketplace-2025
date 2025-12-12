@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+// Force rebuild - using verified domain noreply@goodslister.com
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
