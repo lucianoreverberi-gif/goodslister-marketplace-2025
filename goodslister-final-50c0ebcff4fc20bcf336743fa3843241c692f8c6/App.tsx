@@ -32,11 +32,66 @@ interface Notification {
     message: string;
 }
 
+// ROUTING CONFIGURATION
+const PATH_MAP: Record<string, Page> = {
+    '/': 'home',
+    '/explore': 'explore',
+    '/create-listing': 'createListing',
+    '/edit-listing': 'editListing',
+    '/ai-assistant': 'aiAssistant',
+    '/admin': 'admin',
+    '/dashboard': 'userDashboard',
+    '/inbox': 'inbox',
+    '/listing': 'listingDetail',
+    '/profile': 'userProfile',
+    '/about': 'aboutUs',
+    '/careers': 'careers',
+    '/press': 'press',
+    '/help': 'helpCenter',
+    '/contact': 'contactUs',
+    '/terms': 'terms',
+    '/privacy': 'privacyPolicy',
+    '/how-it-works': 'howItWorks',
+    '/florida-compliance': 'floridaCompliance',
+};
+
+const REVERSE_PATH_MAP: Record<Page, string> = {
+    'home': '/',
+    'explore': '/explore',
+    'createListing': '/create-listing',
+    'editListing': '/edit-listing',
+    'aiAssistant': '/ai-assistant',
+    'admin': '/admin',
+    'userDashboard': '/dashboard',
+    'inbox': '/inbox',
+    'listingDetail': '/listing',
+    'userProfile': '/profile',
+    'aboutUs': '/about',
+    'careers': '/careers',
+    'press': '/press',
+    'helpCenter': '/help',
+    'contactUs': '/contact',
+    'terms': '/terms',
+    'privacyPolicy': '/privacy',
+    'howItWorks': '/how-it-works',
+    'floridaCompliance': '/florida-compliance',
+};
+
 const App: React.FC = () => {
-    const [page, setPage] = useState<Page>('home');
-    const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-    // NEW: State for public profile viewing
-    const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
+    // 1. Initialize state from URL
+    const getUrlParams = () => new URLSearchParams(window.location.search);
+    
+    const [page, setPage] = useState<Page>(() => {
+        const path = window.location.pathname;
+        // Find matching page or default to home
+        for (const [p, pageName] of Object.entries(PATH_MAP)) {
+            if (path === p) return pageName;
+        }
+        return 'home';
+    });
+
+    const [selectedListingId, setSelectedListingId] = useState<string | null>(() => getUrlParams().get('id'));
+    const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(() => getUrlParams().get('userId'));
     
     const [session, setSession] = useState<Session | null>(null);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -70,20 +125,68 @@ const App: React.FC = () => {
         loadData();
     }, []);
 
+    // Effect: Restore "Listing To Edit" state if URL indicates editing and data is loaded
+    useEffect(() => {
+        if (page === 'editListing' && appData?.listings && !listingToEdit) {
+            const editId = new URLSearchParams(window.location.search).get('id');
+            if (editId) {
+                const found = appData.listings.find((l: Listing) => l.id === editId);
+                if (found) setListingToEdit(found);
+            }
+        }
+    }, [page, appData, listingToEdit]);
+
+    // Effect: Handle Browser Back/Forward Buttons
+    useEffect(() => {
+        const handlePopState = () => {
+            const path = window.location.pathname;
+            const params = new URLSearchParams(window.location.search);
+            
+            let foundPage: Page = 'home';
+            for (const [p, pageName] of Object.entries(PATH_MAP)) {
+                if (path === p) {
+                    foundPage = pageName;
+                    break;
+                }
+            }
+            setPage(foundPage);
+            
+            // Restore IDs from URL
+            if (params.get('id')) setSelectedListingId(params.get('id'));
+            if (params.get('userId')) setSelectedUserProfileId(params.get('userId'));
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     // Use a generic update handler to keep state management DRY
     const updateAppData = (updates: Partial<any>) => {
         setAppData((prevData: any) => ({ ...prevData, ...updates }));
     };
 
-    const handleNavigate = useCallback((newPage: Page) => {
+    // NAVIGATION HANDLER (Now with URL updates)
+    const handleNavigate = useCallback((newPage: Page, params?: Record<string, string>) => {
         setPage(newPage);
         window.scrollTo(0, 0);
+
+        // Update URL
+        let path = REVERSE_PATH_MAP[newPage] || '/';
+        if (params) {
+            const searchParams = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value) searchParams.set(key, value);
+            });
+            const qs = searchParams.toString();
+            if (qs) path += `?${qs}`;
+        }
+        window.history.pushState({ page: newPage, params }, '', path);
     }, []);
 
     // NEW: Handle navigating to user profile
     const handleViewUserProfile = useCallback((userId: string) => {
         setSelectedUserProfileId(userId);
-        handleNavigate('userProfile');
+        handleNavigate('userProfile', { userId });
     }, [handleNavigate]);
 
     const addNotification = (type: 'success' | 'info' | 'message', title: string, message: string) => {
@@ -119,14 +222,14 @@ const App: React.FC = () => {
 
     const handleListingClick = useCallback((id: string) => {
         setSelectedListingId(id);
-        handleNavigate('listingDetail');
+        handleNavigate('listingDetail', { id });
     }, [handleNavigate]);
 
     const handleEditListingClick = useCallback((id: string) => {
         const listing = appData.listings.find((l: Listing) => l.id === id);
         if (listing) {
             setListingToEdit(listing);
-            handleNavigate('editListing');
+            handleNavigate('editListing', { id });
         }
     }, [appData, handleNavigate]);
 
@@ -464,6 +567,7 @@ const App: React.FC = () => {
                             currentUser={session} 
                        />;
             case 'listingDetail':
+                // Check if listing ID is set (from state or URL)
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
                 return listing ? <ListingDetailPage 
                     listing={listing} 
@@ -474,7 +578,7 @@ const App: React.FC = () => {
                     isFavorite={session?.favorites?.includes(listing.id) || false}
                     onToggleFavorite={handleToggleFavorite}
                     onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)} // NEW PROP
-                /> : <p>Listing not found.</p>;
+                /> : <div className="p-8 text-center"><p className="text-gray-600">Listing not found or loading...</p><button onClick={() => handleNavigate('explore')} className="mt-4 text-cyan-600 font-bold">Go to Explore</button></div>;
             case 'userProfile': // NEW PAGE CASE
                 const profileUser = users.find((u: User) => u.id === selectedUserProfileId);
                 if (!profileUser) return <p className="p-8 text-center text-gray-500">User profile not found.</p>;
@@ -500,7 +604,7 @@ const App: React.FC = () => {
                         currentUser={session} 
                         initialData={listingToEdit} 
                         onSubmit={handleUpdateListing} 
-                    /> : <p>No listing selected for editing.</p>;
+                    /> : <p className="p-8 text-center">No listing selected for editing.</p>;
             case 'aiAssistant':
                 return <AIAssistantPage />;
             case 'admin':
@@ -541,7 +645,11 @@ const App: React.FC = () => {
                     onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
                     onDeleteListing={handleDeleteListing} // NEW PROP
                     onBookingStatusUpdate={handleBookingStatusUpdate} // NEW PROP
-                /> : <p>Please log in.</p>;
+                /> : <div className="p-12 text-center">
+                        <h2 className="text-xl font-bold mb-4">Please Log In</h2>
+                        <p className="text-gray-600 mb-6">You need to be logged in to view your dashboard.</p>
+                        <button onClick={() => setIsLoginModalOpen(true)} className="px-6 py-2 bg-cyan-600 text-white rounded-lg font-bold">Log In</button>
+                     </div>;
             case 'aboutUs':
                 return <AboutUsPage />;
             case 'careers':
@@ -607,7 +715,7 @@ const App: React.FC = () => {
             </div>
 
             <Header 
-                onNavigate={handleNavigate}
+                onNavigate={(p) => handleNavigate(p)} // Wrap to match signature
                 onLoginClick={() => setIsLoginModalOpen(true)}
                 onLogoutClick={handleLogout}
                 onOpenChat={() => { 
@@ -625,7 +733,7 @@ const App: React.FC = () => {
             <main className="flex-grow">
                 {renderPage()}
             </main>
-            <Footer logoUrl={logoUrl} onNavigate={handleNavigate} />
+            <Footer logoUrl={logoUrl} onNavigate={(p) => handleNavigate(p)} />
             
             {isLoginModalOpen && (
                 <LoginModal 

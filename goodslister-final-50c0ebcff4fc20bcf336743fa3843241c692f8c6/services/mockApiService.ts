@@ -347,8 +347,8 @@ export const createBooking = async (
                 startDate: startDate.toISOString(), 
                 endDate: endDate.toISOString(), 
                 totalPrice, 
-                amountPaidOnline,
-                balanceDueOnSite,
+                amountPaidOnline, 
+                balanceDueOnSite, 
                 paymentMethod,
                 protectionType,
                 protectionFee
