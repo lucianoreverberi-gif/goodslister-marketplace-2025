@@ -122,9 +122,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Send the email
-    // NOTE: 'from' address must be 'onboarding@resend.dev' until you verify a domain in Resend dashboard.
+    // NOTE: 'from' address must be 'noreply@goodslister.com' until you verify a domain in Resend dashboard.
     const { data: emailData, error } = await resend.emails.send({
-      from: 'GoodsLister <onboarding@resend.dev>',
+      from: 'GoodsLister <noreply@goodslister.com>',
       to: [to], // In Resend free tier, this MUST be your verified email only.
       subject: subject,
       html: htmlContent,
