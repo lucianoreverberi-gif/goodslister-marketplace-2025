@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Session, Listing, Booking, InspectionPhoto } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon, HeartIcon, UserCheckIcon, TrashIcon, AlertTriangleIcon } from './icons';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon, HeartIcon, UserCheckIcon, TrashIcon, AlertTriangleIcon, TrendUpIcon, ArrowRightIcon, GlobeIcon, ZapIcon, MapPinIcon, LockIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import DigitalInspection from './DigitalInspection';
@@ -133,19 +133,60 @@ const InspectionModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ 
 };
 
 const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => {
-    const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
+    const [selectedPlan, setSelectedPlan] = useState<number | null>(2); // Default to middle tier
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
+    // Enhanced Plans reflecting Regional/Social strategy
     const plans = [
-        { id: 1, name: 'Local Boost', price: 4.99, duration: '3 Days', features: ['2x Visibility in search', `Targeted to ${listing.location.city}`, 'Basic Analytics'] },
-        { id: 2, name: 'City Star', price: 9.99, duration: '7 Days', features: ['5x Visibility', 'Top of search results', 'Verified Badge on listing'], recommended: true },
-        { id: 3, name: 'Regional Hero', price: 29.99, duration: '30 Days', features: ['Max Visibility', 'Homepage Feature', 'Email Newsletter Feature'] },
+        { 
+            id: 1, 
+            name: 'Local Boost', 
+            price: 5.99, 
+            duration: '3 Days', 
+            icon: MapPinIcon,
+            color: 'bg-blue-50 border-blue-200 text-blue-700',
+            features: [
+                'Top of search in your city', 
+                'Highlighted map pin', 
+                '~200 Est. Reach'
+            ] 
+        },
+        { 
+            id: 2, 
+            name: 'Social Spotlight', 
+            price: 14.99, 
+            duration: '7 Days', 
+            recommended: true,
+            icon: MegaphoneIcon,
+            color: 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 text-purple-700',
+            features: [
+                'Included "Local Boost"',
+                'Post on our Instagram/FB Stories',
+                'Featured in weekly newsletter',
+                '~1,500 Est. Reach'
+            ] 
+        },
+        { 
+            id: 3, 
+            name: 'Regional Hero', 
+            price: 29.99, 
+            duration: '14 Days', 
+            icon: StarIcon,
+            color: 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 text-yellow-800',
+            features: [
+                'Homepage "Hero" Slider Feature',
+                'Dedicated Social Media Post',
+                'Top placement in 3 nearby cities',
+                '~5,000+ Est. Reach'
+            ] 
+        },
     ];
 
     const handlePromote = () => {
         if (!selectedPlan) return;
         setIsProcessing(true);
+        // Simulate API call
         setTimeout(() => {
             setIsProcessing(false);
             setIsSuccess(true);
@@ -154,14 +195,25 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => 
 
     if (isSuccess) {
         return (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center">
-                    <div className="bg-green-100 text-green-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                        <CheckCircleIcon className="h-10 w-10" />
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in zoom-in-95">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-100 opacity-50"></div>
+                    <div className="relative z-10">
+                        <div className="bg-green-100 text-green-600 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-sm border-4 border-white">
+                            <RocketIcon className="h-10 w-10" />
+                        </div>
+                        <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Blast Off! 🚀</h2>
+                        <p className="text-gray-600 mb-6">
+                            Your campaign for <strong>{listing.title}</strong> is now live. Watch your views skyrocket!
+                        </p>
+                        <div className="bg-white p-4 rounded-lg border border-green-200 mb-6 shadow-sm">
+                            <p className="text-sm font-bold text-gray-700">Estimated Reach</p>
+                            <p className="text-2xl font-black text-green-600">+1,200 Views</p>
+                        </div>
+                        <button onClick={onClose} className="w-full py-3 px-4 text-white font-bold rounded-lg bg-green-600 hover:bg-green-700 transition-colors shadow-lg">
+                            Return to Dashboard
+                        </button>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900">Success!</h2>
-                    <p className="text-gray-600 mt-2">Your listing <strong>{listing.title}</strong> is now being promoted.</p>
-                    <button onClick={onClose} className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">Back to Dashboard</button>
                 </div>
             </div>
         );
@@ -169,34 +221,87 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => 
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl relative flex flex-col max-h-[90vh]">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
-                    <XIcon className="h-6 w-6" />
-                </button>
-                <div className="p-6 border-b">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <RocketIcon className="h-6 w-6 text-cyan-600" /> Boost Visibility
-                    </h2>
-                    <p className="text-gray-600 mt-1">Promote <strong>{listing.title}</strong> to renters in <strong>{listing.location.city}</strong>.</p>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl relative flex flex-col max-h-[90vh] overflow-hidden">
+                {/* Header */}
+                <div className="bg-gray-900 p-6 flex justify-between items-start">
+                    <div>
+                        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                            <ZapIcon className="h-6 w-6 text-yellow-400" />
+                            Boost Exposure
+                        </h2>
+                        <p className="text-gray-400 mt-1 text-sm">Promote <strong>{listing.title}</strong> to get more bookings faster.</p>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+                        <XIcon className="h-6 w-6" />
+                    </button>
                 </div>
-                <div className="p-6 overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {plans.map((plan) => (
-                            <div key={plan.id} onClick={() => setSelectedPlan(plan.id)} className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedPlan === plan.id ? 'border-cyan-600 bg-cyan-50 ring-2 ring-cyan-200' : 'border-gray-200 hover:border-cyan-300'}`}>
-                                {plan.recommended && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-400 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">MOST POPULAR</div>}
-                                <h3 className="font-bold text-lg text-gray-900 text-center">{plan.name}</h3>
-                                <div className="text-center my-3"><span className="text-2xl font-extrabold text-gray-900">${plan.price}</span></div>
-                                <p className="text-center text-sm font-semibold text-cyan-700 mb-4">{plan.duration}</p>
-                                <ul className="space-y-2 text-sm text-gray-600">
-                                    {plan.features.map((feature, idx) => <li key={idx} className="flex items-start"><CheckCircleIcon className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" /><span>{feature}</span></li>)}
-                                </ul>
-                            </div>
-                        ))}
+
+                {/* Body */}
+                <div className="p-6 md:p-8 overflow-y-auto bg-gray-50 flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {plans.map((plan) => {
+                            const Icon = plan.icon;
+                            const isSelected = selectedPlan === plan.id;
+                            
+                            return (
+                                <div 
+                                    key={plan.id} 
+                                    onClick={() => setSelectedPlan(plan.id)} 
+                                    className={`relative rounded-xl p-6 cursor-pointer transition-all duration-300 border-2 flex flex-col
+                                        ${isSelected 
+                                            ? `border-cyan-500 shadow-xl scale-105 bg-white z-10` 
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                                        }
+                                    `}
+                                >
+                                    {plan.recommended && (
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md uppercase tracking-wider">
+                                            Most Popular
+                                        </div>
+                                    )}
+                                    
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${isSelected ? 'bg-cyan-100 text-cyan-600' : 'bg-gray-100 text-gray-500'}`}>
+                                        <Icon className="h-6 w-6" />
+                                    </div>
+
+                                    <h3 className="font-bold text-lg text-gray-900">{plan.name}</h3>
+                                    <div className="my-2">
+                                        <span className="text-3xl font-extrabold text-gray-900">${Math.floor(plan.price)}</span>
+                                        <span className="text-sm font-semibold text-gray-500">.{plan.price.toFixed(2).split('.')[1]}</span>
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-6">{plan.duration}</p>
+
+                                    <ul className="space-y-3 mb-6 flex-1">
+                                        {plan.features.map((feature, idx) => (
+                                            <li key={idx} className="flex items-start text-sm text-gray-600">
+                                                <CheckCircleIcon className={`h-4 w-4 mr-2 flex-shrink-0 mt-0.5 ${isSelected ? 'text-green-500' : 'text-gray-400'}`} />
+                                                <span className={idx === plan.features.length - 1 ? "font-bold text-gray-800" : ""}>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <div className={`w-full h-10 rounded-lg flex items-center justify-center font-bold text-sm transition-colors ${isSelected ? 'bg-cyan-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                        {isSelected ? 'Selected' : 'Choose Plan'}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-                <div className="p-6 border-t bg-gray-50 rounded-b-2xl">
-                    <button onClick={handlePromote} disabled={!selectedPlan || isProcessing} className="w-full py-3 px-4 text-white font-bold rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2">
-                        {isProcessing ? 'Processing Payment...' : (selectedPlan ? `Pay $${plans.find(p => p.id === selectedPlan)?.price} & Promote` : 'Select a Plan')}
+
+                {/* Footer */}
+                <div className="p-6 bg-white border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <LockIcon className="h-4 w-4" />
+                        <span>Secure payment processed by Stripe</span>
+                    </div>
+                    <button 
+                        onClick={handlePromote} 
+                        disabled={!selectedPlan || isProcessing} 
+                        className="w-full sm:w-auto px-8 py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        {isProcessing ? 'Processing Payment...' : `Pay $${plans.find(p => p.id === selectedPlan)?.price} & Boost`}
+                        {!isProcessing && <RocketIcon className="h-5 w-5" />}
                     </button>
                 </div>
             </div>
@@ -204,6 +309,7 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ listing, onClose }) => 
     );
 };
 
+// ... [PhoneVerificationModal, IdVerificationModal, BookingsManager remain unchanged] ...
 const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => {
     const [step, setStep] = useState<'input' | 'code'>('input');
     const [phone, setPhone] = useState('');
@@ -660,6 +766,9 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
     const [showIdModal, setShowIdModal] = useState(false);
     const [listingToDelete, setListingToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    
+    // NEW: Promotion State
+    const [listingToPromote, setListingToPromote] = useState<Listing | null>(null);
 
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
         { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon },
@@ -696,6 +805,66 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
         return ( <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 space-y-6"> <div className="flex gap-6 items-center"> <div className="w-24 h-24"> <ImageUploader currentImageUrl={avatar} onImageChange={setAvatar} label="" /> </div> <div> <h3 className="font-bold text-gray-900">Profile Photo</h3> <p className="text-sm text-gray-500">Update your public avatar.</p> </div> </div> <div> <label className="block font-bold text-gray-700 mb-2">Bio</label> <textarea value={bio} onChange={e => setBio(e.target.value)} className="w-full border rounded-lg p-3" rows={4} /> </div> <button onClick={handleSave} className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-lg">{isSaving ? 'Saving...' : 'Save Changes'}</button> {saveMessage && <span className="text-green-600 ml-4">{saveMessage}</span>} </div> );
     };
     
+    const BillingTab: React.FC = () => {
+        // Calculate mocked earning stats
+        const myListings = listings.map(l => l.id);
+        const hostingBookings = bookings.filter(b => myListings.includes(b.listingId));
+        const totalEarnings = hostingBookings.filter(b => b.status === 'completed' || b.status === 'active').reduce((sum, b) => sum + b.balanceDueOnSite, 0);
+        const pendingPayouts = hostingBookings.filter(b => b.status === 'confirmed').reduce((sum, b) => sum + b.balanceDueOnSite, 0);
+
+        return (
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="bg-gradient-to-br from-green-500 to-emerald-700 rounded-xl p-6 text-white shadow-lg">
+                        <h3 className="text-green-100 font-medium mb-1">Total Earnings</h3>
+                        <div className="text-4xl font-bold">${totalEarnings.toFixed(2)}</div>
+                        <p className="text-sm text-green-100 mt-4 opacity-80">Paid directly by renters on pickup.</p>
+                     </div>
+                     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                         <h3 className="text-gray-500 font-medium mb-1">Upcoming Payouts</h3>
+                         <div className="text-4xl font-bold text-gray-900">${pendingPayouts.toFixed(2)}</div>
+                         <p className="text-sm text-gray-400 mt-4">{hostingBookings.filter(b => b.status === 'confirmed').length} reservations pending</p>
+                     </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 font-bold text-gray-700">Recent Transactions</div>
+                    {hostingBookings.length > 0 ? (
+                        <div className="divide-y divide-gray-100">
+                             {hostingBookings.slice(0, 5).map(b => (
+                                 <div key={b.id} className="px-6 py-4 flex justify-between items-center hover:bg-gray-50">
+                                     <div>
+                                         <p className="font-medium text-gray-900">{b.listing.title}</p>
+                                         <p className="text-xs text-gray-500">{new Date(b.startDate).toLocaleDateString()} • {b.renterId}</p>
+                                     </div>
+                                     <div className="text-right">
+                                         <span className={`font-bold ${b.status === 'completed' ? 'text-green-600' : 'text-gray-600'}`}>+${b.balanceDueOnSite}</span>
+                                         <span className={`block text-[10px] uppercase font-bold ${b.status === 'completed' ? 'text-green-600' : 'text-amber-500'}`}>{b.status === 'completed' ? 'Paid' : 'Pending'}</span>
+                                     </div>
+                                 </div>
+                             ))}
+                        </div>
+                    ) : (
+                        <div className="p-8 text-center text-gray-500">No transactions yet.</div>
+                    )}
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-xl p-6 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-indigo-100 p-3 rounded-lg text-indigo-600">
+                            <LandmarkIcon className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-gray-900">Payout Method</h4>
+                            <p className="text-sm text-gray-500">Connected to Stripe Connect</p>
+                        </div>
+                    </div>
+                    <button className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm">Manage</button>
+                </div>
+            </div>
+        );
+    }
+
     const VerificationItem: React.FC<{icon: React.ElementType, text: string, isVerified: boolean, onVerify: () => void}> = ({ icon: Icon, text, isVerified, onVerify }) => (
          <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center">
@@ -790,8 +959,157 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
         )
     };
 
-    const AIOptimizer = () => <div>AI Tools</div>;
-    const FeeStrategyAdvisor = () => <div>Billing Info</div>;
+    // AI Tools State
+    const [selectedAiListingId, setSelectedAiListingId] = useState<string>('');
+    const [aiResult, setAiResult] = useState('');
+    const [aiLoading, setAiLoading] = useState(false);
+
+    const AIOptimizer: React.FC = () => {
+        const handleGetAdvice = async (type: ListingAdviceType) => {
+            if (!selectedAiListingId) return;
+            const listing = listings.find(l => l.id === selectedAiListingId);
+            if (!listing) return;
+            
+            setAiLoading(true);
+            setAiResult('');
+            try {
+                const advice = await getListingAdvice(listing, type);
+                setAiResult(advice);
+            } catch (e) {
+                setAiResult("Failed to get advice.");
+            } finally {
+                setAiLoading(false);
+            }
+        };
+
+        return (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-8 text-white">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                        <BrainCircuitIcon className="h-8 w-8" />
+                        AI Listing Coach
+                    </h2>
+                    <p className="text-indigo-100 mt-2">Optimize your listings to earn more. Select an item to get started.</p>
+                </div>
+
+                <div className="p-8">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Select a Listing</label>
+                    <select 
+                        value={selectedAiListingId} 
+                        onChange={e => setSelectedAiListingId(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg mb-6"
+                    >
+                        <option value="">-- Choose an Item --</option>
+                        {listings.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                    </select>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <button 
+                            disabled={!selectedAiListingId || aiLoading}
+                            onClick={() => handleGetAdvice('pricing')}
+                            className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-cyan-300 transition-all text-left group disabled:opacity-50"
+                        >
+                            <div className="bg-green-100 w-10 h-10 rounded-full flex items-center justify-center text-green-600 mb-3 group-hover:scale-110 transition-transform">
+                                <DollarSignIcon className="h-5 w-5" />
+                            </div>
+                            <h4 className="font-bold text-gray-900">Price Check</h4>
+                            <p className="text-xs text-gray-500 mt-1">Get pricing strategy advice based on location.</p>
+                        </button>
+                        
+                        <button 
+                            disabled={!selectedAiListingId || aiLoading}
+                            onClick={() => handleGetAdvice('improvement')}
+                            className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-cyan-300 transition-all text-left group disabled:opacity-50"
+                        >
+                            <div className="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center text-blue-600 mb-3 group-hover:scale-110 transition-transform">
+                                <WandSparklesIcon className="h-5 w-5" />
+                            </div>
+                            <h4 className="font-bold text-gray-900">Optimize Text</h4>
+                            <p className="text-xs text-gray-500 mt-1">Improve your title and description SEO.</p>
+                        </button>
+
+                        <button 
+                            disabled={!selectedAiListingId || aiLoading}
+                            onClick={() => handleGetAdvice('promotion')}
+                            className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-cyan-300 transition-all text-left group disabled:opacity-50"
+                        >
+                            <div className="bg-purple-100 w-10 h-10 rounded-full flex items-center justify-center text-purple-600 mb-3 group-hover:scale-110 transition-transform">
+                                <MegaphoneIcon className="h-5 w-5" />
+                            </div>
+                            <h4 className="font-bold text-gray-900">Social Post</h4>
+                            <p className="text-xs text-gray-500 mt-1">Generate a catchy post for Instagram/Facebook.</p>
+                        </button>
+                    </div>
+
+                    {aiLoading && (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+                            <p className="text-gray-500 text-sm">Consulting the AI...</p>
+                        </div>
+                    )}
+
+                    {aiResult && (
+                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-bottom-2">
+                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <LightbulbIcon className="h-5 w-5 text-yellow-500" />
+                                AI Suggestion
+                            </h3>
+                            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line">
+                                {aiResult}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const AnalyticsTab: React.FC = () => {
+         // Mock data for chart visualization
+         const monthlyData = [40, 25, 60, 85, 50, 95]; 
+         
+         return (
+             <div className="space-y-6">
+                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                     <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
+                         <BarChartIcon className="h-5 w-5 text-cyan-600" />
+                         Performance Overview
+                     </h3>
+                     <div className="flex items-end justify-between h-48 gap-2 px-2">
+                         {monthlyData.map((val, i) => (
+                             <div key={i} className="w-full bg-gray-100 rounded-t-lg relative group">
+                                 <div 
+                                    className="absolute bottom-0 left-0 right-0 bg-cyan-500 hover:bg-cyan-600 transition-all rounded-t-lg"
+                                    style={{ height: `${val}%` }}
+                                 ></div>
+                                 <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
+                                     ${val * 10}
+                                 </div>
+                             </div>
+                         ))}
+                     </div>
+                     <div className="flex justify-between mt-2 text-xs text-gray-400">
+                         <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+                     </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                         <h4 className="font-bold text-gray-700 mb-4">Listing Views</h4>
+                         <div className="text-3xl font-bold text-gray-900">1,245</div>
+                         <div className="flex items-center text-green-600 text-sm mt-1">
+                             <TrendUpIcon className="h-4 w-4 mr-1" /> +12% this month
+                         </div>
+                     </div>
+                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                         <h4 className="font-bold text-gray-700 mb-4">Conversion Rate</h4>
+                         <div className="text-3xl font-bold text-gray-900">3.2%</div>
+                         <div className="text-sm text-gray-500 mt-1">Avg. across your category: 2.8%</div>
+                     </div>
+                 </div>
+             </div>
+         )
+    }
 
     const renderContent = () => {
         switch (activeTab) {
@@ -807,8 +1125,19 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                     {listings.map(listing => (
                                         <tr key={listing.id} className="border-b">
                                             <td className="p-3 font-medium">{listing.title}</td>
-                                            <td className="p-3"><span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Active</span></td>
-                                            <td className="p-3 flex justify-end gap-2">
+                                            <td className="p-3">
+                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${listing.isFeatured ? 'text-purple-800 bg-purple-100' : 'text-green-800 bg-green-100'}`}>
+                                                    {listing.isFeatured ? 'Featured' : 'Active'}
+                                                </span>
+                                            </td>
+                                            <td className="p-3 flex justify-end gap-2 items-center">
+                                                <button 
+                                                    onClick={() => setListingToPromote(listing)} 
+                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold text-cyan-600 bg-cyan-50 rounded hover:bg-cyan-100 mr-2 border border-cyan-200 transition-colors"
+                                                    title="Promote Listing"
+                                                >
+                                                    <RocketIcon className="h-3 w-3" /> Boost
+                                                </button>
                                                 <button onClick={() => onListingClick && onListingClick(listing.id)} className="p-2 text-gray-500 hover:text-cyan-600"><EyeIcon className="h-5 w-5" /></button>
                                                 <button onClick={() => onEditListing && onEditListing(listing.id)} className="p-2 text-gray-500 hover:text-cyan-600"><PencilIcon className="h-5 w-5" /></button>
                                                 <button onClick={() => setListingToDelete(listing.id)} className="p-2 text-red-500 hover:bg-red-50 rounded"><TrashIcon className="h-5 w-5" /></button>
@@ -824,8 +1153,8 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
             case 'bookings': return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
             case 'favorites': return (<div><h2 className="text-2xl font-bold mb-6">Saved Items</h2>{favoriteListings.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-3 gap-6">{favoriteListings.map(l => <ListingCard key={l.id} listing={l} onClick={onListingClick || (() => {})} isFavorite={true} onToggleFavorite={onToggleFavorite} />)}</div>) : <p>No favorites.</p>}</div>);
             case 'security': return <SecurityTab />;
-            case 'billing': return <FeeStrategyAdvisor />;
-            case 'analytics': return <div>Analytics</div>;
+            case 'billing': return <BillingTab />;
+            case 'analytics': return <AnalyticsTab />;
             case 'aiAssistant': return <AIOptimizer />;
         }
     };
@@ -846,6 +1175,15 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
             </div>
             {showPhoneModal && <PhoneVerificationModal onClose={() => setShowPhoneModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'phone')} />}
             {showIdModal && <IdVerificationModal onClose={() => setShowIdModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'id')} />}
+            
+            {/* Modal Injection */}
+            {listingToPromote && (
+                <PromotionModal 
+                    listing={listingToPromote} 
+                    onClose={() => setListingToPromote(null)} 
+                />
+            )}
+
             {listingToDelete && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl p-6 max-w-sm text-center">

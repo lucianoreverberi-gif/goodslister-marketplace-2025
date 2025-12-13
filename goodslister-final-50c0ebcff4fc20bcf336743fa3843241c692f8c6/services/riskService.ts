@@ -2,8 +2,7 @@
 import { Listing, ListingCategory, RiskTier } from '../types';
 
 // --- Configuration Constants ---
-const WAIVER_PERCENTAGE = 0.15; // 15% for Soft Goods
-const POWERSPORT_INSURANCE_DAILY_RATE = 35.00; // $35/day flat rate for now
+const WAIVER_PERCENTAGE = 0.15; // 15% for Soft Goods (Goes to Risk Fund)
 
 export interface PriceBreakdown {
     baseRentalPrice: number;
@@ -56,14 +55,15 @@ export class RiskManagerService {
         let requiresLicense = false;
 
         if (riskTier === RiskTier.TIER_1_SOFT_GOODS) {
-            // Logic Branch 1: 15% of Daily Rate
+            // Logic Branch 1: Soft Goods are covered by Platform Risk Fund
             protectionFee = baseRentalPrice * WAIVER_PERCENTAGE;
             protectionLabel = 'Goodslister Protection Plan (15%)';
             requiresLicense = false;
         } else {
-            // Logic Branch 2: Fixed Daily Premium
-            protectionFee = POWERSPORT_INSURANCE_DAILY_RATE * days;
-            protectionLabel = `Third-Party Liability Insurance ($${POWERSPORT_INSURANCE_DAILY_RATE}/day)`;
+            // Logic Branch 2: Hard Goods are NOT covered by Platform
+            // Fee is 0 because the risk is transferred to the owner/renter externally
+            protectionFee = 0;
+            protectionLabel = 'No Platform Coverage (External/Owner Insurance Required)';
             requiresLicense = true;
         }
 

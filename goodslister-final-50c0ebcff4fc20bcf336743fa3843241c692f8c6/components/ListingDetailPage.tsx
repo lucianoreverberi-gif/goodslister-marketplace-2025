@@ -304,8 +304,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             rentalTotal = basePrice * unitCount;
         }
         
-        // Logic: Platform insurance only applies to non-high-risk items.
-        // For High Risk items, protectionFee is 0 because it's handled directly/externally.
+        // Logic: Platform insurance only applies to Soft Goods (non-high-risk).
+        // For High Risk items (Boats/Moto), protectionFee is 0 because platform does not cover it.
         let protectionFee = 0;
         if (!isHighRisk) {
             if (insurancePlan === 'standard') {
@@ -472,7 +472,6 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
                         {/* Details and Booking */}
                         <div className="lg:col-span-2 p-6 sm:p-8 flex flex-col">
-                            {/* Header Info */}
                             <div>
                                 <div className="flex justify-between items-start">
                                     <p className="text-sm font-semibold text-cyan-600 uppercase tracking-wider">{listing.category}{listing.subcategory && ` / ${listing.subcategory}`}</p>
@@ -608,9 +607,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
                                                 <div className="flex items-center gap-2 font-bold mb-1">
                                                     <ShieldIcon className="h-4 w-4 text-amber-700" />
-                                                    Direct Insurance
+                                                    Platform Coverage Unavailable
                                                 </div>
-                                                <p>For this high-value item, insurance and damage policies are handled directly with the owner. Please review the contract before signing.</p>
+                                                <p>
+                                                    For this item category, <strong>Goodslister does NOT provide insurance</strong>. 
+                                                    You must rely on the owner's insurance or your own coverage.
+                                                </p>
                                             </div>
                                         ) : (
                                             <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">

@@ -5,7 +5,7 @@ import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, Credit
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'financials' | 'content' | 'billing' | 'disputes' | 'marketing' | 'settings';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings';
 
 interface AdminPageProps {
     users: User[];
@@ -43,7 +43,6 @@ const mockCoupons: Coupon[] = [
 ];
 
 // Mock Financial Ledger
-// Categories: 'revenue' (Our money), 'insurance_in' (Premiums), 'deposit' (Held money), 'payout' (Owner money)
 const mockLedger = [
     { id: 'txn_105', date: 'Today, 11:15 AM', category: 'insurance_in', description: 'Premium Protection Plan', amount: 45.00, status: 'cleared', user: 'Guest #9901' },
     { id: 'txn_104', date: 'Today, 10:45 AM', category: 'claim_out', description: 'Damage Coverage Payout (Claim #22)', amount: -320.00, status: 'processed', user: 'Host: Sarah J.' },
@@ -51,8 +50,194 @@ const mockLedger = [
     { id: 'txn_102', date: 'Today, 10:23 AM', category: 'payout', description: 'Rental Payment to Host', amount: 85.00, status: 'pending', user: 'Host: Carlos G.' },
     { id: 'txn_103', date: 'Today, 10:23 AM', category: 'deposit', description: 'Security Deposit Hold', amount: 250.00, status: 'held', user: 'Guest #8821' },
     { id: 'txn_99', date: 'Yesterday', category: 'revenue', description: 'Fixed Service Fee (Tier 2)', amount: 25.00, status: 'cleared', user: 'Guest #4412' },
-    { id: 'txn_98', date: 'Yesterday', category: 'deposit', description: 'Deposit Release', amount: -250.00, status: 'released', user: 'Guest #1234' },
 ];
+
+const RiskFundTab: React.FC = () => {
+    return (
+        <div className="space-y-8 animate-in fade-in">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <UmbrellaIcon className="h-8 w-8 text-purple-600" />
+                        Risk & Insurance Fund (Soft Goods Only)
+                    </h2>
+                    <p className="text-sm text-gray-500">Manage self-insurance pools for eligible soft goods. Hard assets are externally insured.</p>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-bold border border-green-200">
+                    <CheckCircleIcon className="h-4 w-4" /> Solvency Ratio: 4.2x (Healthy)
+                </div>
+            </div>
+
+            {/* Top Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Fund Balance</p>
+                    <p className="text-3xl font-bold text-gray-900">$8,120.00</p>
+                    <div className="mt-2 text-xs text-green-600 font-medium flex items-center gap-1">
+                        <TrendUpIcon className="h-3 w-3" /> +$450 this week
+                    </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Active Soft Goods Value</p>
+                    <p className="text-3xl font-bold text-gray-900">$12,500</p>
+                    <p className="text-xs text-gray-400 mt-2">Total covered inventory currently rented</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Active Policies</p>
+                    <p className="text-3xl font-bold text-gray-900">14</p>
+                    <div className="flex gap-2 mt-2">
+                        <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">8 Premium</span>
+                        <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-bold">6 Standard</span>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Loss Ratio (YTD)</p>
+                    <p className="text-3xl font-bold text-green-600">5.4%</p>
+                    <p className="text-xs text-gray-400 mt-2">Target: &lt; 20%</p>
+                </div>
+            </div>
+
+            {/* Middle Section: Visuals & Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Chart Simulation */}
+                <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 className="font-bold text-gray-800 mb-6">Fund Performance (Premiums vs Claims)</h3>
+                    <div className="h-full max-h-64 flex items-end justify-between gap-2 px-2 pb-6">
+                        {[40, 65, 45, 80, 55, 90, 70, 100, 85, 120, 60, 95].map((h, i) => (
+                            <div key={i} className="w-full bg-purple-50 rounded-t-sm relative group h-48 flex flex-col justify-end">
+                                <div 
+                                    className="bg-purple-500 hover:bg-purple-600 transition-all rounded-t-sm w-full" 
+                                    style={{ height: `${h}%` }}
+                                ></div>
+                                {/* Claim spike simulation */}
+                                {i === 4 && <div className="absolute bottom-0 left-0 right-0 bg-red-400 h-[30%] opacity-80" title="Claim Paid"></div>}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400 border-t pt-2">
+                        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+                    </div>
+                </div>
+
+                {/* Risk Distribution Analyst View */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 overflow-y-auto max-h-[500px]">
+                    <div className="flex items-center gap-2 mb-4">
+                        <BarChartIcon className="h-5 w-5 text-gray-500" />
+                        <h3 className="font-bold text-gray-800">Soft Goods Risk Analysis</h3>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        {/* 1. Winter Sports */}
+                        <div>
+                            <div className="flex justify-between items-center text-sm mb-1">
+                                <span className="font-bold text-gray-700">Winter Sports</span>
+                                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase">High Risk</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                                <div className="bg-slate-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                                <strong className="text-gray-700">Analyst Note:</strong> High frequency of claims due to hidden rocks/ice impact on bases. Suggest 20% deductible.
+                            </div>
+                        </div>
+
+                        {/* 2. Bikes */}
+                        <div>
+                            <div className="flex justify-between items-center text-sm mb-1">
+                                <span className="font-bold text-gray-700">Bikes (MTB/Road)</span>
+                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded uppercase">Med Risk</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                                <div className="bg-orange-500 h-2 rounded-full" style={{ width: '30%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                                <strong className="text-gray-700">Analyst Note:</strong> Moderate risk of derailleur damage and frame scratches during transport.
+                            </div>
+                        </div>
+
+                        {/* 3. Water Sports (Soft) */}
+                        <div>
+                            <div className="flex justify-between items-center text-sm mb-1">
+                                <span className="font-bold text-gray-700">Water Sports (Soft)</span>
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Low Risk</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                                <div className="bg-cyan-500 h-2 rounded-full" style={{ width: '15%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                                <strong className="text-gray-700">Analyst Note:</strong> Includes Kayaks/SUP/Surf. Main liability is lost paddles or fins. Hull integrity usually stable.
+                            </div>
+                        </div>
+
+                        {/* 4. Camping */}
+                        <div>
+                            <div className="flex justify-between items-center text-sm mb-1">
+                                <span className="font-bold text-gray-700">Camping Gear</span>
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Low Risk</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                                <div className="bg-green-600 h-2 rounded-full" style={{ width: '10%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                                <strong className="text-gray-700">Analyst Note:</strong> Low severity claims (zippers, poles). High volume but low cost replacements.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-100">
+                        <h4 className="text-sm font-bold text-purple-900 flex items-center gap-2">
+                            <ShieldIcon className="h-4 w-4" /> Reinsurance Status
+                        </h4>
+                        <p className="text-xs text-purple-700 mt-1">
+                            Catastrophic Coverage for Soft Goods active via Lloyd's. Trigger point: $50k single event.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Claims Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800">Recent Claims & Payouts</h3>
+                    <button className="text-sm text-purple-600 font-semibold hover:underline">View All History</button>
+                </div>
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
+                        <tr>
+                            <th className="p-4">Date</th>
+                            <th className="p-4">Type</th>
+                            <th className="p-4">Description</th>
+                            <th className="p-4">Amount</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        <tr className="hover:bg-gray-50">
+                            <td className="p-4 text-gray-500">Today</td>
+                            <td className="p-4"><span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold">Claim Payout</span></td>
+                            <td className="p-4 font-medium text-gray-900">Broken Ski Binding (Claim #22)</td>
+                            <td className="p-4 text-red-600 font-bold">-$120.00</td>
+                            <td className="p-4"><span className="text-gray-500 text-xs uppercase font-bold tracking-wide">Processed</span></td>
+                            <td className="p-4 text-right"><button className="text-gray-400 hover:text-gray-600"><ExternalLinkIcon className="h-4 w-4"/></button></td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                            <td className="p-4 text-gray-500">Yesterday</td>
+                            <td className="p-4"><span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">Premium</span></td>
+                            <td className="p-4 font-medium text-gray-900">Premium Protection (Booking #992)</td>
+                            <td className="p-4 text-green-600 font-bold">+$45.00</td>
+                            <td className="p-4"><span className="text-green-600 text-xs uppercase font-bold tracking-wide">Collected</span></td>
+                            <td className="p-4 text-right"><button className="text-gray-400 hover:text-gray-600"><ExternalLinkIcon className="h-4 w-4"/></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
 
 const FinancialsTab: React.FC = () => {
     return (
@@ -60,15 +245,15 @@ const FinancialsTab: React.FC = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
-                    <p className="text-sm text-gray-500">Track platform revenue, insurance pools, and user funds.</p>
+                    <p className="text-sm text-gray-500">Track platform revenue, escrow holdings, and payouts.</p>
                 </div>
                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
                     <ExternalLinkIcon className="h-4 w-4" /> Download Report
                 </button>
             </div>
 
-            {/* The 4 Buckets - Clean Design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {/* The 3 Buckets - Clean Design (Removed 4th column) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 {/* Column 1: OUR MONEY (Revenue) */}
                 <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-6 flex flex-col h-full relative overflow-hidden">
@@ -92,29 +277,7 @@ const FinancialsTab: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Column 2: RISK FUND (Insurance) - NEW */}
-                <div className="bg-purple-50 rounded-xl border border-purple-100 p-6 flex flex-col h-full relative overflow-hidden">
-                    <div className="flex items-center gap-3 mb-4 z-10">
-                        <div className="p-2 bg-purple-100 rounded-lg text-purple-700">
-                            <UmbrellaIcon className="h-6 w-6" />
-                        </div>
-                        <h3 className="font-bold text-purple-900">Risk & Insurance Fund</h3>
-                    </div>
-                    <div className="mb-6 z-10">
-                        <p className="text-4xl font-extrabold text-purple-700">$8,120.00</p>
-                        <p className="text-sm text-purple-600 mt-1 font-medium">Solvency: High</p>
-                    </div>
-                    <div className="mt-auto z-10">
-                        <div className="text-xs text-purple-800 bg-white/60 p-3 rounded-lg border border-purple-100">
-                            <strong>Source:</strong> Collected protection fees. Used for claims.
-                        </div>
-                        <button className="w-full mt-4 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-sm text-sm">
-                            Manage Claims
-                        </button>
-                    </div>
-                </div>
-
-                {/* Column 3: ESCROW (Deposits) */}
+                {/* Column 2: ESCROW (Deposits) */}
                 <div className="bg-amber-50 rounded-xl border border-amber-100 p-6 flex flex-col h-full relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-4 z-10">
                         <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
@@ -136,7 +299,7 @@ const FinancialsTab: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Column 4: PAYOUTS (Hosts) */}
+                {/* Column 3: PAYOUTS (Hosts) */}
                 <div className="bg-blue-50 rounded-xl border border-blue-100 p-6 flex flex-col h-full relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-4 z-10">
                         <div className="p-2 bg-blue-100 rounded-lg text-blue-700">
@@ -162,7 +325,7 @@ const FinancialsTab: React.FC = () => {
             {/* Detailed Ledger */}
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-700">Combined Ledger</h3>
+                    <h3 className="font-bold text-gray-700">General Ledger</h3>
                     <div className="text-xs text-gray-500">Showing last 7 transactions</div>
                 </div>
                 <table className="w-full text-sm text-left">
@@ -177,17 +340,14 @@ const FinancialsTab: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {mockLedger.map((txn) => (
+                        {mockLedger.filter(t => t.category !== 'insurance_in' && t.category !== 'claim_out').map((txn) => (
                             <tr key={txn.id} className="hover:bg-gray-50">
                                 <td className="p-4">
                                     {txn.category === 'revenue' && <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold uppercase">Revenue</span>}
-                                    {txn.category === 'insurance_in' && <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold uppercase">Protection</span>}
-                                    {txn.category === 'claim_out' && <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-bold uppercase flex items-center w-fit gap-1"><AlertTriangleIcon className="h-3 w-3"/> Claim</span>}
                                     {txn.category === 'deposit' && <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold uppercase">Deposit</span>}
                                     {txn.category === 'payout' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold uppercase">Payout</span>}
                                 </td>
                                 <td className={`p-4 font-mono font-bold ${
-                                    txn.category === 'claim_out' || (txn.amount < 0 && txn.category !== 'deposit') ? 'text-red-600' : 
                                     txn.amount < 0 ? 'text-gray-500' : 
                                     txn.category === 'payout' ? 'text-gray-900' : 'text-green-600'
                                 }`}>
@@ -618,7 +778,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
     const tabs: { id: AdminTab; name: string; icon: React.ElementType }[] = [
         { id: 'dashboard', name: 'Command Center', icon: LayoutDashboardIcon },
-        { id: 'financials', name: 'Financials', icon: DollarSignIcon }, // NEW TAB
+        { id: 'financials', name: 'Financials', icon: DollarSignIcon }, 
+        { id: 'risk_fund', name: 'Risk & Insurance', icon: UmbrellaIcon }, // New Robust Tab
         { id: 'disputes', name: 'Disputes', icon: GavelIcon },
         { id: 'marketing', name: 'Marketing', icon: TicketIcon },
         { id: 'users', name: 'Users', icon: UsersIcon },
@@ -694,6 +855,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 );
             case 'financials':
                 return <FinancialsTab />;
+            case 'risk_fund':
+                return <RiskFundTab />;
             case 'marketing':
                 return <MarketingTab />;
             case 'settings':
