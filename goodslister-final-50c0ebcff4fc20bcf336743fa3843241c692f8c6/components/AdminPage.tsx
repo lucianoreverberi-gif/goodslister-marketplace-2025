@@ -43,7 +43,7 @@ const mockCoupons: Coupon[] = [
 ];
 
 // Mock Financial Ledger
-// Categories: 'revenue' (Service Fees), 'insurance_in' (Protection Fees), 'claim_out' (Damage Payouts), 'deposit' (Held), 'payout' (Owner Rental Fee)
+// Categories: 'revenue' (Our money), 'insurance_in' (Premiums), 'deposit' (Held money), 'payout' (Owner money)
 const mockLedger = [
     { id: 'txn_105', date: 'Today, 11:15 AM', category: 'insurance_in', description: 'Premium Protection Plan', amount: 45.00, status: 'cleared', user: 'Guest #9901' },
     { id: 'txn_104', date: 'Today, 10:45 AM', category: 'claim_out', description: 'Damage Coverage Payout (Claim #22)', amount: -320.00, status: 'processed', user: 'Host: Sarah J.' },
@@ -60,119 +60,100 @@ const FinancialsTab: React.FC = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
-                    <p className="text-sm text-gray-500">Track cash flow across platform revenue, risk pools, and user funds.</p>
+                    <p className="text-sm text-gray-500">Track platform revenue, insurance pools, and user funds.</p>
                 </div>
                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
                     <ExternalLinkIcon className="h-4 w-4" /> Download Report
                 </button>
             </div>
 
-            {/* The 4 Buckets Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* The 4 Buckets - Clean Design */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 
                 {/* Column 1: OUR MONEY (Revenue) */}
-                <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-5 flex flex-col h-full relative overflow-hidden group hover:shadow-md transition-shadow">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <TrendUpIcon className="h-20 w-20 text-emerald-600" />
-                    </div>
+                <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-6 flex flex-col h-full relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-4 z-10">
                         <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700">
-                            <DollarSignIcon className="h-5 w-5" />
+                            <DollarSignIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-emerald-900 text-sm uppercase tracking-wide">Net Revenue</h3>
+                        <h3 className="font-bold text-emerald-900">Net Platform Revenue</h3>
                     </div>
-                    <div className="mb-4 z-10">
-                        <p className="text-3xl font-extrabold text-emerald-700">$2,450.00</p>
-                        <p className="text-xs text-emerald-600 mt-1 font-medium bg-emerald-100/50 inline-block px-2 py-0.5 rounded">+ $350.00 this week</p>
+                    <div className="mb-6 z-10">
+                        <p className="text-4xl font-extrabold text-emerald-700">$2,450.00</p>
+                        <p className="text-sm text-emerald-600 mt-1 font-medium">+ $350.00 this week</p>
                     </div>
                     <div className="mt-auto z-10">
-                        <div className="text-[10px] text-emerald-800/80 mb-3">
-                            Source: Service Fees & Commission.
+                        <div className="text-xs text-emerald-800 bg-white/60 p-3 rounded-lg border border-emerald-100">
+                            <strong>Source:</strong> Fixed service fees & commissions.
                         </div>
-                        <button className="w-full py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm text-xs">
-                            Withdraw
+                        <button className="w-full mt-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm text-sm">
+                            Withdraw to Bank
                         </button>
                     </div>
                 </div>
 
                 {/* Column 2: RISK FUND (Insurance) - NEW */}
-                <div className="bg-purple-50 rounded-xl border border-purple-100 p-5 flex flex-col h-full relative overflow-hidden group hover:shadow-md transition-shadow">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <UmbrellaIcon className="h-20 w-20 text-purple-600" />
-                    </div>
+                <div className="bg-purple-50 rounded-xl border border-purple-100 p-6 flex flex-col h-full relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-4 z-10">
                         <div className="p-2 bg-purple-100 rounded-lg text-purple-700">
-                            <ShieldIcon className="h-5 w-5" />
+                            <UmbrellaIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-purple-900 text-sm uppercase tracking-wide">Risk & Insurance Fund</h3>
+                        <h3 className="font-bold text-purple-900">Risk & Insurance Fund</h3>
                     </div>
-                    <div className="mb-4 z-10">
-                        <p className="text-3xl font-extrabold text-purple-700">$8,120.00</p>
-                        <div className="flex items-center gap-2 mt-1">
-                            <p className="text-xs text-purple-600 font-medium bg-purple-100/50 inline-block px-2 py-0.5 rounded">Solvency: High</p>
-                        </div>
+                    <div className="mb-6 z-10">
+                        <p className="text-4xl font-extrabold text-purple-700">$8,120.00</p>
+                        <p className="text-sm text-purple-600 mt-1 font-medium">Solvency: High</p>
                     </div>
                     <div className="mt-auto z-10">
-                        <div className="text-[10px] text-purple-800/80 mb-3">
-                            Source: Protection Fees collected. Used for claims.
+                        <div className="text-xs text-purple-800 bg-white/60 p-3 rounded-lg border border-purple-100">
+                            <strong>Source:</strong> Collected protection fees. Used for claims.
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button className="py-2 bg-white text-purple-700 border border-purple-200 font-bold rounded-lg hover:bg-purple-50 text-xs">
-                                History
-                            </button>
-                            <button className="py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-sm text-xs">
-                                Pay Claim
-                            </button>
-                        </div>
+                        <button className="w-full mt-4 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 shadow-sm text-sm">
+                            Manage Claims
+                        </button>
                     </div>
                 </div>
 
                 {/* Column 3: ESCROW (Deposits) */}
-                <div className="bg-amber-50 rounded-xl border border-amber-100 p-5 flex flex-col h-full relative overflow-hidden group hover:shadow-md transition-shadow">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <LockIcon className="h-20 w-20 text-amber-600" />
-                    </div>
+                <div className="bg-amber-50 rounded-xl border border-amber-100 p-6 flex flex-col h-full relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-4 z-10">
                         <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
-                            <LockIcon className="h-5 w-5" />
+                            <ShieldIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-amber-900 text-sm uppercase tracking-wide">Active Deposits</h3>
+                        <h3 className="font-bold text-amber-900">Held Security Deposits</h3>
                     </div>
-                    <div className="mb-4 z-10">
-                        <p className="text-3xl font-extrabold text-amber-700">$15,200.00</p>
-                        <p className="text-xs text-amber-600 mt-1 font-medium bg-amber-100/50 inline-block px-2 py-0.5 rounded">62 Active Holds</p>
+                    <div className="mb-6 z-10">
+                        <p className="text-4xl font-extrabold text-amber-700">$15,200.00</p>
+                        <p className="text-sm text-amber-600 mt-1 font-medium">62 Active Holds</p>
                     </div>
                     <div className="mt-auto z-10">
-                        <div className="text-[10px] text-amber-800/80 mb-3">
-                            Status: Held in Escrow. Released post-rental.
+                        <div className="text-xs text-amber-800 bg-white/60 p-3 rounded-lg border border-amber-100">
+                            <strong>Status:</strong> Held in Escrow.
                         </div>
-                        <button className="w-full py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 shadow-sm text-xs">
-                            Manage Holds
+                        <button className="w-full mt-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 shadow-sm text-sm">
+                            View Active Holds
                         </button>
                     </div>
                 </div>
 
                 {/* Column 4: PAYOUTS (Hosts) */}
-                <div className="bg-blue-50 rounded-xl border border-blue-100 p-5 flex flex-col h-full relative overflow-hidden group hover:shadow-md transition-shadow">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <UsersIcon className="h-20 w-20 text-blue-600" />
-                    </div>
+                <div className="bg-blue-50 rounded-xl border border-blue-100 p-6 flex flex-col h-full relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-4 z-10">
                         <div className="p-2 bg-blue-100 rounded-lg text-blue-700">
-                            <ArrowRightIcon className="h-5 w-5" />
+                            <ArrowRightIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-blue-900 text-sm uppercase tracking-wide">Pending Payouts</h3>
+                        <h3 className="font-bold text-blue-900">Pending Host Payouts</h3>
                     </div>
-                    <div className="mb-4 z-10">
-                        <p className="text-3xl font-extrabold text-blue-700">$4,120.00</p>
-                        <p className="text-xs text-blue-600 mt-1 font-medium bg-blue-100/50 inline-block px-2 py-0.5 rounded">Due in 24h</p>
+                    <div className="mb-6 z-10">
+                        <p className="text-4xl font-extrabold text-blue-700">$4,120.00</p>
+                        <p className="text-sm text-blue-600 mt-1 font-medium">Due in next 24h</p>
                     </div>
                     <div className="mt-auto z-10">
-                        <div className="text-[10px] text-blue-800/80 mb-3">
-                            Liability: Rental fees collected for hosts.
+                        <div className="text-xs text-blue-800 bg-white/60 p-3 rounded-lg border border-blue-100">
+                            <strong>Liability:</strong> Rental fees collected for hosts.
                         </div>
-                        <button className="w-full py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-sm text-xs">
-                            Process Batch
+                        <button className="w-full mt-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-sm text-sm">
+                            Process Payouts
                         </button>
                     </div>
                 </div>
@@ -181,44 +162,41 @@ const FinancialsTab: React.FC = () => {
             {/* Detailed Ledger */}
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                        <BarChartIcon className="h-5 w-5 text-gray-400" />
-                        Unified Ledger
-                    </h3>
-                    <div className="text-xs text-gray-500 bg-white px-3 py-1 rounded border">Showing last 7 transactions</div>
+                    <h3 className="font-bold text-gray-700">Combined Ledger</h3>
+                    <div className="text-xs text-gray-500">Showing last 7 transactions</div>
                 </div>
                 <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 text-gray-500 font-medium">
                         <tr>
-                            <th className="p-4">Category</th>
-                            <th className="p-4 text-right">Amount</th>
+                            <th className="p-4">Type</th>
+                            <th className="p-4">Amount</th>
                             <th className="p-4">Description</th>
-                            <th className="p-4">User / Entity</th>
+                            <th className="p-4">User</th>
                             <th className="p-4">Status</th>
                             <th className="p-4">Date</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {mockLedger.map((txn) => (
-                            <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                            <tr key={txn.id} className="hover:bg-gray-50">
                                 <td className="p-4">
-                                    {txn.category === 'revenue' && <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-md text-xs font-bold uppercase tracking-wide border border-emerald-200">Revenue</span>}
-                                    {txn.category === 'insurance_in' && <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs font-bold uppercase tracking-wide border border-purple-200">Protection</span>}
-                                    {txn.category === 'claim_out' && <span className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-bold uppercase tracking-wide border border-red-200 flex items-center w-fit gap-1"><AlertTriangleIcon className="h-3 w-3"/> Claim</span>}
-                                    {txn.category === 'deposit' && <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-md text-xs font-bold uppercase tracking-wide border border-amber-200">Deposit</span>}
-                                    {txn.category === 'payout' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs font-bold uppercase tracking-wide border border-blue-200">Payout</span>}
+                                    {txn.category === 'revenue' && <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold uppercase">Revenue</span>}
+                                    {txn.category === 'insurance_in' && <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold uppercase">Protection</span>}
+                                    {txn.category === 'claim_out' && <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-bold uppercase flex items-center w-fit gap-1"><AlertTriangleIcon className="h-3 w-3"/> Claim</span>}
+                                    {txn.category === 'deposit' && <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold uppercase">Deposit</span>}
+                                    {txn.category === 'payout' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold uppercase">Payout</span>}
                                 </td>
-                                <td className={`p-4 text-right font-mono font-bold ${
+                                <td className={`p-4 font-mono font-bold ${
                                     txn.category === 'claim_out' || (txn.amount < 0 && txn.category !== 'deposit') ? 'text-red-600' : 
                                     txn.amount < 0 ? 'text-gray-500' : 
                                     txn.category === 'payout' ? 'text-gray-900' : 'text-green-600'
                                 }`}>
-                                    {txn.amount < 0 ? '-' : '+'}${Math.abs(txn.amount).toFixed(2)}
+                                    {txn.amount < 0 ? '-' : ''}${Math.abs(txn.amount).toFixed(2)}
                                 </td>
                                 <td className="p-4 text-gray-800 font-medium">{txn.description}</td>
-                                <td className="p-4 text-gray-500 text-xs">{txn.user}</td>
+                                <td className="p-4 text-gray-500">{txn.user}</td>
                                 <td className="p-4">
-                                    <span className="capitalize text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded border border-gray-200">{txn.status}</span>
+                                    <span className="capitalize text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{txn.status}</span>
                                 </td>
                                 <td className="p-4 text-gray-400 text-xs">{txn.date}</td>
                             </tr>
@@ -441,92 +419,103 @@ const MarketingTab: React.FC = () => {
     const [newType, setNewType] = useState<'percentage' | 'fixed'>('percentage');
 
     const handleCreateCoupon = () => {
-        const newCoupon: Coupon = {
+        const coupon: Coupon = {
             id: `cpn-${Date.now()}`,
             code: newCode.toUpperCase(),
             discountType: newType,
             discountValue: newDiscount,
             usageLimit: 100,
             usedCount: 0,
-            expiryDate: '2025-12-31', // Default future date
+            expiryDate: '2025-12-31',
             status: 'active'
         };
-        setCoupons([...coupons, newCoupon]);
+        setCoupons([...coupons, coupon]);
         setShowCreate(false);
         setNewCode('');
     };
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-6">Marketing & Promotions</h2>
-            
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-800">Active Coupons</h3>
-                <button 
-                    onClick={() => setShowCreate(!showCreate)}
-                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2 text-sm font-medium"
-                >
-                    <TicketIcon className="h-4 w-4" /> Create New Coupon
+                <div>
+                    <h2 className="text-2xl font-bold">Marketing Engine</h2>
+                    <p className="text-gray-600 text-sm">Manage discount codes and promotions.</p>
+                </div>
+                <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 flex items-center gap-2">
+                    <TicketIcon className="h-5 w-5" />
+                    Create Coupon
                 </button>
             </div>
 
             {showCreate && (
-                <div className="bg-gray-50 p-6 rounded-lg mb-6 border border-gray-200 animate-in fade-in slide-in-from-top-2">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <input 
-                            type="text" 
-                            placeholder="Code (e.g. SUMMER20)" 
-                            value={newCode} 
-                            onChange={e => setNewCode(e.target.value)} 
-                            className="border p-2 rounded"
-                        />
-                        <select 
-                            value={newType} 
-                            onChange={e => setNewType(e.target.value as any)} 
-                            className="border p-2 rounded"
-                        >
-                            <option value="percentage">Percentage (%)</option>
-                            <option value="fixed">Fixed Amount ($)</option>
-                        </select>
-                        <input 
-                            type="number" 
-                            placeholder="Value" 
-                            value={newDiscount} 
-                            onChange={e => setNewDiscount(Number(e.target.value))} 
-                            className="border p-2 rounded"
-                        />
-                        <button onClick={handleCreateCoupon} className="bg-green-600 text-white rounded px-4 py-2 hover:bg-green-700">Save Coupon</button>
+                <div className="bg-white p-6 rounded-lg shadow mb-6 border border-cyan-100 animate-in fade-in slide-in-from-top-2">
+                    <h3 className="font-bold text-lg mb-4">New Coupon Configuration</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code</label>
+                            <input 
+                                type="text" 
+                                value={newCode} 
+                                onChange={e => setNewCode(e.target.value)} 
+                                className="w-full border-gray-300 rounded-md uppercase font-mono" 
+                                placeholder="SUMMER25"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                            <select 
+                                value={newType} 
+                                onChange={e => setNewType(e.target.value as any)} 
+                                className="w-full border-gray-300 rounded-md"
+                            >
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="fixed">Fixed Amount ($)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Value</label>
+                            <input 
+                                type="number" 
+                                value={newDiscount} 
+                                onChange={e => setNewDiscount(Number(e.target.value))} 
+                                className="w-full border-gray-300 rounded-md"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
+                        <button onClick={handleCreateCoupon} disabled={!newCode} className="px-4 py-2 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">Launch Coupon</button>
                     </div>
                 </div>
             )}
 
             <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 text-gray-500 font-medium">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="p-4">Code</th>
-                            <th className="p-4">Discount</th>
-                            <th className="p-4">Usage</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4 text-right">Actions</th>
+                            <th className="p-4 font-medium text-gray-500">Code</th>
+                            <th className="p-4 font-medium text-gray-500">Discount</th>
+                            <th className="p-4 font-medium text-gray-500">Usage</th>
+                            <th className="p-4 font-medium text-gray-500">Status</th>
+                            <th className="p-4 font-medium text-gray-500">Expiry</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody>
                         {coupons.map(coupon => (
-                            <tr key={coupon.id}>
-                                <td className="p-4 font-mono font-bold text-gray-900">{coupon.code}</td>
+                            <tr key={coupon.id} className="border-b last:border-0 hover:bg-gray-50">
+                                <td className="p-4 font-mono font-bold text-gray-800">{coupon.code}</td>
                                 <td className="p-4 text-green-600 font-bold">
-                                    {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `$${coupon.discountValue} OFF`}
+                                    {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `-$${coupon.discountValue}`}
                                 </td>
-                                <td className="p-4 text-gray-600">{coupon.usedCount} / {coupon.usageLimit}</td>
+                                <td className="p-4 text-gray-600">
+                                    {coupon.usedCount} / {coupon.usageLimit}
+                                </td>
                                 <td className="p-4">
-                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${coupon.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${coupon.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
                                         {coupon.status}
                                     </span>
                                 </td>
-                                <td className="p-4 text-right">
-                                    <button className="text-red-500 hover:text-red-700 text-xs font-medium">Deactivate</button>
-                                </td>
+                                <td className="p-4 text-gray-500">{coupon.expiryDate}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -536,190 +525,218 @@ const MarketingTab: React.FC = () => {
     );
 };
 
-const AdminPage: React.FC<AdminPageProps> = ({
-    users, listings, heroSlides, banners, logoUrl, paymentApiKey, categoryImages,
-    onUpdatePaymentApiKey, onUpdateLogo, onUpdateSlide, onAddSlide, onDeleteSlide,
-    onUpdateBanner, onAddBanner, onDeleteBanner, onToggleFeatured, onUpdateCategoryImage,
-    onUpdateListingImage, onViewListing, onDeleteListing
+const SystemHealth: React.FC = () => {
+    const [status, setStatus] = useState<{ blob: boolean; postgres: boolean; ai: boolean } | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const res = await fetch('/api/config-status');
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        console.log("System health check: Local Mode (API not found)");
+                        setStatus({ blob: false, postgres: false, ai: false });
+                        return;
+                    }
+                    throw new Error(`Server returned ${res.status}`);
+                }
+                const data = await res.json();
+                setStatus(data);
+            } catch (err) {
+                console.warn("Failed to check system status (using fallback):", err);
+                setStatus({ blob: false, postgres: false, ai: false });
+                setError("Could not connect to server configuration.");
+            }
+        };
+        checkStatus();
+    }, []);
+
+    if (!status) return <div className="p-4 text-gray-500">Checking system health...</div>;
+
+    const StatusItem = ({ label, connected, helpText }: { label: string, connected: boolean, helpText: string }) => (
+        <div className={`p-4 rounded-lg border ${connected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-gray-700">{label}</span>
+                <span className={`px-2 py-1 text-xs font-bold rounded-full ${connected ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                    {connected ? 'CONNECTED' : 'DISCONNECTED'}
+                </span>
+            </div>
+            <p className="text-sm text-gray-600">{connected ? 'Operational.' : helpText}</p>
+        </div>
+    );
+
+    return (
+        <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Platform Health</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatusItem label="Image Storage" connected={status.blob} helpText="Connect Vercel Blob" />
+                <StatusItem label="Database" connected={status.postgres} helpText="Connect Vercel Postgres" />
+                <StatusItem label="AI Intelligence" connected={status.ai} helpText="Configure API_KEY" />
+            </div>
+        </div>
+    );
+};
+
+
+const AdminPage: React.FC<AdminPageProps> = ({ 
+    users, 
+    listings, 
+    heroSlides, 
+    banners, 
+    logoUrl,
+    paymentApiKey,
+    categoryImages,
+    onUpdatePaymentApiKey,
+    onUpdateLogo,
+    onUpdateSlide, 
+    onAddSlide,
+    onDeleteSlide,
+    onUpdateBanner, 
+    onAddBanner,
+    onDeleteBanner,
+    onToggleFeatured,
+    onUpdateCategoryImage,
+    onUpdateListingImage,
+    onViewListing,
+    onDeleteListing
 }) => {
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+    const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
+
+    const wrapImageUpdate = async (loadingKey: string, updateFn: () => Promise<void>) => {
+        setUploadingStates(prev => ({ ...prev, [loadingKey]: true }));
+        try {
+            await updateFn();
+        } catch (error) {
+            console.error("Failed to update image:", error);
+            alert("Failed to save image update. Please try again.");
+        } finally {
+            setUploadingStates(prev => ({ ...prev, [loadingKey]: false }));
+        }
+    };
+
+    const tabs: { id: AdminTab; name: string; icon: React.ElementType }[] = [
+        { id: 'dashboard', name: 'Command Center', icon: LayoutDashboardIcon },
+        { id: 'financials', name: 'Financials', icon: DollarSignIcon }, // NEW TAB
+        { id: 'disputes', name: 'Disputes', icon: GavelIcon },
+        { id: 'marketing', name: 'Marketing', icon: TicketIcon },
+        { id: 'users', name: 'Users', icon: UsersIcon },
+        { id: 'listings', name: 'All Listings', icon: PackageIcon },
+        { id: 'content', name: 'Content', icon: PaletteIcon },
+        { id: 'billing', name: 'Gateway', icon: CreditCardIcon },
+        { id: 'settings', name: 'Settings', icon: CogIcon },
+    ];
+
+    const displayCategoryImages = { ...initialCategoryImages, ...categoryImages };
 
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
                 return (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-lg shadow border border-gray-100">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-500 font-medium">Total Users</p>
-                                        <p className="text-3xl font-bold text-gray-900">{users.length}</p>
-                                    </div>
-                                    <div className="bg-blue-50 p-3 rounded-full text-blue-600"><UsersIcon className="h-6 w-6"/></div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow border border-gray-100">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-500 font-medium">Active Listings</p>
-                                        <p className="text-3xl font-bold text-gray-900">{listings.length}</p>
-                                    </div>
-                                    <div className="bg-green-50 p-3 rounded-full text-green-600"><PackageIcon className="h-6 w-6"/></div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow border border-gray-100">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-500 font-medium">Open Disputes</p>
-                                        <p className="text-3xl font-bold text-gray-900">{mockDisputes.filter(d => d.status === 'open').length}</p>
-                                    </div>
-                                    <div className="bg-red-50 p-3 rounded-full text-red-600"><AlertIcon className="h-6 w-6"/></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            
-            case 'users':
-                return (
                     <div>
-                        <h2 className="text-2xl font-bold mb-6">User Management</h2>
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50"><tr><th className="p-4">Name</th><th className="p-4">Email</th><th className="p-4">Status</th></tr></thead>
-                                <tbody>
-                                    {users.map(u => (
-                                        <tr key={u.id} className="border-b last:border-0 hover:bg-gray-50">
-                                            <td className="p-4 font-medium">{u.name}</td>
-                                            <td className="p-4 text-gray-500">{u.email}</td>
-                                            <td className="p-4"><span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <SystemHealth />
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            {/* Business Intelligence Metrics */}
+                            <div className="bg-gradient-to-br from-blue-600 to-cyan-600 p-6 rounded-lg shadow-lg text-white">
+                                <h3 className="text-sm font-medium opacity-90">Gross Merchandise Value (GMV)</h3>
+                                <p className="text-3xl font-bold mt-1">$12,450.00</p>
+                                <span className="text-xs bg-white/20 px-2 py-1 rounded mt-2 inline-block">+12% vs last month</span>
+                            </div>
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-sm font-medium text-gray-500">Total Revenue (Take Rate)</h3>
+                                <p className="text-3xl font-bold mt-1 text-gray-900">$1,867.50</p>
+                            </div>
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-sm font-medium text-gray-500">Active Listings</h3>
+                                <p className="text-3xl font-bold mt-1 text-gray-900">{listings.length}</p>
+                            </div>
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-sm font-medium text-gray-500">Open Disputes</h3>
+                                <p className="text-3xl font-bold mt-1 text-red-600">2</p>
+                            </div>
                         </div>
-                    </div>
-                );
 
-            case 'listings':
-                return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">Listing Moderation</h2>
-                        <div className="space-y-4">
-                            {listings.map(l => (
-                                <div key={l.id} className="bg-white p-4 rounded-lg shadow flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <img src={l.images[0]} className="w-16 h-16 rounded object-cover" />
-                                        <div>
-                                            <h4 className="font-bold text-gray-900">{l.title}</h4>
-                                            <p className="text-sm text-gray-500">{l.owner.name} • {l.category}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => onToggleFeatured(l.id)} className={`p-2 rounded ${l.isFeatured ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-400'}`} title="Toggle Featured">
-                                            <CheckCircleIcon className="h-5 w-5" />
-                                        </button>
-                                        <button onClick={() => onViewListing(l.id)} className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100" title="View">
-                                            <EyeIcon className="h-5 w-5" />
-                                        </button>
-                                        <button onClick={() => onDeleteListing(l.id)} className="p-2 bg-red-50 text-red-600 rounded hover:bg-red-100" title="Delete">
-                                            <XIcon className="h-5 w-5" />
-                                        </button>
-                                    </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="font-bold text-gray-800 mb-4">Recent Activity</h3>
+                                <ul className="space-y-3">
+                                    <li className="flex items-center text-sm text-gray-600">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                        New user registration: <strong>Ana Rodriguez</strong>
+                                    </li>
+                                    <li className="flex items-center text-sm text-gray-600">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                        New listing: <strong>Mountain Bike</strong> in Mendoza
+                                    </li>
+                                    <li className="flex items-center text-sm text-gray-600">
+                                        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                                        Booking request #492 pending approval
+                                    </li>
+                                </ul>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="font-bold text-gray-800 mb-4">Quick Actions</h3>
+                                <div className="flex gap-2 flex-wrap">
+                                    <button onClick={() => setActiveTab('listings')} className="px-4 py-2 bg-cyan-100 text-cyan-700 rounded-md text-sm font-medium hover:bg-cyan-200">
+                                        Manage Listings
+                                    </button>
+                                    <button onClick={() => setActiveTab('disputes')} className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200">
+                                        Handle Disputes
+                                    </button>
+                                    <button onClick={() => setActiveTab('financials')} className="px-4 py-2 bg-green-100 text-green-700 rounded-md text-sm font-medium hover:bg-green-200">
+                                        View Financials
+                                    </button>
                                 </div>
-                            ))}
+                            </div>
                         </div>
                     </div>
                 );
-
             case 'financials':
                 return <FinancialsTab />;
-
-            case 'content':
-                return (
-                    <div className="space-y-8">
-                        <section>
-                            <h3 className="text-xl font-bold mb-4">Brand Assets</h3>
-                            <div className="bg-white p-6 rounded-lg shadow flex items-center gap-6">
-                                <div className="w-32"><ImageUploader currentImageUrl={logoUrl} onImageChange={onUpdateLogo} label="Logo" /></div>
-                                <div className="text-sm text-gray-500">Upload a transparent PNG for the header.</div>
-                            </div>
-                        </section>
-                        <section>
-                            <h3 className="text-xl font-bold mb-4">Hero Slides</h3>
-                            {heroSlides.map(slide => (
-                                <div key={slide.id} className="bg-white p-6 rounded-lg shadow mb-4">
-                                    <div className="flex gap-4">
-                                        <div className="w-1/3"><ImageUploader currentImageUrl={slide.imageUrl} onImageChange={(url) => onUpdateSlide(slide.id, 'imageUrl', url)} label="Slide Image" /></div>
-                                        <div className="flex-1 space-y-4">
-                                            <input value={slide.title} onChange={e => onUpdateSlide(slide.id, 'title', e.target.value)} className="w-full border p-2 rounded" placeholder="Title" />
-                                            <input value={slide.subtitle} onChange={e => onUpdateSlide(slide.id, 'subtitle', e.target.value)} className="w-full border p-2 rounded" placeholder="Subtitle" />
-                                            <button onClick={() => onDeleteSlide(slide.id)} className="text-red-500 text-sm">Remove Slide</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            <button onClick={onAddSlide} className="w-full py-3 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg hover:border-cyan-500 hover:text-cyan-500">+ Add Slide</button>
-                        </section>
-                        <section>
-                            <h3 className="text-xl font-bold mb-4">Banners</h3>
-                            {banners.map(banner => (
-                                <div key={banner.id} className="bg-white p-6 rounded-lg shadow mb-4">
-                                    <div className="flex gap-4">
-                                        <div className="w-1/3"><ImageUploader currentImageUrl={banner.imageUrl} onImageChange={(url) => onUpdateBanner(banner.id, 'imageUrl', url)} label="Banner Image" /></div>
-                                        <div className="flex-1 space-y-4">
-                                            <input value={banner.title} onChange={e => onUpdateBanner(banner.id, 'title', e.target.value)} className="w-full border p-2 rounded" placeholder="Title" />
-                                            <input value={banner.description} onChange={e => onUpdateBanner(banner.id, 'description', e.target.value)} className="w-full border p-2 rounded" placeholder="Description" />
-                                            <div className="flex gap-2">
-                                                <input value={banner.buttonText} onChange={e => onUpdateBanner(banner.id, 'buttonText', e.target.value)} className="w-1/2 border p-2 rounded" placeholder="Button Text" />
-                                                <input value={banner.linkUrl} onChange={e => onUpdateBanner(banner.id, 'linkUrl', e.target.value)} className="w-1/2 border p-2 rounded" placeholder="Link URL (e.g. /explore)" />
-                                            </div>
-                                            <div className="flex gap-2 items-center text-sm text-gray-600">
-                                                <span>Layout:</span>
-                                                <button onClick={() => onUpdateBanner(banner.id, 'layout', 'overlay')} className={`p-2 border rounded ${banner.layout === 'overlay' ? 'bg-cyan-100 border-cyan-500' : ''}`}><LayoutOverlayIcon className="h-4 w-4"/></button>
-                                                <button onClick={() => onUpdateBanner(banner.id, 'layout', 'split')} className={`p-2 border rounded ${banner.layout === 'split' ? 'bg-cyan-100 border-cyan-500' : ''}`}><LayoutSplitIcon className="h-4 w-4"/></button>
-                                                <button onClick={() => onUpdateBanner(banner.id, 'layout', 'wide')} className={`p-2 border rounded ${banner.layout === 'wide' ? 'bg-cyan-100 border-cyan-500' : ''}`}><LayoutWideIcon className="h-4 w-4"/></button>
-                                            </div>
-                                            <button onClick={() => onDeleteBanner(banner.id)} className="text-red-500 text-sm">Remove Banner</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            <button onClick={onAddBanner} className="w-full py-3 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg hover:border-cyan-500 hover:text-cyan-500">+ Add Banner</button>
-                        </section>
-                        <section>
-                            <h3 className="text-xl font-bold mb-4">Category Images</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {Object.entries(categoryImages).map(([cat, url]) => (
-                                    <div key={cat} className="bg-white p-3 rounded shadow">
-                                        <p className="text-sm font-bold mb-2 text-center">{cat}</p>
-                                        <ImageUploader currentImageUrl={url} onImageChange={(newUrl) => onUpdateCategoryImage(cat as ListingCategory, newUrl)} label="" />
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    </div>
-                );
-
-            case 'billing':
-                return <BillingSettings currentApiKey={paymentApiKey} onSaveApiKey={onUpdatePaymentApiKey} />;
-
+            case 'marketing':
+                return <MarketingTab />;
+            case 'settings':
+                return <GlobalSettingsTab />;
             case 'disputes':
                 return (
                     <div>
-                        <h2 className="text-2xl font-bold mb-6">Dispute Resolution Center</h2>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold">Dispute Resolution Center</h2>
+                            <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">2 Active Cases</span>
+                        </div>
                         <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50"><tr><th className="p-4">ID</th><th className="p-4">Reason</th><th className="p-4">Status</th><th className="p-4">Amount</th><th className="p-4 text-right">Action</th></tr></thead>
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-50 border-b">
+                                    <tr>
+                                        <th className="p-4 font-medium text-gray-500">ID</th>
+                                        <th className="p-4 font-medium text-gray-500">Reason</th>
+                                        <th className="p-4 font-medium text-gray-500">Amount</th>
+                                        <th className="p-4 font-medium text-gray-500">Status</th>
+                                        <th className="p-4 font-medium text-gray-500">Action</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    {mockDisputes.map(d => (
-                                        <tr key={d.id} className="border-b">
-                                            <td className="p-4">{d.id}</td>
-                                            <td className="p-4"><span className="capitalize">{d.reason}</span></td>
-                                            <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold uppercase ${d.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-gray-100'}`}>{d.status}</span></td>
-                                            <td className="p-4">${d.amountInvolved}</td>
-                                            <td className="p-4 text-right"><button className="text-blue-600 font-bold hover:underline">Review</button></td>
+                                    {mockDisputes.map(dispute => (
+                                        <tr key={dispute.id} className="border-b last:border-0 hover:bg-gray-50">
+                                            <td className="p-4 font-mono text-gray-600">{dispute.id}</td>
+                                            <td className="p-4">
+                                                <span className="font-bold block text-gray-800 capitalize">{dispute.reason.replace('_', ' ')}</span>
+                                                <span className="text-xs text-gray-500">{dispute.description}</span>
+                                            </td>
+                                            <td className="p-4 font-bold">${dispute.amountInvolved}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${
+                                                    dispute.status === 'open' ? 'bg-yellow-100 text-yellow-800' : 
+                                                    dispute.status === 'escalated' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                                                }`}>
+                                                    {dispute.status}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <button className="text-cyan-600 hover:underline mr-3">View Evidence</button>
+                                                <button className="text-gray-600 hover:text-gray-900">Message</button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -727,53 +744,304 @@ const AdminPage: React.FC<AdminPageProps> = ({
                         </div>
                     </div>
                 );
+            case 'users':
+                return (
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">Manage Users</h2>
+                        <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="p-3">Name</th>
+                                        <th className="p-3">Email</th>
+                                        <th className="p-3">Status</th>
+                                        <th className="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map(user => (
+                                        <tr key={user.id} className="border-b">
+                                            <td className="p-3 font-medium">
+                                                {user.name}
+                                                <div className="text-xs text-gray-400">Joined: {user.registeredDate}</div>
+                                            </td>
+                                            <td className="p-3 text-gray-600">{user.email}</td>
+                                            <td className="p-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${user.isIdVerified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {user.isIdVerified ? 'Verified' : 'Unverified'}
+                                                </span>
+                                            </td>
+                                            <td className="p-3 text-right">
+                                                <button className="text-xs text-red-600 hover:underline mr-3 font-semibold" onClick={() => alert(`Simulated Ban for ${user.name}`)}>
+                                                    Suspend
+                                                </button>
+                                                <button className="text-xs text-gray-500 hover:text-gray-800 hover:underline" onClick={() => alert(`Reset password email sent to ${user.email}`)}>
+                                                    Reset Pass
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            case 'listings':
+                 return (
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">Manage All Listings</h2>
+                         <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="p-3">Title</th>
+                                        <th className="p-3">Category</th>
+                                        <th className="p-3">Owner</th>
+                                        <th className="p-3">Price/day</th>
+                                        <th className="p-3">Location</th>
+                                        <th className="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {listings.map(listing => (
+                                        <tr key={listing.id} className="border-b">
+                                            <td className="p-3">{listing.title}</td>
+                                            <td className="p-3">{listing.category}</td>
+                                            <td className="p-3">{listing.owner.name}</td>
+                                            <td className="p-3">${listing.pricePerDay}</td>
+                                            <td className="p-3 text-gray-600">
+                                                <div className="flex items-center gap-1">
+                                                    <MapPinIcon className="h-3 w-3" />
+                                                    {listing.location.city}, {listing.location.country}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-right flex justify-end gap-2">
+                                                <button 
+                                                    onClick={() => onViewListing(listing.id)}
+                                                    className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors"
+                                                    title="View Listing Details"
+                                                >
+                                                    <EyeIcon className="h-5 w-5" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if(confirm(`Are you sure you want to delete "${listing.title}"? This cannot be undone.`)) {
+                                                            onDeleteListing(listing.id);
+                                                        }
+                                                    }}
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                    title="Delete Listing"
+                                                >
+                                                    <TrashIcon className="h-5 w-5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            case 'content':
+                return (
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">Edit Homepage Content</h2>
+                        <div className="space-y-8">
+                            {/* Logo Editor */}
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-lg font-semibold mb-4">Site Logo</h3>
+                                <ImageUploader
+                                    label="Logo (JPG or PNG). Will be displayed in the header and footer."
+                                    currentImageUrl={logoUrl}
+                                    onImageChange={(newUrl) => wrapImageUpdate('logo', () => onUpdateLogo(newUrl))}
+                                    isLoading={uploadingStates['logo']}
+                                />
+                            </div>
+                            {/* Hero Slides Editor */}
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-lg font-semibold mb-4">Hero Section</h3>
+                                {heroSlides.map(slide => (
+                                    <div key={slide.id} className="relative space-y-4 border rounded-lg p-4 pt-8 mb-6 last:mb-0">
+                                        <button 
+                                            onClick={() => onDeleteSlide(slide.id)} 
+                                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors"
+                                            aria-label="Delete slide"
+                                        >
+                                            <XIcon className="h-5 w-5" />
+                                        </button>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Title</label>
+                                            <input type="text" value={slide.title} onChange={e => onUpdateSlide(slide.id, 'title', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Subtitle</label>
+                                            <input type="text" value={slide.subtitle} onChange={e => onUpdateSlide(slide.id, 'subtitle', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
+                                        </div>
+                                        <ImageUploader 
+                                            label="Background Image"
+                                            currentImageUrl={slide.imageUrl}
+                                            onImageChange={(newUrl) => wrapImageUpdate(slide.id, () => onUpdateSlide(slide.id, 'imageUrl', newUrl))}
+                                            isLoading={uploadingStates[slide.id]}
+                                        />
+                                    </div>
+                                ))}
+                                <button onClick={onAddSlide} className="mt-4 w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-cyan-500 hover:text-cyan-600 font-semibold transition-colors">
+                                    + Add New Slide
+                                </button>
+                            </div>
+                             {/* Category Images Editor */}
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-lg font-semibold mb-4">Category Images</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {Object.entries(displayCategoryImages).map(([category, imageUrl]) => (
+                                        <div key={category}>
+                                            <ImageUploader
+                                                label={category}
+                                                currentImageUrl={imageUrl}
+                                                onImageChange={(newUrl) => wrapImageUpdate(category, () => onUpdateCategoryImage(category as ListingCategory, newUrl))}
+                                                isLoading={uploadingStates[category]}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                             {/* Banners Editor */}
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-lg font-semibold mb-4">Promotional Banners</h3>
+                                {banners.map(banner => (
+                                    <div key={banner.id} className="relative space-y-4 border rounded-lg p-4 pt-8 mb-6 last:mb-0">
+                                        <button 
+                                            onClick={() => onDeleteBanner(banner.id)} 
+                                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors"
+                                            aria-label="Delete banner"
+                                        >
+                                            <XIcon className="h-5 w-5" />
+                                        </button>
+                                        
+                                        {/* Layout Selector */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Banner Layout</label>
+                                            <div className="flex gap-4">
+                                                {['overlay', 'split', 'wide'].map((layout) => (
+                                                    <button
+                                                        key={layout}
+                                                        onClick={() => onUpdateBanner(banner.id, 'layout', layout)}
+                                                        className={`flex flex-col items-center p-2 rounded-lg border transition-all ${
+                                                            (banner.layout || 'overlay') === layout 
+                                                                ? 'border-cyan-500 bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500' 
+                                                                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        {layout === 'overlay' && <LayoutOverlayIcon className="w-8 h-8 mb-1" />}
+                                                        {layout === 'split' && <LayoutSplitIcon className="w-8 h-8 mb-1" />}
+                                                        {layout === 'wide' && <LayoutWideIcon className="w-8 h-8 mb-1" />}
+                                                        <span className="text-xs font-medium capitalize">{layout}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
 
-            case 'marketing':
-                return <MarketingTab />;
-
-            case 'settings':
-                return <GlobalSettingsTab />;
-
-            default:
-                return null;
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Title</label>
+                                            <input type="text" value={banner.title} onChange={e => onUpdateBanner(banner.id, 'title', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                                            <textarea value={banner.description} onChange={e => onUpdateBanner(banner.id, 'description', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500" rows={3}/>
+                                        </div>
+                                        <ImageUploader
+                                            label="Banner Image"
+                                            currentImageUrl={banner.imageUrl}
+                                            onImageChange={(newUrl) => wrapImageUpdate(banner.id, () => onUpdateBanner(banner.id, 'imageUrl', newUrl))}
+                                            isLoading={uploadingStates[banner.id]}
+                                        />
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Button Text</label>
+                                            <input type="text" value={banner.buttonText} onChange={e => onUpdateBanner(banner.id, 'buttonText', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Button Link (Optional)</label>
+                                            <input 
+                                                type="text" 
+                                                value={banner.linkUrl || ''} 
+                                                onChange={e => onUpdateBanner(banner.id, 'linkUrl', e.target.value)} 
+                                                className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                                placeholder="e.g., /explore or /createListing"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">Use local paths (like '/explore') or full URLs.</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                 <button onClick={onAddBanner} className="mt-4 w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-cyan-500 hover:text-cyan-600 font-semibold transition-colors">
+                                    + Add New Banner
+                                </button>
+                            </div>
+                            {/* Featured Products */}
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <h3 className="text-lg font-semibold mb-4">Featured Items</h3>
+                                <div className="space-y-6">
+                                    {listings.map(listing => (
+                                        <div key={listing.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-medium">{listing.title}</span>
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" checked={!!listing.isFeatured} onChange={() => onToggleFeatured(listing.id)} className="sr-only peer" />
+                                                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-cyan-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                                                    <span className="ml-3 text-sm font-medium text-gray-900">Featured</span>
+                                                </label>
+                                            </div>
+                                            {listing.isFeatured && (
+                                                <div className="mt-4 pt-4 border-t">
+                                                    <ImageUploader
+                                                        label="Update Featured Image"
+                                                        currentImageUrl={listing.images[0]}
+                                                        onImageChange={(newUrl) => wrapImageUpdate(`listing-${listing.id}`, () => onUpdateListingImage(listing.id, newUrl))}
+                                                        isLoading={uploadingStates[`listing-${listing.id}`]}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'billing':
+                return <BillingSettings currentApiKey={paymentApiKey} onSaveApiKey={onUpdatePaymentApiKey} />;
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* Sidebar */}
-            <aside className="w-64 bg-gray-900 text-gray-300 flex-shrink-0">
-                <div className="p-6">
-                    <h1 className="text-xl font-bold text-white tracking-wider uppercase">Admin Panel</h1>
+        <div className="bg-gray-50 min-h-screen">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
+                <div className="flex flex-col md:flex-row gap-8">
+                    {/* Sidebar Navigation */}
+                    <aside className="md:w-1/4 lg:w-1/5">
+                        <nav className="flex flex-col space-y-2">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center px-4 py-2 rounded-lg text-left transition-colors ${
+                                        activeTab === tab.id
+                                            ? 'bg-cyan-600 text-white shadow-md'
+                                            : 'hover:bg-gray-200 text-gray-700'
+                                    }`}
+                                >
+                                    <tab.icon className="h-5 w-5 mr-3" />
+                                    {tab.name}
+                                </button>
+                            ))}
+                        </nav>
+                    </aside>
+                    {/* Main Content */}
+                    <main className="flex-1">
+                        {renderContent()}
+                    </main>
                 </div>
-                <nav className="space-y-1 px-3">
-                    {[
-                        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
-                        { id: 'users', label: 'Users', icon: UsersIcon },
-                        { id: 'listings', label: 'Listings', icon: PackageIcon },
-                        { id: 'financials', label: 'Financials', icon: BarChartIcon },
-                        { id: 'content', label: 'Content CMS', icon: PaletteIcon },
-                        { id: 'billing', label: 'Billing Config', icon: CreditCardIcon },
-                        { id: 'disputes', label: 'Disputes', icon: GavelIcon },
-                        { id: 'marketing', label: 'Marketing', icon: TicketIcon },
-                        { id: 'settings', label: 'Global Settings', icon: CogIcon },
-                    ].map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => setActiveTab(item.id as AdminTab)}
-                            className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === item.id ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 hover:text-white'}`}
-                        >
-                            <item.icon className="mr-3 h-5 w-5" />
-                            {item.label}
-                        </button>
-                    ))}
-                </nav>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 p-8 overflow-y-auto h-screen">
-                {renderContent()}
-            </main>
+            </div>
         </div>
     );
 };
