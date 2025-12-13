@@ -1,3 +1,5 @@
+
+// services/mockApiService.ts
 import { 
     User, Listing, HeroSlide, Banner, Conversation, 
     CategoryImagesMap, ListingCategory, Booking 
