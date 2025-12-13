@@ -1,5 +1,6 @@
 import sgMail from '@sendgrid/mail';
 // Force rebuild - using verified domain noreply@goodslister.com
+// Cache invalidation: Vercel rebuild forced on Dec 12, 2025 19:10 EST
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
