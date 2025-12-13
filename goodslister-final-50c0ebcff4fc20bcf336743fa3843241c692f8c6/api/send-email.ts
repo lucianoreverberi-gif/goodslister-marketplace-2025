@@ -6,6 +6,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 const LOGO_URL = 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
 const BRAND_COLOR = '#06B6D4'; // Cyan-600
 const ACCENT_COLOR = '#10B981'; // Green-500
+const WARNING_COLOR = '#F59E0B'; // Amber-500
+const DANGER_COLOR = '#EF4444'; // Red-500
 
 // --- HTML WRAPPER ---
 const wrapHtml = (title: string, bodyContent: string) => `
@@ -209,6 +211,78 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         </div>
       `;
       break;
+
+    // --- NEW: DISPUTE & DAMAGE NOTIFICATIONS ---
+
+    case 'dispute_opened_renter': // Notify Renter
+      subject = `Urgent: Issue reported for ${data.listingTitle} ⚠️`;
+      bodyContent = `
+        <h1>Issue Reported</h1>
+        <p>Hi ${data.renterName},</p>
+        <p>The owner, <strong>${data.ownerName}</strong>, has reported an issue regarding your recent rental of <strong>${data.listingTitle}</strong>.</p>
+        
+        <div style="background-color: #fff1f2; border-left: 4px solid ${DANGER_COLOR}; padding: 16px; border-radius: 4px; margin: 24px 0;">
+            <h3 style="color: ${DANGER_COLOR}; margin-top:0;">Report Details</h3>
+            <p><strong>Issue Type:</strong> <span style="text-transform: capitalize;">${data.reason.replace('_', ' ')}</span></p>
+            <p><strong>Owner's Note:</strong> "${data.description}"</p>
+        </div>
+
+        <p><strong>What happens next?</strong></p>
+        <ul>
+            <li>Your security deposit has been temporarily frozen.</li>
+            <li>Our Trust & Safety Team will review the pre-trip and post-trip photos.</li>
+            <li>You will receive a final verdict within 48 hours.</li>
+        </ul>
+        <p>If you disagree with this report, please reply to this email immediately with your evidence or chat with support.</p>
+        <center>
+          <a href="https://goodslister.com/contact" class="btn" style="background-color: #374151;">Contact Support</a>
+        </center>
+      `;
+      break;
+
+    case 'dispute_opened_owner': // Notify Owner
+      subject = `Claim Received: ${data.listingTitle} 🛡️`;
+      bodyContent = `
+        <h1>Claim Received</h1>
+        <p>Hi ${data.ownerName},</p>
+        <p>We have received your claim regarding the rental with <strong>${data.renterName}</strong>.</p>
+        <p><strong>Claim ID:</strong> ${data.disputeId}</p>
+        
+        <div class="info-box">
+            <strong>Next Steps:</strong> Our team is currently analyzing the Digital Inspection photos using our AI comparison tool to verify the damage.
+        </div>
+
+        <p>We typically resolve these cases within 24-48 hours. We will notify you as soon as a verdict is reached and if the security deposit will be released to you.</p>
+      `;
+      break;
+
+    case 'dispute_verdict': // Final Resolution
+        const isApproved = data.outcome === 'approved';
+        const verdictColor = isApproved ? DANGER_COLOR : ACCENT_COLOR;
+        const verdictTitle = isApproved ? 'Claim Approved' : 'Claim Closed';
+        subject = `Final Decision: Claim #${data.disputeId}`;
+        
+        bodyContent = `
+            <h1>${verdictTitle}</h1>
+            <p>After reviewing the evidence for the rental of <strong>${data.listingTitle}</strong>, Goodslister has reached a verdict.</p>
+            
+            <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin: 20px 0;">
+                <div style="background-color: ${verdictColor}; color: white; padding: 12px 20px; font-weight: bold;">
+                    Decision: ${isApproved ? 'Claim Upheld (Charge Approved)' : 'Claim Denied (Deposit Released)'}
+                </div>
+                <div style="padding: 20px; background-color: #ffffff;">
+                    <p><strong>Resolution:</strong> ${data.resolutionText}</p>
+                    ${isApproved ? `<p><strong>Amount Charged:</strong> $${data.amount}</p>` : ''}
+                </div>
+            </div>
+            
+            <p>Thank you for using Goodslister. We strive to keep our marketplace fair and safe for everyone.</p>
+            
+            <center>
+                <a href="https://goodslister.com/dashboard" class="btn">View Case Details</a>
+            </center>
+        `;
+        break;
 
     default:
       return res.status(400).json({ error: 'Invalid email type' });

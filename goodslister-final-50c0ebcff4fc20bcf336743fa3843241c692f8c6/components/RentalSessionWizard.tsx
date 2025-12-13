@@ -46,6 +46,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
     const [damageNotes, setDamageNotes] = useState('');
     const [showInspectionModal, setShowInspectionModal] = useState(false);
+    const [isFilingClaim, setIsFilingClaim] = useState(false); // NEW STATE
 
     // Initialize State
     useEffect(() => {
@@ -77,8 +78,38 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         setInboundPhotos(photos);
         setDamageVerdict(reportedDamage ? 'damage' : 'clean');
         setShowInspectionModal(false);
-        // FIX: Skip fuel check slider, go straight to verdict for simpler UX
         setStep('DAMAGE_ASSESSMENT');
+    };
+
+    // NEW: Function to file dispute via API
+    const handleFileClaim = async () => {
+        if (!damageNotes) return;
+        setIsFilingClaim(true);
+        
+        try {
+            const response = await fetch('/api/disputes/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookingId: booking.id,
+                    reporterId: booking.listing.owner.id,
+                    reason: damageNotes.toLowerCase().includes('fuel') ? 'fuel' : 'damage',
+                    description: damageNotes
+                })
+            });
+
+            if (response.ok) {
+                // Advance to review but keep rental as completed (with dispute flag implicitly)
+                setStep('REVIEW_CLOSE');
+            } else {
+                alert("Failed to file claim. Please try again or contact support.");
+            }
+        } catch (e) {
+            console.error("Claim error:", e);
+            alert("Network error filing claim.");
+        } finally {
+            setIsFilingClaim(false);
+        }
     };
 
     const handleSessionFinished = () => {
@@ -128,7 +159,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                     <h3 className="text-xl font-bold">Step 2: Document Condition</h3>
                     <p className="text-gray-500 text-sm">Take 2 to 8 photos of the item.</p>
                     
-                    {/* NEW: Dynamic Fuel Tip */}
                     <div className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium border border-blue-100">
                         <FuelIcon className="h-3 w-3" />
                         <span>Tip: If it has an engine, include a photo of the fuel gauge.</span>
@@ -182,7 +212,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                 </button>
             </div>
         );
-        // REMOVED FUEL_CHECK STEP HERE
+        
         if (step === 'DAMAGE_ASSESSMENT') return (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                 <h3 className="text-xl font-bold text-center">Verdict</h3>
@@ -200,8 +230,20 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
 
                 {damageVerdict === 'damage' && (
                     <div className="animate-in fade-in mt-4">
-                        <textarea value={damageNotes} onChange={e => setDamageNotes(e.target.value)} className="w-full border p-3 rounded-lg focus:ring-red-500" placeholder="Describe damage or missing fuel..." rows={3} />
-                        <button onClick={() => setStep('REVIEW_CLOSE')} className="w-full mt-4 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors">File Claim & Continue</button>
+                        <textarea 
+                            value={damageNotes} 
+                            onChange={e => setDamageNotes(e.target.value)} 
+                            className="w-full border p-3 rounded-lg focus:ring-red-500" 
+                            placeholder="Describe damage or missing fuel..." 
+                            rows={3} 
+                        />
+                        <button 
+                            onClick={handleFileClaim} 
+                            disabled={isFilingClaim || !damageNotes}
+                            className="w-full mt-4 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                            {isFilingClaim ? 'Filing Claim...' : 'File Claim & Notify Renter'}
+                        </button>
                     </div>
                 )}
             </div>
