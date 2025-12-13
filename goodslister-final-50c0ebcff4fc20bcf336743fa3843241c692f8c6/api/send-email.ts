@@ -22,12 +22,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing required fields (to, type)' });
   }
 
-  // Configuration for Sender Email
-  // 1. If SENDER_EMAIL is set in Vercel (e.g. 'noreply@goodslister.com'), use it.
-  // 2. Otherwise, fallback to Resend's testing domain 'onboarding@resend.dev'.
-  // NOTE: To use a custom domain, you MUST verify it in the Resend Dashboard first.
-  const fromEmail = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
-  const senderName = 'Goodslister';
+  // Sender Email Logic
+  // Use 'info' for warm welcomes, 'noreply' for transactional alerts
+  let fromEmail = 'noreply@goodslister.com';
+  let senderName = 'Goodslister';
+
+  if (type === 'welcome') {
+      fromEmail = 'info@goodslister.com';
+      senderName = 'Luciano from Goodslister'; // More personal touch for welcome
+  }
 
   try {
     let subject = '';
@@ -42,6 +45,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             <h1>Welcome, ${data.name}!</h1>
             <p>We are thrilled to have you join the Goodslister community.</p>
             <p>You can now list your gear to earn extra income or rent unique items for your next adventure.</p>
+            <br/>
+            <p>If you have any questions, feel free to reply to this email.</p>
             <br/>
             <a href="https://goodslister.com" style="background-color: #06B6D4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Explore Now</a>
           </div>
@@ -74,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               "${data.messagePreview}"
             </blockquote>
             <br/>
-            <a href="https://goodslister.com" style="background-color: #06B6D4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reply Now</a>
+            <a href="https://goodslister.com/inbox" style="background-color: #06B6D4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reply Now</a>
           </div>
         `;
         break;
@@ -84,8 +89,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Send the email
-    // Important: If using the 'onboarding@resend.dev' domain, you can ONLY send to the email address 
-    // associated with your Resend account. Once you verify 'goodslister.com', this restriction is lifted.
     const { data: emailData, error } = await resend.emails.send({
       from: `${senderName} <${fromEmail}>`,
       to: [to], 
@@ -95,9 +98,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) {
       console.error("Resend Error:", error);
-      // Provide a helpful error message if it's likely a domain verification issue
+      // Fallback hint for development if domain isn't verified yet
       if (error.message?.includes('domain')) {
-         return res.status(400).json({ error: "Domain not verified. Please check Resend settings or use the registered testing email." });
+         return res.status(400).json({ error: "Domain verification pending. Please verify 'goodslister.com' in Resend." });
       }
       return res.status(400).json({ error: error.message });
     }

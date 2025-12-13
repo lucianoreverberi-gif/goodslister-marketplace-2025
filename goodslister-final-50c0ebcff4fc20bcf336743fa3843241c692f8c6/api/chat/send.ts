@@ -135,7 +135,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     const senderName = senderData.rows[0].name;
                     
                     const resend = new Resend(process.env.RESEND_API_KEY);
-                    const fromEmail = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
+                    // Use 'noreply' for automated notifications
+                    const fromEmail = 'noreply@goodslister.com';
 
                     await resend.emails.send({
                         from: `Goodslister <${fromEmail}>`,

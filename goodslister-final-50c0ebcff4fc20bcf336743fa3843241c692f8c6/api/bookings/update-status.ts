@@ -43,7 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (bookingDetails.rows.length > 0) {
                 const info = bookingDetails.rows[0];
                 const resend = new Resend(process.env.RESEND_API_KEY);
-                const fromEmail = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
+                // Use 'noreply' for automated system status updates
+                const fromEmail = 'noreply@goodslister.com';
                 
                 let subject = '';
                 let htmlBody = '';
