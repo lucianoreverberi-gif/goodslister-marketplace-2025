@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing' | 'disputes' | 'moderation' | 'marketing' | 'settings';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing' | 'disputes' | 'marketing' | 'settings';
 
 interface AdminPageProps {
     users: User[];
@@ -27,6 +27,7 @@ interface AdminPageProps {
     onUpdateCategoryImage: (category: ListingCategory, newUrl: string) => Promise<void>;
     onUpdateListingImage: (listingId: string, newImageUrl: string) => Promise<void>;
     onViewListing: (id: string) => void;
+    onDeleteListing: (id: string) => Promise<void>;
 }
 
 // Mock Disputes Data
@@ -421,7 +422,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
     onToggleFeatured,
     onUpdateCategoryImage,
     onUpdateListingImage,
-    onViewListing
+    onViewListing,
+    onDeleteListing
 }) => {
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
@@ -441,7 +443,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
     const tabs: { id: AdminTab; name: string; icon: React.ElementType }[] = [
         { id: 'dashboard', name: 'Command Center', icon: LayoutDashboardIcon },
         { id: 'disputes', name: 'Disputes', icon: GavelIcon },
-        { id: 'moderation', name: 'Moderation', icon: CheckSquareIcon },
+        // Moderation Tab Removed per request
         { id: 'marketing', name: 'Marketing', icon: TicketIcon },
         { id: 'users', name: 'Users', icon: UsersIcon },
         { id: 'listings', name: 'All Listings', icon: PackageIcon },
@@ -500,8 +502,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                             <div className="bg-white rounded-lg shadow p-6">
                                 <h3 className="font-bold text-gray-800 mb-4">Quick Actions</h3>
                                 <div className="flex gap-2 flex-wrap">
-                                    <button onClick={() => setActiveTab('moderation')} className="px-4 py-2 bg-cyan-100 text-cyan-700 rounded-md text-sm font-medium hover:bg-cyan-200">
-                                        Review Pending Listings
+                                    <button onClick={() => setActiveTab('listings')} className="px-4 py-2 bg-cyan-100 text-cyan-700 rounded-md text-sm font-medium hover:bg-cyan-200">
+                                        Manage Listings
                                     </button>
                                     <button onClick={() => setActiveTab('disputes')} className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200">
                                         Handle Disputes
@@ -564,45 +566,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
                         </div>
                     </div>
                 );
-            case 'moderation':
-                return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">Listing Moderation Queue</h2>
-                        <p className="text-gray-600 mb-4">Review listings before they go live to ensure quality and safety standards.</p>
-                        {/* Mock pending listing */}
-                        <div className="bg-white rounded-lg shadow border border-l-4 border-l-yellow-400 p-6 mb-4">
-                            <div className="flex justify-between items-start">
-                                <div className="flex gap-4">
-                                    <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
-                                        [Image]
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-lg">Vintage Hiking Gear Set</h3>
-                                        <p className="text-sm text-gray-600">User: Carlos Gomez</p>
-                                        <p className="text-sm text-gray-500 mt-1 max-w-xl">
-                                            "Old boots and a backpack I found in the attic. Not sure if waterproof."
-                                        </p>
-                                        <div className="mt-2 flex gap-2">
-                                            <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">Camping</span>
-                                            <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">$15/day</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <button className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-bold hover:bg-green-700">
-                                        Approve Listing
-                                    </button>
-                                    <button className="px-4 py-2 bg-red-50 text-red-700 rounded-md text-sm font-medium hover:bg-red-100">
-                                        Reject
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="text-center p-8 text-gray-500 italic">
-                            No more items in queue. Good job!
-                        </div>
-                    </div>
-                );
             case 'users':
                 return (
                     <div>
@@ -657,6 +620,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <th className="p-3">Category</th>
                                         <th className="p-3">Owner</th>
                                         <th className="p-3">Price/day</th>
+                                        <th className="p-3">Location</th>
                                         <th className="p-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -667,13 +631,30 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             <td className="p-3">{listing.category}</td>
                                             <td className="p-3">{listing.owner.name}</td>
                                             <td className="p-3">${listing.pricePerDay}</td>
-                                            <td className="p-3 text-right">
+                                            <td className="p-3 text-gray-600">
+                                                <div className="flex items-center gap-1">
+                                                    <MapPinIcon className="h-3 w-3" />
+                                                    {listing.location.city}, {listing.location.country}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-right flex justify-end gap-2">
                                                 <button 
                                                     onClick={() => onViewListing(listing.id)}
                                                     className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors"
                                                     title="View Listing Details"
                                                 >
                                                     <EyeIcon className="h-5 w-5" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if(confirm(`Are you sure you want to delete "${listing.title}"? This cannot be undone.`)) {
+                                                            onDeleteListing(listing.id);
+                                                        }
+                                                    }}
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                    title="Delete Listing"
+                                                >
+                                                    <TrashIcon className="h-5 w-5" />
                                                 </button>
                                             </td>
                                         </tr>
