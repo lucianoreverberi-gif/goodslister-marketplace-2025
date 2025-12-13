@@ -349,9 +349,9 @@ export const createBooking = async (
                 totalPrice, 
                 amountPaidOnline, 
                 balanceDueOnSite, 
-                paymentMethod,
-                protectionType,
-                protectionFee
+                paymentMethod, 
+                protectionType, 
+                protectionFee 
             }),
         });
 

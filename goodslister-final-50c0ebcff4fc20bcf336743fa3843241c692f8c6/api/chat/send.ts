@@ -1,5 +1,7 @@
+
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Resend } from 'resend';
 
 // Helper to create tables if they don't exist
 async function ensureTablesExist() {
@@ -47,6 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const executeSend = async (retry = true): Promise<any> => {
       try {
         let finalConversationId = conversationId;
+        let finalRecipientId = recipientId;
 
         // 1. ID Resolution & Creation
         if (!finalConversationId || finalConversationId === 'NEW_DRAFT') {
@@ -75,6 +78,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     VALUES (${finalConversationId}, ${listingId}, CURRENT_TIMESTAMP)
                 `;
             }
+        } else {
+            // If existing conversation, we need to find the recipient ID to send the email
+            // The recipient is the participant who is NOT the sender
+            if (!finalRecipientId) {
+                const participants = await sql`
+                    SELECT user_id FROM conversation_participants 
+                    WHERE conversation_id = ${finalConversationId} AND user_id != ${senderId}
+                    LIMIT 1
+                `;
+                if (participants.rows.length > 0) {
+                    finalRecipientId = participants.rows[0].user_id;
+                }
+            }
         }
 
         // 2. SELF-HEALING: Ensure participants are linked
@@ -84,10 +100,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ON CONFLICT (conversation_id, user_id) DO NOTHING
         `;
 
-        if (recipientId) {
+        if (finalRecipientId) {
             await sql`
                 INSERT INTO conversation_participants (conversation_id, user_id)
-                VALUES (${finalConversationId}, ${recipientId})
+                VALUES (${finalConversationId}, ${finalRecipientId})
                 ON CONFLICT (conversation_id, user_id) DO NOTHING
             `;
         }
@@ -105,6 +121,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             SET updated_at = CURRENT_TIMESTAMP 
             WHERE id = ${finalConversationId}
         `;
+
+        // 5. Send Email Notification (Async, best effort)
+        if (process.env.RESEND_API_KEY && finalRecipientId) {
+            try {
+                // Get recipient email and sender name
+                const recipientData = await sql`SELECT email, name FROM users WHERE id = ${finalRecipientId}`;
+                const senderData = await sql`SELECT name FROM users WHERE id = ${senderId}`;
+                
+                if (recipientData.rows.length > 0 && senderData.rows.length > 0) {
+                    const recipientEmail = recipientData.rows[0].email;
+                    const recipientName = recipientData.rows[0].name;
+                    const senderName = senderData.rows[0].name;
+                    
+                    const resend = new Resend(process.env.RESEND_API_KEY);
+                    const fromEmail = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
+
+                    await resend.emails.send({
+                        from: `Goodslister <${fromEmail}>`,
+                        to: recipientEmail,
+                        subject: `New message from ${senderName}`,
+                        html: `
+                            <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                                <h2>Hello ${recipientName},</h2>
+                                <p><strong>${senderName}</strong> sent you a message on Goodslister:</p>
+                                <blockquote style="background: #f4f4f4; padding: 15px; border-left: 4px solid #06B6D4; border-radius: 4px;">
+                                    "${text}"
+                                </blockquote>
+                                <br/>
+                                <a href="https://goodslister.com/inbox" style="background-color: #06B6D4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Reply Now</a>
+                            </div>
+                        `
+                    });
+                    console.log(`Email notification sent to ${recipientEmail}`);
+                }
+            } catch (emailError) {
+                console.error("Failed to send email notification:", emailError);
+                // Don't fail the request if email fails
+            }
+        }
 
         return { 
             success: true, 
