@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -42,84 +42,142 @@ const mockCoupons: Coupon[] = [
     { id: 'cpn-2', code: 'SUMMER20', discountType: 'fixed', discountValue: 20, usageLimit: 50, usedCount: 50, expiryDate: '2023-08-31', status: 'expired' },
 ];
 
-// Mock Transactions Data
-const mockTransactions = [
-    { id: 'txn_1', date: '2024-03-15', type: 'Booking Payment', user: 'Ana Rodriguez', amount: 450.00, status: 'completed', description: 'Booking #bk-998' },
-    { id: 'txn_2', date: '2024-03-14', type: 'Payout', user: 'Carlos Gomez', amount: -405.00, status: 'processing', description: 'Payout for #bk-998 (minus fees)' },
-    { id: 'txn_3', date: '2024-03-12', type: 'Booking Payment', user: 'John Doe', amount: 120.00, status: 'completed', description: 'Booking #bk-997' },
-    { id: 'txn_4', date: '2024-03-10', type: 'Refund', user: 'Sarah Smith', amount: -50.00, status: 'completed', description: 'Security Deposit Refund' },
-    { id: 'txn_5', date: '2024-03-09', type: 'Service Fee', user: 'System', amount: 45.00, status: 'completed', description: 'Platform Revenue #bk-998' },
+// Mock Financial Ledger
+// Categories: 'revenue' (Our money), 'deposit' (Held money), 'payout' (Owner money)
+const mockLedger = [
+    { id: 'txn_101', date: 'Today, 10:23 AM', category: 'revenue', description: 'Fixed Service Fee (Tier 1)', amount: 10.00, status: 'cleared', user: 'Guest #8821' },
+    { id: 'txn_102', date: 'Today, 10:23 AM', category: 'payout', description: 'Rental Payment to Host', amount: 85.00, status: 'pending', user: 'Host: Carlos G.' },
+    { id: 'txn_103', date: 'Today, 10:23 AM', category: 'deposit', description: 'Security Deposit Hold', amount: 250.00, status: 'held', user: 'Guest #8821' },
+    { id: 'txn_99', date: 'Yesterday', category: 'revenue', description: 'Fixed Service Fee (Tier 2)', amount: 25.00, status: 'cleared', user: 'Guest #4412' },
+    { id: 'txn_98', date: 'Yesterday', category: 'deposit', description: 'Deposit Release', amount: -250.00, status: 'released', user: 'Guest #1234' },
 ];
 
 const FinancialsTab: React.FC = () => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
+                    <p className="text-sm text-gray-500">Track cash flow across 3 separate buckets.</p>
+                </div>
                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
-                    <ExternalLinkIcon className="h-4 w-4" /> Export CSV
+                    <ExternalLinkIcon className="h-4 w-4" /> Download Report
                 </button>
             </div>
 
-            {/* KPI Cards */}
+            {/* The 3 Buckets */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-                    <p className="text-sm font-medium text-gray-500 uppercase">Gross Volume (GMV)</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">$12,450.00</p>
-                    <div className="mt-2 flex items-center text-xs text-green-600">
-                        <span className="font-bold">+12.5%</span>&nbsp;from last month
+                
+                {/* Column 1: OUR MONEY (Revenue) */}
+                <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-6 flex flex-col h-full relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <TrendUpIcon className="h-24 w-24 text-emerald-600" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-4 z-10">
+                        <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700">
+                            <DollarSignIcon className="h-6 w-6" />
+                        </div>
+                        <h3 className="font-bold text-emerald-900">Net Platform Revenue</h3>
+                    </div>
+                    <div className="mb-6 z-10">
+                        <p className="text-4xl font-extrabold text-emerald-700">$2,450.00</p>
+                        <p className="text-sm text-emerald-600 mt-1 font-medium">+ $350.00 this week</p>
+                    </div>
+                    <div className="mt-auto z-10">
+                        <div className="text-xs text-emerald-800 bg-white/60 p-3 rounded-lg border border-emerald-100">
+                            <strong>Source:</strong> Fixed fees ($10/$25) + optional insurance markup. This money stays in the platform account.
+                        </div>
+                        <button className="w-full mt-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm text-sm">
+                            Withdraw to Bank
+                        </button>
                     </div>
                 </div>
-                <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-                    <p className="text-sm font-medium text-gray-500 uppercase">Pending Payouts</p>
-                    <p className="text-3xl font-bold text-amber-600 mt-2">$1,250.00</p>
-                    <p className="text-xs text-gray-400 mt-2">Held in escrow</p>
+
+                {/* Column 2: ESCROW (Deposits) */}
+                <div className="bg-amber-50 rounded-xl border border-amber-100 p-6 flex flex-col h-full relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <LockIcon className="h-24 w-24 text-amber-600" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-4 z-10">
+                        <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
+                            <ShieldIcon className="h-6 w-6" />
+                        </div>
+                        <h3 className="font-bold text-amber-900">Held Security Deposits</h3>
+                    </div>
+                    <div className="mb-6 z-10">
+                        <p className="text-4xl font-extrabold text-amber-700">$15,200.00</p>
+                        <p className="text-sm text-amber-600 mt-1 font-medium">62 Active Holds</p>
+                    </div>
+                    <div className="mt-auto z-10">
+                        <div className="text-xs text-amber-800 bg-white/60 p-3 rounded-lg border border-amber-100">
+                            <strong>Status:</strong> Held in Stripe Escrow. Not recognized as revenue. Released 48h after return if no claims.
+                        </div>
+                        <button className="w-full mt-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 shadow-sm text-sm">
+                            View Active Holds
+                        </button>
+                    </div>
                 </div>
-                <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-                    <p className="text-sm font-medium text-gray-500 uppercase">Net Revenue</p>
-                    <p className="text-3xl font-bold text-green-600 mt-2">$1,867.50</p>
-                    <p className="text-xs text-gray-400 mt-2">Platform fees collected</p>
+
+                {/* Column 3: PAYOUTS (Hosts) */}
+                <div className="bg-blue-50 rounded-xl border border-blue-100 p-6 flex flex-col h-full relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <UsersIcon className="h-24 w-24 text-blue-600" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-4 z-10">
+                        <div className="p-2 bg-blue-100 rounded-lg text-blue-700">
+                            <ArrowRightIcon className="h-6 w-6" />
+                        </div>
+                        <h3 className="font-bold text-blue-900">Pending Host Payouts</h3>
+                    </div>
+                    <div className="mb-6 z-10">
+                        <p className="text-4xl font-extrabold text-blue-700">$4,120.00</p>
+                        <p className="text-sm text-blue-600 mt-1 font-medium">Due in next 24h</p>
+                    </div>
+                    <div className="mt-auto z-10">
+                        <div className="text-xs text-blue-800 bg-white/60 p-3 rounded-lg border border-blue-100">
+                            <strong>Liability:</strong> Rental fees collected on behalf of hosts. Transferred automatically via Stripe Connect.
+                        </div>
+                        <button className="w-full mt-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-sm text-sm">
+                            Process Batch Payout
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Transactions Table */}
+            {/* Detailed Ledger */}
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <h3 className="font-bold text-gray-700">Recent Transactions</h3>
+                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-700">Combined Ledger</h3>
+                    <div className="text-xs text-gray-500">Showing last 5 transactions</div>
                 </div>
                 <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 text-gray-500 font-medium">
                         <tr>
-                            <th className="p-4">Transaction ID</th>
-                            <th className="p-4">Date</th>
                             <th className="p-4">Type</th>
+                            <th className="p-4">Amount</th>
+                            <th className="p-4">Description</th>
                             <th className="p-4">User</th>
-                            <th className="p-4 text-right">Amount</th>
                             <th className="p-4">Status</th>
+                            <th className="p-4">Date</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {mockTransactions.map((txn) => (
+                        {mockLedger.map((txn) => (
                             <tr key={txn.id} className="hover:bg-gray-50">
-                                <td className="p-4 font-mono text-gray-500 text-xs">{txn.id}</td>
-                                <td className="p-4 text-gray-600">{txn.date}</td>
                                 <td className="p-4">
-                                    <span className="font-medium text-gray-900 block">{txn.type}</span>
-                                    <span className="text-xs text-gray-500">{txn.description}</span>
+                                    {txn.category === 'revenue' && <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold uppercase">Revenue</span>}
+                                    {txn.category === 'deposit' && <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold uppercase">Deposit</span>}
+                                    {txn.category === 'payout' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold uppercase">Payout</span>}
                                 </td>
-                                <td className="p-4 text-gray-900">{txn.user}</td>
-                                <td className={`p-4 text-right font-bold ${txn.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                                    {txn.amount > 0 ? '+' : ''}{txn.amount.toFixed(2)}
+                                <td className={`p-4 font-mono font-bold ${txn.amount > 0 ? (txn.category === 'payout' ? 'text-gray-900' : 'text-green-600') : 'text-gray-500'}`}>
+                                    {txn.amount < 0 ? '-' : ''}${Math.abs(txn.amount).toFixed(2)}
                                 </td>
+                                <td className="p-4 text-gray-800 font-medium">{txn.description}</td>
+                                <td className="p-4 text-gray-500">{txn.user}</td>
                                 <td className="p-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${
-                                        txn.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                        txn.status === 'processing' ? 'bg-amber-100 text-amber-800' :
-                                        'bg-red-100 text-red-800'
-                                    }`}>
-                                        {txn.status}
-                                    </span>
+                                    <span className="capitalize text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{txn.status}</span>
                                 </td>
+                                <td className="p-4 text-gray-400 text-xs">{txn.date}</td>
                             </tr>
                         ))}
                     </tbody>
