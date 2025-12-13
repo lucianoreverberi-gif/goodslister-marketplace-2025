@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -42,6 +42,13 @@ const mockCoupons: Coupon[] = [
     { id: 'cpn-2', code: 'SUMMER20', discountType: 'fixed', discountValue: 20, usageLimit: 50, usedCount: 50, expiryDate: '2023-08-31', status: 'expired' },
 ];
 
+// Mock Ad Campaigns (The Upsell Data)
+const mockCampaigns = [
+    { id: 'cmp-101', listing: 'Yamaha Jet Ski', owner: 'Carlos Gomez', plan: 'Regional Hero', price: 29.99, status: 'active', startDate: '2024-03-10', endDate: '2024-03-24', impressions: 1240 },
+    { id: 'cmp-102', listing: 'Mountain Bike Pro', owner: 'Ana Rodriguez', plan: 'Local Boost', price: 5.99, status: 'active', startDate: '2024-03-12', endDate: '2024-03-15', impressions: 320 },
+    { id: 'cmp-103', listing: 'Family RV', owner: 'Carlos Gomez', plan: 'Social Spotlight', price: 14.99, status: 'completed', startDate: '2024-02-01', endDate: '2024-02-08', impressions: 2100 },
+];
+
 // Mock Financial Ledger
 const mockLedger = [
     { id: 'txn_105', date: 'Today, 11:15 AM', category: 'insurance_in', description: 'Premium Protection Plan', amount: 45.00, status: 'cleared', user: 'Guest #9901' },
@@ -49,7 +56,7 @@ const mockLedger = [
     { id: 'txn_101', date: 'Today, 10:23 AM', category: 'revenue', description: 'Fixed Service Fee (Tier 1)', amount: 10.00, status: 'cleared', user: 'Guest #8821' },
     { id: 'txn_102', date: 'Today, 10:23 AM', category: 'payout', description: 'Rental Payment to Host', amount: 85.00, status: 'pending', user: 'Host: Carlos G.' },
     { id: 'txn_103', date: 'Today, 10:23 AM', category: 'deposit', description: 'Security Deposit Hold', amount: 250.00, status: 'held', user: 'Guest #8821' },
-    { id: 'txn_99', date: 'Yesterday', category: 'revenue', description: 'Fixed Service Fee (Tier 2)', amount: 25.00, status: 'cleared', user: 'Guest #4412' },
+    { id: 'txn_106', date: 'Yesterday', category: 'ad_revenue', description: 'Campaign: Regional Hero (Jet Ski)', amount: 29.99, status: 'cleared', user: 'Host: Carlos G.' }, // New Ad Revenue
 ];
 
 const RiskFundTab: React.FC = () => {
@@ -240,6 +247,11 @@ const RiskFundTab: React.FC = () => {
 };
 
 const FinancialsTab: React.FC = () => {
+    // Determine Ad Revenue
+    const adRevenueTotal = mockCampaigns.reduce((sum, cmp) => sum + cmp.price, 0);
+    // Placeholder Service Fee Revenue
+    const serviceFeeRevenue = 2450.00; 
+
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -252,28 +264,30 @@ const FinancialsTab: React.FC = () => {
                 </button>
             </div>
 
-            {/* The 3 Buckets - Clean Design (Removed 4th column) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Revenue Streams Breakdown (New) */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 
-                {/* Column 1: OUR MONEY (Revenue) */}
-                <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-6 flex flex-col h-full relative overflow-hidden">
+                {/* Net Platform Revenue (Total) */}
+                <div className="col-span-1 md:col-span-2 bg-emerald-50 rounded-xl border border-emerald-100 p-6 flex flex-col h-full relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-4 z-10">
                         <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700">
                             <DollarSignIcon className="h-6 w-6" />
                         </div>
-                        <h3 className="font-bold text-emerald-900">Net Platform Revenue</h3>
+                        <h3 className="font-bold text-emerald-900">Total Platform Revenue</h3>
                     </div>
                     <div className="mb-6 z-10">
-                        <p className="text-4xl font-extrabold text-emerald-700">$2,450.00</p>
-                        <p className="text-sm text-emerald-600 mt-1 font-medium">+ $350.00 this week</p>
+                        <p className="text-4xl font-extrabold text-emerald-700">${(serviceFeeRevenue + adRevenueTotal).toFixed(2)}</p>
+                        <p className="text-sm text-emerald-600 mt-1 font-medium">+ $450.00 this week</p>
                     </div>
-                    <div className="mt-auto z-10">
-                        <div className="text-xs text-emerald-800 bg-white/60 p-3 rounded-lg border border-emerald-100">
-                            <strong>Source:</strong> Fixed service fees & commissions.
+                    <div className="mt-auto z-10 grid grid-cols-2 gap-4">
+                        <div className="bg-white/60 p-3 rounded-lg border border-emerald-100">
+                            <p className="text-xs text-emerald-800 uppercase font-bold">Booking Fees</p>
+                            <p className="text-lg font-bold text-emerald-900">${serviceFeeRevenue.toFixed(2)}</p>
                         </div>
-                        <button className="w-full mt-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm text-sm">
-                            Withdraw to Bank
-                        </button>
+                        <div className="bg-white/60 p-3 rounded-lg border border-emerald-100">
+                            <p className="text-xs text-emerald-800 uppercase font-bold flex items-center gap-1">Ads & Boosts <RocketIcon className="h-3 w-3" /></p>
+                            <p className="text-lg font-bold text-emerald-900">${adRevenueTotal.toFixed(2)}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -286,16 +300,13 @@ const FinancialsTab: React.FC = () => {
                         <h3 className="font-bold text-amber-900">Held Security Deposits</h3>
                     </div>
                     <div className="mb-6 z-10">
-                        <p className="text-4xl font-extrabold text-amber-700">$15,200.00</p>
+                        <p className="text-3xl font-extrabold text-amber-700">$15,200.00</p>
                         <p className="text-sm text-amber-600 mt-1 font-medium">62 Active Holds</p>
                     </div>
                     <div className="mt-auto z-10">
                         <div className="text-xs text-amber-800 bg-white/60 p-3 rounded-lg border border-amber-100">
                             <strong>Status:</strong> Held in Escrow.
                         </div>
-                        <button className="w-full mt-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 shadow-sm text-sm">
-                            View Active Holds
-                        </button>
                     </div>
                 </div>
 
@@ -308,16 +319,13 @@ const FinancialsTab: React.FC = () => {
                         <h3 className="font-bold text-blue-900">Pending Host Payouts</h3>
                     </div>
                     <div className="mb-6 z-10">
-                        <p className="text-4xl font-extrabold text-blue-700">$4,120.00</p>
+                        <p className="text-3xl font-extrabold text-blue-700">$4,120.00</p>
                         <p className="text-sm text-blue-600 mt-1 font-medium">Due in next 24h</p>
                     </div>
                     <div className="mt-auto z-10">
                         <div className="text-xs text-blue-800 bg-white/60 p-3 rounded-lg border border-blue-100">
                             <strong>Liability:</strong> Rental fees collected for hosts.
                         </div>
-                        <button className="w-full mt-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-sm text-sm">
-                            Process Payouts
-                        </button>
                     </div>
                 </div>
             </div>
@@ -346,6 +354,7 @@ const FinancialsTab: React.FC = () => {
                                     {txn.category === 'revenue' && <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold uppercase">Revenue</span>}
                                     {txn.category === 'deposit' && <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold uppercase">Deposit</span>}
                                     {txn.category === 'payout' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold uppercase">Payout</span>}
+                                    {txn.category === 'ad_revenue' && <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold uppercase flex items-center gap-1 w-fit"><RocketIcon className="h-3 w-3"/> Ad Revenue</span>}
                                 </td>
                                 <td className={`p-4 font-mono font-bold ${
                                     txn.amount < 0 ? 'text-gray-500' : 
@@ -570,6 +579,7 @@ const GlobalSettingsTab: React.FC = () => {
 };
 
 const MarketingTab: React.FC = () => {
+    const [view, setView] = useState<'coupons' | 'campaigns'>('campaigns');
     const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons);
     const [showCreate, setShowCreate] = useState(false);
     
@@ -599,88 +609,189 @@ const MarketingTab: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold">Marketing Engine</h2>
-                    <p className="text-gray-600 text-sm">Manage discount codes and promotions.</p>
+                    <p className="text-gray-600 text-sm">Manage discount codes and user ad campaigns.</p>
                 </div>
-                <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 flex items-center gap-2">
-                    <TicketIcon className="h-5 w-5" />
-                    Create Coupon
-                </button>
+                
+                {/* Sub-Nav Switcher */}
+                <div className="bg-gray-100 p-1 rounded-lg flex">
+                    <button 
+                        onClick={() => setView('campaigns')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${view === 'campaigns' ? 'bg-white shadow text-cyan-600' : 'text-gray-500'}`}
+                    >
+                        Active Campaigns
+                    </button>
+                    <button 
+                        onClick={() => setView('coupons')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${view === 'coupons' ? 'bg-white shadow text-cyan-600' : 'text-gray-500'}`}
+                    >
+                        Coupons & Discounts
+                    </button>
+                </div>
             </div>
 
-            {showCreate && (
-                <div className="bg-white p-6 rounded-lg shadow mb-6 border border-cyan-100 animate-in fade-in slide-in-from-top-2">
-                    <h3 className="font-bold text-lg mb-4">New Coupon Configuration</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code</label>
-                            <input 
-                                type="text" 
-                                value={newCode} 
-                                onChange={e => setNewCode(e.target.value)} 
-                                className="w-full border-gray-300 rounded-md uppercase font-mono" 
-                                placeholder="SUMMER25"
-                            />
+            {view === 'campaigns' ? (
+                // CAMPAIGNS VIEW (NEW)
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                            <div className="p-3 bg-purple-100 text-purple-600 rounded-full">
+                                <MegaphoneIcon className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase">Active Campaigns</p>
+                                <p className="text-2xl font-bold text-gray-900">12</p>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
-                            <select 
-                                value={newType} 
-                                onChange={e => setNewType(e.target.value as any)} 
-                                className="w-full border-gray-300 rounded-md"
-                            >
-                                <option value="percentage">Percentage (%)</option>
-                                <option value="fixed">Fixed Amount ($)</option>
-                            </select>
+                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                            <div className="p-3 bg-green-100 text-green-600 rounded-full">
+                                <DollarSignIcon className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase">Ad Revenue (MTD)</p>
+                                <p className="text-2xl font-bold text-gray-900">$450.00</p>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Value</label>
-                            <input 
-                                type="number" 
-                                value={newDiscount} 
-                                onChange={e => setNewDiscount(Number(e.target.value))} 
-                                className="w-full border-gray-300 rounded-md"
-                            />
+                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                            <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
+                                <EyeIcon className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase">Impressions Delivered</p>
+                                <p className="text-2xl font-bold text-gray-900">8,450</p>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex justify-end gap-2">
-                        <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
-                        <button onClick={handleCreateCoupon} disabled={!newCode} className="px-4 py-2 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">Launch Coupon</button>
+
+                    <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-gray-50 border-b">
+                                <tr>
+                                    <th className="p-4 font-medium text-gray-500">Listing</th>
+                                    <th className="p-4 font-medium text-gray-500">Owner</th>
+                                    <th className="p-4 font-medium text-gray-500">Plan</th>
+                                    <th className="p-4 font-medium text-gray-500">Dates</th>
+                                    <th className="p-4 font-medium text-gray-500">Performance</th>
+                                    <th className="p-4 font-medium text-gray-500">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {mockCampaigns.map(cmp => (
+                                    <tr key={cmp.id} className="border-b last:border-0 hover:bg-gray-50">
+                                        <td className="p-4 font-medium text-gray-900">{cmp.listing}</td>
+                                        <td className="p-4 text-gray-600">{cmp.owner}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                                cmp.plan.includes('Hero') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                            }`}>
+                                                {cmp.plan}
+                                            </span>
+                                            <div className="text-xs text-gray-400 mt-1">${cmp.price} paid</div>
+                                        </td>
+                                        <td className="p-4 text-gray-500 text-xs">
+                                            {cmp.startDate} - {cmp.endDate}
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-1 text-green-600 font-bold">
+                                                <EyeIcon className="h-3 w-3" /> {cmp.impressions} views
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${cmp.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                                                {cmp.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+            ) : (
+                // COUPONS VIEW (EXISTING)
+                <>
+                    <div className="flex justify-end mb-4">
+                        <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 flex items-center gap-2">
+                            <TicketIcon className="h-5 w-5" />
+                            Create Coupon
+                        </button>
+                    </div>
+
+                    {showCreate && (
+                        <div className="bg-white p-6 rounded-lg shadow mb-6 border border-cyan-100 animate-in fade-in slide-in-from-top-2">
+                            <h3 className="font-bold text-lg mb-4">New Coupon Configuration</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code</label>
+                                    <input 
+                                        type="text" 
+                                        value={newCode} 
+                                        onChange={e => setNewCode(e.target.value)} 
+                                        className="w-full border-gray-300 rounded-md uppercase font-mono" 
+                                        placeholder="SUMMER25"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                                    <select 
+                                        value={newType} 
+                                        onChange={e => setNewType(e.target.value as any)} 
+                                        className="w-full border-gray-300 rounded-md"
+                                    >
+                                        <option value="percentage">Percentage (%)</option>
+                                        <option value="fixed">Fixed Amount ($)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Value</label>
+                                    <input 
+                                        type="number" 
+                                        value={newDiscount} 
+                                        onChange={e => setNewDiscount(Number(e.target.value))} 
+                                        className="w-full border-gray-300 rounded-md"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
+                                <button onClick={handleCreateCoupon} disabled={!newCode} className="px-4 py-2 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">Launch Coupon</button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-gray-50 border-b">
+                                <tr>
+                                    <th className="p-4 font-medium text-gray-500">Code</th>
+                                    <th className="p-4 font-medium text-gray-500">Discount</th>
+                                    <th className="p-4 font-medium text-gray-500">Usage</th>
+                                    <th className="p-4 font-medium text-gray-500">Status</th>
+                                    <th className="p-4 font-medium text-gray-500">Expiry</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {coupons.map(coupon => (
+                                    <tr key={coupon.id} className="border-b last:border-0 hover:bg-gray-50">
+                                        <td className="p-4 font-mono font-bold text-gray-800">{coupon.code}</td>
+                                        <td className="p-4 text-green-600 font-bold">
+                                            {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `-$${coupon.discountValue}`}
+                                        </td>
+                                        <td className="p-4 text-gray-600">
+                                            {coupon.usedCount} / {coupon.usageLimit}
+                                        </td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${coupon.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                                                {coupon.status}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-gray-500">{coupon.expiryDate}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
-
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 border-b">
-                        <tr>
-                            <th className="p-4 font-medium text-gray-500">Code</th>
-                            <th className="p-4 font-medium text-gray-500">Discount</th>
-                            <th className="p-4 font-medium text-gray-500">Usage</th>
-                            <th className="p-4 font-medium text-gray-500">Status</th>
-                            <th className="p-4 font-medium text-gray-500">Expiry</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {coupons.map(coupon => (
-                            <tr key={coupon.id} className="border-b last:border-0 hover:bg-gray-50">
-                                <td className="p-4 font-mono font-bold text-gray-800">{coupon.code}</td>
-                                <td className="p-4 text-green-600 font-bold">
-                                    {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `-$${coupon.discountValue}`}
-                                </td>
-                                <td className="p-4 text-gray-600">
-                                    {coupon.usedCount} / {coupon.usageLimit}
-                                </td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${coupon.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
-                                        {coupon.status}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-gray-500">{coupon.expiryDate}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
         </div>
     );
 };
