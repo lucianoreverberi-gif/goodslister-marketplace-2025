@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -97,49 +97,118 @@ const BillingSettings: React.FC<{
 };
 
 const GlobalSettingsTab: React.FC = () => {
-    const [serviceFee, setServiceFee] = useState(10);
+    // Tiered Pricing State
+    const [feeThreshold, setFeeThreshold] = useState(100);
+    const [lowTierFee, setLowTierFee] = useState(10);
+    const [highTierFee, setHighTierFee] = useState(25);
     const [ownerFee, setOwnerFee] = useState(3);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = () => {
         setIsSaving(true);
+        // Simulate API call
         setTimeout(() => setIsSaving(false), 1000);
     };
 
     return (
         <div>
             <h2 className="text-2xl font-bold mb-6">Platform Configuration</h2>
-            <div className="bg-white p-6 rounded-lg shadow mb-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <CreditCardIcon className="h-5 w-5 text-cyan-600" />
-                    Dynamic Fee Structure
-                </h3>
-                <p className="text-sm text-gray-500 mb-6">Adjust the marketplace fees in real-time. These changes affect all future bookings immediately.</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Renter Service Fee (%)</label>
-                        <div className="relative rounded-md shadow-sm">
-                            <input
-                                type="number"
-                                value={serviceFee}
-                                onChange={(e) => setServiceFee(Number(e.target.value))}
-                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-3 pr-12 py-2"
-                            />
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <span className="text-gray-500 sm:text-sm">%</span>
-                            </div>
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">Charged to the renter on top of the listing price.</p>
+            
+            {/* Renter Fee Section */}
+            <div className="bg-white p-6 rounded-lg shadow mb-6 border-l-4 border-cyan-500">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="bg-cyan-100 p-2 rounded-full text-cyan-600">
+                        <CalculatorIcon className="h-6 w-6" />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Owner Transaction Fee (%)</label>
+                        <h3 className="text-lg font-bold text-gray-900">Renter Service Fees (Tiered Strategy)</h3>
+                        <p className="text-xs text-gray-500">Configure dynamic fixed fees based on the rental subtotal.</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
+                    {/* 1. Threshold */}
+                    <div className="relative">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">1. Price Threshold</label>
+                        <div className="relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input
+                                type="number"
+                                value={feeThreshold}
+                                onChange={(e) => setFeeThreshold(Number(e.target.value))}
+                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">The breakpoint amount (e.g. rentals under/over $100).</p>
+                    </div>
+
+                    {/* 2. Low Fee */}
+                    <div className="relative">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">2. Fee for Low Value Rentals</label>
+                        <div className="relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input
+                                type="number"
+                                value={lowTierFee}
+                                onChange={(e) => setLowTierFee(Number(e.target.value))}
+                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2 bg-green-50"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">Applied if booking is &lt; ${feeThreshold}.</p>
+                    </div>
+
+                    {/* 3. High Fee */}
+                    <div className="relative">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">3. Fee for High Value Rentals</label>
+                        <div className="relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input
+                                type="number"
+                                value={highTierFee}
+                                onChange={(e) => setHighTierFee(Number(e.target.value))}
+                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2 bg-blue-50"
+                            />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">Applied if booking is &gt;= ${feeThreshold}.</p>
+                    </div>
+                </div>
+
+                <div className="mt-6 bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-600">
+                    <p><strong>Current Logic:</strong></p>
+                    <ul className="list-disc ml-5 mt-1 space-y-1">
+                        <li>If a user rents a kayak for <strong>$50</strong>, they pay a <strong>${lowTierFee}</strong> service fee.</li>
+                        <li>If a user rents a boat for <strong>$500</strong>, they pay a <strong>${highTierFee}</strong> service fee.</li>
+                    </ul>
+                </div>
+            </div>
+
+            {/* Owner Fee Section */}
+            <div className="bg-white p-6 rounded-lg shadow mb-6 border-l-4 border-purple-500">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="bg-purple-100 p-2 rounded-full text-purple-600">
+                        <CreditCardIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900">Owner Commission</h3>
+                        <p className="text-xs text-gray-500">Percentage deducted from the payout.</p>
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">4. Transaction Fee (%)</label>
                         <div className="relative rounded-md shadow-sm">
                             <input
                                 type="number"
                                 value={ownerFee}
                                 onChange={(e) => setOwnerFee(Number(e.target.value))}
-                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-3 pr-12 py-2"
+                                className="block w-full border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 pl-3 pr-12 py-2"
                             />
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <span className="text-gray-500 sm:text-sm">%</span>
@@ -148,15 +217,16 @@ const GlobalSettingsTab: React.FC = () => {
                         <p className="mt-1 text-xs text-gray-500">Deducted from the owner's payout.</p>
                     </div>
                 </div>
-                <div className="mt-6 pt-4 border-t flex justify-end">
-                    <button 
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="px-4 py-2 bg-cyan-600 text-white rounded-md font-bold hover:bg-cyan-700 transition-colors"
-                    >
-                        {isSaving ? 'Saving...' : 'Update Fees'}
-                    </button>
-                </div>
+            </div>
+
+            <div className="flex justify-end">
+                <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-gray-900 text-white rounded-lg font-bold hover:bg-black transition-colors shadow-lg flex items-center gap-2"
+                >
+                    {isSaving ? 'Updating...' : 'Update Billing Strategy'}
+                </button>
             </div>
         </div>
     );
