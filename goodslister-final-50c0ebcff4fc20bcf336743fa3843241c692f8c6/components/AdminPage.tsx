@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'content' | 'billing' | 'disputes' | 'marketing' | 'settings';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'financials' | 'content' | 'billing' | 'disputes' | 'marketing' | 'settings';
 
 interface AdminPageProps {
     users: User[];
@@ -42,6 +42,93 @@ const mockCoupons: Coupon[] = [
     { id: 'cpn-2', code: 'SUMMER20', discountType: 'fixed', discountValue: 20, usageLimit: 50, usedCount: 50, expiryDate: '2023-08-31', status: 'expired' },
 ];
 
+// Mock Transactions Data
+const mockTransactions = [
+    { id: 'txn_1', date: '2024-03-15', type: 'Booking Payment', user: 'Ana Rodriguez', amount: 450.00, status: 'completed', description: 'Booking #bk-998' },
+    { id: 'txn_2', date: '2024-03-14', type: 'Payout', user: 'Carlos Gomez', amount: -405.00, status: 'processing', description: 'Payout for #bk-998 (minus fees)' },
+    { id: 'txn_3', date: '2024-03-12', type: 'Booking Payment', user: 'John Doe', amount: 120.00, status: 'completed', description: 'Booking #bk-997' },
+    { id: 'txn_4', date: '2024-03-10', type: 'Refund', user: 'Sarah Smith', amount: -50.00, status: 'completed', description: 'Security Deposit Refund' },
+    { id: 'txn_5', date: '2024-03-09', type: 'Service Fee', user: 'System', amount: 45.00, status: 'completed', description: 'Platform Revenue #bk-998' },
+];
+
+const FinancialsTab: React.FC = () => {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
+                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
+                    <ExternalLinkIcon className="h-4 w-4" /> Export CSV
+                </button>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+                    <p className="text-sm font-medium text-gray-500 uppercase">Gross Volume (GMV)</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">$12,450.00</p>
+                    <div className="mt-2 flex items-center text-xs text-green-600">
+                        <span className="font-bold">+12.5%</span>&nbsp;from last month
+                    </div>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+                    <p className="text-sm font-medium text-gray-500 uppercase">Pending Payouts</p>
+                    <p className="text-3xl font-bold text-amber-600 mt-2">$1,250.00</p>
+                    <p className="text-xs text-gray-400 mt-2">Held in escrow</p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+                    <p className="text-sm font-medium text-gray-500 uppercase">Net Revenue</p>
+                    <p className="text-3xl font-bold text-green-600 mt-2">$1,867.50</p>
+                    <p className="text-xs text-gray-400 mt-2">Platform fees collected</p>
+                </div>
+            </div>
+
+            {/* Transactions Table */}
+            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h3 className="font-bold text-gray-700">Recent Transactions</h3>
+                </div>
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-500 font-medium">
+                        <tr>
+                            <th className="p-4">Transaction ID</th>
+                            <th className="p-4">Date</th>
+                            <th className="p-4">Type</th>
+                            <th className="p-4">User</th>
+                            <th className="p-4 text-right">Amount</th>
+                            <th className="p-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {mockTransactions.map((txn) => (
+                            <tr key={txn.id} className="hover:bg-gray-50">
+                                <td className="p-4 font-mono text-gray-500 text-xs">{txn.id}</td>
+                                <td className="p-4 text-gray-600">{txn.date}</td>
+                                <td className="p-4">
+                                    <span className="font-medium text-gray-900 block">{txn.type}</span>
+                                    <span className="text-xs text-gray-500">{txn.description}</span>
+                                </td>
+                                <td className="p-4 text-gray-900">{txn.user}</td>
+                                <td className={`p-4 text-right font-bold ${txn.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                                    {txn.amount > 0 ? '+' : ''}{txn.amount.toFixed(2)}
+                                </td>
+                                <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${
+                                        txn.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                        txn.status === 'processing' ? 'bg-amber-100 text-amber-800' :
+                                        'bg-red-100 text-red-800'
+                                    }`}>
+                                        {txn.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
 const BillingSettings: React.FC<{
     currentApiKey: string;
     onSaveApiKey: (key: string) => Promise<void>;
@@ -61,37 +148,47 @@ const BillingSettings: React.FC<{
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-6">Payment Gateway Settings</h2>
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold mb-1">Stripe API Key</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                    Enter your Stripe API key here to process payments. Your key is stored securely.
-                </p>
-                <form onSubmit={handleSave}>
-                    <div>
-                        <label htmlFor="api-key" className="block text-sm font-medium text-gray-700">
-                            API Key (e.g., pk_live_... or sk_live_...)
-                        </label>
-                        <input
-                            type="text"
-                            id="api-key"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
-                            placeholder="Enter your API key"
-                        />
+            <h2 className="text-2xl font-bold mb-6">Payment Gateway Configuration</h2>
+            <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-indigo-50 rounded-full text-indigo-600">
+                        <CreditCardIcon className="h-6 w-6" />
                     </div>
-                    <div className="mt-4 flex justify-end items-center">
-                        {saved && <span className="text-sm text-green-600 mr-4">API Key saved successfully!</span>}
-                        <button
-                            type="submit"
-                            disabled={isSaving}
-                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-400"
-                        >
-                            {isSaving ? 'Saving...' : 'Save Key'}
-                        </button>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-1">Stripe Integration</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Connect your Stripe account to process payments, handle payouts, and manage refunds securely.
+                        </p>
+                        <form onSubmit={handleSave}>
+                            <div>
+                                <label htmlFor="api-key" className="block text-sm font-medium text-gray-700">
+                                    Stripe Secret Key (sk_live_...)
+                                </label>
+                                <div className="mt-1 flex rounded-md shadow-sm">
+                                    <input
+                                        type="password"
+                                        id="api-key"
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value)}
+                                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                                        placeholder="sk_live_..."
+                                    />
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500">This key is stored encrypted in your environment variables.</p>
+                            </div>
+                            <div className="mt-4 flex justify-end items-center">
+                                {saved && <span className="text-sm text-green-600 mr-4 flex items-center gap-1"><CheckCircleIcon className="h-4 w-4"/> Saved!</span>}
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 transition-colors"
+                                >
+                                    {isSaving ? 'Connecting...' : 'Update Connection'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );
@@ -113,7 +210,7 @@ const GlobalSettingsTab: React.FC = () => {
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-6">Platform Configuration</h2>
+            <h2 className="text-2xl font-bold mb-6">Platform Business Model</h2>
             
             {/* Renter Fee Section */}
             <div className="bg-white p-6 rounded-lg shadow mb-6 border-l-4 border-cyan-500">
@@ -442,13 +539,13 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
     const tabs: { id: AdminTab; name: string; icon: React.ElementType }[] = [
         { id: 'dashboard', name: 'Command Center', icon: LayoutDashboardIcon },
+        { id: 'financials', name: 'Financials', icon: DollarSignIcon }, // NEW TAB
         { id: 'disputes', name: 'Disputes', icon: GavelIcon },
-        // Moderation Tab Removed per request
         { id: 'marketing', name: 'Marketing', icon: TicketIcon },
         { id: 'users', name: 'Users', icon: UsersIcon },
         { id: 'listings', name: 'All Listings', icon: PackageIcon },
         { id: 'content', name: 'Content', icon: PaletteIcon },
-        { id: 'billing', name: 'Billing', icon: CreditCardIcon },
+        { id: 'billing', name: 'Gateway', icon: CreditCardIcon },
         { id: 'settings', name: 'Settings', icon: CogIcon },
     ];
 
@@ -508,14 +605,16 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                     <button onClick={() => setActiveTab('disputes')} className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200">
                                         Handle Disputes
                                     </button>
-                                    <button onClick={() => setActiveTab('marketing')} className="px-4 py-2 bg-purple-100 text-purple-700 rounded-md text-sm font-medium hover:bg-purple-200">
-                                        Create Coupon
+                                    <button onClick={() => setActiveTab('financials')} className="px-4 py-2 bg-green-100 text-green-700 rounded-md text-sm font-medium hover:bg-green-200">
+                                        View Financials
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 );
+            case 'financials':
+                return <FinancialsTab />;
             case 'marketing':
                 return <MarketingTab />;
             case 'settings':
