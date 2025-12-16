@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { FacebookIcon, InstagramIcon, TwitterIcon } from './icons';
+import { FacebookIcon, InstagramIcon, TwitterXIcon } from './icons';
 import { Page } from '../types';
 
 interface FooterProps {
@@ -56,8 +56,8 @@ const Footer: React.FC<FooterProps> = ({ logoUrl, onNavigate }) => {
                     <p className="text-base text-gray-500 order-2 sm:order-1 mt-4 sm:mt-0">&copy; 2025 Goodslister Inc. All rights reserved.</p>
                     <div className="flex space-x-6 order-1 sm:order-2">
                         <a href="#" className="text-gray-400 hover:text-gray-500">
-                            <span className="sr-only">Twitter</span>
-                            <TwitterIcon className="h-6 w-6" />
+                            <span className="sr-only">X</span>
+                            <TwitterXIcon className="h-6 w-6" />
                         </a>
                         <a href="#" className="text-gray-400 hover:text-gray-500">
                             <span className="sr-only">Facebook</span>
