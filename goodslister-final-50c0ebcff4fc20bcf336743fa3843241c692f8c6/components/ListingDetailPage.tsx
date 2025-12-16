@@ -209,7 +209,7 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ priceData
                             <div 
                                 className={`border-2 rounded-xl p-4 transition-all ${
                                     forceSplit
-                                        ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' 
+                                        ? 'opacity-60 cursor-not-allowed border-gray-100 bg-gray-50' 
                                         : `cursor-pointer ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`
                                 }`}
                                 onClick={() => !forceSplit && setSelectedMethod('platform')}
@@ -230,8 +230,8 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ priceData
                                     </div>
                                 </div>
                                 {forceSplit && (
-                                    <div className="mt-2 text-xs text-red-500 font-medium">
-                                        * Not available for bookings over $1,000 or high-risk items.
+                                    <div className="mt-3 text-xs text-gray-600 font-medium bg-gray-100 p-2 rounded border border-gray-200">
+                                        Full online payment is not available for this item.
                                     </div>
                                 )}
                                 {!forceSplit && selectedMethod === 'platform' && (
