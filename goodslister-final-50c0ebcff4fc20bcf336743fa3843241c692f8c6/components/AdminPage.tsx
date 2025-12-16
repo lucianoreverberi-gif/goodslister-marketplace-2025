@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon, SearchIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -30,7 +30,6 @@ interface AdminPageProps {
     onDeleteListing: (id: string) => Promise<void>;
 }
 
-// ... (Existing MOCK DATA remains unchanged: mockDisputes, mockCoupons, mockCampaigns, mockLedger) ...
 // Mock Disputes Data
 const mockDisputes: Dispute[] = [
     { id: 'dsp-1', bookingId: 'bk-123', reporterId: 'user-2', reason: 'damage', description: 'Item received with scratches not mentioned in listing.', status: 'open', dateOpened: '2024-03-10', amountInvolved: 150 },
@@ -52,15 +51,16 @@ const mockCampaigns = [
 
 // Mock Financial Ledger
 const mockLedger = [
-    { id: 'txn_105', date: 'Today, 11:15 AM', category: 'insurance_in', description: 'Premium Protection Plan', amount: 45.00, status: 'cleared', user: 'Guest #9901' },
-    { id: 'txn_104', date: 'Today, 10:45 AM', category: 'claim_out', description: 'Damage Coverage Payout (Claim #22)', amount: -320.00, status: 'processed', user: 'Host: Sarah J.' },
-    { id: 'txn_101', date: 'Today, 10:23 AM', category: 'revenue', description: 'Fixed Service Fee (Tier 1)', amount: 10.00, status: 'cleared', user: 'Guest #8821' },
-    { id: 'txn_102', date: 'Today, 10:23 AM', category: 'payout', description: 'Rental Payment to Host', amount: 85.00, status: 'pending', user: 'Host: Carlos G.' },
-    { id: 'txn_103', date: 'Today, 10:23 AM', category: 'deposit', description: 'Security Deposit Hold', amount: 250.00, status: 'held', user: 'Guest #8821' },
-    { id: 'txn_106', date: 'Yesterday', category: 'ad_revenue', description: 'Campaign: Regional Hero (Jet Ski)', amount: 29.99, status: 'cleared', user: 'Host: Carlos G.' }, // New Ad Revenue
+    { id: 'txn_105', date: '2024-03-15', category: 'insurance_in', description: 'Premium Protection Plan', amount: 45.00, status: 'cleared', user: 'Guest #9901' },
+    { id: 'txn_104', date: '2024-03-15', category: 'claim_out', description: 'Damage Coverage Payout (Claim #22)', amount: -320.00, status: 'processed', user: 'Host: Sarah J.' },
+    { id: 'txn_101', date: '2024-03-14', category: 'revenue', description: 'Fixed Service Fee (Tier 1)', amount: 10.00, status: 'cleared', user: 'Guest #8821' },
+    { id: 'txn_102', date: '2024-03-14', category: 'payout', description: 'Rental Payment to Host', amount: -85.00, status: 'pending', user: 'Host: Carlos G.' },
+    { id: 'txn_103', date: '2024-03-14', category: 'deposit', description: 'Security Deposit Hold', amount: 250.00, status: 'held', user: 'Guest #8821' },
+    { id: 'txn_106', date: '2024-03-13', category: 'ad_revenue', description: 'Campaign: Regional Hero (Jet Ski)', amount: 29.99, status: 'cleared', user: 'Host: Carlos G.' },
+    { id: 'txn_107', date: '2024-03-12', category: 'revenue', description: 'Fixed Service Fee (Tier 2)', amount: 25.00, status: 'cleared', user: 'Guest #1204' },
+    { id: 'txn_108', date: '2024-03-12', category: 'payout', description: 'Rental Payment to Host', amount: -200.00, status: 'cleared', user: 'Host: Ana R.' },
 ];
 
-// ... (InsuranceStrategyConfig remains unchanged) ...
 const InsuranceStrategyConfig: React.FC = () => {
     // Strategy State
     const [strategy, setStrategy] = useState<'percentage' | 'tiered'>('percentage');
@@ -822,71 +822,199 @@ const SystemHealth: React.FC = () => {
 };
 
 const FinancialsTab: React.FC = () => {
+    // --- ROBUST FILTERING & CALCULATIONS ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCategory, setFilterCategory] = useState<string>('all');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    
+    // Sort logic (Newest First by default)
+    const sortedLedger = [...mockLedger].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Filtering Logic
+    const filteredLedger = useMemo(() => {
+        return sortedLedger.filter(txn => {
+            const matchesSearch = 
+                txn.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                txn.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                txn.id.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesCategory = filterCategory === 'all' 
+                ? true 
+                : filterCategory === 'income' 
+                    ? (txn.category === 'revenue' || txn.category === 'ad_revenue' || txn.category === 'insurance_in')
+                    : filterCategory === 'expense'
+                        ? (txn.category === 'payout' || txn.category === 'claim_out')
+                        : txn.category === filterCategory;
+
+            const matchesStatus = filterStatus === 'all' ? true : txn.status === filterStatus;
+
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+    }, [searchTerm, filterCategory, filterStatus, sortedLedger]);
+
+    // Dynamic Stats Calculation
+    const stats = useMemo(() => {
+        const grossVolume = filteredLedger.reduce((sum, t) => t.amount > 0 ? sum + t.amount : sum, 0);
+        const payoutVolume = filteredLedger.reduce((sum, t) => t.amount < 0 ? sum + Math.abs(t.amount) : sum, 0);
+        const riskFundBalance = filteredLedger
+            .filter(t => t.category === 'insurance_in' || t.category === 'claim_out')
+            .reduce((sum, t) => sum + t.amount, 0); // Simplified calc for display
+        
+        return { grossVolume, payoutVolume, riskFundBalance };
+    }, [filteredLedger]);
+
+    const getTypeColor = (cat: string) => {
+        if (['revenue', 'ad_revenue', 'insurance_in'].includes(cat)) return 'text-green-600 bg-green-50 border-green-200';
+        if (['payout', 'claim_out'].includes(cat)) return 'text-gray-600 bg-gray-50 border-gray-200';
+        if (cat === 'deposit') return 'text-blue-600 bg-blue-50 border-blue-200';
+        return 'text-gray-600';
+    };
+
     return (
         <div>
             <h2 className="text-2xl font-bold mb-6">Financial Performance</h2>
             
+            {/* Dynamic Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <p className="text-sm font-bold text-gray-500 uppercase">Gross Volume (GMV)</p>
-                    <p className="text-3xl font-bold text-gray-900">$124,500.00</p>
-                    <span className="text-green-600 text-xs font-bold flex items-center mt-2">
-                        <TrendUpIcon className="h-3 w-3 mr-1" /> +15% this month
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm transition-all hover:shadow-md">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Filtered Revenue (In)</p>
+                    <p className="text-3xl font-extrabold text-gray-900 mt-2">${stats.grossVolume.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                    <span className="text-green-600 text-xs font-bold flex items-center mt-2 bg-green-50 inline-block px-2 py-1 rounded">
+                        <TrendUpIcon className="h-3 w-3 mr-1" /> Incoming Flow
                     </span>
                 </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <p className="text-sm font-bold text-gray-500 uppercase">Net Revenue</p>
-                    <p className="text-3xl font-bold text-gray-900">$12,450.00</p>
-                    <p className="text-xs text-gray-400 mt-2">Platform fees & commissions</p>
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm transition-all hover:shadow-md">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Filtered Payouts (Out)</p>
+                    <p className="text-3xl font-extrabold text-gray-900 mt-2">-${stats.payoutVolume.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                    <p className="text-xs text-gray-400 mt-2">Host transfers & claims</p>
                 </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <p className="text-sm font-bold text-gray-500 uppercase">Risk Fund Reserve</p>
-                    <p className="text-3xl font-bold text-purple-600">$8,940.00</p>
-                    <p className="text-xs text-gray-400 mt-2">Available for claims</p>
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm transition-all hover:shadow-md border-l-4 border-l-purple-500">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Net Risk Fund Impact</p>
+                    <p className={`text-3xl font-extrabold mt-2 ${stats.riskFundBalance >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                        {stats.riskFundBalance >= 0 ? '+' : ''}${stats.riskFundBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">Premiums collected vs Claims paid</p>
                 </div>
             </div>
 
-            <h3 className="text-lg font-bold mb-4">Recent Ledger Entries</h3>
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <CreditCardIcon className="h-5 w-5 text-gray-500" />
+                    Ledger Entries
+                </h3>
+                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{filteredLedger.length} records found</span>
+            </div>
+
+            {/* --- ROBUST FILTER TOOLBAR --- */}
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full md:w-1/3">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <SearchIcon className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input 
+                        type="text" 
+                        placeholder="Search ID, User, or Description..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="block w-full pl-10 sm:text-sm border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 h-10"
+                    />
+                </div>
+                
+                <div className="flex gap-2 w-full md:w-auto overflow-x-auto">
+                    <select 
+                        value={filterCategory} 
+                        onChange={(e) => setFilterCategory(e.target.value)}
+                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-lg h-10"
+                    >
+                        <option value="all">All Categories</option>
+                        <option value="income">🟢 All Income</option>
+                        <option value="expense">🔴 All Expenses</option>
+                        <option value="revenue">Service Fees</option>
+                        <option value="insurance_in">Insurance Premiums</option>
+                        <option value="payout">Host Payouts</option>
+                        <option value="claim_out">Claims Paid</option>
+                        <option value="deposit">Deposits (Held)</option>
+                    </select>
+
+                    <select 
+                        value={filterStatus} 
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-lg h-10"
+                    >
+                        <option value="all">All Statuses</option>
+                        <option value="cleared">✅ Cleared</option>
+                        <option value="pending">⏳ Pending</option>
+                        <option value="processed">🔄 Processed</option>
+                        <option value="held">🔒 Held</option>
+                    </select>
+                    
+                    <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <ExternalLinkIcon className="h-4 w-4" /> Export
+                    </button>
+                </div>
+            </div>
+
+            {/* Data Table */}
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
                 <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 border-b">
                         <tr>
                             <th className="p-4 font-medium text-gray-500">ID</th>
                             <th className="p-4 font-medium text-gray-500">Date</th>
+                            <th className="p-4 font-medium text-gray-500">Category</th>
                             <th className="p-4 font-medium text-gray-500">Description</th>
                             <th className="p-4 font-medium text-gray-500">User</th>
                             <th className="p-4 font-medium text-gray-500 text-right">Amount</th>
                             <th className="p-4 font-medium text-gray-500 text-right">Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {mockLedger.map(txn => (
-                            <tr key={txn.id} className="border-b last:border-0 hover:bg-gray-50">
-                                <td className="p-4 font-mono text-xs text-gray-400">{txn.id}</td>
-                                <td className="p-4 text-gray-600">{txn.date}</td>
-                                <td className="p-4">
-                                    <div className="font-medium text-gray-900">{txn.description}</div>
-                                    <div className="text-xs text-gray-500 uppercase tracking-wide">{txn.category}</div>
-                                </td>
-                                <td className="p-4 text-gray-600">{txn.user}</td>
-                                <td className={`p-4 font-bold text-right ${txn.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                                    {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toFixed(2)}
-                                </td>
-                                <td className="p-4 text-right">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
-                                        txn.status === 'cleared' ? 'bg-green-100 text-green-800' : 
-                                        txn.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                        txn.status === 'processed' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-600'
-                                    }`}>
-                                        {txn.status}
-                                    </span>
+                    <tbody className="divide-y divide-gray-100">
+                        {filteredLedger.length > 0 ? (
+                            filteredLedger.map(txn => (
+                                <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="p-4 font-mono text-xs text-gray-400">{txn.id}</td>
+                                    <td className="p-4 text-gray-600 whitespace-nowrap">{txn.date}</td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide border ${getTypeColor(txn.category)}`}>
+                                            {txn.category.replace('_', ' ')}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 font-medium text-gray-900">{txn.description}</td>
+                                    <td className="p-4 text-gray-600">{txn.user}</td>
+                                    <td className={`p-4 font-bold text-right ${txn.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                                        {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toFixed(2)}
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase inline-flex items-center gap-1 ${
+                                            txn.status === 'cleared' ? 'bg-green-100 text-green-800' : 
+                                            txn.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                            txn.status === 'processed' ? 'bg-blue-100 text-blue-800' :
+                                            'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {txn.status === 'cleared' && <CheckCircleIcon className="h-3 w-3"/>}
+                                            {txn.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={7} className="p-12 text-center text-gray-500">
+                                    No transactions found matching your filters.
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
+            
+            {/* Mock Pagination */}
+            {filteredLedger.length > 0 && (
+                <div className="flex justify-end mt-4 gap-2">
+                    <button disabled className="px-3 py-1 text-sm border rounded bg-gray-100 text-gray-400 cursor-not-allowed">Previous</button>
+                    <button className="px-3 py-1 text-sm border rounded hover:bg-gray-50 text-gray-700">Next</button>
+                </div>
+            )}
         </div>
     );
 };
