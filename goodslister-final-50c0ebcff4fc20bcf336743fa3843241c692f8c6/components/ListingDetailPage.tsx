@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, ExternalLinkIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
@@ -76,11 +76,11 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                 </div>
                 <div className="flex items-center gap-2 mt-2 text-sm">
                     {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
-                    <p className="capitalize font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
+                    <p className="capitalize font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Partial Payment'}</p>
                 </div>
                 {booking.paymentMethod === 'direct' && (
                      <div className="mt-3 p-3 bg-amber-50 rounded border border-amber-200 text-xs text-amber-800 font-medium">
-                         Reminder: You have only paid the service fee (and deposit if applicable). The rental balance is due directly to the owner upon pickup.
+                         <p><strong>Action Required:</strong> You have paid the fees & insurance online. Please pay the remaining balance directly to the owner upon arrival.</p>
                      </div>
                 )}
                 <p className="mt-3 text-xs text-gray-400 text-center">Check your email for the receipt.</p>
@@ -178,12 +178,19 @@ interface PaymentSelectionModalProps {
 }
 
 const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ priceData, isHighRisk, isInstant, onConfirm, onClose, isProcessing }) => {
-    // Logic: If high risk OR total > 1000, enforce split payment.
     const isOverLimit = priceData.totalPayFull > 1000;
     const forceSplit = isHighRisk || isOverLimit;
     
-    // Default to 'direct' (split) if forced, otherwise null to force choice
     const [selectedMethod, setSelectedMethod] = useState<'platform' | 'direct' | null>(forceSplit ? 'direct' : null);
+    const [view, setView] = useState<'method' | 'card'>('method');
+
+    const handleContinue = () => {
+        if (selectedMethod) {
+            setView('card');
+        }
+    };
+
+    const amountToChargeNow = selectedMethod === 'platform' ? priceData.totalPayFull : priceData.totalSplitUpfront;
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -192,97 +199,143 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ priceData
                     <XIcon className="h-6 w-6" />
                 </button>
                 
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Secure Booking</h2>
-                <p className="text-gray-600 mb-6">Choose how you want to pay.</p>
+                {view === 'method' && (
+                    <>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Secure Booking</h2>
+                        <p className="text-gray-600 mb-6">Choose how you want to pay.</p>
 
-                <div className="space-y-4 overflow-y-auto flex-1">
-                    {/* OPTION 1: PAY FULL (Platform) */}
-                    <div 
-                        className={`border-2 rounded-xl p-4 transition-all ${
-                            forceSplit
-                                ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' 
-                                : `cursor-pointer ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`
-                        }`}
-                        onClick={() => !forceSplit && setSelectedMethod('platform')}
-                    >
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${forceSplit ? 'bg-gray-200 text-gray-400' : 'bg-green-100 text-green-600'}`}>
-                                    <CreditCardIcon className="h-6 w-6" />
+                        <div className="space-y-4 overflow-y-auto flex-1">
+                            {/* OPTION 1: PAY FULL (Platform) */}
+                            <div 
+                                className={`border-2 rounded-xl p-4 transition-all ${
+                                    forceSplit
+                                        ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' 
+                                        : `cursor-pointer ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`
+                                }`}
+                                onClick={() => !forceSplit && setSelectedMethod('platform')}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-full ${forceSplit ? 'bg-gray-200 text-gray-400' : 'bg-green-100 text-green-600'}`}>
+                                            <CreditCardIcon className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">Pay Full Amount</h3>
+                                            <p className="text-sm text-gray-500">Includes Stripe Fee</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="block font-bold text-gray-900">${priceData.totalPayFull.toFixed(2)}</span>
+                                        {!forceSplit && <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full">All inclusive</span>}
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900">Pay Full Amount</h3>
-                                    <p className="text-sm text-gray-500">Includes Stripe Fee</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <span className="block font-bold text-gray-900">${priceData.totalPayFull.toFixed(2)}</span>
-                                {!forceSplit && <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full">All inclusive</span>}
-                            </div>
-                        </div>
-                        {forceSplit && (
-                            <div className="mt-2 text-xs text-red-500 font-medium">
-                                * Not available for bookings over $1,000 or high-risk items.
-                            </div>
-                        )}
-                        {!forceSplit && selectedMethod === 'platform' && (
-                             <div className="mt-3 pl-11 text-xs text-gray-600">
-                                Includes: Rental (${priceData.rentalTotal}), Service Fee, Protection, Deposit${isInstant ? '' : ' (Authorized)'} and a ${priceData.stripeAdminFee.toFixed(2)} admin fee.
-                            </div>
-                        )}
-                    </div>
-
-                    {/* OPTION 2: SPLIT PAYMENT (Direct) */}
-                    <div 
-                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'direct' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-200' : 'border-gray-200 hover:border-gray-300'}`}
-                        onClick={() => setSelectedMethod('direct')}
-                    >
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-amber-100 p-2 rounded-full text-amber-600">
-                                    <WalletIcon className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900">Split Payment</h3>
-                                    <p className="text-sm text-gray-500">Secure listing now, pay owner later.</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <span className="block font-bold text-cyan-700">Pay Now: ${priceData.totalSplitUpfront.toFixed(2)}</span>
-                                <span className="text-xs text-amber-700">Due Later: ${priceData.balanceDirect.toFixed(2)}</span>
-                            </div>
-                        </div>
-                        
-                        {selectedMethod === 'direct' && (
-                            <div className="mt-3 pl-11">
-                                <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
-                                    <li><strong>Pay Now:</strong> Service Fee{priceData.protectionFee > 0 && ', Protection Plan'}{isInstant && priceData.depositAmount > 0 && ', Security Deposit'}.</li>
-                                    <li><strong>Pay Later:</strong> ${priceData.balanceDirect.toFixed(2)} directly to owner (Zelle/Cash) at pickup.</li>
-                                </ul>
-                                {isInstant && priceData.depositAmount > 0 && (
-                                     <div className="mt-2 p-2 bg-amber-100 rounded text-amber-800 text-xs font-bold flex items-center gap-2">
-                                        <ShieldIcon className="h-4 w-4" />
-                                        Instant Booking: ${priceData.depositAmount} Deposit included upfront.
-                                     </div>
+                                {forceSplit && (
+                                    <div className="mt-2 text-xs text-red-500 font-medium">
+                                        * Not available for bookings over $1,000 or high-risk items.
+                                    </div>
+                                )}
+                                {!forceSplit && selectedMethod === 'platform' && (
+                                    <div className="mt-3 pl-11 text-xs text-gray-600">
+                                        Includes: Rental (${priceData.rentalTotal}), Service Fee, Protection, Deposit${isInstant ? '' : ' (Authorized)'} and a ${priceData.stripeAdminFee.toFixed(2)} admin fee.
+                                    </div>
                                 )}
                             </div>
-                        )}
-                    </div>
-                </div>
 
-                <div className="pt-6 mt-4 border-t">
-                    <div className="flex justify-between items-center mb-4 text-lg font-bold text-gray-900">
-                        <span>Due Today</span>
-                        <span>${selectedMethod === 'direct' ? priceData.totalSplitUpfront.toFixed(2) : (selectedMethod ? priceData.totalPayFull.toFixed(2) : '0.00')}</span>
-                    </div>
-                    <button
-                        onClick={() => selectedMethod && onConfirm(selectedMethod)}
-                        disabled={!selectedMethod || isProcessing}
-                        className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isProcessing ? 'Processing...' : 'Confirm & Pay'}
-                    </button>
-                </div>
+                            {/* OPTION 2: SPLIT PAYMENT (Direct) */}
+                            <div 
+                                className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'direct' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-200' : 'border-gray-200 hover:border-gray-300'}`}
+                                onClick={() => setSelectedMethod('direct')}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-amber-100 p-2 rounded-full text-amber-600">
+                                            <WalletIcon className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">Split Payment</h3>
+                                            <p className="text-sm text-gray-500">Secure listing now, pay owner later.</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="block font-bold text-cyan-700">Online: ${priceData.totalSplitUpfront.toFixed(2)}</span>
+                                        <span className="text-xs text-amber-700">Later: ${priceData.balanceDirect.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                                
+                                {selectedMethod === 'direct' && (
+                                    <div className="mt-3 pl-11">
+                                        <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                                            <li><strong>Online Now:</strong> Service Fee{priceData.protectionFee > 0 && ' + Protection'}{isInstant && priceData.depositAmount > 0 && ' + Deposit'}.</li>
+                                            <li><strong>Pay on Pickup:</strong> ${priceData.balanceDirect.toFixed(2)} directly to owner (Zelle/Cash).</li>
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="pt-6 mt-4 border-t">
+                            <div className="flex justify-between items-center mb-4 text-lg font-bold text-gray-900">
+                                <span>Due Today</span>
+                                <span>${selectedMethod === 'direct' ? priceData.totalSplitUpfront.toFixed(2) : (selectedMethod ? priceData.totalPayFull.toFixed(2) : '0.00')}</span>
+                            </div>
+                            <button
+                                onClick={handleContinue}
+                                disabled={!selectedMethod || isProcessing}
+                                className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? 'Processing...' : (selectedMethod === 'platform' ? 'Continue to Payment' : 'Proceed to Checkout')}
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {view === 'card' && (
+                    <>
+                        <div className="flex items-center gap-2 mb-6">
+                            <button onClick={() => setView('method')} className="p-1 -ml-1 text-gray-500 hover:text-gray-900">
+                                <ChevronLeftIcon className="h-6 w-6" />
+                            </button>
+                            <h2 className="text-xl font-bold text-gray-900">Final Step</h2>
+                        </div>
+
+                        <div className="flex-1 space-y-6 animate-in fade-in slide-in-from-right-4">
+                            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white shadow-lg text-center">
+                                <p className="text-indigo-100 font-medium mb-1">Total Due Now</p>
+                                <p className="text-4xl font-extrabold tracking-tight">${amountToChargeNow.toFixed(2)}</p>
+                            </div>
+
+                            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 text-center space-y-4">
+                                <div className="flex justify-center text-indigo-500 mb-2">
+                                    <LockIcon className="h-8 w-8" />
+                                </div>
+                                <h3 className="font-bold text-gray-900">Redirecting to Stripe</h3>
+                                <p className="text-sm text-gray-600">
+                                    We use Stripe to securely process your 
+                                    <strong> {selectedMethod === 'platform' ? 'full payment' : 'booking deposit'}</strong>.
+                                    {selectedMethod === 'direct' && " You will pay the rest to the owner upon pickup."}
+                                </p>
+                                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mt-2">
+                                    <span className="bg-gray-200 px-2 py-1 rounded">SSL Encrypted</span>
+                                    <span className="bg-gray-200 px-2 py-1 rounded">PCI Compliant</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-6 mt-4 border-t">
+                            <button
+                                onClick={() => selectedMethod && onConfirm(selectedMethod)}
+                                disabled={isProcessing}
+                                className="w-full py-4 px-4 text-white font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform hover:scale-[1.02]"
+                            >
+                                {isProcessing ? 'Redirecting to Stripe...' : (
+                                    <>
+                                        Proceed to Secure Checkout <ExternalLinkIcon className="h-4 w-4" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -438,13 +491,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         setIsBooking(true);
         setBookingError(null);
 
-        // Simulate processing delay
-        await new Promise(resolve => setTimeout(resolve, 1500)); 
-
         try {
-            // Determine total price recorded in DB
-            const finalTotalPrice = paymentMethod === 'platform' ? priceDetails.totalPayFull : (priceDetails.totalSplitUpfront + priceDetails.balanceDirect);
+            // Determine total price recorded in DB (without Stripe Fee, that's added on top in checkout)
+            const finalTotalPrice = paymentMethod === 'platform' ? (priceDetails.totalPayFull - priceDetails.stripeAdminFee) : (priceDetails.totalSplitUpfront + priceDetails.balanceDirect);
             
+            // 1. Create the booking record (Pending)
             const newBooking = await onCreateBooking(
                 listing.id, 
                 finalStartDate, 
@@ -454,25 +505,69 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                 (!isHighRisk && (insurancePlan === 'premium' || insurancePlan === 'standard')) ? 'insurance' : 'waiver',
                 priceDetails.protectionFee
             );
-            setSuccessfulBooking(newBooking);
-            setRange(undefined); 
-            setHourlyDate(undefined);
-            setShowPaymentModal(false);
+
+            // 2. Initiate Stripe Checkout
+            // KEY CHANGE: Now we check amounts for BOTH methods
+            let amountToCharge = 0;
+            let chargeLabel = "";
+
+            if (paymentMethod === 'platform') {
+                amountToCharge = priceDetails.totalPayFull;
+                chargeLabel = `Full Rental: ${listing.title}`;
+            } else {
+                amountToCharge = priceDetails.totalSplitUpfront;
+                chargeLabel = `Booking Deposit: ${listing.title}`;
+            }
+
+            // Only redirect to Stripe if there is something to charge
+            if (amountToCharge > 0) {
+                const response = await fetch('/api/stripe/create-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: chargeLabel,
+                        amount: amountToCharge,
+                        bookingId: newBooking.id,
+                        imageUrl: listing.images[0]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to initialize Stripe checkout.");
+                }
+
+                const { url } = await response.json();
+                
+                // 3. Redirect to Stripe
+                if (url) {
+                    window.location.href = url;
+                    return; // Stop execution here, browser handles redirect
+                } else {
+                    throw new Error("Stripe URL not found.");
+                }
+            } else {
+                // Should logically rarely happen in this model unless everything is $0
+                setSuccessfulBooking(newBooking);
+                setRange(undefined); 
+                setHourlyDate(undefined);
+                setShowPaymentModal(false);
+                setIsBooking(false);
+            }
+
         } catch (error) {
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
             setBookingError(message);
-        } finally {
             setIsBooking(false);
         }
     };
 
-    const modifiersStyles: React.CSSProperties | any = {
-      selected: { backgroundColor: '#06B6D4', color: 'white' },
-      range_middle: { backgroundColor: '#06B6D4', color: 'white', borderRadius: 0 },
-      range_start: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
-      range_end: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
-      today: { fontWeight: 'bold', color: '#10B981' },
-      disabled: { textDecoration: 'line-through', opacity: 0.5 }
+    const modifiersStyles = {
+        selected: { backgroundColor: '#06B6D4', color: 'white' },
+        range_middle: { backgroundColor: '#06B6D4', color: 'white', borderRadius: 0 },
+        range_start: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
+        range_end: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
+        today: { fontWeight: 'bold', color: '#10B981' },
+        disabled: { textDecoration: 'line-through', opacity: 0.5 }
     };
 
     // Calculate Modal Dates for passing props safely
