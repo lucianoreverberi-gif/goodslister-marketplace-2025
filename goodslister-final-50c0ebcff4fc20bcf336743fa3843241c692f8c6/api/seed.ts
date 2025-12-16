@@ -119,6 +119,11 @@ export default async function handler(
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
         // NEW MIGRATION
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS instant_booking_enabled BOOLEAN DEFAULT FALSE`;
+        
+        // --- FIX FOR YOUR ERROR: Adding the missing risk/hardware columns ---
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_gps_tracker BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_commercial_insurance BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS security_deposit NUMERIC(10, 2) DEFAULT 0`;
     } catch (e) {
         console.log("Migration skipped", e);
     }
