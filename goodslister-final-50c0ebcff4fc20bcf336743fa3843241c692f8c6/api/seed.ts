@@ -29,7 +29,7 @@ export default async function handler(
       );
     `;
 
-    // 2. Create Listings Table (Added country_code and currency)
+    // 2. Create Listings Table (Added country_code, currency, instant_booking_enabled)
     await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id VARCHAR(255) PRIMARY KEY,
@@ -64,11 +64,12 @@ export default async function handler(
         skill_level VARCHAR(20),
         whats_included TEXT,
         itinerary TEXT,
-        price_unit VARCHAR(20) DEFAULT 'item'
+        price_unit VARCHAR(20) DEFAULT 'item',
+        instant_booking_enabled BOOLEAN DEFAULT FALSE
       );
     `;
 
-    // 3. Create Bookings Table with Split Payment support
+    // 3. Create Bookings Table
     await sql`
         CREATE TABLE IF NOT EXISTS bookings (
             id VARCHAR(255) PRIMARY KEY,
@@ -87,71 +88,17 @@ export default async function handler(
             has_return_inspection BOOLEAN DEFAULT FALSE
         );
     `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS payments (
-            id VARCHAR(255) PRIMARY KEY,
-            booking_id VARCHAR(255) REFERENCES bookings(id),
-            payer_id VARCHAR(255) REFERENCES users(id),
-            payee_id VARCHAR(255) REFERENCES users(id),
-            amount NUMERIC(10, 2),
-            platform_fee NUMERIC(10, 2),
-            protection_fee NUMERIC(10, 2),
-            owner_payout NUMERIC(10, 2),
-            status VARCHAR(20),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS hero_slides (
-            id VARCHAR(255) PRIMARY KEY,
-            title TEXT,
-            subtitle TEXT,
-            image_url TEXT
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS banners (
-            id VARCHAR(255) PRIMARY KEY,
-            title TEXT,
-            description TEXT,
-            button_text TEXT,
-            image_url TEXT,
-            layout TEXT DEFAULT 'overlay',
-            link_url TEXT
-        );
-    `;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS inspections (
-            id VARCHAR(255) PRIMARY KEY,
-            booking_id VARCHAR(255) REFERENCES bookings(id),
-            status VARCHAR(50), 
-            handover_photos JSONB, 
-            return_photos JSONB,
-            damage_reported BOOLEAN DEFAULT FALSE,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    // --- REVIEWS TABLE ---
-    await sql`CREATE TABLE IF NOT EXISTS reviews (id VARCHAR(255) PRIMARY KEY, booking_id VARCHAR(255) REFERENCES bookings(id), author_id VARCHAR(255) REFERENCES users(id), target_id VARCHAR(255) REFERENCES users(id), role VARCHAR(20), rating NUMERIC(3, 2), comment TEXT, private_note TEXT, care_rating NUMERIC(3, 2), clean_rating NUMERIC(3, 2), accuracy_rating NUMERIC(3, 2), safety_rating NUMERIC(3, 2), status VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
-
-    await sql`
-        CREATE TABLE IF NOT EXISTS site_config (
-            key VARCHAR(255) PRIMARY KEY,
-            value TEXT
-        );
-    `;
     
-    // --- CHAT TABLES ---
+    // ... (Rest of tables: payments, hero_slides, banners, inspections, reviews, site_config, conversations...)
+    await sql`CREATE TABLE IF NOT EXISTS payments (id VARCHAR(255) PRIMARY KEY, booking_id VARCHAR(255) REFERENCES bookings(id), payer_id VARCHAR(255) REFERENCES users(id), payee_id VARCHAR(255) REFERENCES users(id), amount NUMERIC(10, 2), platform_fee NUMERIC(10, 2), protection_fee NUMERIC(10, 2), owner_payout NUMERIC(10, 2), status VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+    await sql`CREATE TABLE IF NOT EXISTS hero_slides (id VARCHAR(255) PRIMARY KEY, title TEXT, subtitle TEXT, image_url TEXT)`;
+    await sql`CREATE TABLE IF NOT EXISTS banners (id VARCHAR(255) PRIMARY KEY, title TEXT, description TEXT, button_text TEXT, image_url TEXT, layout TEXT DEFAULT 'overlay', link_url TEXT)`;
+    await sql`CREATE TABLE IF NOT EXISTS inspections (id VARCHAR(255) PRIMARY KEY, booking_id VARCHAR(255) REFERENCES bookings(id), status VARCHAR(50), handover_photos JSONB, return_photos JSONB, damage_reported BOOLEAN DEFAULT FALSE, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+    await sql`CREATE TABLE IF NOT EXISTS reviews (id VARCHAR(255) PRIMARY KEY, booking_id VARCHAR(255) REFERENCES bookings(id), author_id VARCHAR(255) REFERENCES users(id), target_id VARCHAR(255) REFERENCES users(id), role VARCHAR(20), rating NUMERIC(3, 2), comment TEXT, private_note TEXT, care_rating NUMERIC(3, 2), clean_rating NUMERIC(3, 2), accuracy_rating NUMERIC(3, 2), safety_rating NUMERIC(3, 2), status VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+    await sql`CREATE TABLE IF NOT EXISTS site_config (key VARCHAR(255) PRIMARY KEY, value TEXT)`;
     await sql`CREATE TABLE IF NOT EXISTS conversations (id VARCHAR(255) PRIMARY KEY, listing_id VARCHAR(255), updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
     await sql`CREATE TABLE IF NOT EXISTS conversation_participants (conversation_id VARCHAR(255) REFERENCES conversations(id), user_id VARCHAR(255), PRIMARY KEY (conversation_id, user_id))`;
     await sql`CREATE TABLE IF NOT EXISTS messages (id VARCHAR(255) PRIMARY KEY, conversation_id VARCHAR(255) REFERENCES conversations(id), sender_id VARCHAR(255), content TEXT, is_read BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
-
 
     // Run migrations for existing columns if needed
     try {
@@ -162,25 +109,21 @@ export default async function handler(
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
-        
-        // GLOBAL ARCHITECTURE MIGRATION
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS country_code VARCHAR(5) DEFAULT 'US'`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS currency VARCHAR(5) DEFAULT 'USD'`;
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'USER'`;
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS home_region VARCHAR(10)`;
-
-        // Migration for bookings table split payment
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`;
-        
-        // Migration for favorites
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
+        // NEW MIGRATION
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS instant_booking_enabled BOOLEAN DEFAULT FALSE`;
     } catch (e) {
         console.log("Migration skipped", e);
     }
 
-    // --- SEEDING STRATEGY: UPSERT (Insert if not exists) ---
+    // --- SEEDING STRATEGY ---
     
     // 1. Users
     for (const user of mockUsers) {
@@ -194,7 +137,6 @@ export default async function handler(
 
     // 2. Listings
     for (const listing of mockListings) {
-        // Ensure owner exists to satisfy FK
         const ownerExists = mockUsers.find(u => u.id === listing.owner.id);
         if (ownerExists) {
              await sql`
@@ -204,7 +146,7 @@ export default async function handler(
                     location_city, location_state, location_country, location_lat, location_lng,
                     owner_id, images, video_url, is_featured, rating, reviews_count, booked_dates, owner_rules, 
                     has_gps_tracker, has_commercial_insurance, security_deposit, listing_type, price_unit,
-                    country_code, currency
+                    country_code, currency, instant_booking_enabled
                 )
                 VALUES (
                     ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, ${listing.subcategory},
@@ -213,7 +155,7 @@ export default async function handler(
                     ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, 
                     ${listing.hasGpsTracker || false}, ${listing.hasCommercialInsurance || false}, ${listing.securityDeposit || 0},
                     ${listing.listingType || 'rental'}, ${listing.priceUnit || 'item'},
-                    'US', 'USD' 
+                    'US', 'USD', ${listing.instantBookingEnabled || false}
                 )
                 ON CONFLICT (id) DO NOTHING
             `;
@@ -223,10 +165,8 @@ export default async function handler(
 
     // 3. Bookings
     for (const booking of mockBookings) {
-        // Ensure relations exist
         const listingExists = mockListings.find(l => l.id === booking.listingId);
         const renterExists = mockUsers.find(u => u.id === booking.renterId);
-        
         if (listingExists && renterExists) {
              await sql`
                 INSERT INTO bookings (id, listing_id, renter_id, start_date, end_date, total_price, status, protection_type, protection_fee, payment_method, amount_paid_online, balance_due_on_site)

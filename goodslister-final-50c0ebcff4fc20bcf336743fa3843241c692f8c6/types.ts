@@ -17,9 +17,6 @@ export enum RiskTier {
     TIER_2_POWERSPORTS = "POWERSPORTS"      // External Insurance
 }
 
-// NEW: Scalable User Roles
-export type UserRole = 'SUPER_ADMIN' | 'REGION_MANAGER' | 'SUPPORT_AGENT' | 'USER';
-
 export type ListingType = 'rental' | 'experience';
 export type PriceUnit = 'item' | 'person' | 'group';
 
@@ -34,20 +31,23 @@ export interface User {
     bio?: string;
     isEmailVerified?: boolean;
     isPhoneVerified?: boolean;
-    isIdVerified?: boolean; 
-    licenseVerified?: boolean; 
+    isIdVerified?: boolean; // Important for Tier 2
+    licenseVerified?: boolean; // NEW: Specific for Powersports/Marine
     averageRating?: number;
     totalReviews?: number;
     status?: 'active' | 'suspended';
-    favorites: string[]; 
+    favorites: string[]; // List of Listing IDs
     
     // NEW: Architecture fields
     role?: UserRole; // Replaces simple 'isAdmin' boolean logic internally
     homeRegion?: string; // e.g., 'US', 'AR'
 }
 
+// NEW: Scalable User Roles
+export type UserRole = 'SUPER_ADMIN' | 'REGION_MANAGER' | 'SUPPORT_AGENT' | 'USER';
+
 export interface Session extends User {
-    isAdmin?: boolean; // Kept for backward compatibility with UI checks
+    isAdmin?: boolean;
 }
 
 export interface Location {
@@ -82,16 +82,24 @@ export interface Listing {
     bookedDates?: string[];
     ownerRules?: string;
     approvalStatus?: 'pending' | 'approved' | 'rejected';
+    // NEW: Hardware check for Tier 2 Assets
     hasGpsTracker?: boolean;
+    
+    // NEW: Safety & Legal Configuration
     hasCommercialInsurance?: boolean;
     securityDeposit?: number;
-    listingType?: ListingType;
+
+    // NEW: Experience & Hosting Fields
+    listingType?: ListingType; // 'rental' or 'experience'
     operatorLicenseId?: string;
     fuelPolicy?: 'included' | 'extra';
     skillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'all_levels';
     whatsIncluded?: string;
     itinerary?: string;
-    priceUnit?: PriceUnit;
+    priceUnit?: PriceUnit; // 'item' (default), 'person', 'group'
+
+    // NEW: Booking Logic
+    instantBookingEnabled?: boolean;
 }
 
 export interface HeroSlide {
@@ -121,7 +129,7 @@ export interface Message {
 
 export interface Conversation {
     id: string;
-    participants: { [key: string]: User };
+    participants: { [key: string]: User }; // participantId -> User object
     listing: Listing;
     messages: Message[];
 }
@@ -136,19 +144,28 @@ export interface Booking {
     startDate: string;
     endDate: string;
     totalPrice: number;
+    
+    // REFACTORED: Split protection logic
     protectionType: 'waiver' | 'insurance'; 
-    protectionFee: number;
-    insurancePlan?: 'standard' | 'essential' | 'premium';
-    amountPaidOnline: number;
-    balanceDueOnSite: number;
+    protectionFee: number; // The 15% or the $35/day
+    insurancePlan?: 'standard' | 'essential' | 'premium'; // Deprecated/Optional now
+    
+    // NEW: Split Payment Fields
+    amountPaidOnline: number; // Service Fee + Protection
+    balanceDueOnSite: number; // Base Rental Price (Paid to host)
+
+    // NEW: Legal Contract Signature
     contractSignature?: {
         signedBy: string;
         signedAt: string;
         contractType: string;
     };
-    paymentMethod?: 'platform' | 'direct';
-    status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
+
+    paymentMethod?: 'platform' | 'direct'; // Kept for legacy/analytics, but now mostly 'split'
+    status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled' | 'rejected';
     inspectionResult?: 'clean' | 'damaged';
+    
+    // NEW: Inspection Tracking
     hasHandoverInspection?: boolean;
     hasReturnInspection?: boolean;
 }
@@ -175,6 +192,7 @@ export interface Coupon {
     status: 'active' | 'expired';
 }
 
+// NEW: Inspection Interfaces
 export interface InspectionPhoto {
     url: string;
     angleId: string;
