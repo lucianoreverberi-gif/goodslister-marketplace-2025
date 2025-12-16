@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -59,6 +59,233 @@ const mockLedger = [
     { id: 'txn_106', date: 'Yesterday', category: 'ad_revenue', description: 'Campaign: Regional Hero (Jet Ski)', amount: 29.99, status: 'cleared', user: 'Host: Carlos G.' }, // New Ad Revenue
 ];
 
+const InsuranceStrategyConfig: React.FC = () => {
+    // Strategy State
+    const [strategy, setStrategy] = useState<'percentage' | 'tiered'>('percentage');
+    const [deductible, setDeductible] = useState(500);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Percentage Model
+    const [percentageRate, setPercentageRate] = useState(15);
+    const [minFee, setMinFee] = useState(5);
+
+    // Tiered Model
+    const [tier1Limit, setTier1Limit] = useState(100); // Up to $100
+    const [tier1Fee, setTier1Fee] = useState(10);
+    
+    const [tier2Limit, setTier2Limit] = useState(500); // Up to $500
+    const [tier2Fee, setTier2Fee] = useState(35);
+    
+    const [tier3Fee, setTier3Fee] = useState(75); // Above $500
+
+    // Simulator State
+    const [simRentalValue, setSimRentalValue] = useState(250);
+
+    const calculateFee = (val: number) => {
+        if (strategy === 'percentage') {
+            const calc = val * (percentageRate / 100);
+            return Math.max(calc, minFee);
+        } else {
+            if (val <= tier1Limit) return tier1Fee;
+            if (val <= tier2Limit) return tier2Fee;
+            return tier3Fee;
+        }
+    };
+
+    const handleSave = () => {
+        setIsSaving(true);
+        setTimeout(() => setIsSaving(false), 1500);
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-800 to-indigo-900 p-6 text-white flex justify-between items-center">
+                <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                        <SlidersIcon className="h-6 w-6" />
+                        Insurance Pricing Engine
+                    </h3>
+                    <p className="text-purple-200 text-sm mt-1">Configure how the "Protection Plan" is calculated for renters.</p>
+                </div>
+                <div className="flex bg-white/10 p-1 rounded-lg">
+                    <button 
+                        onClick={() => setStrategy('percentage')}
+                        className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${strategy === 'percentage' ? 'bg-white text-purple-900' : 'text-purple-100 hover:bg-white/10'}`}
+                    >
+                        % Percentage
+                    </button>
+                    <button 
+                        onClick={() => setStrategy('tiered')}
+                        className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${strategy === 'tiered' ? 'bg-white text-purple-900' : 'text-purple-100 hover:bg-white/10'}`}
+                    >
+                        Fixed Tiers
+                    </button>
+                </div>
+            </div>
+
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
+                
+                {/* Configuration Column */}
+                <div className="space-y-8">
+                    {/* Common Settings */}
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <ShieldIcon className="h-4 w-4 text-purple-600" />
+                            Deductible (User Liability)
+                        </label>
+                        <div className="relative rounded-md shadow-sm max-w-xs">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input
+                                type="number"
+                                value={deductible}
+                                onChange={(e) => setDeductible(Number(e.target.value))}
+                                className="block w-full pl-7 border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Amount the renter pays before insurance kicks in.</p>
+                    </div>
+
+                    {strategy === 'percentage' ? (
+                        <div className="space-y-6 animate-in fade-in">
+                            <div className="p-4 bg-purple-50 border border-purple-100 rounded-lg">
+                                <h4 className="font-bold text-purple-900 mb-4">Percentage Model Settings</h4>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fee Percentage</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="number" 
+                                                value={percentageRate} 
+                                                onChange={e => setPercentageRate(Number(e.target.value))}
+                                                className="block w-full border-gray-300 rounded-md pr-8" 
+                                            />
+                                            <span className="absolute right-3 top-2 text-gray-500">%</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Minimum Fee Floor</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                            <input 
+                                                type="number" 
+                                                value={minFee} 
+                                                onChange={e => setMinFee(Number(e.target.value))}
+                                                className="block w-full border-gray-300 rounded-md pl-6" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6 animate-in fade-in">
+                             <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg space-y-4">
+                                <h4 className="font-bold text-indigo-900 mb-2">Tiered Model Settings</h4>
+                                
+                                {/* Tier 1 */}
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-indigo-800 font-medium">Low Value (Up to)</label>
+                                        <div className="relative"><span className="absolute left-2 top-1.5 text-xs">$</span><input type="number" value={tier1Limit} onChange={e => setTier1Limit(Number(e.target.value))} className="w-full pl-5 py-1 text-sm rounded border-gray-300"/></div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-indigo-800 font-bold">Charge Fee</label>
+                                        <div className="relative"><span className="absolute left-2 top-1.5 text-xs">$</span><input type="number" value={tier1Fee} onChange={e => setTier1Fee(Number(e.target.value))} className="w-full pl-5 py-1 text-sm rounded border-indigo-300 bg-white font-bold text-indigo-700"/></div>
+                                    </div>
+                                </div>
+
+                                {/* Tier 2 */}
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-indigo-800 font-medium">Mid Value (Up to)</label>
+                                        <div className="relative"><span className="absolute left-2 top-1.5 text-xs">$</span><input type="number" value={tier2Limit} onChange={e => setTier2Limit(Number(e.target.value))} className="w-full pl-5 py-1 text-sm rounded border-gray-300"/></div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-indigo-800 font-bold">Charge Fee</label>
+                                        <div className="relative"><span className="absolute left-2 top-1.5 text-xs">$</span><input type="number" value={tier2Fee} onChange={e => setTier2Fee(Number(e.target.value))} className="w-full pl-5 py-1 text-sm rounded border-indigo-300 bg-white font-bold text-indigo-700"/></div>
+                                    </div>
+                                </div>
+
+                                {/* Tier 3 */}
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1 pt-4">
+                                        <span className="text-sm font-medium text-gray-500">High Value (Above)</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-xs text-indigo-800 font-bold">Charge Fee</label>
+                                        <div className="relative"><span className="absolute left-2 top-1.5 text-xs">$</span><input type="number" value={tier3Fee} onChange={e => setTier3Fee(Number(e.target.value))} className="w-full pl-5 py-1 text-sm rounded border-indigo-300 bg-white font-bold text-indigo-700"/></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="pt-4 border-t">
+                        <button 
+                            onClick={handleSave} 
+                            disabled={isSaving}
+                            className="px-6 py-3 bg-gray-900 text-white font-bold rounded-lg hover:bg-black transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
+                        >
+                            {isSaving ? 'Saving...' : 'Update Insurance Model'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Simulator Column */}
+                <div className="bg-gray-50 p-8 rounded-xl border border-gray-200 flex flex-col justify-center">
+                    <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <CalculatorIcon className="h-5 w-5 text-gray-500" />
+                        Live Pricing Simulator
+                    </h4>
+                    
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">Simulated Rental Total</label>
+                            <input 
+                                type="range" 
+                                min="20" 
+                                max="2000" 
+                                step="10"
+                                value={simRentalValue} 
+                                onChange={(e) => setSimRentalValue(Number(e.target.value))}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                            />
+                            <div className="mt-2 text-center font-mono font-bold text-xl text-gray-900">
+                                ${simRentalValue}
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
+                            <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+                                <span className="text-gray-600">Calculated Insurance Fee</span>
+                                <span className="text-2xl font-bold text-purple-600">
+                                    ${calculateFee(simRentalValue).toFixed(2)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-500">Effective Rate</span>
+                                <span className="font-medium text-gray-900">
+                                    {((calculateFee(simRentalValue) / simRentalValue) * 100).toFixed(1)}%
+                                </span>
+                            </div>
+                             <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-500">Deductible Applied</span>
+                                <span className="font-medium text-gray-900">${deductible}</span>
+                            </div>
+                        </div>
+
+                        <div className="text-xs text-gray-400 text-center">
+                            * This is the amount added to the renter's total at checkout.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const RiskFundTab: React.FC = () => {
     return (
         <div className="space-y-8 animate-in fade-in">
@@ -74,6 +301,9 @@ const RiskFundTab: React.FC = () => {
                     <CheckCircleIcon className="h-4 w-4" /> Solvency Ratio: 4.2x (Healthy)
                 </div>
             </div>
+
+            {/* NEW: Insurance Pricing Config Component */}
+            <InsuranceStrategyConfig />
 
             {/* Top Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -252,6 +482,17 @@ const FinancialsTab: React.FC = () => {
     // Placeholder Service Fee Revenue
     const serviceFeeRevenue = 2450.00; 
 
+    // State for Ledger Filtering
+    const [activeFilter, setActiveFilter] = useState<'all' | 'revenue' | 'payout' | 'deposit' | 'ad_revenue'>('all');
+
+    const filteredLedger = mockLedger.filter(txn => {
+        if (activeFilter === 'all') {
+            // Default exclusion of internal insurance flows to keep "General" clean, unless specifically requested
+            return txn.category !== 'insurance_in' && txn.category !== 'claim_out';
+        }
+        return txn.category === activeFilter;
+    });
+
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -332,9 +573,45 @@ const FinancialsTab: React.FC = () => {
 
             {/* Detailed Ledger */}
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-700">General Ledger</h3>
-                    <div className="text-xs text-gray-500">Showing last 7 transactions</div>
+                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-2">
+                         <h3 className="font-bold text-gray-700">General Ledger</h3>
+                         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{filteredLedger.length} items</span>
+                    </div>
+
+                    {/* Filter Controls */}
+                    <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+                        <button 
+                            onClick={() => setActiveFilter('all')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                        >
+                            All
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('revenue')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'revenue' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                        >
+                            Revenue
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('payout')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'payout' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+                        >
+                            Payouts
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('deposit')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'deposit' ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
+                        >
+                            Deposits
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('ad_revenue')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'ad_revenue' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'}`}
+                        >
+                            Ads
+                        </button>
+                    </div>
                 </div>
                 <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 text-gray-500 font-medium">
@@ -348,13 +625,16 @@ const FinancialsTab: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {mockLedger.filter(t => t.category !== 'insurance_in' && t.category !== 'claim_out').map((txn) => (
+                        {filteredLedger.length > 0 ? (
+                            filteredLedger.map((txn) => (
                             <tr key={txn.id} className="hover:bg-gray-50">
                                 <td className="p-4">
                                     {txn.category === 'revenue' && <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold uppercase">Revenue</span>}
                                     {txn.category === 'deposit' && <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold uppercase">Deposit</span>}
                                     {txn.category === 'payout' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold uppercase">Payout</span>}
                                     {txn.category === 'ad_revenue' && <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold uppercase flex items-center gap-1 w-fit"><RocketIcon className="h-3 w-3"/> Ad Revenue</span>}
+                                    {txn.category === 'insurance_in' && <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs font-bold uppercase">Premium</span>}
+                                    {txn.category === 'claim_out' && <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-bold uppercase">Claim</span>}
                                 </td>
                                 <td className={`p-4 font-mono font-bold ${
                                     txn.amount < 0 ? 'text-gray-500' : 
@@ -369,7 +649,11 @@ const FinancialsTab: React.FC = () => {
                                 </td>
                                 <td className="p-4 text-gray-400 text-xs">{txn.date}</td>
                             </tr>
-                        ))}
+                        ))) : (
+                            <tr>
+                                <td colSpan={6} className="p-8 text-center text-gray-500 italic">No transactions found for this filter.</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -806,7 +1090,6 @@ const SystemHealth: React.FC = () => {
                 const res = await fetch('/api/config-status');
                 if (!res.ok) {
                     if (res.status === 404) {
-                        console.log("System health check: Local Mode (API not found)");
                         setStatus({ blob: false, postgres: false, ai: false });
                         return;
                     }
@@ -815,9 +1098,7 @@ const SystemHealth: React.FC = () => {
                 const data = await res.json();
                 setStatus(data);
             } catch (err) {
-                console.warn("Failed to check system status (using fallback):", err);
                 setStatus({ blob: false, postgres: false, ai: false });
-                setError("Could not connect to server configuration.");
             }
         };
         checkStatus();
@@ -875,6 +1156,10 @@ const AdminPage: React.FC<AdminPageProps> = ({
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
 
+    // --- NEW: Global Region Context ---
+    // In a real app, this might come from a context provider
+    const [selectedRegion, setSelectedRegion] = useState<string>('GLOBAL'); // 'GLOBAL', 'US', 'AR', etc.
+
     const wrapImageUpdate = async (loadingKey: string, updateFn: () => Promise<void>) => {
         setUploadingStates(prev => ({ ...prev, [loadingKey]: true }));
         try {
@@ -901,37 +1186,81 @@ const AdminPage: React.FC<AdminPageProps> = ({
     ];
 
     const displayCategoryImages = { ...initialCategoryImages, ...categoryImages };
+    
+    // --- FILTERING LOGIC FOR SCALABILITY ---
+    // If region is GLOBAL, show all. If specific, filter by country code.
+    const filteredListings = useMemo(() => {
+        if (selectedRegion === 'GLOBAL') return listings;
+        return listings.filter(l => l.location.countryCode === selectedRegion);
+    }, [listings, selectedRegion]);
+
+    const filteredUsers = useMemo(() => {
+        if (selectedRegion === 'GLOBAL') return users;
+        // In real app, filter users by their home_region or booking history in that region
+        return users.filter(u => u.homeRegion === selectedRegion); 
+    }, [users, selectedRegion]);
+
+    const stats = useMemo(() => {
+        const totalRevenue = filteredListings.reduce((sum, l) => sum + (l.pricePerDay || 0) * 5, 0); // Mock calc
+        return {
+            gmv: totalRevenue * 10, // Mock GMV
+            revenue: totalRevenue,
+            activeListings: filteredListings.length,
+            disputes: selectedRegion === 'GLOBAL' ? 2 : 0 // Mock logic
+        };
+    }, [filteredListings, selectedRegion]);
+
 
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
                 return (
                     <div>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Global Overview</h2>
+                             {/* --- REGION SELECTOR (THE SCALABILITY KEY) --- */}
+                            <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
+                                <GlobeIcon className="h-4 w-4 text-gray-500 ml-2" />
+                                <span className="text-xs font-bold text-gray-500 uppercase mr-1">Region:</span>
+                                <select 
+                                    value={selectedRegion} 
+                                    onChange={(e) => setSelectedRegion(e.target.value)}
+                                    className="bg-transparent text-sm font-semibold text-gray-800 focus:outline-none cursor-pointer"
+                                >
+                                    <option value="GLOBAL">Earth (Global View)</option>
+                                    <option value="US">North America (USA)</option>
+                                    <option value="AR">South America (Argentina)</option>
+                                    <option value="EU">Europe (EU)</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <SystemHealth />
+                        
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                             {/* Business Intelligence Metrics */}
                             <div className="bg-gradient-to-br from-blue-600 to-cyan-600 p-6 rounded-lg shadow-lg text-white">
                                 <h3 className="text-sm font-medium opacity-90">Gross Merchandise Value (GMV)</h3>
-                                <p className="text-3xl font-bold mt-1">$12,450.00</p>
+                                <p className="text-3xl font-bold mt-1">${stats.gmv.toLocaleString()}</p>
                                 <span className="text-xs bg-white/20 px-2 py-1 rounded mt-2 inline-block">+12% vs last month</span>
                             </div>
                             <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-sm font-medium text-gray-500">Total Revenue (Take Rate)</h3>
-                                <p className="text-3xl font-bold mt-1 text-gray-900">$1,867.50</p>
+                                <h3 className="text-sm font-medium text-gray-500">Net Revenue ({selectedRegion === 'GLOBAL' ? 'Global' : selectedRegion})</h3>
+                                <p className="text-3xl font-bold mt-1 text-gray-900">${stats.revenue.toLocaleString()}</p>
                             </div>
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h3 className="text-sm font-medium text-gray-500">Active Listings</h3>
-                                <p className="text-3xl font-bold mt-1 text-gray-900">{listings.length}</p>
+                                <p className="text-3xl font-bold mt-1 text-gray-900">{stats.activeListings}</p>
                             </div>
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h3 className="text-sm font-medium text-gray-500">Open Disputes</h3>
-                                <p className="text-3xl font-bold mt-1 text-red-600">2</p>
+                                <p className="text-3xl font-bold mt-1 text-red-600">{stats.disputes}</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="font-bold text-gray-800 mb-4">Recent Activity</h3>
+                                <h3 className="font-bold text-gray-800 mb-4">Recent Activity in {selectedRegion === 'GLOBAL' ? 'All Regions' : selectedRegion}</h3>
                                 <ul className="space-y-3">
                                     <li className="flex items-center text-sm text-gray-600">
                                         <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
@@ -1021,25 +1350,27 @@ const AdminPage: React.FC<AdminPageProps> = ({
             case 'users':
                 return (
                     <div>
-                        <h2 className="text-2xl font-bold mb-6">Manage Users</h2>
+                        <h2 className="text-2xl font-bold mb-6">Manage Users ({filteredUsers.length})</h2>
                         <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="p-3">Name</th>
                                         <th className="p-3">Email</th>
+                                        <th className="p-3">Role</th>
                                         <th className="p-3">Status</th>
                                         <th className="p-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map(user => (
+                                    {filteredUsers.map(user => (
                                         <tr key={user.id} className="border-b">
                                             <td className="p-3 font-medium">
                                                 {user.name}
                                                 <div className="text-xs text-gray-400">Joined: {user.registeredDate}</div>
                                             </td>
                                             <td className="p-3 text-gray-600">{user.email}</td>
+                                            <td className="p-3"><span className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">{user.role || 'USER'}</span></td>
                                             <td className="p-3">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${user.isIdVerified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                                                     {user.isIdVerified ? 'Verified' : 'Unverified'}
@@ -1063,7 +1394,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
             case 'listings':
                  return (
                     <div>
-                        <h2 className="text-2xl font-bold mb-6">Manage All Listings</h2>
+                        <h2 className="text-2xl font-bold mb-6">Manage Listings ({filteredListings.length})</h2>
                          <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-gray-50">
@@ -1071,18 +1402,18 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <th className="p-3">Title</th>
                                         <th className="p-3">Category</th>
                                         <th className="p-3">Owner</th>
-                                        <th className="p-3">Price/day</th>
+                                        <th className="p-3">Price</th>
                                         <th className="p-3">Location</th>
                                         <th className="p-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {listings.map(listing => (
+                                    {filteredListings.map(listing => (
                                         <tr key={listing.id} className="border-b">
                                             <td className="p-3">{listing.title}</td>
                                             <td className="p-3">{listing.category}</td>
                                             <td className="p-3">{listing.owner.name}</td>
-                                            <td className="p-3">${listing.pricePerDay}</td>
+                                            <td className="p-3">${listing.pricePerDay} <span className="text-gray-400 text-xs">{listing.currency}</span></td>
                                             <td className="p-3 text-gray-600">
                                                 <div className="flex items-center gap-1">
                                                     <MapPinIcon className="h-3 w-3" />

@@ -16,17 +16,20 @@ export default async function handler(
         email VARCHAR(255) UNIQUE NOT NULL,
         registered_date DATE,
         avatar_url TEXT,
+        bio TEXT,
         is_email_verified BOOLEAN DEFAULT FALSE,
         is_phone_verified BOOLEAN DEFAULT FALSE,
         is_id_verified BOOLEAN DEFAULT FALSE,
         license_verified BOOLEAN DEFAULT FALSE,
         average_rating NUMERIC(3, 2) DEFAULT 0,
         total_reviews INTEGER DEFAULT 0,
-        favorites TEXT[] DEFAULT ARRAY[]::TEXT[]
+        favorites TEXT[] DEFAULT ARRAY[]::TEXT[],
+        role VARCHAR(50) DEFAULT 'USER',
+        home_region VARCHAR(10)
       );
     `;
 
-    // 2. Create Listings Table
+    // 2. Create Listings Table (Added country_code and currency)
     await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id VARCHAR(255) PRIMARY KEY,
@@ -42,6 +45,8 @@ export default async function handler(
         location_country VARCHAR(100),
         location_lat NUMERIC,
         location_lng NUMERIC,
+        country_code VARCHAR(5) DEFAULT 'US',
+        currency VARCHAR(5) DEFAULT 'USD',
         owner_id VARCHAR(255) REFERENCES users(id),
         images TEXT[], 
         video_url TEXT,
@@ -123,7 +128,7 @@ export default async function handler(
         CREATE TABLE IF NOT EXISTS inspections (
             id VARCHAR(255) PRIMARY KEY,
             booking_id VARCHAR(255) REFERENCES bookings(id),
-            status VARCHAR(50), -- 'pending_handover', 'active', 'pending_return', 'completed', 'disputed'
+            status VARCHAR(50), 
             handover_photos JSONB, 
             return_photos JSONB,
             damage_reported BOOLEAN DEFAULT FALSE,
@@ -134,7 +139,6 @@ export default async function handler(
 
     // --- REVIEWS TABLE ---
     await sql`CREATE TABLE IF NOT EXISTS reviews (id VARCHAR(255) PRIMARY KEY, booking_id VARCHAR(255) REFERENCES bookings(id), author_id VARCHAR(255) REFERENCES users(id), target_id VARCHAR(255) REFERENCES users(id), role VARCHAR(20), rating NUMERIC(3, 2), comment TEXT, private_note TEXT, care_rating NUMERIC(3, 2), clean_rating NUMERIC(3, 2), accuracy_rating NUMERIC(3, 2), safety_rating NUMERIC(3, 2), status VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
-
 
     await sql`
         CREATE TABLE IF NOT EXISTS site_config (
@@ -158,6 +162,13 @@ export default async function handler(
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
+        
+        // GLOBAL ARCHITECTURE MIGRATION
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS country_code VARCHAR(5) DEFAULT 'US'`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS currency VARCHAR(5) DEFAULT 'USD'`;
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'USER'`;
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS home_region VARCHAR(10)`;
+
         // Migration for bookings table split payment
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS amount_paid_online NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
@@ -174,8 +185,8 @@ export default async function handler(
     // 1. Users
     for (const user of mockUsers) {
         await sql`
-            INSERT INTO users (id, name, email, registered_date, avatar_url, bio, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, favorites)
-            VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate || '2023-01-01'}, ${user.avatarUrl}, ${user.bio || ''}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any})
+            INSERT INTO users (id, name, email, registered_date, avatar_url, bio, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, favorites, role)
+            VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate || '2023-01-01'}, ${user.avatarUrl}, ${user.bio || ''}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any}, ${user.email.includes('admin') ? 'SUPER_ADMIN' : 'USER'})
             ON CONFLICT (id) DO NOTHING
         `;
     }
@@ -192,7 +203,8 @@ export default async function handler(
                     price_per_day, price_per_hour, pricing_type, 
                     location_city, location_state, location_country, location_lat, location_lng,
                     owner_id, images, video_url, is_featured, rating, reviews_count, booked_dates, owner_rules, 
-                    has_gps_tracker, has_commercial_insurance, security_deposit, listing_type, price_unit
+                    has_gps_tracker, has_commercial_insurance, security_deposit, listing_type, price_unit,
+                    country_code, currency
                 )
                 VALUES (
                     ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, ${listing.subcategory},
@@ -200,7 +212,8 @@ export default async function handler(
                     ${listing.location.city}, ${listing.location.state}, ${listing.location.country}, ${listing.location.latitude}, ${listing.location.longitude},
                     ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''}, 
                     ${listing.hasGpsTracker || false}, ${listing.hasCommercialInsurance || false}, ${listing.securityDeposit || 0},
-                    ${listing.listingType || 'rental'}, ${listing.priceUnit || 'item'}
+                    ${listing.listingType || 'rental'}, ${listing.priceUnit || 'item'},
+                    'US', 'USD' 
                 )
                 ON CONFLICT (id) DO NOTHING
             `;
@@ -208,7 +221,7 @@ export default async function handler(
     }
     console.log('Listings synced');
 
-    // 3. Bookings (The Fix for Reviews)
+    // 3. Bookings
     for (const booking of mockBookings) {
         // Ensure relations exist
         const listingExists = mockListings.find(l => l.id === booking.listingId);

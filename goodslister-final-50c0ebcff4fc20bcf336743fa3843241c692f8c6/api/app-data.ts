@@ -38,7 +38,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       licenseVerified: row.license_verified,
       averageRating: Number(row.average_rating),
       totalReviews: row.total_reviews,
-      favorites: row.favorites || []
+      favorites: row.favorites || [],
+      role: row.role || 'USER',
+      homeRegion: row.home_region || ''
     }));
 
     const listings = listingsQuery.rows.map(row => {
@@ -57,8 +59,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           state: row.location_state,
           country: row.location_country,
           latitude: Number(row.location_lat),
-          longitude: Number(row.location_lng)
+          longitude: Number(row.location_lng),
+          countryCode: row.country_code || 'US' // Architecture fallback
         },
+        currency: row.currency || 'USD',
         owner: owner || (users.length > 0 ? users[0] : { id: 'deleted', name: 'Unknown', avatarUrl: '' }),
         images: row.images || [],
         videoUrl: row.video_url,
@@ -94,7 +98,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: row.status,
             protectionType: row.protection_type,
             protectionFee: Number(row.protection_fee),
-            paymentMethod: row.payment_method
+            paymentMethod: row.payment_method,
+            amountPaidOnline: Number(row.amount_paid_online || 0),
+            balanceDueOnSite: Number(row.balance_due_on_site || 0)
         }
     }).filter(b => b.listing); 
 
