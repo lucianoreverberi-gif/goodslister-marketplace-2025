@@ -204,7 +204,7 @@ export const initialCategoryImages: CategoryImagesMap = {
 
 export const subcategories: { [key in ListingCategory]: string[] } = {
     [ListingCategory.MOTORCYCLES]: ["Adventure", "Cruiser", "Sport", "Touring", "Dual-Sport"],
-    [ListingCategory.BIKES]: ["Mountain", "Road", "Hybrid", "BMX", "E-Bike"],
+    [ListingCategory.BIKES]: ["Mountain", "Road", "Hybrid", "BMX", "E-Bike", "Scooters"],
     [ListingCategory.BOATS]: ["Speedboat", "Fishing Boat", "Sailboat", "Pontoon", "Yacht"],
     [ListingCategory.CAMPING]: ["Tent", "Backpack", "Sleeping Bag", "Cooler", "Stove"],
     [ListingCategory.WINTER_SPORTS]: ["Skis", "Snowboard", "Snowshoes", "Sled", "Ice Skates"],
