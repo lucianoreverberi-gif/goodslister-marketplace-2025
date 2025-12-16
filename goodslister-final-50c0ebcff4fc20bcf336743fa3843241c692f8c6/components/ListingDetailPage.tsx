@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
@@ -80,7 +80,7 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                 </div>
                 {booking.paymentMethod === 'direct' && (
                      <div className="mt-3 p-3 bg-amber-50 rounded border border-amber-200 text-xs text-amber-800 font-medium">
-                         Reminder: You have only paid the service fee. The rental balance is due directly to the owner upon pickup.
+                         Reminder: You have only paid the service fee (and deposit if applicable). The rental balance is due directly to the owner upon pickup.
                      </div>
                 )}
                 <p className="mt-3 text-xs text-gray-400 text-center">Check your email for the receipt.</p>
@@ -156,19 +156,34 @@ const ContractSigningModal: React.FC<ContractSigningModalProps> = ({ listing, re
     );
 };
 
+interface PriceData {
+    unitCount: number;
+    rentalTotal: number;
+    protectionFee: number;
+    serviceFee: number;
+    stripeAdminFee: number;
+    depositAmount: number; // The deposit that needs to be collected NOW
+    totalPayFull: number;
+    totalSplitUpfront: number;
+    balanceDirect: number;
+}
+
 interface PaymentSelectionModalProps {
-    totalPrice: number;
-    rentalCost: number; // Base rent
-    serviceFee: number; // The fee to be paid online
-    isHighRisk: boolean; // Triggers the direct payment enforcement
+    priceData: PriceData;
+    isHighRisk: boolean;
+    isInstant: boolean;
     onConfirm: (method: 'platform' | 'direct') => void;
     onClose: () => void;
     isProcessing: boolean;
 }
 
-const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, isHighRisk, onConfirm, onClose, isProcessing }) => {
-    // If high risk, default to direct. Otherwise no default.
-    const [selectedMethod, setSelectedMethod] = useState<'platform' | 'direct' | null>(isHighRisk ? 'direct' : null);
+const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ priceData, isHighRisk, isInstant, onConfirm, onClose, isProcessing }) => {
+    // Logic: If high risk OR total > 1000, enforce split payment.
+    const isOverLimit = priceData.totalPayFull > 1000;
+    const forceSplit = isHighRisk || isOverLimit;
+    
+    // Default to 'direct' (split) if forced, otherwise null to force choice
+    const [selectedMethod, setSelectedMethod] = useState<'platform' | 'direct' | null>(forceSplit ? 'direct' : null);
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -178,46 +193,46 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
                 </button>
                 
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Secure Booking</h2>
-                <p className="text-gray-600 mb-6">Complete your reservation.</p>
+                <p className="text-gray-600 mb-6">Choose how you want to pay.</p>
 
                 <div className="space-y-4 overflow-y-auto flex-1">
-                    {/* Platform Payment Card - DISABLED FOR HIGH RISK */}
+                    {/* OPTION 1: PAY FULL (Platform) */}
                     <div 
                         className={`border-2 rounded-xl p-4 transition-all ${
-                            isHighRisk 
+                            forceSplit
                                 ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' 
                                 : `cursor-pointer ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`
                         }`}
-                        onClick={() => !isHighRisk && setSelectedMethod('platform')}
+                        onClick={() => !forceSplit && setSelectedMethod('platform')}
                     >
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${isHighRisk ? 'bg-gray-200 text-gray-400' : 'bg-green-100 text-green-600'}`}>
+                                <div className={`p-2 rounded-full ${forceSplit ? 'bg-gray-200 text-gray-400' : 'bg-green-100 text-green-600'}`}>
                                     <CreditCardIcon className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-900">Pay Full Amount Now</h3>
-                                    <p className="text-sm text-gray-500">Credit / Debit Card</p>
+                                    <h3 className="font-bold text-gray-900">Pay Full Amount</h3>
+                                    <p className="text-sm text-gray-500">Includes Stripe Fee</p>
                                 </div>
                             </div>
-                            {!isHighRisk && <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Recommended</span>}
+                            <div className="text-right">
+                                <span className="block font-bold text-gray-900">${priceData.totalPayFull.toFixed(2)}</span>
+                                {!forceSplit && <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full">All inclusive</span>}
+                            </div>
                         </div>
-                        {isHighRisk && (
+                        {forceSplit && (
                             <div className="mt-2 text-xs text-red-500 font-medium">
-                                * Not available for high-value items in this region.
+                                * Not available for bookings over $1,000 or high-risk items.
                             </div>
                         )}
-                        {!isHighRisk && (
-                             <div className="mt-3 pl-11">
-                                <ul className="text-sm text-gray-600 space-y-1">
-                                    <li className="flex items-center gap-2"><ShieldCheckIcon className="h-4 w-4 text-green-500"/> Includes Goodslister Protection</li>
-                                    <li className="flex items-center gap-2"><CheckCircleIcon className="h-4 w-4 text-green-500"/> Instant Confirmation</li>
-                                </ul>
+                        {!forceSplit && selectedMethod === 'platform' && (
+                             <div className="mt-3 pl-11 text-xs text-gray-600">
+                                Includes: Rental (${priceData.rentalTotal}), Service Fee, Protection, Deposit${isInstant ? '' : ' (Authorized)'} and a ${priceData.stripeAdminFee.toFixed(2)} admin fee.
                             </div>
                         )}
                     </div>
 
-                    {/* Direct Payment Card - MANDATORY FOR HIGH RISK */}
+                    {/* OPTION 2: SPLIT PAYMENT (Direct) */}
                     <div 
                         className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'direct' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-200' : 'border-gray-200 hover:border-gray-300'}`}
                         onClick={() => setSelectedMethod('direct')}
@@ -228,40 +243,44 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
                                     <WalletIcon className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-900">Pay Service Fee Only</h3>
-                                    <p className="text-sm text-gray-500">Pay ${rentalCost.toFixed(0)} balance to owner on pickup</p>
+                                    <h3 className="font-bold text-gray-900">Split Payment</h3>
+                                    <p className="text-sm text-gray-500">Secure listing now, pay owner later.</p>
                                 </div>
                             </div>
-                            {isHighRisk && <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full">Required</span>}
+                            <div className="text-right">
+                                <span className="block font-bold text-cyan-700">Pay Now: ${priceData.totalSplitUpfront.toFixed(2)}</span>
+                                <span className="text-xs text-amber-700">Due Later: ${priceData.balanceDirect.toFixed(2)}</span>
+                            </div>
                         </div>
-                        <div className="mt-3 pl-11">
-                            <p className="text-sm text-gray-600 mb-2">
-                                You only pay the <strong>${serviceFee.toFixed(2)}</strong> service fee now to secure the booking.
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                The remaining balance (${rentalCost.toFixed(2)}) is paid directly to the owner (Cash/Zelle/Venmo) when you pick up the item.
-                            </p>
-                            {selectedMethod === 'direct' && (
-                                <div className="bg-amber-100 border border-amber-200 p-3 rounded-lg text-amber-800 text-xs flex gap-2 items-start mt-2">
-                                    <AlertTriangleIcon className="h-5 w-5 flex-shrink-0" />
-                                    <p><strong>Note:</strong> Direct payments to owners are not covered by our Refund Policy. Ensure item condition before paying balance.</p>
-                                </div>
-                            )}
-                        </div>
+                        
+                        {selectedMethod === 'direct' && (
+                            <div className="mt-3 pl-11">
+                                <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                                    <li><strong>Pay Now:</strong> Service Fee{priceData.protectionFee > 0 && ', Protection Plan'}{isInstant && priceData.depositAmount > 0 && ', Security Deposit'}.</li>
+                                    <li><strong>Pay Later:</strong> ${priceData.balanceDirect.toFixed(2)} directly to owner (Zelle/Cash) at pickup.</li>
+                                </ul>
+                                {isInstant && priceData.depositAmount > 0 && (
+                                     <div className="mt-2 p-2 bg-amber-100 rounded text-amber-800 text-xs font-bold flex items-center gap-2">
+                                        <ShieldIcon className="h-4 w-4" />
+                                        Instant Booking: ${priceData.depositAmount} Deposit included upfront.
+                                     </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="pt-6 mt-4 border-t">
                     <div className="flex justify-between items-center mb-4 text-lg font-bold text-gray-900">
-                        <span>Due Now</span>
-                        <span>${selectedMethod === 'direct' ? serviceFee.toFixed(2) : totalPrice.toFixed(2)}</span>
+                        <span>Due Today</span>
+                        <span>${selectedMethod === 'direct' ? priceData.totalSplitUpfront.toFixed(2) : (selectedMethod ? priceData.totalPayFull.toFixed(2) : '0.00')}</span>
                     </div>
                     <button
                         onClick={() => selectedMethod && onConfirm(selectedMethod)}
                         disabled={!selectedMethod || isProcessing}
                         className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isProcessing ? 'Processing...' : (selectedMethod === 'platform' ? `Pay $${totalPrice.toFixed(2)}` : `Pay Fee ($${serviceFee.toFixed(2)}) & Book`)}
+                        {isProcessing ? 'Processing...' : 'Confirm & Pay'}
                     </button>
                 </div>
             </div>
@@ -294,9 +313,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
     const isHourly = listing.pricingType === 'hourly';
+    
+    // Check if listing allows instant booking
+    const isInstant = !!listing.instantBookingEnabled;
 
     // Identify high-risk categories where insurance is handled directly (not via platform add-on)
-    // AND payment is forced to be direct (Phase 1 Strategy)
     const isHighRisk = 
         listing.category === ListingCategory.MOTORCYCLES ||
         listing.category === ListingCategory.BOATS ||
@@ -313,8 +334,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     // Helper: Generate Duration Options
     const durationOptions = [1, 2, 3, 4, 5, 6, 8, 24];
 
-    // Calculate Totals (Updated for both Daily and Hourly)
-    const getPriceDetails = () => {
+    // STRIPE FEE CONSTANT
+    const STRIPE_FEE_PERCENTAGE = 0.03;
+
+    // Calculate Totals (Updated logic for hybrid strategy)
+    const getPriceDetails = (): PriceData | null => {
         let rentalTotal = 0;
         let unitCount = 0; // days or hours
 
@@ -331,8 +355,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             rentalTotal = basePrice * unitCount;
         }
         
-        // Logic: Platform insurance only applies to non-high-risk items.
-        // For High Risk items, protectionFee is 0 because it's handled directly/externally.
+        // 1. Insurance Logic (Only for Soft Goods)
         let protectionFee = 0;
         if (!isHighRisk) {
             if (insurancePlan === 'standard') {
@@ -340,20 +363,38 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             } else if (insurancePlan === 'premium') {
                 protectionFee = rentalTotal * 0.20; // 20% for premium
             }
-            // 'none' is 0
         }
         
-        // Service Fee logic (e.g. 10% of rental) - This is what we collect online for direct payment items
-        const serviceFee = rentalTotal * 0.10; // Simple 10% platform fee
+        // 2. Service Fee (10% of rental) - Platform Commission
+        const serviceFee = rentalTotal * 0.10;
         
-        const totalPrice = rentalTotal + protectionFee + serviceFee;
+        // 3. Deposit Logic (Only charged upfront if Instant Booking)
+        // If it's "Request to Book", deposit is authorized later, not charged now.
+        const depositAmount = isInstant ? (listing.securityDeposit || 0) : 0;
+
+        // 4. Split Payment Calculation (The "Direct" Option)
+        // Upfront = Commission + Insurance + Deposit (if instant)
+        const totalSplitUpfront = serviceFee + protectionFee + depositAmount;
+        // Balance = Rental Price (Paid to owner directly)
+        const balanceDirect = rentalTotal;
+
+        // 5. Pay Full Calculation (The "Platform" Option)
+        // Base Total before Stripe Fee
+        const rawFullTotal = rentalTotal + protectionFee + serviceFee + depositAmount;
+        // Add Admin Cost for Stripe Payouts (~3%)
+        const stripeAdminFee = rawFullTotal * STRIPE_FEE_PERCENTAGE;
+        const totalPayFull = rawFullTotal + stripeAdminFee;
 
         return {
             unitCount,
             rentalTotal,
             protectionFee,
             serviceFee,
-            totalPrice
+            stripeAdminFee,
+            depositAmount,
+            totalPayFull,
+            totalSplitUpfront,
+            balanceDirect
         };
     };
 
@@ -397,17 +438,18 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         setIsBooking(true);
         setBookingError(null);
 
-        // Simulate slight delay for UX
-        if (paymentMethod === 'platform') {
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
-        }
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 1500)); 
 
         try {
+            // Determine total price recorded in DB
+            const finalTotalPrice = paymentMethod === 'platform' ? priceDetails.totalPayFull : (priceDetails.totalSplitUpfront + priceDetails.balanceDirect);
+            
             const newBooking = await onCreateBooking(
                 listing.id, 
                 finalStartDate, 
                 finalEndDate, 
-                priceDetails.totalPrice, 
+                finalTotalPrice, 
                 paymentMethod,
                 (!isHighRisk && (insurancePlan === 'premium' || insurancePlan === 'standard')) ? 'insurance' : 'waiver',
                 priceDetails.protectionFee
@@ -446,7 +488,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                     renter={currentUser}
                     startDate={contractStartDate}
                     endDate={contractEndDate}
-                    totalPrice={priceDetails.totalPrice}
+                    totalPrice={priceDetails.totalPayFull} // Estimate
                     onSign={handleContractSigned}
                     onClose={() => setShowContractModal(false)}
                 />
@@ -455,10 +497,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             {/* Payment Modal - Step 2 of Checkout */}
             {showPaymentModal && priceDetails && (
                 <PaymentSelectionModal 
-                    totalPrice={priceDetails.totalPrice} 
-                    rentalCost={priceDetails.rentalTotal}
-                    serviceFee={priceDetails.serviceFee}
+                    priceData={priceDetails}
                     isHighRisk={isHighRisk}
+                    isInstant={isInstant}
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
@@ -481,6 +522,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                         <div className="lg:col-span-3">
                             <div className="relative">
                                 <img src={listing.images[activeImageIndex]} alt={`${listing.title} image ${activeImageIndex + 1}`} className="w-full h-[500px] object-cover" />
+                                {isInstant && (
+                                    <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1 z-10">
+                                        <ZapIcon className="h-3 w-3" />
+                                        Instant Book
+                                    </div>
+                                )}
                                 <div className="absolute top-4 right-4 flex gap-2">
                                     <button className="p-2 bg-white/80 rounded-full text-gray-700 hover:bg-white hover:text-gray-900 transition">
                                         <ShareIcon className="h-5 w-5"/>
@@ -641,9 +688,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
                                                 <div className="flex items-center gap-2 font-bold mb-1">
                                                     <ShieldIcon className="h-4 w-4 text-amber-700" />
-                                                    High Value Item Policy
+                                                    Direct Insurance Required
                                                 </div>
-                                                <p>For this category, the payment is <strong>Direct to Owner</strong> upon pickup. You will only pay the service fee online to reserve.</p>
+                                                <p>For this high-risk item, platform insurance is unavailable. You are responsible for insurance/damages directly with the owner.</p>
                                             </div>
                                         ) : (
                                             <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
@@ -721,15 +768,24 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                 <span>Service Fee (10%)</span>
                                                 <span className="font-medium">${priceDetails.serviceFee.toFixed(2)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
-                                                <span>Total Price</span>
-                                                <span>${priceDetails.totalPrice.toFixed(2)}</span>
-                                            </div>
-                                            {isHighRisk && (
-                                                <div className="text-xs text-right text-gray-500 mt-1">
-                                                    Due now: <span className="font-bold text-cyan-700">${priceDetails.serviceFee.toFixed(2)}</span>
+                                            
+                                            {/* Show Deposit IF Instant Booking */}
+                                            {isInstant && priceDetails.depositAmount > 0 && (
+                                                <div className="flex justify-between items-center text-gray-700 text-sm border-t pt-2 mt-2 border-gray-200 border-dashed">
+                                                    <span>Security Deposit (Refundable)</span>
+                                                    <span className="font-medium">${priceDetails.depositAmount.toFixed(2)}</span>
                                                 </div>
                                             )}
+
+                                            <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
+                                                <span>Total Cost</span>
+                                                <span>${(priceDetails.rentalTotal + priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span>
+                                            </div>
+                                            
+                                            <div className="text-xs text-right text-gray-500 mt-1">
+                                                Due Now: <span className="font-bold text-cyan-700">${priceDetails.totalSplitUpfront.toFixed(2)}</span> 
+                                                {priceDetails.balanceDirect > 0 && ` + $${priceDetails.balanceDirect.toFixed(0)} later`}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -739,7 +795,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     disabled={!currentUser || isOwner || !priceDetails || isBooking}
                                     className="mt-4 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isOwner ? "This is your listing" : (currentUser ? (priceDetails ? "Book Now" : "Select date/time to book") : "Log in to book")}
+                                    {isOwner ? "This is your listing" : (currentUser ? (priceDetails ? (isInstant ? "Instant Book" : "Request to Book") : "Select date/time to book") : "Log in to book")}
                                 </button>
                             </div>
                         </div>
