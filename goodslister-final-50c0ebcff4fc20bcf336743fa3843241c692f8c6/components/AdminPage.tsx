@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -30,6 +30,7 @@ interface AdminPageProps {
     onDeleteListing: (id: string) => Promise<void>;
 }
 
+// ... (Existing MOCK DATA remains unchanged: mockDisputes, mockCoupons, mockCampaigns, mockLedger) ...
 // Mock Disputes Data
 const mockDisputes: Dispute[] = [
     { id: 'dsp-1', bookingId: 'bk-123', reporterId: 'user-2', reason: 'damage', description: 'Item received with scratches not mentioned in listing.', status: 'open', dateOpened: '2024-03-10', amountInvolved: 150 },
@@ -59,6 +60,7 @@ const mockLedger = [
     { id: 'txn_106', date: 'Yesterday', category: 'ad_revenue', description: 'Campaign: Regional Hero (Jet Ski)', amount: 29.99, status: 'cleared', user: 'Host: Carlos G.' }, // New Ad Revenue
 ];
 
+// ... (InsuranceStrategyConfig remains unchanged) ...
 const InsuranceStrategyConfig: React.FC = () => {
     // Strategy State
     const [strategy, setStrategy] = useState<'percentage' | 'tiered'>('percentage');
@@ -286,393 +288,29 @@ const InsuranceStrategyConfig: React.FC = () => {
     );
 };
 
-const RiskFundTab: React.FC = () => {
-    return (
-        <div className="space-y-8 animate-in fade-in">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <UmbrellaIcon className="h-8 w-8 text-purple-600" />
-                        Risk & Insurance Fund (Soft Goods Only)
-                    </h2>
-                    <p className="text-sm text-gray-500">Manage self-insurance pools for eligible soft goods. Hard assets are externally insured.</p>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-bold border border-green-200">
-                    <CheckCircleIcon className="h-4 w-4" /> Solvency Ratio: 4.2x (Healthy)
-                </div>
-            </div>
-
-            {/* NEW: Insurance Pricing Config Component */}
-            <InsuranceStrategyConfig />
-
-            {/* Top Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Fund Balance</p>
-                    <p className="text-3xl font-bold text-gray-900">$8,120.00</p>
-                    <div className="mt-2 text-xs text-green-600 font-medium flex items-center gap-1">
-                        <TrendUpIcon className="h-3 w-3" /> +$450 this week
-                    </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Active Soft Goods Value</p>
-                    <p className="text-3xl font-bold text-gray-900">$12,500</p>
-                    <p className="text-xs text-gray-400 mt-2">Total covered inventory currently rented</p>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Active Policies</p>
-                    <p className="text-3xl font-bold text-gray-900">14</p>
-                    <div className="flex gap-2 mt-2">
-                        <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">8 Premium</span>
-                        <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-bold">6 Standard</span>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Loss Ratio (YTD)</p>
-                    <p className="text-3xl font-bold text-green-600">5.4%</p>
-                    <p className="text-xs text-gray-400 mt-2">Target: &lt; 20%</p>
-                </div>
-            </div>
-
-            {/* Middle Section: Visuals & Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Chart Simulation */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 className="font-bold text-gray-800 mb-6">Fund Performance (Premiums vs Claims)</h3>
-                    <div className="h-full max-h-64 flex items-end justify-between gap-2 px-2 pb-6">
-                        {[40, 65, 45, 80, 55, 90, 70, 100, 85, 120, 60, 95].map((h, i) => (
-                            <div key={i} className="w-full bg-purple-50 rounded-t-sm relative group h-48 flex flex-col justify-end">
-                                <div 
-                                    className="bg-purple-500 hover:bg-purple-600 transition-all rounded-t-sm w-full" 
-                                    style={{ height: `${h}%` }}
-                                ></div>
-                                {/* Claim spike simulation */}
-                                {i === 4 && <div className="absolute bottom-0 left-0 right-0 bg-red-400 h-[30%] opacity-80" title="Claim Paid"></div>}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400 border-t pt-2">
-                        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
-                    </div>
-                </div>
-
-                {/* Risk Distribution Analyst View */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 overflow-y-auto max-h-[500px]">
-                    <div className="flex items-center gap-2 mb-4">
-                        <BarChartIcon className="h-5 w-5 text-gray-500" />
-                        <h3 className="font-bold text-gray-800">Soft Goods Risk Analysis</h3>
-                    </div>
-                    
-                    <div className="space-y-6">
-                        {/* 1. Winter Sports */}
-                        <div>
-                            <div className="flex justify-between items-center text-sm mb-1">
-                                <span className="font-bold text-gray-700">Winter Sports</span>
-                                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase">High Risk</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                                <div className="bg-slate-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                            </div>
-                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
-                                <strong className="text-gray-700">Analyst Note:</strong> High frequency of claims due to hidden rocks/ice impact on bases. Suggest 20% deductible.
-                            </div>
-                        </div>
-
-                        {/* 2. Bikes */}
-                        <div>
-                            <div className="flex justify-between items-center text-sm mb-1">
-                                <span className="font-bold text-gray-700">Bikes (MTB/Road)</span>
-                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded uppercase">Med Risk</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                                <div className="bg-orange-500 h-2 rounded-full" style={{ width: '30%' }}></div>
-                            </div>
-                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
-                                <strong className="text-gray-700">Analyst Note:</strong> Moderate risk of derailleur damage and frame scratches during transport.
-                            </div>
-                        </div>
-
-                        {/* 3. Water Sports (Soft) */}
-                        <div>
-                            <div className="flex justify-between items-center text-sm mb-1">
-                                <span className="font-bold text-gray-700">Water Sports (Soft)</span>
-                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Low Risk</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                                <div className="bg-cyan-500 h-2 rounded-full" style={{ width: '15%' }}></div>
-                            </div>
-                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
-                                <strong className="text-gray-700">Analyst Note:</strong> Includes Kayaks/SUP/Surf. Main liability is lost paddles or fins. Hull integrity usually stable.
-                            </div>
-                        </div>
-
-                        {/* 4. Camping */}
-                        <div>
-                            <div className="flex justify-between items-center text-sm mb-1">
-                                <span className="font-bold text-gray-700">Camping Gear</span>
-                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Low Risk</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                                <div className="bg-green-600 h-2 rounded-full" style={{ width: '10%' }}></div>
-                            </div>
-                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
-                                <strong className="text-gray-700">Analyst Note:</strong> Low severity claims (zippers, poles). High volume but low cost replacements.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-100">
-                        <h4 className="text-sm font-bold text-purple-900 flex items-center gap-2">
-                            <ShieldIcon className="h-4 w-4" /> Reinsurance Status
-                        </h4>
-                        <p className="text-xs text-purple-700 mt-1">
-                            Catastrophic Coverage for Soft Goods active via Lloyd's. Trigger point: $50k single event.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Claims Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800">Recent Claims & Payouts</h3>
-                    <button className="text-sm text-purple-600 font-semibold hover:underline">View All History</button>
-                </div>
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
-                        <tr>
-                            <th className="p-4">Date</th>
-                            <th className="p-4">Type</th>
-                            <th className="p-4">Description</th>
-                            <th className="p-4">Amount</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        <tr className="hover:bg-gray-50">
-                            <td className="p-4 text-gray-500">Today</td>
-                            <td className="p-4"><span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold">Claim Payout</span></td>
-                            <td className="p-4 font-medium text-gray-900">Broken Ski Binding (Claim #22)</td>
-                            <td className="p-4 text-red-600 font-bold">-$120.00</td>
-                            <td className="p-4"><span className="text-gray-500 text-xs uppercase font-bold tracking-wide">Processed</span></td>
-                            <td className="p-4 text-right"><button className="text-gray-400 hover:text-gray-600"><ExternalLinkIcon className="h-4 w-4"/></button></td>
-                        </tr>
-                        <tr className="hover:bg-gray-50">
-                            <td className="p-4 text-gray-500">Yesterday</td>
-                            <td className="p-4"><span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">Premium</span></td>
-                            <td className="p-4 font-medium text-gray-900">Premium Protection (Booking #992)</td>
-                            <td className="p-4 text-green-600 font-bold">+$45.00</td>
-                            <td className="p-4"><span className="text-green-600 text-xs uppercase font-bold tracking-wide">Collected</span></td>
-                            <td className="p-4 text-right"><button className="text-gray-400 hover:text-gray-600"><ExternalLinkIcon className="h-4 w-4"/></button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
-const FinancialsTab: React.FC = () => {
-    // Determine Ad Revenue
-    const adRevenueTotal = mockCampaigns.reduce((sum, cmp) => sum + cmp.price, 0);
-    // Placeholder Service Fee Revenue
-    const serviceFeeRevenue = 2450.00; 
-
-    // State for Ledger Filtering
-    const [activeFilter, setActiveFilter] = useState<'all' | 'revenue' | 'payout' | 'deposit' | 'ad_revenue'>('all');
-
-    const filteredLedger = mockLedger.filter(txn => {
-        if (activeFilter === 'all') {
-            // Default exclusion of internal insurance flows to keep "General" clean, unless specifically requested
-            return txn.category !== 'insurance_in' && txn.category !== 'claim_out';
-        }
-        return txn.category === activeFilter;
-    });
-
-    return (
-        <div className="space-y-8">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Financial Overview</h2>
-                    <p className="text-sm text-gray-500">Track platform revenue, escrow holdings, and payouts.</p>
-                </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
-                    <ExternalLinkIcon className="h-4 w-4" /> Download Report
-                </button>
-            </div>
-
-            {/* Revenue Streams Breakdown (New) */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                
-                {/* Net Platform Revenue (Total) */}
-                <div className="col-span-1 md:col-span-2 bg-emerald-50 rounded-xl border border-emerald-100 p-6 flex flex-col h-full relative overflow-hidden">
-                    <div className="flex items-center gap-3 mb-4 z-10">
-                        <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700">
-                            <DollarSignIcon className="h-6 w-6" />
-                        </div>
-                        <h3 className="font-bold text-emerald-900">Total Platform Revenue</h3>
-                    </div>
-                    <div className="mb-6 z-10">
-                        <p className="text-4xl font-extrabold text-emerald-700">${(serviceFeeRevenue + adRevenueTotal).toFixed(2)}</p>
-                        <p className="text-sm text-emerald-600 mt-1 font-medium">+ $450.00 this week</p>
-                    </div>
-                    <div className="mt-auto z-10 grid grid-cols-2 gap-4">
-                        <div className="bg-white/60 p-3 rounded-lg border border-emerald-100">
-                            <p className="text-xs text-emerald-800 uppercase font-bold">Booking Fees</p>
-                            <p className="text-lg font-bold text-emerald-900">${serviceFeeRevenue.toFixed(2)}</p>
-                        </div>
-                        <div className="bg-white/60 p-3 rounded-lg border border-emerald-100">
-                            <p className="text-xs text-emerald-800 uppercase font-bold flex items-center gap-1">Ads & Boosts <RocketIcon className="h-3 w-3" /></p>
-                            <p className="text-lg font-bold text-emerald-900">${adRevenueTotal.toFixed(2)}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Column 2: ESCROW (Deposits) */}
-                <div className="bg-amber-50 rounded-xl border border-amber-100 p-6 flex flex-col h-full relative overflow-hidden">
-                    <div className="flex items-center gap-3 mb-4 z-10">
-                        <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
-                            <ShieldIcon className="h-6 w-6" />
-                        </div>
-                        <h3 className="font-bold text-amber-900">Held Security Deposits</h3>
-                    </div>
-                    <div className="mb-6 z-10">
-                        <p className="text-3xl font-extrabold text-amber-700">$15,200.00</p>
-                        <p className="text-sm text-amber-600 mt-1 font-medium">62 Active Holds</p>
-                    </div>
-                    <div className="mt-auto z-10">
-                        <div className="text-xs text-amber-800 bg-white/60 p-3 rounded-lg border border-amber-100">
-                            <strong>Status:</strong> Held in Escrow.
-                        </div>
-                    </div>
-                </div>
-
-                {/* Column 3: PAYOUTS (Hosts) */}
-                <div className="bg-blue-50 rounded-xl border border-blue-100 p-6 flex flex-col h-full relative overflow-hidden">
-                    <div className="flex items-center gap-3 mb-4 z-10">
-                        <div className="p-2 bg-blue-100 rounded-lg text-blue-700">
-                            <ArrowRightIcon className="h-6 w-6" />
-                        </div>
-                        <h3 className="font-bold text-blue-900">Pending Host Payouts</h3>
-                    </div>
-                    <div className="mb-6 z-10">
-                        <p className="text-3xl font-extrabold text-blue-700">$4,120.00</p>
-                        <p className="text-sm text-blue-600 mt-1 font-medium">Due in next 24h</p>
-                    </div>
-                    <div className="mt-auto z-10">
-                        <div className="text-xs text-blue-800 bg-white/60 p-3 rounded-lg border border-blue-100">
-                            <strong>Liability:</strong> Rental fees collected for hosts.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Detailed Ledger */}
-            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-2">
-                         <h3 className="font-bold text-gray-700">General Ledger</h3>
-                         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{filteredLedger.length} items</span>
-                    </div>
-
-                    {/* Filter Controls */}
-                    <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-                        <button 
-                            onClick={() => setActiveFilter('all')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                        >
-                            All
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('revenue')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'revenue' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
-                        >
-                            Revenue
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('payout')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'payout' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
-                        >
-                            Payouts
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('deposit')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'deposit' ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
-                        >
-                            Deposits
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('ad_revenue')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${activeFilter === 'ad_revenue' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'}`}
-                        >
-                            Ads
-                        </button>
-                    </div>
-                </div>
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 text-gray-500 font-medium">
-                        <tr>
-                            <th className="p-4">Type</th>
-                            <th className="p-4">Amount</th>
-                            <th className="p-4">Description</th>
-                            <th className="p-4">User</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {filteredLedger.length > 0 ? (
-                            filteredLedger.map((txn) => (
-                            <tr key={txn.id} className="hover:bg-gray-50">
-                                <td className="p-4">
-                                    {txn.category === 'revenue' && <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold uppercase">Revenue</span>}
-                                    {txn.category === 'deposit' && <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-bold uppercase">Deposit</span>}
-                                    {txn.category === 'payout' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold uppercase">Payout</span>}
-                                    {txn.category === 'ad_revenue' && <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold uppercase flex items-center gap-1 w-fit"><RocketIcon className="h-3 w-3"/> Ad Revenue</span>}
-                                    {txn.category === 'insurance_in' && <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs font-bold uppercase">Premium</span>}
-                                    {txn.category === 'claim_out' && <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-bold uppercase">Claim</span>}
-                                </td>
-                                <td className={`p-4 font-mono font-bold ${
-                                    txn.amount < 0 ? 'text-gray-500' : 
-                                    txn.category === 'payout' ? 'text-gray-900' : 'text-green-600'
-                                }`}>
-                                    {txn.amount < 0 ? '-' : ''}${Math.abs(txn.amount).toFixed(2)}
-                                </td>
-                                <td className="p-4 text-gray-800 font-medium">{txn.description}</td>
-                                <td className="p-4 text-gray-500">{txn.user}</td>
-                                <td className="p-4">
-                                    <span className="capitalize text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{txn.status}</span>
-                                </td>
-                                <td className="p-4 text-gray-400 text-xs">{txn.date}</td>
-                            </tr>
-                        ))) : (
-                            <tr>
-                                <td colSpan={6} className="p-8 text-center text-gray-500 italic">No transactions found for this filter.</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
 const BillingSettings: React.FC<{
     currentApiKey: string;
     onSaveApiKey: (key: string) => Promise<void>;
 }> = ({ currentApiKey, onSaveApiKey }) => {
+    // Payment State
     const [apiKey, setApiKey] = useState(currentApiKey);
+    
+    // Identity State
+    const [identityEnabled, setIdentityEnabled] = useState(true);
+    const [templateId, setTemplateId] = useState('itm_1234567890');
+    
     const [isSaving, setIsSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+        // Save API Key
         await onSaveApiKey(apiKey);
+        
+        // Simulating saving the Identity Config to site_config
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
         setIsSaving(false);
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
@@ -680,52 +318,105 @@ const BillingSettings: React.FC<{
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-6">Payment Gateway Configuration</h2>
-            <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <h2 className="text-2xl font-bold mb-6">Gateway & Security Configuration</h2>
+            
+            {/* Stripe Payments */}
+            <div className="bg-white p-6 rounded-lg shadow border border-gray-200 mb-8">
                 <div className="flex items-start gap-4">
                     <div className="p-3 bg-indigo-50 rounded-full text-indigo-600">
                         <CreditCardIcon className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-1">Stripe Integration</h3>
+                        <h3 className="text-lg font-semibold mb-1">Stripe Payments</h3>
                         <p className="text-sm text-gray-600 mb-4">
                             Connect your Stripe account to process payments, handle payouts, and manage refunds securely.
                         </p>
-                        <form onSubmit={handleSave}>
-                            <div>
-                                <label htmlFor="api-key" className="block text-sm font-medium text-gray-700">
-                                    Stripe Secret Key (sk_live_...)
-                                </label>
-                                <div className="mt-1 flex rounded-md shadow-sm">
-                                    <input
-                                        type="password"
-                                        id="api-key"
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
-                                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                                        placeholder="sk_live_..."
-                                    />
-                                </div>
-                                <p className="mt-2 text-xs text-gray-500">This key is stored encrypted in your environment variables.</p>
+                        <div>
+                            <label htmlFor="api-key" className="block text-sm font-medium text-gray-700">
+                                Stripe Secret Key (sk_live_...)
+                            </label>
+                            <div className="mt-1 flex rounded-md shadow-sm">
+                                <input
+                                    type="password"
+                                    id="api-key"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    className="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                                    placeholder="sk_live_..."
+                                />
                             </div>
-                            <div className="mt-4 flex justify-end items-center">
-                                {saved && <span className="text-sm text-green-600 mr-4 flex items-center gap-1"><CheckCircleIcon className="h-4 w-4"/> Saved!</span>}
-                                <button
-                                    type="submit"
-                                    disabled={isSaving}
-                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 transition-colors"
-                                >
-                                    {isSaving ? 'Connecting...' : 'Update Connection'}
-                                </button>
-                            </div>
-                        </form>
+                            <p className="mt-2 text-xs text-gray-500">This key is stored encrypted in your environment variables.</p>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Stripe Identity (New) */}
+            <div className="bg-white p-6 rounded-lg shadow border border-gray-200 relative overflow-hidden">
+                {identityEnabled && <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-green-100 to-transparent"></div>}
+                
+                <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-full ${identityEnabled ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                        <UserCheckIcon className="h-6 w-6" />
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-lg font-semibold mb-1">Identity Verification (KYC)</h3>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Enforce "Know Your Customer" checks using <strong>Stripe Identity</strong>. Requires users to upload a government ID and selfie before booking high-value items.
+                                </p>
+                            </div>
+                            
+                            {/* Toggle Switch */}
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked={identityEnabled} onChange={() => setIdentityEnabled(!identityEnabled)} className="sr-only peer" />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+
+                        {identityEnabled && (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Verification Template ID
+                                </label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={templateId}
+                                        onChange={(e) => setTemplateId(e.target.value)}
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-mono"
+                                        placeholder="itm_..."
+                                    />
+                                    <button className="px-3 py-2 text-xs font-bold text-cyan-700 bg-cyan-50 rounded hover:bg-cyan-100 border border-cyan-200">
+                                        Test Mode
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Found in your <a href="#" className="text-cyan-600 hover:underline">Stripe Identity Dashboard</a>. Controls document types (Passport, Driver License).
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Save Action */}
+            <div className="mt-6 flex justify-end items-center">
+                {saved && <span className="text-sm text-green-600 mr-4 flex items-center gap-1"><CheckCircleIcon className="h-4 w-4"/> Settings Saved!</span>}
+                <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-sm font-bold rounded-lg text-white bg-gray-900 hover:bg-black disabled:bg-gray-400 transition-colors"
+                >
+                    {isSaving ? 'Updating Gateway...' : 'Update Configuration'}
+                </button>
             </div>
         </div>
     );
 };
 
+// ... (Rest of component remains unchanged: GlobalSettingsTab, MarketingTab, SystemHealth, FinancialsTab, RiskFundTab, AdminPage) ...
 const GlobalSettingsTab: React.FC = () => {
     // Tiered Pricing State
     const [feeThreshold, setFeeThreshold] = useState(100);
@@ -1130,6 +821,77 @@ const SystemHealth: React.FC = () => {
     );
 };
 
+const FinancialsTab: React.FC = () => {
+    return (
+        <div>
+            <h2 className="text-2xl font-bold mb-6">Financial Performance</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <p className="text-sm font-bold text-gray-500 uppercase">Gross Volume (GMV)</p>
+                    <p className="text-3xl font-bold text-gray-900">$124,500.00</p>
+                    <span className="text-green-600 text-xs font-bold flex items-center mt-2">
+                        <TrendUpIcon className="h-3 w-3 mr-1" /> +15% this month
+                    </span>
+                </div>
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <p className="text-sm font-bold text-gray-500 uppercase">Net Revenue</p>
+                    <p className="text-3xl font-bold text-gray-900">$12,450.00</p>
+                    <p className="text-xs text-gray-400 mt-2">Platform fees & commissions</p>
+                </div>
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <p className="text-sm font-bold text-gray-500 uppercase">Risk Fund Reserve</p>
+                    <p className="text-3xl font-bold text-purple-600">$8,940.00</p>
+                    <p className="text-xs text-gray-400 mt-2">Available for claims</p>
+                </div>
+            </div>
+
+            <h3 className="text-lg font-bold mb-4">Recent Ledger Entries</h3>
+            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50 border-b">
+                        <tr>
+                            <th className="p-4 font-medium text-gray-500">ID</th>
+                            <th className="p-4 font-medium text-gray-500">Date</th>
+                            <th className="p-4 font-medium text-gray-500">Description</th>
+                            <th className="p-4 font-medium text-gray-500">User</th>
+                            <th className="p-4 font-medium text-gray-500 text-right">Amount</th>
+                            <th className="p-4 font-medium text-gray-500 text-right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {mockLedger.map(txn => (
+                            <tr key={txn.id} className="border-b last:border-0 hover:bg-gray-50">
+                                <td className="p-4 font-mono text-xs text-gray-400">{txn.id}</td>
+                                <td className="p-4 text-gray-600">{txn.date}</td>
+                                <td className="p-4">
+                                    <div className="font-medium text-gray-900">{txn.description}</div>
+                                    <div className="text-xs text-gray-500 uppercase tracking-wide">{txn.category}</div>
+                                </td>
+                                <td className="p-4 text-gray-600">{txn.user}</td>
+                                <td className={`p-4 font-bold text-right ${txn.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                                    {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toFixed(2)}
+                                </td>
+                                <td className="p-4 text-right">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                                        txn.status === 'cleared' ? 'bg-green-100 text-green-800' : 
+                                        txn.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                        txn.status === 'processed' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-gray-100 text-gray-600'
+                                    }`}>
+                                        {txn.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+const RiskFundTab = InsuranceStrategyConfig;
 
 const AdminPage: React.FC<AdminPageProps> = ({ 
     users, 

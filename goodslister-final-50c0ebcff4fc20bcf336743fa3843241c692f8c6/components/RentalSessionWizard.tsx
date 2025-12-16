@@ -46,7 +46,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
     const [damageNotes, setDamageNotes] = useState('');
     const [showInspectionModal, setShowInspectionModal] = useState(false);
-    const [isFilingClaim, setIsFilingClaim] = useState(false); // NEW STATE
+    const [isFilingClaim, setIsFilingClaim] = useState(false); 
 
     // Initialize State
     useEffect(() => {
@@ -81,7 +81,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         setStep('DAMAGE_ASSESSMENT');
     };
 
-    // NEW: Function to file dispute via API
     const handleFileClaim = async () => {
         if (!damageNotes) return;
         setIsFilingClaim(true);
@@ -99,7 +98,6 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
             });
 
             if (response.ok) {
-                // Advance to review but keep rental as completed (with dispute flag implicitly)
                 setStep('REVIEW_CLOSE');
             } else {
                 alert("Failed to file claim. Please try again or contact support.");
@@ -254,14 +252,41 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     
     // Render Handover steps
     const renderHandoverStep = () => {
+         // Step 1: Check Payment (Especially important for direct payments)
          if (step === 'PAYMENT_CHECK') return (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                <div className="bg-amber-50 p-6 rounded-xl border border-amber-200">
-                    <h3 className="font-bold text-amber-900">Collect Balance</h3>
-                    <p className="text-3xl font-bold mt-2">${booking.balanceDueOnSite}</p>
+                <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-sm">
+                    <h3 className="font-bold text-amber-900 text-lg">Collect Balance Due</h3>
+                    <p className="text-amber-800 text-sm mt-1 mb-3">
+                        The service fee has been paid online. You must collect the remaining rental balance from the renter <strong>before</strong> handing over the keys.
+                    </p>
+                    <div className="bg-white p-4 rounded-lg border border-amber-100 text-center">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider font-bold">Amount to Collect</p>
+                        <p className="text-4xl font-extrabold text-amber-600 mt-1">${booking.balanceDueOnSite.toFixed(2)}</p>
+                    </div>
                 </div>
-                <label className="flex gap-4 p-4 bg-white border rounded-xl cursor-pointer"><input type="checkbox" checked={balanceConfirmed} onChange={e => setBalanceConfirmed(e.target.checked)} className="mt-1" /> <span>Payment Received</span></label>
-                <button onClick={() => setStep('ID_SCAN')} disabled={!balanceConfirmed} className="w-full py-4 bg-cyan-600 text-white font-bold rounded-xl disabled:opacity-50 transition-colors">Next</button>
+                
+                <div className="bg-white p-4 rounded-xl border border-gray-200">
+                    <label className="flex gap-4 cursor-pointer items-start">
+                        <input 
+                            type="checkbox" 
+                            checked={balanceConfirmed} 
+                            onChange={e => setBalanceConfirmed(e.target.checked)} 
+                            className="mt-1 h-5 w-5 text-cyan-600 rounded" 
+                        /> 
+                        <span className="text-sm text-gray-700 font-medium">
+                            I confirm I have received <strong>${booking.balanceDueOnSite.toFixed(2)}</strong> from the renter via Cash, Zelle, or Venmo.
+                        </span>
+                    </label>
+                </div>
+
+                <button 
+                    onClick={() => setStep('ID_SCAN')} 
+                    disabled={!balanceConfirmed} 
+                    className="w-full py-4 bg-cyan-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:bg-cyan-700"
+                >
+                    Payment Collected - Next
+                </button>
             </div>
         );
         

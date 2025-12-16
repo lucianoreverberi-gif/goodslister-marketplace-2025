@@ -78,6 +78,11 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
                     {booking.paymentMethod === 'platform' ? <CreditCardIcon className="h-4 w-4 text-green-600" /> : <WalletIcon className="h-4 w-4 text-amber-600" />}
                     <p className="capitalize font-medium">{booking.paymentMethod === 'platform' ? 'Paid Online' : 'Pay on Pickup'}</p>
                 </div>
+                {booking.paymentMethod === 'direct' && (
+                     <div className="mt-3 p-3 bg-amber-50 rounded border border-amber-200 text-xs text-amber-800 font-medium">
+                         Reminder: You have only paid the service fee. The rental balance is due directly to the owner upon pickup.
+                     </div>
+                )}
                 <p className="mt-3 text-xs text-gray-400 text-center">Check your email for the receipt.</p>
             </div>
             <button onClick={onClose} className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
@@ -153,13 +158,17 @@ const ContractSigningModal: React.FC<ContractSigningModalProps> = ({ listing, re
 
 interface PaymentSelectionModalProps {
     totalPrice: number;
+    rentalCost: number; // Base rent
+    serviceFee: number; // The fee to be paid online
+    isHighRisk: boolean; // Triggers the direct payment enforcement
     onConfirm: (method: 'platform' | 'direct') => void;
     onClose: () => void;
     isProcessing: boolean;
 }
 
-const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPrice, onConfirm, onClose, isProcessing }) => {
-    const [selectedMethod, setSelectedMethod] = useState<'platform' | 'direct' | null>(null);
+const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, isHighRisk, onConfirm, onClose, isProcessing }) => {
+    // If high risk, default to direct. Otherwise no default.
+    const [selectedMethod, setSelectedMethod] = useState<'platform' | 'direct' | null>(isHighRisk ? 'direct' : null);
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -168,36 +177,47 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
                     <XIcon className="h-6 w-6" />
                 </button>
                 
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Payment Method</h2>
-                <p className="text-gray-600 mb-6">Complete your booking securely.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Secure Booking</h2>
+                <p className="text-gray-600 mb-6">Complete your reservation.</p>
 
                 <div className="space-y-4 overflow-y-auto flex-1">
-                    {/* Platform Payment Card */}
+                    {/* Platform Payment Card - DISABLED FOR HIGH RISK */}
                     <div 
-                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`}
-                        onClick={() => setSelectedMethod('platform')}
+                        className={`border-2 rounded-xl p-4 transition-all ${
+                            isHighRisk 
+                                ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' 
+                                : `cursor-pointer ${selectedMethod === 'platform' ? 'border-cyan-600 bg-cyan-50 ring-1 ring-cyan-200' : 'border-gray-200 hover:border-gray-300'}`
+                        }`}
+                        onClick={() => !isHighRisk && setSelectedMethod('platform')}
                     >
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="bg-green-100 p-2 rounded-full text-green-600">
+                                <div className={`p-2 rounded-full ${isHighRisk ? 'bg-gray-200 text-gray-400' : 'bg-green-100 text-green-600'}`}>
                                     <CreditCardIcon className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-900">Pay Securely Now</h3>
+                                    <h3 className="font-bold text-gray-900">Pay Full Amount Now</h3>
                                     <p className="text-sm text-gray-500">Credit / Debit Card</p>
                                 </div>
                             </div>
-                            <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Recommended</span>
+                            {!isHighRisk && <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">Recommended</span>}
                         </div>
-                        <div className="mt-3 pl-11">
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                <li className="flex items-center gap-2"><ShieldCheckIcon className="h-4 w-4 text-green-500"/> Includes Goodslister Protection</li>
-                                <li className="flex items-center gap-2"><CheckCircleIcon className="h-4 w-4 text-green-500"/> Instant Confirmation</li>
-                            </ul>
-                        </div>
+                        {isHighRisk && (
+                            <div className="mt-2 text-xs text-red-500 font-medium">
+                                * Not available for high-value items in this region.
+                            </div>
+                        )}
+                        {!isHighRisk && (
+                             <div className="mt-3 pl-11">
+                                <ul className="text-sm text-gray-600 space-y-1">
+                                    <li className="flex items-center gap-2"><ShieldCheckIcon className="h-4 w-4 text-green-500"/> Includes Goodslister Protection</li>
+                                    <li className="flex items-center gap-2"><CheckCircleIcon className="h-4 w-4 text-green-500"/> Instant Confirmation</li>
+                                </ul>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Direct Payment Card */}
+                    {/* Direct Payment Card - MANDATORY FOR HIGH RISK */}
                     <div 
                         className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedMethod === 'direct' ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-200' : 'border-gray-200 hover:border-gray-300'}`}
                         onClick={() => setSelectedMethod('direct')}
@@ -208,17 +228,23 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
                                     <WalletIcon className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-900">Pay on Pickup</h3>
-                                    <p className="text-sm text-gray-500">Direct to Owner</p>
+                                    <h3 className="font-bold text-gray-900">Pay Service Fee Only</h3>
+                                    <p className="text-sm text-gray-500">Pay ${rentalCost.toFixed(0)} balance to owner on pickup</p>
                                 </div>
                             </div>
+                            {isHighRisk && <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-full">Required</span>}
                         </div>
                         <div className="mt-3 pl-11">
-                            <p className="text-sm text-gray-600 mb-2">Coordinate payment (Cash, Venmo, etc.) directly with the owner when you meet.</p>
+                            <p className="text-sm text-gray-600 mb-2">
+                                You only pay the <strong>${serviceFee.toFixed(2)}</strong> service fee now to secure the booking.
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                The remaining balance (${rentalCost.toFixed(2)}) is paid directly to the owner (Cash/Zelle/Venmo) when you pick up the item.
+                            </p>
                             {selectedMethod === 'direct' && (
-                                <div className="bg-amber-100 border border-amber-200 p-3 rounded-lg text-amber-800 text-xs flex gap-2 items-start">
+                                <div className="bg-amber-100 border border-amber-200 p-3 rounded-lg text-amber-800 text-xs flex gap-2 items-start mt-2">
                                     <AlertTriangleIcon className="h-5 w-5 flex-shrink-0" />
-                                    <p><strong>Warning:</strong> Payments made outside the platform are NOT covered by our Insurance or Refund Policy. Proceed with caution.</p>
+                                    <p><strong>Note:</strong> Direct payments to owners are not covered by our Refund Policy. Ensure item condition before paying balance.</p>
                                 </div>
                             )}
                         </div>
@@ -227,15 +253,15 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ totalPric
 
                 <div className="pt-6 mt-4 border-t">
                     <div className="flex justify-between items-center mb-4 text-lg font-bold text-gray-900">
-                        <span>Total to Pay</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <span>Due Now</span>
+                        <span>${selectedMethod === 'direct' ? serviceFee.toFixed(2) : totalPrice.toFixed(2)}</span>
                     </div>
                     <button
                         onClick={() => selectedMethod && onConfirm(selectedMethod)}
                         disabled={!selectedMethod || isProcessing}
                         className="w-full py-3 px-4 text-white font-bold rounded-lg bg-cyan-600 hover:bg-cyan-700 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isProcessing ? 'Processing...' : (selectedMethod === 'platform' ? `Pay $${totalPrice.toFixed(2)} & Book` : 'Confirm Booking')}
+                        {isProcessing ? 'Processing...' : (selectedMethod === 'platform' ? `Pay $${totalPrice.toFixed(2)}` : `Pay Fee ($${serviceFee.toFixed(2)}) & Book`)}
                     </button>
                 </div>
             </div>
@@ -270,6 +296,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const isHourly = listing.pricingType === 'hourly';
 
     // Identify high-risk categories where insurance is handled directly (not via platform add-on)
+    // AND payment is forced to be direct (Phase 1 Strategy)
     const isHighRisk = 
         listing.category === ListingCategory.MOTORCYCLES ||
         listing.category === ListingCategory.BOATS ||
@@ -304,8 +331,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             rentalTotal = basePrice * unitCount;
         }
         
-        // Logic: Platform insurance only applies to Soft Goods (non-high-risk).
-        // For High Risk items (Boats/Moto), protectionFee is 0 because platform does not cover it.
+        // Logic: Platform insurance only applies to non-high-risk items.
+        // For High Risk items, protectionFee is 0 because it's handled directly/externally.
         let protectionFee = 0;
         if (!isHighRisk) {
             if (insurancePlan === 'standard') {
@@ -316,12 +343,16 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             // 'none' is 0
         }
         
-        const totalPrice = rentalTotal + protectionFee;
+        // Service Fee logic (e.g. 10% of rental) - This is what we collect online for direct payment items
+        const serviceFee = rentalTotal * 0.10; // Simple 10% platform fee
+        
+        const totalPrice = rentalTotal + protectionFee + serviceFee;
 
         return {
             unitCount,
             rentalTotal,
             protectionFee,
+            serviceFee,
             totalPrice
         };
     };
@@ -425,6 +456,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             {showPaymentModal && priceDetails && (
                 <PaymentSelectionModal 
                     totalPrice={priceDetails.totalPrice} 
+                    rentalCost={priceDetails.rentalTotal}
+                    serviceFee={priceDetails.serviceFee}
+                    isHighRisk={isHighRisk}
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
@@ -607,12 +641,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
                                                 <div className="flex items-center gap-2 font-bold mb-1">
                                                     <ShieldIcon className="h-4 w-4 text-amber-700" />
-                                                    Platform Coverage Unavailable
+                                                    High Value Item Policy
                                                 </div>
-                                                <p>
-                                                    For this item category, <strong>Goodslister does NOT provide insurance</strong>. 
-                                                    You must rely on the owner's insurance or your own coverage.
-                                                </p>
+                                                <p>For this category, the payment is <strong>Direct to Owner</strong> upon pickup. You will only pay the service fee online to reserve.</p>
                                             </div>
                                         ) : (
                                             <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
@@ -685,10 +716,20 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                     <span className="font-medium">${priceDetails.protectionFee.toFixed(2)}</span>
                                                 </div>
                                             )}
+                                            {/* Show Service Fee explicitly */}
+                                            <div className="flex justify-between items-center text-gray-700 text-sm">
+                                                <span>Service Fee (10%)</span>
+                                                <span className="font-medium">${priceDetails.serviceFee.toFixed(2)}</span>
+                                            </div>
                                             <div className="flex justify-between items-center font-bold text-lg pt-2 border-t text-gray-900">
-                                                <span>Total</span>
+                                                <span>Total Price</span>
                                                 <span>${priceDetails.totalPrice.toFixed(2)}</span>
                                             </div>
+                                            {isHighRisk && (
+                                                <div className="text-xs text-right text-gray-500 mt-1">
+                                                    Due now: <span className="font-bold text-cyan-700">${priceDetails.serviceFee.toFixed(2)}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
