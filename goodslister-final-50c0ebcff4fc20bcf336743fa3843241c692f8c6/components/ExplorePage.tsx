@@ -4,8 +4,9 @@
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Listing, ListingCategory } from '../types';
+import { subcategories } from '../constants';
 import ListingCard from './ListingCard';
-import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon } from './icons';
+import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon, XIcon } from './icons';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';
 
@@ -38,6 +39,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     // Filter and sort state
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
+    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]); // NEW: Subcategory State
     const maxPrice = useMemo(() => Math.max(...listings.map(l => l.pricePerDay || 0), 100), [listings]);
     const [priceRange, setPriceRange] = useState<number>(maxPrice);
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
@@ -161,15 +163,47 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         setSelectedCategories(prev => {
             // Reset manual search flag when user changes filters, so map can auto-fit to new results
             setUserManuallySearched(false);
-            return prev.includes(category)
+            const newSelection = prev.includes(category)
                 ? prev.filter(c => c !== category)
                 : [...prev, category];
+            return newSelection;
         });
     };
+    
+    // NEW: Handle Subcategory Toggle
+    const handleSubcategoryToggle = (subcategory: string) => {
+        setSelectedSubcategories(prev => {
+            setUserManuallySearched(false);
+            return prev.includes(subcategory)
+                ? prev.filter(s => s !== subcategory)
+                : [...prev, subcategory];
+        });
+    };
+
+    // NEW: Compute available subcategories based on selected categories
+    const availableSubcategories = useMemo(() => {
+        if (selectedCategories.length === 0) return [];
+        // Get all subcategories for the selected parent categories
+        // Flatten the array of arrays
+        const subs = selectedCategories.flatMap(cat => subcategories[cat] || []);
+        // Remove duplicates if any (though unlikely with current structure)
+        return Array.from(new Set(subs)).sort();
+    }, [selectedCategories]);
+
+    // NEW: Auto-clear selected subcategories if they are no longer valid (e.g. parent category deselected)
+    useEffect(() => {
+        if (selectedCategories.length === 0) {
+            setSelectedSubcategories([]);
+            return;
+        }
+        const validSubs = selectedCategories.flatMap(cat => subcategories[cat] || []);
+        setSelectedSubcategories(prev => prev.filter(s => validSubs.includes(s)));
+    }, [selectedCategories]);
 
     const clearFilters = () => {
         setSearchTerm('');
         setSelectedCategories([]);
+        setSelectedSubcategories([]); // NEW
         setPriceRange(maxPrice);
         setSortBy('rating_desc');
         setLocationFilter('');
@@ -188,6 +222,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesCategory = selectedCategories.length > 0 ? 
                 selectedCategories.includes(listing.category) : true;
             
+            // NEW: Subcategory Match Logic
+            const matchesSubcategory = selectedSubcategories.length > 0 ?
+                (listing.subcategory && selectedSubcategories.includes(listing.subcategory)) : true;
+            
             // Improved Location Matching: Split by comma to handle "City, State" better
             const locationFilterLower = locationFilter.toLowerCase();
             const matchesLocation = locationFilter ?
@@ -200,7 +238,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesPrice = price ? price <= priceRange : true;
 
 
-            return matchesSearch && matchesCategory && matchesPrice && matchesLocation;
+            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation;
         });
 
         switch (sortBy) {
@@ -216,7 +254,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         }
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, priceRange, sortBy, locationFilter]);
+    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -357,6 +395,30 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                             </div>
                         </div>
 
+                        {/* NEW: Subcategory Filter */}
+                        {availableSubcategories.length > 0 && (
+                            <div className="animate-in fade-in slide-in-from-top-1">
+                                <label className="block text-sm font-bold text-gray-800">
+                                    Subcategory <span className="text-gray-400 font-normal text-xs">(Optional)</span>
+                                </label>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {availableSubcategories.map(sub => (
+                                        <button
+                                            key={sub}
+                                            onClick={() => handleSubcategoryToggle(sub)}
+                                            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                                                selectedSubcategories.includes(sub)
+                                                    ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:text-purple-600'
+                                            }`}
+                                        >
+                                            {sub}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                          {/* Search Filter */}
                         <div>
                             <label htmlFor="search" className="block text-sm font-bold text-gray-800">Keyword</label>
@@ -406,7 +468,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                                 >
                                     <ListingCard 
                                         listing={listing} 
-                                        onClick={onListingClick}
+                                        onClick={onListingClick} 
                                         isFavorite={favorites.includes(listing.id)}
                                         onToggleFavorite={onToggleFavorite}
                                     />
