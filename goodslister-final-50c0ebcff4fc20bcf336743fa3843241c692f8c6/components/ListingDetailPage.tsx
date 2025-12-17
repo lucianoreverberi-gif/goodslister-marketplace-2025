@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, ExternalLinkIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, ExternalLinkIcon, InfoIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
@@ -230,8 +230,9 @@ const PaymentSelectionModal: React.FC<PaymentSelectionModalProps> = ({ priceData
                                     </div>
                                 </div>
                                 {forceSplit && (
-                                    <div className="mt-3 text-xs text-gray-600 font-medium bg-gray-100 p-2 rounded border border-gray-200">
-                                        Full online payment is not available for this item.
+                                    <div className="mt-3 text-xs text-gray-600 font-medium bg-gray-100 p-2 rounded border border-gray-200 flex items-start gap-2">
+                                        <InfoIcon className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                        <span>Full online payment is not available for this item. Please use the split payment option.</span>
                                     </div>
                                 )}
                                 {!forceSplit && selectedMethod === 'platform' && (
@@ -780,12 +781,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                 {priceDetails && (
                                     <div className="mt-4 space-y-4">
                                         {isHighRisk ? (
-                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm text-sm text-amber-900">
-                                                <div className="flex items-center gap-2 font-bold mb-1">
-                                                    <ShieldIcon className="h-4 w-4 text-amber-700" />
-                                                    Direct Insurance Required
+                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm text-sm text-gray-700">
+                                                <div className="flex items-center gap-2 font-bold mb-1 text-gray-900">
+                                                    <ShieldIcon className="h-4 w-4 text-gray-500" />
+                                                    Independent Insurance
                                                 </div>
-                                                <p>For this high-risk item, platform insurance is unavailable. You are responsible for insurance/damages directly with the owner.</p>
+                                                <p>Platform insurance is not applicable for this category. Insurance and damages are handled directly with the owner.</p>
                                             </div>
                                         ) : (
                                             <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
