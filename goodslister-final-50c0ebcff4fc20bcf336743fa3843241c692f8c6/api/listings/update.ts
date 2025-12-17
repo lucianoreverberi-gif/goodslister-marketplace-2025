@@ -2,23 +2,21 @@
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Self-healing function to create columns if they are missing
 async function ensureListingColumns() {
-    console.log("Self-healing: Adding missing columns to listings table...");
     try {
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_gps_tracker BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_commercial_insurance BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS security_deposit NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS listing_type VARCHAR(20) DEFAULT 'rental'`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS operator_license_id TEXT`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS fuel_policy VARCHAR(20)`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS skill_level VARCHAR(20)`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS fuel_policy VARCHAR(20) `;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS skill_level VARCHAR(20) `;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS whats_included TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS itinerary TEXT`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS price_unit VARCHAR(20) DEFAULT 'item'`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS country_code VARCHAR(5) DEFAULT 'US'`;
-        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS currency VARCHAR(5) DEFAULT 'USD'`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS instant_booking_enabled BOOLEAN DEFAULT FALSE`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS legal_template_selection VARCHAR(20) DEFAULT 'standard'`;
+        await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS legal_item_name TEXT`;
     } catch (e) {
         console.error("Migration in update failed:", e);
     }
@@ -64,14 +62,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 whats_included = ${listing.whatsIncluded || ''},
                 itinerary = ${listing.itinerary || ''},
                 price_unit = ${listing.priceUnit || 'item'},
-                instant_booking_enabled = ${listing.instantBookingEnabled || false}
+                instant_booking_enabled = ${listing.instantBookingEnabled || false},
+                legal_template_selection = ${listing.legalTemplateSelection || 'standard'},
+                legal_item_name = ${listing.legalItemName || ''}
             WHERE id = ${listing.id}
         `;
         return { success: true, listing };
       } catch (error: any) {
           if (retryCount >= 1) throw error;
-
-          // Check for "column does not exist" error (Code 42703)
           if (error.code === '42703' || error.message?.includes('does not exist')) {
               await ensureListingColumns();
               return await executeUpdate(retryCount + 1);

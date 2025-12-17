@@ -21,7 +21,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             location_city, location_state, location_country, location_lat, location_lng,
             owner_id, images, video_url, is_featured, rating, reviews_count, booked_dates, owner_rules,
             has_gps_tracker, has_commercial_insurance, security_deposit,
-            listing_type, operator_license_id, fuel_policy, skill_level, whats_included, itinerary, price_unit
+            listing_type, operator_license_id, fuel_policy, skill_level, whats_included, itinerary, price_unit,
+            legal_template_selection, legal_item_name
         )
         VALUES (
             ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, ${listing.subcategory},
@@ -29,7 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ${listing.location.city}, ${listing.location.state}, ${listing.location.country}, ${listing.location.latitude}, ${listing.location.longitude},
             ${listing.owner.id}, ${listing.images as any}, ${listing.videoUrl || ''}, ${listing.isFeatured}, ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates as any}, ${listing.ownerRules || ''},
             ${listing.hasGpsTracker || false}, ${listing.hasCommercialInsurance || false}, ${listing.securityDeposit || 0},
-            ${listing.listingType || 'rental'}, ${listing.operatorLicenseId || ''}, ${listing.fuelPolicy || ''}, ${listing.skillLevel || ''}, ${listing.whatsIncluded || ''}, ${listing.itinerary || ''}, ${listing.priceUnit || 'item'}
+            ${listing.listingType || 'rental'}, ${listing.operatorLicenseId || ''}, ${listing.fuelPolicy || ''}, ${listing.skillLevel || ''}, ${listing.whatsIncluded || ''}, ${listing.itinerary || ''}, ${listing.priceUnit || 'item'},
+            ${listing.legalTemplateSelection || 'standard'}, ${listing.legalItemName || ''}
         )
     `;
 
