@@ -247,10 +247,12 @@ export const loginUser = async (email: string, password?: string): Promise<User 
         if (response.ok) {
             const user = await response.json();
             return user;
+        } else {
+            console.error("Login server error:", await response.text());
         }
         return null;
     } catch (e) {
-        console.error("Login failed:", e);
+        console.error("Login network failed:", e);
         return null;
     }
 };
