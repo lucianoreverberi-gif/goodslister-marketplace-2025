@@ -1,18 +1,26 @@
 
-import React, { useState } from 'react';
-import { XIcon, EyeIcon, EyeOffIcon, UserCheckIcon, MailIcon, CheckCircleIcon } from './icons';
+import React, { useState, useEffect } from 'react';
+import { XIcon, EyeIcon, EyeOffIcon, UserCheckIcon, MailIcon, CheckCircleIcon, LockIcon } from './icons';
 
 interface LoginModalProps {
     onLogin: (email: string, password: string) => Promise<boolean>;
     onRegister: (name: string, email: string, password: string) => Promise<boolean>;
     onClose: () => void;
+    resetToken?: string | null;
 }
 
-type ModalView = 'login' | 'register' | 'forgot_password';
+type ModalView = 'login' | 'register' | 'forgot_password' | 'new_password';
 
-const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose, resetToken }) => {
     const [view, setView] = useState<ModalView>('login');
     
+    // Init with correct view if token present
+    useEffect(() => {
+        if (resetToken) {
+            setView('new_password');
+        }
+    }, [resetToken]);
+
     // Form States
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -25,6 +33,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [resetSent, setResetSent] = useState(false);
+    const [passwordResetSuccess, setPasswordResetSuccess] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,7 +58,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
             }
         } else if (view === 'forgot_password') {
             try {
-                // Call real API to trigger email
                 const res = await fetch('/api/auth/forgot-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -60,6 +68,31 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                     setResetSent(true);
                 } else {
                     setError('Failed to send reset link. Please try again.');
+                }
+            } catch (err) {
+                setError('Network error occurred.');
+            }
+            setIsLoading(false);
+            return;
+        } else if (view === 'new_password') {
+            // NEW PASSWORD LOGIC
+            if (password !== confirmPassword) {
+                setError("Passwords do not match.");
+                setIsLoading(false);
+                return;
+            }
+            try {
+                const res = await fetch('/api/auth/reset-password-confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: resetToken, newPassword: password })
+                });
+                
+                if (res.ok) {
+                    setPasswordResetSuccess(true);
+                } else {
+                    const data = await res.json();
+                    setError(data.error || 'Failed to reset password. Link might be expired.');
                 }
             } catch (err) {
                 setError('Network error occurred.');
@@ -93,12 +126,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                         {view === 'register' && 'Create Account'}
                         {view === 'login' && 'Log In'}
                         {view === 'forgot_password' && 'Reset Password'}
+                        {view === 'new_password' && 'Set New Password'}
                     </h2>
                     
                     <p className="text-center text-gray-600 mt-2 text-sm">
                         {view === 'register' && 'Join the Goodslister community.'}
                         {view === 'login' && 'Access your Goodslister account.'}
                         {view === 'forgot_password' && 'Enter your email to receive instructions.'}
+                        {view === 'new_password' && 'Enter a secure new password for your account.'}
                     </p>
 
                     {view === 'forgot_password' && resetSent ? (
@@ -117,6 +152,22 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                                 Back to Log In
                             </button>
                         </div>
+                    ) : view === 'new_password' && passwordResetSuccess ? (
+                        <div className="mt-8 text-center animate-in zoom-in-95">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+                                <CheckCircleIcon className="h-8 w-8" />
+                            </div>
+                            <h3 className="font-bold text-gray-900">Password Reset!</h3>
+                            <p className="text-sm text-gray-500 mt-2">
+                                You can now log in with your new password.
+                            </p>
+                            <button 
+                                onClick={() => { setView('login'); setPasswordResetSuccess(false); }}
+                                className="mt-6 text-cyan-600 font-bold hover:underline text-sm"
+                            >
+                                Log In Now
+                            </button>
+                        </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                             {view === 'register' && (
@@ -133,27 +184,31 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                                 </div>
                             )}
                             
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Email address</label>
-                                <div className="relative mt-1">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                        <MailIcon className="h-5 w-5" />
+                            {(view === 'login' || view === 'register' || view === 'forgot_password') && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Email address</label>
+                                    <div className="relative mt-1">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <MailIcon className="h-5 w-5" />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
+                                            placeholder="you@example.com"
+                                        />
                                     </div>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
-                                        placeholder="you@example.com"
-                                    />
                                 </div>
-                            </div>
+                            )}
 
-                            {view !== 'forgot_password' && (
+                            {(view === 'login' || view === 'register' || view === 'new_password') && (
                                 <div>
                                     <div className="flex justify-between items-center">
-                                        <label className="block text-sm font-medium text-gray-700">Password</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            {view === 'new_password' ? 'New Password' : 'Password'}
+                                        </label>
                                         {view === 'login' && (
                                             <button 
                                                 type="button"
@@ -165,12 +220,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                                         )}
                                     </div>
                                     <div className="relative mt-1">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <LockIcon className="h-5 w-5" />
+                                        </div>
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             required
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 pr-10"
+                                            className="block w-full pl-10 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 pr-10"
                                             placeholder="••••••••"
                                         />
                                         <button
@@ -184,16 +242,19 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                                 </div>
                             )}
 
-                            {view === 'register' && (
+                            {(view === 'register' || view === 'new_password') && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
                                     <div className="relative mt-1">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <LockIcon className="h-5 w-5" />
+                                        </div>
                                         <input
                                             type={showConfirmPassword ? "text" : "password"}
                                             required
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 pr-10"
+                                            className="block w-full pl-10 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 pr-10"
                                             placeholder="••••••••"
                                         />
                                         <button
@@ -221,6 +282,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                                 {isLoading ? 'Processing...' : (
                                     view === 'register' ? 'Sign Up' : 
                                     view === 'login' ? 'Log In' : 
+                                    view === 'new_password' ? 'Reset Password' :
                                     'Send Reset Link'
                                 )}
                             </button>
@@ -241,7 +303,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                         </div>
                     )}
 
-                    {!resetSent && (
+                    {!resetSent && !passwordResetSuccess && view !== 'new_password' && (
                         <div className="mt-6 text-center pt-6 border-t border-gray-100">
                             {view === 'login' ? (
                                 <p className="text-sm text-gray-600">

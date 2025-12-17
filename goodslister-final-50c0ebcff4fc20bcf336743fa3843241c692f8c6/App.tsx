@@ -41,6 +41,9 @@ const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
+    // NEW: State for Password Reset
+    const [resetToken, setResetToken] = useState<string | null>(null);
+    
     // Edit Listing State
     const [listingToEdit, setListingToEdit] = useState<Listing | undefined>(undefined);
 
@@ -70,6 +73,18 @@ const App: React.FC = () => {
         };
 
         loadData();
+    }, []);
+
+    // Check for Reset Password Token in URL
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('reset_token');
+        if (token) {
+            setResetToken(token);
+            setIsLoginModalOpen(true);
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }, []);
 
     // Use a generic update handler to keep state management DRY
@@ -619,7 +634,11 @@ const App: React.FC = () => {
                 <LoginModal 
                     onLogin={handleLogin}
                     onRegister={handleRegister}
-                    onClose={() => setIsLoginModalOpen(false)} 
+                    onClose={() => {
+                        setIsLoginModalOpen(false);
+                        setResetToken(null); // Clear token on close
+                    }} 
+                    resetToken={resetToken}
                 />
             )}
             

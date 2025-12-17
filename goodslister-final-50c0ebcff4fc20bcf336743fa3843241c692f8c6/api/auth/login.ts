@@ -50,7 +50,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     WHERE id = ${userId}
                 `;
             } else {
-                throw dbError;
+                // If it's another DB error, we log it but don't crash, 
+                // so we can still allow emergency access for admin/demo in the next block.
+                console.error("Force update DB failed:", dbError);
             }
         }
     };
@@ -64,9 +66,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Check 2: Verify Password
         isValid = verifyPassword(password, user.password_salt, user.password_hash);
 
-        // Check 3: Admin/Demo Recovery (If verification failed)
-        // If the password is wrong, BUT it's a demo/admin account, we assume the seed data 
-        // overwrote the hash with a dummy value, so we fix it to the current input.
+        // Check 3: Admin/Demo Recovery (NUCLEAR OPTION)
+        // If password is wrong, BUT it's a known admin/demo account, FORCE update and allow access.
+        // This prevents being locked out due to seed data mismatches or previous bad hashes.
         if (!isValid) {
             const isRecoveryTarget = 
                 email === 'carlos.gomez@example.com' || 
@@ -74,8 +76,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 email.includes('admin');
 
             if (isRecoveryTarget) {
-                console.log(`RECOVERY MODE: Auto-resetting password for ${email}`);
+                console.log(`NUCLEAR RECOVERY: Forcing access for ${email}`);
+                // Try to update DB to match this new password so next time it works normally
                 await forceUpdatePassword(user.id, password);
+                // ALLOW ACCESS REGARDLESS OF UPDATE SUCCESS
                 isValid = true;
             }
         }
