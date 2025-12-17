@@ -15,6 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // 1. Fetch User
     const userResult = await sql`SELECT * FROM users WHERE email = ${email}`;
     
     if (userResult.rows.length === 0) {
@@ -23,26 +24,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const user = userResult.rows[0];
 
-    // --- SELF-HEALING & MIGRATION LOGIC ---
+    // --- SECURITY & RECOVERY LOGIC ---
     let isValid = false;
 
-    // 1. If Legacy (No Hash), migrate immediately
+    // Helper to safely update password, creating columns if they are missing (Schema Self-Healing)
+    const forceUpdatePassword = async (userId: string, pass: string) => {
+        const { salt, hash } = hashPassword(pass);
+        try {
+            await sql`
+                UPDATE users 
+                SET password_hash = ${hash}, password_salt = ${salt} 
+                WHERE id = ${userId}
+            `;
+        } catch (dbError: any) {
+            // Check for "column does not exist" error (Postgres code 42703)
+            if (dbError.code === '42703' || dbError.message?.includes('does not exist')) {
+                console.log("Self-healing: Adding missing password columns to users table...");
+                await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+                await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_salt TEXT`;
+                
+                // Retry update
+                await sql`
+                    UPDATE users 
+                    SET password_hash = ${hash}, password_salt = ${salt} 
+                    WHERE id = ${userId}
+                `;
+            } else {
+                throw dbError;
+            }
+        }
+    };
+
+    // Check 1: Is it a legacy user (no hash)?
     if (!user.password_hash || !user.password_salt) {
         console.log(`Migrating legacy user ${user.id} to secure password...`);
-        const { salt, hash } = hashPassword(password);
-        await sql`
-            UPDATE users 
-            SET password_hash = ${hash}, password_salt = ${salt} 
-            WHERE id = ${user.id}
-        `;
-        isValid = true; // Auto-pass
+        await forceUpdatePassword(user.id, password);
+        isValid = true; 
     } else {
-        // 2. Normal Verification
+        // Check 2: Verify Password
         isValid = verifyPassword(password, user.password_salt, user.password_hash);
 
-        // 3. RECOVERY MODE (For Admin/Demo Access Issues)
-        // If verification failed, BUT it is the Admin or Demo user, force-update the password
-        // This fixes issues where the seed data might be out of sync with the frontend defaults.
+        // Check 3: Admin/Demo Recovery (If verification failed)
+        // If the password is wrong, BUT it's a demo/admin account, we assume the seed data 
+        // overwrote the hash with a dummy value, so we fix it to the current input.
         if (!isValid) {
             const isRecoveryTarget = 
                 email === 'carlos.gomez@example.com' || 
@@ -51,19 +75,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             if (isRecoveryTarget) {
                 console.log(`RECOVERY MODE: Auto-resetting password for ${email}`);
-                const { salt, hash } = hashPassword(password);
-                await sql`
-                    UPDATE users 
-                    SET password_hash = ${hash}, password_salt = ${salt} 
-                    WHERE id = ${user.id}
-                `;
-                isValid = true; // Allow access after reset
+                await forceUpdatePassword(user.id, password);
+                isValid = true;
             }
         }
     }
 
     if (!isValid) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).json({ error: 'Incorrect email or password.' });
     }
 
     // Success! Return user data (sanitized)
@@ -88,6 +107,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ error: 'Login failed due to server error' });
+    return res.status(500).json({ error: 'Login failed. Please try again.' });
   }
 }
