@@ -48,10 +48,22 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                 setError('Incorrect email or password.');
             }
         } else if (view === 'forgot_password') {
-            // Mock Password Reset Flow
-            // In a real app, call an API like /api/auth/reset-password
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            setResetSent(true);
+            try {
+                // Call real API to trigger email
+                const res = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                if (res.ok) {
+                    setResetSent(true);
+                } else {
+                    setError('Failed to send reset link. Please try again.');
+                }
+            } catch (err) {
+                setError('Network error occurred.');
+            }
             setIsLoading(false);
             return;
         }
@@ -96,7 +108,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                             </div>
                             <h3 className="font-bold text-gray-900">Check your inbox</h3>
                             <p className="text-sm text-gray-500 mt-2">
-                                We've sent a password reset link to <strong>{email}</strong>.
+                                If an account exists for <strong>{email}</strong>, we've sent a password reset link.
                             </p>
                             <button 
                                 onClick={() => { setView('login'); setResetSent(false); }}
