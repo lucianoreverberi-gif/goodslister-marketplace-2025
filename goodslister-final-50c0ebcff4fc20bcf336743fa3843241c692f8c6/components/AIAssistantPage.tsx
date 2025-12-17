@@ -1,11 +1,13 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ListingCategory } from '../types';
 import { getAIAdvice } from '../services/geminiService';
 import { BrainCircuitIcon, MapPinIcon, SparklesIcon, LightbulbIcon, ShieldCheckIcon } from './icons';
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 
-// API Key for Google Maps (Consistent with other components)
+// API Key for Google Maps
 const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
+const LIBRARIES: ("places")[] = ['places'];
 
 const AIAssistantPage: React.FC = () => {
     // Form State
@@ -18,44 +20,29 @@ const AIAssistantPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [advice, setAdvice] = useState('');
 
-    // Google Maps Autocomplete
-    const locationInputRef = useRef<HTMLInputElement>(null);
+    // Google Maps Loader
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: MAPS_API_KEY,
+        libraries: LIBRARIES
+    });
 
-    useEffect(() => {
-        const initAutocomplete = () => {
-            if (locationInputRef.current && (window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
-                try {
-                    const autocomplete = new (window as any).google.maps.places.Autocomplete(locationInputRef.current, { types: ['geocode'] });
-                    autocomplete.addListener('place_changed', () => {
-                        const place = autocomplete.getPlace();
-                        if (place.formatted_address) setLocation(place.formatted_address);
-                        else if (place.name) setLocation(place.name);
-                    });
-                } catch (e) {
-                    console.error("Maps Autocomplete init error", e);
-                }
+    const [autocomplete, setAutocomplete] = useState<any>(null);
+
+    const onAutocompleteLoad = (autoC: any) => {
+        setAutocomplete(autoC);
+    }
+
+    const onPlaceChanged = () => {
+        if (autocomplete) {
+            const place = autocomplete.getPlace();
+            if (place.formatted_address) {
+                setLocation(place.formatted_address);
+            } else if (place.name) {
+                setLocation(place.name);
             }
-        };
-
-        if ((window as any).google && (window as any).google.maps) {
-             initAutocomplete();
-             return;
         }
-
-        const scriptId = 'google-maps-script-manual';
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement("script");
-            script.id = scriptId;
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places`;
-            script.async = true;
-            script.defer = true;
-            script.onload = () => initAutocomplete();
-            document.head.appendChild(script);
-        } else {
-             const existingScript = document.getElementById(scriptId) as HTMLScriptElement;
-             if (existingScript) setTimeout(initAutocomplete, 1000);
-        }
-    }, []);
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -147,14 +134,28 @@ const AIAssistantPage: React.FC = () => {
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <MapPinIcon className="h-5 w-5 text-gray-400" />
                                     </div>
-                                    <input
-                                        ref={locationInputRef}
-                                        type="text"
-                                        value={location}
-                                        onChange={(e) => setLocation(e.target.value)}
-                                        placeholder="e.g. Miami, FL"
-                                        className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 py-3 pl-10"
-                                    />
+                                    
+                                    {isLoaded ? (
+                                        <Autocomplete
+                                            onLoad={onAutocompleteLoad}
+                                            onPlaceChanged={onPlaceChanged}
+                                        >
+                                            <input
+                                                type="text"
+                                                value={location}
+                                                onChange={(e) => setLocation(e.target.value)}
+                                                placeholder="e.g. Miami, FL"
+                                                className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 py-3 pl-10"
+                                            />
+                                        </Autocomplete>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            disabled
+                                            placeholder="Loading maps..."
+                                            className="block w-full border-gray-200 bg-gray-100 rounded-lg py-3 pl-10 cursor-not-allowed"
+                                        />
+                                    )}
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1">Helps us check for local rules like Florida SB 606.</p>
                             </div>
@@ -209,7 +210,7 @@ const AIAssistantPage: React.FC = () => {
                                 </div>
                                 <div className="bg-gray-50 p-6 text-center border-t border-gray-100">
                                     <p className="text-sm text-gray-500 mb-4">Ready to put this plan into action?</p>
-                                    <a href="/createListing" className="inline-block px-6 py-3 bg-gray-900 text-white font-bold rounded-lg hover:bg-black transition-colors">
+                                    <a href="/create-listing" className="inline-block px-6 py-3 bg-gray-900 text-white font-bold rounded-lg hover:bg-black transition-colors">
                                         List Your Item Now
                                     </a>
                                 </div>

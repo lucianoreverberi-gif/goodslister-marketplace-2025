@@ -542,6 +542,7 @@ const App: React.FC = () => {
                     onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
                     onDeleteListing={handleDeleteListing} // NEW PROP
                     onBookingStatusUpdate={handleBookingStatusUpdate} // NEW PROP ADDED
+                    onNavigate={handleNavigate} // NEW PROP
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;

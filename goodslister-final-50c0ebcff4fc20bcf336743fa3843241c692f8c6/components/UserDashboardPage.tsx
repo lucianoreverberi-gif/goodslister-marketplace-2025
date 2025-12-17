@@ -1,11 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Session, Listing, Booking, InspectionPhoto } from '../types';
-import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, FileWarningIcon, GavelIcon, CameraIcon, HeartIcon, UserCheckIcon, TrashIcon, AlertTriangleIcon, TrendUpIcon, ArrowRightIcon, GlobeIcon, ZapIcon, MapPinIcon, LockIcon } from './icons';
+import { Session, Listing, Booking, Page } from '../types';
+import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, XIcon, LandmarkIcon, CalculatorIcon, ScanIcon, CameraIcon, HeartIcon, UserCheckIcon, TrashIcon, ArrowRightIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
-import DigitalInspection from './DigitalInspection';
 import ListingCard from './ListingCard';
 import RentalSessionWizard from './RentalSessionWizard';
 
@@ -23,6 +21,7 @@ interface UserDashboardPageProps {
     onViewPublicProfile: (userId: string) => void;
     onDeleteListing: (listingId: string) => Promise<void>;
     onBookingStatusUpdate: (bookingId: string, status: string) => Promise<void>;
+    onNavigate: (page: Page) => void; // New Prop
 }
 
 type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security' | 'favorites';
@@ -195,7 +194,7 @@ const BillingTab: React.FC<{ bookings: Booking[] }> = ({ bookings }) => {
     );
 };
 
-const AIToolsTab = () => {
+const AIToolsTab: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }) => {
     return (
         <div className="space-y-6 animate-in fade-in">
             <div className="flex justify-between items-center">
@@ -210,9 +209,12 @@ const AIToolsTab = () => {
                     </div>
                     <h3 className="text-lg font-bold text-indigo-900">Listing Optimizer</h3>
                     <p className="text-gray-600 text-sm mt-2 mb-6">Improve your titles and descriptions to rank higher and convert more renters using generative AI.</p>
-                    <a href="/create-listing" className="block w-full text-center py-2.5 bg-white text-indigo-700 border border-indigo-200 font-bold rounded-lg hover:bg-indigo-50 transition-colors shadow-sm">
+                    <button 
+                        onClick={() => onNavigate('createListing')} 
+                        className="block w-full text-center py-2.5 bg-white text-indigo-700 border border-indigo-200 font-bold rounded-lg hover:bg-indigo-50 transition-colors shadow-sm"
+                    >
                         Create Optimized Listing
-                    </a>
+                    </button>
                 </div>
 
                 <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-6 rounded-xl border border-cyan-100 shadow-sm hover:shadow-md transition-all duration-300 group">
@@ -221,9 +223,12 @@ const AIToolsTab = () => {
                     </div>
                     <h3 className="text-lg font-bold text-cyan-900">Legal & Strategy Coach</h3>
                     <p className="text-gray-600 text-sm mt-2 mb-6">Ask our AI about local regulations (SB 606), contracts, and pricing strategies for your assets.</p>
-                    <a href="/ai-assistant" className="block w-full text-center py-2.5 bg-white text-cyan-700 border border-cyan-200 font-bold rounded-lg hover:bg-cyan-50 transition-colors shadow-sm">
+                    <button 
+                        onClick={() => onNavigate('aiAssistant')} 
+                        className="block w-full text-center py-2.5 bg-white text-cyan-700 border border-cyan-200 font-bold rounded-lg hover:bg-cyan-50 transition-colors shadow-sm"
+                    >
                         Consult AI Coach
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -482,7 +487,7 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusU
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ 
     user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onUpdateProfile,
-    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate 
+    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate, onNavigate 
 }) => {
     const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
     const [showPhoneModal, setShowPhoneModal] = useState(false);
@@ -520,8 +525,125 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
         const [avatar, setAvatar] = useState(user.avatarUrl);
         const [isSaving, setIsSaving] = useState(false);
         const [saveMessage, setSaveMessage] = useState('');
-        const handleSave = async () => { setIsSaving(true); await onUpdateProfile(bio, avatar); setSaveMessage('Saved!'); setIsSaving(false); };
-        return ( <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 space-y-6"> <div className="flex gap-6 items-center"> <div className="w-24 h-24"> <ImageUploader currentImageUrl={avatar} onImageChange={setAvatar} label="" /> </div> <div> <h3 className="font-bold text-gray-900">Profile Photo</h3> <p className="text-sm text-gray-500">Update your public avatar.</p> </div> </div> <div> <label className="block font-bold text-gray-700 mb-2">Bio</label> <textarea value={bio} onChange={e => setBio(e.target.value)} className="w-full border rounded-lg p-3" rows={4} /> </div> <button onClick={handleSave} className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-lg">{isSaving ? 'Saving...' : 'Save Changes'}</button> {saveMessage && <span className="text-green-600 ml-4">{saveMessage}</span>} </div> );
+
+        const handleSave = async () => { 
+            setIsSaving(true); 
+            await onUpdateProfile(bio, avatar); 
+            setSaveMessage('Profile saved successfully!'); 
+            setTimeout(() => setSaveMessage(''), 3000);
+            setIsSaving(false); 
+        };
+
+        const getTrustScore = () => {
+            let score = 25; 
+            if (user.isEmailVerified) score += 25;
+            if (user.isPhoneVerified) score += 25;
+            if (user.isIdVerified) score += 25;
+            return score;
+        };
+
+        return ( 
+            <div className="animate-in fade-in space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Decorative Header Banner */}
+                    <div className="h-32 bg-gradient-to-r from-cyan-500 to-blue-600 relative">
+                        <div className="absolute inset-0 bg-black/10"></div>
+                    </div>
+
+                    <div className="px-8 pb-8">
+                        <div className="relative -mt-12 mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                            {/* Avatar */}
+                            <div className="relative group">
+                                <div className="w-28 h-28 rounded-full border-4 border-white shadow-md bg-white overflow-hidden">
+                                    <ImageUploader currentImageUrl={avatar} onImageChange={setAvatar} label="" />
+                                </div>
+                                <div className="absolute bottom-0 right-0 bg-gray-900 text-white p-1.5 rounded-full border-2 border-white shadow-sm cursor-pointer pointer-events-none group-hover:bg-cyan-600 transition-colors">
+                                    <CameraIcon className="h-4 w-4" />
+                                </div>
+                            </div>
+                            
+                            {/* Save Actions - Desktop */}
+                            <div className="hidden sm:block pb-2">
+                                <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 bg-gray-900 text-white font-bold rounded-lg shadow-md hover:bg-black transition-all flex items-center gap-2 disabled:opacity-50">
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                    {!isSaving && <CheckCircleIcon className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Left Column: Identity */}
+                            <div className="col-span-1 space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900">{user.name}</h3>
+                                    <p className="text-gray-500 text-sm">Member since {new Date().getFullYear()}</p>
+                                </div>
+
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                                    <div className="flex items-center gap-3 text-sm text-gray-700">
+                                        <MailIcon className="h-4 w-4 text-gray-400" />
+                                        <span className="truncate">{user.email}</span>
+                                        {user.isEmailVerified && <CheckCircleIcon className="h-4 w-4 text-green-500 ml-auto" />}
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-gray-700">
+                                        <PhoneIcon className="h-4 w-4 text-gray-400" />
+                                        <span className={user.isPhoneVerified ? '' : 'text-gray-400 italic'}>
+                                            {user.isPhoneVerified ? 'Phone Verified' : 'Add Phone'}
+                                        </span>
+                                        {user.isPhoneVerified && <CheckCircleIcon className="h-4 w-4 text-green-500 ml-auto" />}
+                                    </div>
+                                </div>
+
+                                {/* Trust Score Mini Widget */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Trust Score</span>
+                                        <span className="text-xs font-bold text-cyan-600">{getTrustScore()}/100</span>
+                                    </div>
+                                    <div className="w-full bg-gray-100 rounded-full h-2">
+                                        <div className="bg-cyan-500 h-2 rounded-full transition-all duration-1000" style={{ width: `${getTrustScore()}%` }}></div>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        Complete verification steps to increase your score and unlock instant booking.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Bio Editor */}
+                            <div className="col-span-2">
+                                <label className="block text-sm font-bold text-gray-800 mb-2">About You</label>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Tell the community about yourself. Hosts and renters with detailed bios get 30% more bookings.
+                                </p>
+                                <textarea 
+                                    value={bio} 
+                                    onChange={e => setBio(e.target.value)} 
+                                    className="w-full border-gray-300 rounded-xl p-4 shadow-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent min-h-[200px] text-gray-700 leading-relaxed resize-y" 
+                                    placeholder="Hi! I love outdoor adventures and exploring new places..."
+                                />
+                                <div className="flex justify-end mt-2 text-xs text-gray-400">
+                                    {bio.length} characters
+                                </div>
+
+                                {/* Mobile Save Button */}
+                                <div className="sm:hidden mt-6">
+                                    <button onClick={handleSave} disabled={isSaving} className="w-full px-6 py-3 bg-gray-900 text-white font-bold rounded-lg shadow-md hover:bg-black transition-all flex justify-center items-center gap-2 disabled:opacity-50">
+                                        {isSaving ? 'Saving...' : 'Save Profile'}
+                                    </button>
+                                </div>
+
+                                {saveMessage && (
+                                    <div className="mt-4 p-3 bg-green-50 text-green-700 text-sm rounded-lg flex items-center justify-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+                                        <CheckCircleIcon className="h-4 w-4" />
+                                        {saveMessage}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+        );
     };
 
     const renderContent = () => {
@@ -561,7 +683,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
             case 'security': return <SecurityTab user={user} onVerificationUpdate={onVerificationUpdate} setShowPhoneModal={setShowPhoneModal} setShowIdModal={setShowIdModal} />;
             case 'billing': return <BillingTab bookings={bookings} />;
             case 'analytics': return <AnalyticsTab bookings={bookings} listings={listings} />;
-            case 'aiAssistant': return <AIToolsTab />;
+            case 'aiAssistant': return <AIToolsTab onNavigate={onNavigate} />;
         }
     };
 
