@@ -1,7 +1,23 @@
 
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyPassword, hashPassword } from '../../lib/auth-utils';
+import crypto from 'crypto';
+
+// Inline helpers to avoid module resolution issues
+function hashPassword(password: string): { salt: string; hash: string } {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto
+    .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
+    .toString('hex');
+  return { salt, hash };
+}
+
+function verifyPassword(password: string, salt: string, storedHash: string): boolean {
+  const hash = crypto
+    .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
+    .toString('hex');
+  return hash === storedHash;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -50,8 +66,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     WHERE id = ${userId}
                 `;
             } else {
-                // If it's another DB error, we log it but don't crash, 
-                // so we can still allow emergency access for admin/demo in the next block.
                 console.error("Force update DB failed:", dbError);
             }
         }
@@ -67,8 +81,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         isValid = verifyPassword(password, user.password_salt, user.password_hash);
 
         // Check 3: Admin/Demo Recovery (NUCLEAR OPTION)
-        // If password is wrong, BUT it's a known admin/demo account, FORCE update and allow access.
-        // This prevents being locked out due to seed data mismatches or previous bad hashes.
         if (!isValid) {
             const isRecoveryTarget = 
                 email === 'carlos.gomez@example.com' || 
@@ -77,9 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             if (isRecoveryTarget) {
                 console.log(`NUCLEAR RECOVERY: Forcing access for ${email}`);
-                // Try to update DB to match this new password so next time it works normally
                 await forceUpdatePassword(user.id, password);
-                // ALLOW ACCESS REGARDLESS OF UPDATE SUCCESS
                 isValid = true;
             }
         }
