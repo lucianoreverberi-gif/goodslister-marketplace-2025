@@ -1,6 +1,7 @@
 
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { hashPassword } from '../../lib/auth-utils';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -24,9 +25,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const registeredDate = new Date().toISOString().split('T')[0];
     const avatarUrl = `https://i.pravatar.cc/150?u=${email}`;
 
+    // SECURE: Hash the password
+    const { salt, hash } = hashPassword(password);
+
     await sql`
-        INSERT INTO users (id, name, email, registered_date, avatar_url, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews)
-        VALUES (${id}, ${name}, ${email}, ${registeredDate}, ${avatarUrl}, false, false, false, 0, 0)
+        INSERT INTO users (id, name, email, registered_date, avatar_url, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, password_hash, password_salt)
+        VALUES (${id}, ${name}, ${email}, ${registeredDate}, ${avatarUrl}, false, false, false, 0, 0, ${hash}, ${salt})
     `;
 
     const newUser = { 

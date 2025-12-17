@@ -235,17 +235,32 @@ export const updateUserProfile = async (userId: string, bio: string, avatarUrl: 
 
 // --- User & Listing Actions (Real Backend) ---
 
-export const loginUser = async (email: string): Promise<User | null> => {
-    const data = await fetchAllData();
-    return data.users.find(u => u.email === email) || null;
+export const loginUser = async (email: string, password?: string): Promise<User | null> => {
+    try {
+        // Use the REAL auth endpoint
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: password || 'dummy-password' }), // Support old calls without pass
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            return user;
+        }
+        return null;
+    } catch (e) {
+        console.error("Login failed:", e);
+        return null;
+    }
 };
 
-export const registerUser = async (name: string, email: string): Promise<User | null> => {
+export const registerUser = async (name: string, email: string, password?: string): Promise<User | null> => {
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password: 'dummy-password' }),
+            body: JSON.stringify({ name, email, password: password || 'dummy-password' }),
         });
         
         if (response.ok) {

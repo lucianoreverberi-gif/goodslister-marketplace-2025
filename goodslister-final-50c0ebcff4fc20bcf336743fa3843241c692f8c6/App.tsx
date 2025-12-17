@@ -18,7 +18,8 @@ import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
-import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
+import UserProfilePage from './components/UserProfilePage'; 
+import SEOHead from './components/SEOHead'; 
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -35,7 +36,6 @@ interface Notification {
 const App: React.FC = () => {
     const [page, setPage] = useState<Page>('home');
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-    // NEW: State for public profile viewing
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
     
     const [session, setSession] = useState<Session | null>(null);
@@ -48,14 +48,14 @@ const App: React.FC = () => {
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
     const [chatContext, setChatContext] = useState<{ listing?: Listing, recipient?: User, conversationId?: string } | null>(null);
     const [userLanguage, setUserLanguage] = useState('English');
-    // Deep linking for main layout chat
     const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
 
     // Notification System State
     const [notifications, setNotifications] = useState<Notification[]>([]);
 
-    // This state now holds all data fetched from our mock API
+    // Data State
     const [appData, setAppData] = useState<any | null>(null);
+    const [isAppLoading, setIsAppLoading] = useState(true);
 
     // State to pass search criteria from HomePage to ExplorePage
     const [initialExploreFilters, setInitialExploreFilters] = useState<FilterCriteria | null>(null);
@@ -65,6 +65,8 @@ const App: React.FC = () => {
         const loadData = async () => {
             const allData = await mockApi.fetchAllData();
             setAppData(allData);
+            // Add a small delay to prevent flickering if data loads too fast
+            setTimeout(() => setIsAppLoading(false), 800);
         };
 
         loadData();
@@ -80,7 +82,6 @@ const App: React.FC = () => {
         window.scrollTo(0, 0);
     }, []);
 
-    // NEW: Handle navigating to user profile
     const handleViewUserProfile = useCallback((userId: string) => {
         setSelectedUserProfileId(userId);
         handleNavigate('userProfile');
@@ -89,27 +90,18 @@ const App: React.FC = () => {
     const addNotification = (type: 'success' | 'info' | 'message', title: string, message: string) => {
         const id = Math.random().toString(36).substring(2, 9);
         setNotifications(prev => [...prev, { id, type, title, message }]);
-        // Auto remove after 5 seconds
         setTimeout(() => {
             setNotifications(prev => prev.filter(n => n.id !== id));
         }, 5000);
     };
 
-    // NEW: Handle updating user profile (bio/avatar)
     const handleUpdateUserProfile = async (bio: string, avatarUrl: string) => {
         if (!session) return;
-        
-        // Optimistic Update
         const updatedSession = { ...session, bio, avatarUrl };
         setSession(updatedSession);
-        
-        // Update App Data List
         const updatedUsers = appData.users.map((u: User) => u.id === session.id ? { ...u, bio, avatarUrl } : u);
         updateAppData({ users: updatedUsers });
-
-        // CALL NEW API
         await mockApi.updateUserProfile(session.id, bio, avatarUrl); 
-        
         addNotification('success', 'Profile Saved', 'Your bio and avatar have been updated.');
     };
 
@@ -152,23 +144,18 @@ const App: React.FC = () => {
             addNotification('success', 'Saved!', 'Listing added to your favorites.');
         }
 
-        // Optimistic UI Update
         const updatedUser = { ...session, favorites: newFavorites };
         setSession(updatedUser);
-        
-        // Also update the user in the appData list
         const updatedUsers = appData.users.map((u: User) => u.id === session.id ? updatedUser : u);
         updateAppData({ users: updatedUsers });
-
-        // Persist
         await mockApi.toggleFavorite(session.id, listingId);
     };
 
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
-        const user = await mockApi.loginUser(email);
+        // Uses the real backend login now via mockApi wrapper
+        const user = await mockApi.loginUser(email, password);
         if (user) {
-            // In a real app, password would be verified on the backend
-            const isAdmin = user.email.includes('admin') || user.email === 'lucianoreverberi@gmail.com';
+            const isAdmin = user.email.includes('admin') || user.email === 'lucianoreverberi@gmail.com' || user.role === 'SUPER_ADMIN';
             const userSession: Session = { ...user, isAdmin };
             setSession(userSession);
             setIsLoginModalOpen(false);
@@ -183,7 +170,7 @@ const App: React.FC = () => {
 
     const handleRegister = async (name: string, email: string, password: string): Promise<boolean> => {
         try {
-            const newUser = await mockApi.registerUser(name, email);
+            const newUser = await mockApi.registerUser(name, email, password);
             if(newUser) {
                 updateAppData({ users: [...appData.users, newUser] });
                 setSession({ ...newUser, isAdmin: false });
@@ -219,8 +206,6 @@ const App: React.FC = () => {
             return;
         }
         
-        // Setup context for the chat modal.
-        // It will decide if it needs to fetch an existing convo or create a new one.
         setChatContext({
             listing: listing,
             recipient: listing.owner
@@ -245,7 +230,6 @@ const App: React.FC = () => {
         const amountPaidOnline = paymentMethod === 'platform' ? totalPrice : 0;
         const balanceDueOnSite = paymentMethod === 'direct' ? totalPrice : 0;
 
-        // Pass all new parameters to the API/Mock layer
         const result = await mockApi.createBooking(
             listingId, 
             session.id, 
@@ -259,7 +243,6 @@ const App: React.FC = () => {
             protectionFee
         );
         
-        // Update app state with the new booking and the updated listing (with new bookedDates)
         const updatedBookings = [...appData.bookings, result.newBooking];
         const updatedListings = appData.listings.map((l: Listing) => l.id === listingId ? result.updatedListing : l);
         
@@ -268,34 +251,18 @@ const App: React.FC = () => {
             listings: updatedListings
         });
 
-        // Send Booking Confirmation Email via Resend
-        mockApi.sendEmail('booking_confirmation', session.email, {
-            name: session.name,
-            listingTitle: result.updatedListing.title,
-            startDate: format(startDate, 'MMM dd, yyyy'),
-            endDate: format(endDate, 'MMM dd, yyyy'),
-            totalPrice: totalPrice.toFixed(2),
-            paymentMethod: paymentMethod
-        }).then(success => {
-            if (success) {
-                addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
-            }
-        });
+        // Email handling is now inside the API endpoint, so we just notify UI success
+        addNotification('success', 'Booking Initiated', `Check your email for confirmation.`);
 
         return result.newBooking;
     };
 
-    // NEW: Handle Booking Status Update (Real-Time Sync)
     const handleBookingStatusUpdate = async (bookingId: string, newStatus: string) => {
-        // 1. Optimistic Update Local State
         const updatedBookings = appData.bookings.map((b: Booking) => 
             b.id === bookingId ? { ...b, status: newStatus as any } : b
         );
         updateAppData({ bookings: updatedBookings });
-
-        // 2. Persist to API
         await mockApi.updateBookingStatus(bookingId, newStatus);
-        
         addNotification('success', 'Status Updated', `Booking marked as ${newStatus}.`);
     };
 
@@ -348,7 +315,6 @@ const App: React.FC = () => {
     const handleDeleteListing = async (listingId: string): Promise<void> => {
         const success = await mockApi.deleteListing(listingId);
         if (success) {
-            // Remove from local state immediately
             updateAppData({
                 listings: appData.listings.filter((l: Listing) => l.id !== listingId)
             });
@@ -424,13 +390,30 @@ const App: React.FC = () => {
         updateAppData({ listings: updatedListings });
     };
 
-    if (!appData) {
+    // --- RENDER ---
+
+    // 1. Loading State (Splash Screen)
+    if (isAppLoading || !appData) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-                <div className="text-center">
-                    <img src="https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png" alt="Goodslister Logo" className="h-12 w-auto mx-auto mb-4 animate-pulse" />
-                    <p className="text-gray-600">Loading your adventure...</p>
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 flex-col animate-in fade-in duration-700">
+                <div className="relative">
+                    <img 
+                        src="https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png" 
+                        alt="Goodslister Logo" 
+                        className="h-16 w-auto mx-auto mb-8 relative z-10" 
+                    />
+                    <div className="absolute inset-0 bg-cyan-200 blur-2xl opacity-30 rounded-full animate-pulse"></div>
                 </div>
+                <div className="w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-cyan-600 animate-[progress_1s_ease-in-out_infinite] rounded-full w-1/3"></div>
+                </div>
+                <p className="text-gray-500 mt-4 text-sm font-medium animate-pulse">Preparing your adventure...</p>
+                <style>{`
+                    @keyframes progress {
+                        0% { transform: translateX(-100%); }
+                        100% { transform: translateX(300%); }
+                    }
+                `}</style>
             </div>
         );
     }
@@ -448,135 +431,138 @@ const App: React.FC = () => {
     } = appData;
 
     const renderPage = () => {
-        switch (page) {
-            case 'explore':
-                return <ExplorePage 
-                    listings={listings} 
-                    onListingClick={handleListingClick} 
-                    initialFilters={initialExploreFilters}
-                    onClearInitialFilters={() => setInitialExploreFilters(null)}
-                    favorites={session?.favorites || []}
-                    onToggleFavorite={handleToggleFavorite}
-                />;
-            case 'inbox':
-                return <ChatLayout 
-                            initialSelectedId={initialConversationId} 
-                            currentUser={session} 
-                       />;
-            case 'listingDetail':
-                const listing = listings.find((l: Listing) => l.id === selectedListingId);
-                return listing ? <ListingDetailPage 
-                    listing={listing} 
-                    onBack={() => handleNavigate('explore')} 
-                    onStartConversation={handleStartConversation}
-                    currentUser={session}
-                    onCreateBooking={handleCreateBooking}
-                    isFavorite={session?.favorites?.includes(listing.id) || false}
-                    onToggleFavorite={handleToggleFavorite}
-                    onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)} // NEW PROP
-                /> : <p>Listing not found.</p>;
-            case 'userProfile': // NEW PAGE CASE
-                const profileUser = users.find((u: User) => u.id === selectedUserProfileId);
-                if (!profileUser) return <p className="p-8 text-center text-gray-500">User profile not found.</p>;
-                
-                // Filter listings owned by this user
-                const userListings = listings.filter((l: Listing) => l.owner.id === profileUser.id);
-
-                return <UserProfilePage 
-                    profileUser={profileUser}
-                    currentUser={session}
-                    listings={userListings}
-                    onListingClick={handleListingClick}
-                    onToggleFavorite={handleToggleFavorite}
-                    favoriteIds={session?.favorites || []}
-                    onEditProfile={session?.id === profileUser.id ? handleUpdateUserProfile : undefined}
-                />;
-            case 'createListing':
-                return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} onSubmit={handleCreateListing} />;
-            case 'editListing':
-                return listingToEdit ? 
-                    <CreateListingPage 
-                        onBack={() => handleNavigate('userDashboard')} 
-                        currentUser={session} 
-                        initialData={listingToEdit} 
-                        onSubmit={handleUpdateListing} 
-                    /> : <p>No listing selected for editing.</p>;
-            case 'aiAssistant':
-                return <AIAssistantPage />;
-            case 'admin':
-                return session?.isAdmin ? <AdminPage 
-                    users={users}
-                    listings={listings}
-                    heroSlides={heroSlides}
-                    banners={banners}
-                    logoUrl={logoUrl}
-                    paymentApiKey={paymentApiKey}
-                    categoryImages={categoryImages}
-                    onUpdatePaymentApiKey={handleUpdatePaymentApiKey}
-                    onUpdateLogo={handleUpdateLogo}
-                    onUpdateSlide={handleUpdateSlide}
-                    onAddSlide={handleAddSlide}
-                    onDeleteSlide={handleDeleteSlide}
-                    onUpdateBanner={handleUpdateBanner}
-                    onAddBanner={handleAddBanner}
-                    onDeleteBanner={handleDeleteBanner}
-                    onToggleFeatured={handleToggleFeatured}
-                    onUpdateCategoryImage={handleUpdateCategoryImage}
-                    onUpdateListingImage={handleUpdateListingImage}
-                    onViewListing={handleListingClick}
-                    onDeleteListing={handleDeleteListing}
-                /> : <p>Access Denied.</p>;
-             case 'userDashboard':
-                return session ? <UserDashboardPage 
-                    user={session} 
-                    listings={listings.filter((l: Listing) => l.owner.id === session.id)} 
-                    // Pass both bookings where user is the renter OR the owner
-                    bookings={bookings.filter((b: Booking) => b.renterId === session.id || b.listing.owner.id === session.id)}
-                    favoriteListings={listings.filter(l => session.favorites?.includes(l.id))}
-                    onVerificationUpdate={handleVerificationUpdate}
-                    onUpdateAvatar={handleUpdateAvatar}
-                    onUpdateProfile={handleUpdateUserProfile} // Pass the handler
-                    onListingClick={handleListingClick}
-                    onEditListing={handleEditListingClick}
-                    onToggleFavorite={handleToggleFavorite}
-                    onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
-                    onDeleteListing={handleDeleteListing} // NEW PROP
-                    onBookingStatusUpdate={handleBookingStatusUpdate} // NEW PROP ADDED
-                    onNavigate={handleNavigate} // NEW PROP
-                /> : <p>Please log in.</p>;
-            case 'aboutUs':
-                return <AboutUsPage />;
-            case 'careers':
-                return <CareersPage />;
-            case 'press':
-                return <PressPage />;
-            case 'helpCenter':
-                return <HelpCenterPage />;
-            case 'contactUs':
-                return <ContactUsPage />;
-            case 'terms':
-                return <TermsPage />;
-            case 'privacyPolicy':
-                return <PrivacyPolicyPage />;
-            case 'howItWorks':
-                return <HowItWorksPage />;
-            case 'floridaCompliance':
-                return <FloridaCompliancePage />;
-            case 'home':
-            default:
-                return <HomePage 
-                    onListingClick={handleListingClick} 
-                    onCreateListing={() => handleNavigate('createListing')}
-                    onSearch={handleSearch}
-                    onNavigate={handleNavigate}
-                    listings={listings}
-                    heroSlides={heroSlides}
-                    banners={banners}
-                    categoryImages={categoryImages}
-                    favorites={session?.favorites || []}
-                    onToggleFavorite={handleToggleFavorite}
-                />;
+        // SEO Integration
+        let pageTitle = "Home";
+        if (page === 'explore') pageTitle = "Explore Gear";
+        if (page === 'createListing') pageTitle = "List Your Item";
+        if (page === 'listingDetail' && selectedListingId) {
+            const l = listings.find((x: Listing) => x.id === selectedListingId);
+            pageTitle = l ? l.title : "Item Details";
         }
+
+        return (
+            <>
+                <SEOHead title={pageTitle} />
+                {(() => {
+                    switch (page) {
+                        case 'explore':
+                            return <ExplorePage 
+                                listings={listings} 
+                                onListingClick={handleListingClick} 
+                                initialFilters={initialExploreFilters}
+                                onClearInitialFilters={() => setInitialExploreFilters(null)}
+                                favorites={session?.favorites || []}
+                                onToggleFavorite={handleToggleFavorite}
+                            />;
+                        case 'inbox':
+                            return <ChatLayout 
+                                        initialSelectedId={initialConversationId} 
+                                        currentUser={session} 
+                                   />;
+                        case 'listingDetail':
+                            const listing = listings.find((l: Listing) => l.id === selectedListingId);
+                            return listing ? <ListingDetailPage 
+                                listing={listing} 
+                                onBack={() => handleNavigate('explore')} 
+                                onStartConversation={handleStartConversation}
+                                currentUser={session}
+                                onCreateBooking={handleCreateBooking}
+                                isFavorite={session?.favorites?.includes(listing.id) || false}
+                                onToggleFavorite={handleToggleFavorite}
+                                onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)}
+                            /> : <p>Listing not found.</p>;
+                        case 'userProfile':
+                            const profileUser = users.find((u: User) => u.id === selectedUserProfileId);
+                            if (!profileUser) return <p className="p-8 text-center text-gray-500">User profile not found.</p>;
+                            const userListings = listings.filter((l: Listing) => l.owner.id === profileUser.id);
+                            return <UserProfilePage 
+                                profileUser={profileUser}
+                                currentUser={session}
+                                listings={userListings}
+                                onListingClick={handleListingClick}
+                                onToggleFavorite={handleToggleFavorite}
+                                favoriteIds={session?.favorites || []}
+                                onEditProfile={session?.id === profileUser.id ? handleUpdateUserProfile : undefined}
+                            />;
+                        case 'createListing':
+                            return <CreateListingPage onBack={() => handleNavigate('home')} currentUser={session} onSubmit={handleCreateListing} />;
+                        case 'editListing':
+                            return listingToEdit ? 
+                                <CreateListingPage 
+                                    onBack={() => handleNavigate('userDashboard')} 
+                                    currentUser={session} 
+                                    initialData={listingToEdit} 
+                                    onSubmit={handleUpdateListing} 
+                                /> : <p>No listing selected for editing.</p>;
+                        case 'aiAssistant':
+                            return <AIAssistantPage />;
+                        case 'admin':
+                            return session?.isAdmin ? <AdminPage 
+                                users={users}
+                                listings={listings}
+                                heroSlides={heroSlides}
+                                banners={banners}
+                                logoUrl={logoUrl}
+                                paymentApiKey={paymentApiKey}
+                                categoryImages={categoryImages}
+                                onUpdatePaymentApiKey={handleUpdatePaymentApiKey}
+                                onUpdateLogo={handleUpdateLogo}
+                                onUpdateSlide={handleUpdateSlide}
+                                onAddSlide={handleAddSlide}
+                                onDeleteSlide={handleDeleteSlide}
+                                onUpdateBanner={handleUpdateBanner}
+                                onAddBanner={handleAddBanner}
+                                onDeleteBanner={handleDeleteBanner}
+                                onToggleFeatured={handleToggleFeatured}
+                                onUpdateCategoryImage={handleUpdateCategoryImage}
+                                onUpdateListingImage={handleUpdateListingImage}
+                                onViewListing={handleListingClick}
+                                onDeleteListing={handleDeleteListing}
+                            /> : <p>Access Denied.</p>;
+                         case 'userDashboard':
+                            return session ? <UserDashboardPage 
+                                user={session} 
+                                listings={listings.filter((l: Listing) => l.owner.id === session.id)} 
+                                bookings={bookings.filter((b: Booking) => b.renterId === session.id || b.listing.owner.id === session.id)}
+                                favoriteListings={listings.filter(l => session.favorites?.includes(l.id))}
+                                onVerificationUpdate={handleVerificationUpdate}
+                                onUpdateAvatar={handleUpdateAvatar}
+                                onUpdateProfile={handleUpdateUserProfile}
+                                onListingClick={handleListingClick}
+                                onEditListing={handleEditListingClick}
+                                onToggleFavorite={handleToggleFavorite}
+                                onViewPublicProfile={() => handleViewUserProfile(session.id)}
+                                onDeleteListing={handleDeleteListing} 
+                                onBookingStatusUpdate={handleBookingStatusUpdate} 
+                                onNavigate={handleNavigate}
+                            /> : <p>Please log in.</p>;
+                        case 'aboutUs': return <AboutUsPage />;
+                        case 'careers': return <CareersPage />;
+                        case 'press': return <PressPage />;
+                        case 'helpCenter': return <HelpCenterPage />;
+                        case 'contactUs': return <ContactUsPage />;
+                        case 'terms': return <TermsPage />;
+                        case 'privacyPolicy': return <PrivacyPolicyPage />;
+                        case 'howItWorks': return <HowItWorksPage />;
+                        case 'floridaCompliance': return <FloridaCompliancePage />;
+                        case 'home':
+                        default:
+                            return <HomePage 
+                                onListingClick={handleListingClick} 
+                                onCreateListing={() => handleNavigate('createListing')}
+                                onSearch={handleSearch}
+                                onNavigate={handleNavigate}
+                                listings={listings}
+                                heroSlides={heroSlides}
+                                banners={banners}
+                                categoryImages={categoryImages}
+                                favorites={session?.favorites || []}
+                                onToggleFavorite={handleToggleFavorite}
+                            />;
+                    }
+                })()}
+            </>
+        );
     };
 
     return (

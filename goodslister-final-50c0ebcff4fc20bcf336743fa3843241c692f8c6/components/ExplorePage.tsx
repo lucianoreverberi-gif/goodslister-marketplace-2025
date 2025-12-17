@@ -4,11 +4,11 @@
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Listing, ListingCategory } from '../types';
-import { subcategories } from '../constants';
 import ListingCard from './ListingCard';
-import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon, XIcon } from './icons';
+import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon } from './icons';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';
+import { ListingCardSkeleton } from './ui/Skeleton';
 
 interface ExplorePageProps {
     listings: Listing[];
@@ -39,11 +39,17 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     // Filter and sort state
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
-    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]); // NEW: Subcategory State
     const maxPrice = useMemo(() => Math.max(...listings.map(l => l.pricePerDay || 0), 100), [listings]);
     const [priceRange, setPriceRange] = useState<number>(maxPrice);
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
     const [locationFilter, setLocationFilter] = useState('');
+    const [isLoadingListings, setIsLoadingListings] = useState(true); // UX State
+
+    // Simulate loading delay for listings to show off Skeletons (Remove in prod if real data is instant)
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoadingListings(false), 800);
+        return () => clearTimeout(timer);
+    }, [listings]);
 
     // Map specific state
     const [map, setMap] = useState<any>(null); // Use state for map instance to solve race condition
@@ -163,47 +169,15 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         setSelectedCategories(prev => {
             // Reset manual search flag when user changes filters, so map can auto-fit to new results
             setUserManuallySearched(false);
-            const newSelection = prev.includes(category)
+            return prev.includes(category)
                 ? prev.filter(c => c !== category)
                 : [...prev, category];
-            return newSelection;
         });
     };
-    
-    // NEW: Handle Subcategory Toggle
-    const handleSubcategoryToggle = (subcategory: string) => {
-        setSelectedSubcategories(prev => {
-            setUserManuallySearched(false);
-            return prev.includes(subcategory)
-                ? prev.filter(s => s !== subcategory)
-                : [...prev, subcategory];
-        });
-    };
-
-    // NEW: Compute available subcategories based on selected categories
-    const availableSubcategories = useMemo(() => {
-        if (selectedCategories.length === 0) return [];
-        // Get all subcategories for the selected parent categories
-        // Flatten the array of arrays
-        const subs = selectedCategories.flatMap(cat => subcategories[cat] || []);
-        // Remove duplicates if any (though unlikely with current structure)
-        return Array.from(new Set(subs)).sort();
-    }, [selectedCategories]);
-
-    // NEW: Auto-clear selected subcategories if they are no longer valid (e.g. parent category deselected)
-    useEffect(() => {
-        if (selectedCategories.length === 0) {
-            setSelectedSubcategories([]);
-            return;
-        }
-        const validSubs = selectedCategories.flatMap(cat => subcategories[cat] || []);
-        setSelectedSubcategories(prev => prev.filter(s => validSubs.includes(s)));
-    }, [selectedCategories]);
 
     const clearFilters = () => {
         setSearchTerm('');
         setSelectedCategories([]);
-        setSelectedSubcategories([]); // NEW
         setPriceRange(maxPrice);
         setSortBy('rating_desc');
         setLocationFilter('');
@@ -222,10 +196,6 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesCategory = selectedCategories.length > 0 ? 
                 selectedCategories.includes(listing.category) : true;
             
-            // NEW: Subcategory Match Logic
-            const matchesSubcategory = selectedSubcategories.length > 0 ?
-                (listing.subcategory && selectedSubcategories.includes(listing.subcategory)) : true;
-            
             // Improved Location Matching: Split by comma to handle "City, State" better
             const locationFilterLower = locationFilter.toLowerCase();
             const matchesLocation = locationFilter ?
@@ -238,7 +208,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesPrice = price ? price <= priceRange : true;
 
 
-            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation;
+            return matchesSearch && matchesCategory && matchesPrice && matchesLocation;
         });
 
         switch (sortBy) {
@@ -254,7 +224,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         }
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter]);
+    }, [listings, searchTerm, selectedCategories, priceRange, sortBy, locationFilter]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -307,7 +277,6 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     };
 
     if (loadError) return <div className="p-8 text-center">Error loading maps. Please check the API key.</div>;
-    if (!isLoaded) return <div className="p-8 text-center">Loading map and listings...</div>;
 
     return (
         <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden relative">
@@ -348,22 +317,26 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
                                     <MapPinIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                                 </div>
-                                <Autocomplete
-                                    onLoad={onAutocompleteLoad}
-                                    onPlaceChanged={onPlaceChanged}
-                                >
-                                    <input
-                                        type="text"
-                                        id="location"
-                                        value={locationFilter}
-                                        onChange={(e) => {
-                                            setLocationFilter(e.target.value);
-                                            setUserManuallySearched(false); // Reset manual flag if typing manually
-                                        }}
-                                        placeholder="Search for a city (e.g. Miami)"
-                                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10 pr-10"
-                                    />
-                                </Autocomplete>
+                                {isLoaded ? (
+                                    <Autocomplete
+                                        onLoad={onAutocompleteLoad}
+                                        onPlaceChanged={onPlaceChanged}
+                                    >
+                                        <input
+                                            type="text"
+                                            id="location"
+                                            value={locationFilter}
+                                            onChange={(e) => {
+                                                setLocationFilter(e.target.value);
+                                                setUserManuallySearched(false); // Reset manual flag if typing manually
+                                            }}
+                                            placeholder="Search for a city (e.g. Miami)"
+                                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10 pr-10"
+                                        />
+                                    </Autocomplete>
+                                ) : (
+                                    <input disabled className="block w-full border-gray-200 bg-gray-100 rounded-md py-2 px-3" placeholder="Loading maps..." />
+                                )}
                                 <button
                                     type="button"
                                     onClick={handleUseMyLocation}
@@ -395,30 +368,6 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                             </div>
                         </div>
 
-                        {/* NEW: Subcategory Filter */}
-                        {availableSubcategories.length > 0 && (
-                            <div className="animate-in fade-in slide-in-from-top-1">
-                                <label className="block text-sm font-bold text-gray-800">
-                                    Subcategory <span className="text-gray-400 font-normal text-xs">(Optional)</span>
-                                </label>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    {availableSubcategories.map(sub => (
-                                        <button
-                                            key={sub}
-                                            onClick={() => handleSubcategoryToggle(sub)}
-                                            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
-                                                selectedSubcategories.includes(sub)
-                                                    ? 'bg-purple-100 text-purple-800 border-purple-200'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:text-purple-600'
-                                            }`}
-                                        >
-                                            {sub}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
                          {/* Search Filter */}
                         <div>
                             <label htmlFor="search" className="block text-sm font-bold text-gray-800">Keyword</label>
@@ -443,7 +392,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                 </div>
 
                 <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
-                    <p className="text-sm text-gray-600">{filteredAndSortedListings.length} results</p>
+                    <p className="text-sm text-gray-600">
+                        {isLoadingListings ? 'Finding gear...' : `${filteredAndSortedListings.length} results`}
+                    </p>
                     <select 
                         id="sort-by"
                         value={sortBy}
@@ -458,7 +409,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
 
                 {/* Listing Grid */}
                 <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-                    {filteredAndSortedListings.length > 0 ? (
+                    {isLoadingListings ? (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                <ListingCardSkeleton key={i} />
+                            ))}
+                        </div>
+                    ) : filteredAndSortedListings.length > 0 ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             {filteredAndSortedListings.map(listing => (
                                 <div
@@ -498,46 +455,52 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
 
             {/* Right Panel - Map */}
             <div className={`flex-1 relative h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : 'block'}`}>
-                <GoogleMap
-                    mapContainerStyle={mapContainerStyle}
-                    center={mapCenter}
-                    zoom={mapZoom}
-                    onLoad={onMapLoad}
-                    options={{ disableDefaultUI: true, zoomControl: true, streetViewControl: false, mapTypeControl: false }}
-                >
-                    {filteredAndSortedListings.map(listing => (
-                        <Marker
-                            key={listing.id}
-                            position={{ lat: listing.location.latitude, lng: listing.location.longitude }}
-                            onClick={() => setSelectedListing(listing)}
-                            onMouseOver={() => setHoveredListingId(listing.id)}
-                            onMouseOut={() => setHoveredListingId(null)}
-                            icon={{
-                                // FIX: Cast 'window' to 'any' to access 'google.maps' without type definitions.
-                                path: (window as any).google.maps.SymbolPath.CIRCLE,
-                                scale: hoveredListingId === listing.id ? 10 : 7,
-                                fillColor: hoveredListingId === listing.id ? "#06B6D4" : "#10B981",
-                                fillOpacity: 0.9,
-                                strokeColor: "white",
-                                strokeWeight: 2,
-                            }}
-                        />
-                    ))}
-                    {selectedListing && (
-                        <InfoWindow
-                            position={{ lat: selectedListing.location.latitude, lng: selectedListing.location.longitude }}
-                            onCloseClick={() => setSelectedListing(null)}
-                        >
-                            <div className="w-48 cursor-pointer" onClick={() => onListingClick(selectedListing.id)}>
-                                <img src={selectedListing.images[0]} alt={selectedListing.title} className="w-full h-24 object-cover rounded-t-md" />
-                                <div className="p-2">
-                                    <p className="font-bold text-sm truncate">{selectedListing.title}</p>
-                                    <p className="text-xs text-gray-600">${selectedListing.pricePerDay}/day</p>
+                {isLoaded ? (
+                    <GoogleMap
+                        mapContainerStyle={mapContainerStyle}
+                        center={mapCenter}
+                        zoom={mapZoom}
+                        onLoad={onMapLoad}
+                        options={{ disableDefaultUI: true, zoomControl: true, streetViewControl: false, mapTypeControl: false }}
+                    >
+                        {filteredAndSortedListings.map(listing => (
+                            <Marker
+                                key={listing.id}
+                                position={{ lat: listing.location.latitude, lng: listing.location.longitude }}
+                                onClick={() => setSelectedListing(listing)}
+                                onMouseOver={() => setHoveredListingId(listing.id)}
+                                onMouseOut={() => setHoveredListingId(null)}
+                                icon={{
+                                    // FIX: Cast 'window' to 'any' to access 'google.maps' without type definitions.
+                                    path: (window as any).google.maps.SymbolPath.CIRCLE,
+                                    scale: hoveredListingId === listing.id ? 10 : 7,
+                                    fillColor: hoveredListingId === listing.id ? "#06B6D4" : "#10B981",
+                                    fillOpacity: 0.9,
+                                    strokeColor: "white",
+                                    strokeWeight: 2,
+                                }}
+                            />
+                        ))}
+                        {selectedListing && (
+                            <InfoWindow
+                                position={{ lat: selectedListing.location.latitude, lng: selectedListing.location.longitude }}
+                                onCloseClick={() => setSelectedListing(null)}
+                            >
+                                <div className="w-48 cursor-pointer" onClick={() => onListingClick(selectedListing.id)}>
+                                    <img src={selectedListing.images[0]} alt={selectedListing.title} className="w-full h-24 object-cover rounded-t-md" />
+                                    <div className="p-2">
+                                        <p className="font-bold text-sm truncate">{selectedListing.title}</p>
+                                        <p className="text-xs text-gray-600">${selectedListing.pricePerDay}/day</p>
+                                    </div>
                                 </div>
-                            </div>
-                        </InfoWindow>
-                    )}
-                </GoogleMap>
+                            </InfoWindow>
+                        )}
+                    </GoogleMap>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
+                        Loading Map...
+                    </div>
+                )}
             </div>
         </div>
     );

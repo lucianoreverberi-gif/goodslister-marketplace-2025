@@ -2,18 +2,21 @@
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { mockUsers, mockListings, mockBookings } from '../constants';
+import { hashPassword } from '../lib/auth-utils';
 
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ) {
   try {
-    // 1. Create Users Table
+    // 1. Create Users Table (Updated with password_hash and salt)
     await sql`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(255) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT,
+        password_salt TEXT,
         registered_date DATE,
         avatar_url TEXT,
         bio TEXT,
@@ -117,13 +120,14 @@ export default async function handler(
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS balance_due_on_site NUMERIC(10, 2) DEFAULT 0`;
         await sql`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`;
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS favorites TEXT[] DEFAULT ARRAY[]::TEXT[]`;
-        // NEW MIGRATION
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS instant_booking_enabled BOOLEAN DEFAULT FALSE`;
-        
-        // --- FIX FOR YOUR ERROR: Adding the missing risk/hardware columns ---
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_gps_tracker BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS has_commercial_insurance BOOLEAN DEFAULT FALSE`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS security_deposit NUMERIC(10, 2) DEFAULT 0`;
+        
+        // SECURITY MIGRATION
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_salt TEXT`;
     } catch (e) {
         console.log("Migration skipped", e);
     }
@@ -131,11 +135,20 @@ export default async function handler(
     // --- SEEDING STRATEGY ---
     
     // 1. Users
+    // NOTE: For mock users, we generate a default hash for "password"
+    const defaultAuth = hashPassword("password");
+
     for (const user of mockUsers) {
         await sql`
-            INSERT INTO users (id, name, email, registered_date, avatar_url, bio, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, favorites, role)
-            VALUES (${user.id}, ${user.name}, ${user.email}, ${user.registeredDate || '2023-01-01'}, ${user.avatarUrl}, ${user.bio || ''}, ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any}, ${user.email.includes('admin') ? 'SUPER_ADMIN' : 'USER'})
-            ON CONFLICT (id) DO NOTHING
+            INSERT INTO users (id, name, email, registered_date, avatar_url, bio, is_email_verified, is_phone_verified, is_id_verified, average_rating, total_reviews, favorites, role, password_hash, password_salt)
+            VALUES (
+                ${user.id}, ${user.name}, ${user.email}, ${user.registeredDate || '2023-01-01'}, ${user.avatarUrl}, ${user.bio || ''}, 
+                ${user.isEmailVerified}, ${user.isPhoneVerified}, ${user.isIdVerified}, 
+                ${user.averageRating}, ${user.totalReviews}, ${user.favorites as any}, 
+                ${user.email.includes('admin') ? 'SUPER_ADMIN' : 'USER'},
+                ${defaultAuth.hash}, ${defaultAuth.salt}
+            )
+            ON CONFLICT (id) DO UPDATE SET password_hash = ${defaultAuth.hash}, password_salt = ${defaultAuth.salt}
         `;
     }
     console.log('Users synced');
