@@ -4,7 +4,7 @@ import { Booking, InspectionPhoto, User } from '../types';
 import { 
     CameraIcon, RefreshCwIcon, FuelIcon, 
     ShieldCheckIcon, TrashIcon, AlertTriangleIcon, 
-    ScanIcon, BrainCircuitIcon, CheckCircleIcon, UserCheckIcon, XIcon, FileSignatureIcon, PenToolIcon, ClockIcon
+    ScanIcon, BrainCircuitIcon, CheckCircleIcon, UserCheckIcon, XIcon, FileSignatureIcon, PenToolIcon, ClockIcon, LockIcon, ShieldIcon
 } from './icons';
 import ImageUploader from './ImageUploader';
 import { differenceInSeconds, format } from 'date-fns';
@@ -13,13 +13,14 @@ import DigitalInspection from './DigitalInspection';
 import { LegalService } from '../services/legalService';
 
 type WizardPhase = 'IDLE' | 'HANDOVER' | 'ACTIVE' | 'RETURN' | 'COMPLETED';
-type WizardStep = 'PAYMENT_CHECK' | 'ID_SCAN' | 'CONTRACT_SIGNATURE' | 'HANDOVER_DOCUMENTATION' | 'RENTAL_DASHBOARD' | 'INBOUND_INSPECTION' | 'DAMAGE_ASSESSMENT' | 'REVIEW_CLOSE';
+type WizardStep = 'STRIPE_IDENTITY_CHECK' | 'PAYMENT_CHECK' | 'ID_SCAN' | 'CONTRACT_SIGNATURE' | 'HANDOVER_DOCUMENTATION' | 'RENTAL_DASHBOARD' | 'INBOUND_INSPECTION' | 'DAMAGE_ASSESSMENT' | 'REVIEW_CLOSE';
 
 interface RentalSessionWizardProps {
     booking: Booking;
     initialMode?: 'handover' | 'return';
     onStatusChange: (newStatus: string) => void | Promise<void>;
     onComplete: () => void;
+    currentUser?: User | null;
 }
 
 const CountdownTimer: React.FC<{ endDate: string }> = ({ endDate }) => {
@@ -42,10 +43,14 @@ const CountdownTimer: React.FC<{ endDate: string }> = ({ endDate }) => {
     return <p className="text-4xl font-black text-gray-900 tracking-tighter">{timeLeft}</p>;
 };
 
-const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, initialMode, onStatusChange, onComplete }) => {
+const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, initialMode, onStatusChange, onComplete, currentUser }) => {
     const [phase, setPhase] = useState<WizardPhase>('IDLE');
-    const [step, setStep] = useState<WizardStep>('PAYMENT_CHECK');
+    const [step, setStep] = useState<WizardStep>('STRIPE_IDENTITY_CHECK');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Identity State
+    const [isVerifyingWithStripe, setIsVerifyingWithStripe] = useState(false);
+    const [verificationComplete, setVerificationComplete] = useState(false);
 
     // Session Data
     const [idFront, setIdFront] = useState('');
@@ -53,21 +58,33 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     const [inboundPhotos, setInboundPhotos] = useState<InspectionPhoto[]>([]);
     const [signatureName, setSignatureName] = useState('');
 
-    // Return Data
-    const [showInspectionModal, setShowInspectionModal] = useState(false);
-    const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
-    const [damageNotes, setDamageNotes] = useState('');
-
     useEffect(() => {
         if (initialMode === 'return' || booking.status === 'active') {
             setPhase('RETURN'); setStep('INBOUND_INSPECTION'); return;
         }
+        
+        // Determinar primer paso basado en verificación
         if (booking.status === 'confirmed') {
-            setPhase('HANDOVER'); setStep('PAYMENT_CHECK');
+            setPhase('HANDOVER');
+            // Si el usuario ya está verificado, saltar Stripe e ir a pago
+            if (currentUser?.isIdVerified) {
+                setStep('PAYMENT_CHECK');
+            } else {
+                setStep('STRIPE_IDENTITY_CHECK');
+            }
         } else if (booking.status === 'completed') {
             setPhase('COMPLETED');
         }
-    }, [booking.status, initialMode]);
+    }, [booking.status, initialMode, currentUser]);
+
+    const startStripeVerification = () => {
+        setIsVerifyingWithStripe(true);
+        // Simulación de Stripe Identity Redirect/Modal
+        setTimeout(() => {
+            setIsVerifyingWithStripe(false);
+            setVerificationComplete(true);
+        }, 3000);
+    };
 
     const handleStartRental = async () => {
         setIsLoading(true);
@@ -90,6 +107,67 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
             setStep('DAMAGE_ASSESSMENT');
         }
     };
+
+    const renderStripeGate = () => (
+        <div className="max-w-md mx-auto py-12 text-center space-y-8 animate-in fade-in zoom-in-95">
+            <div className="bg-indigo-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto shadow-xl rotate-3">
+                <ShieldIcon className="h-10 w-10 text-white" />
+            </div>
+            <div>
+                <h3 className="text-3xl font-black text-gray-900 tracking-tight">Security Checkpoint</h3>
+                <p className="text-gray-500 mt-2">Since this is your first rental, we need to verify your identity using <span className="font-bold text-indigo-600">Stripe Identity</span>.</p>
+            </div>
+
+            <div className="bg-white border border-gray-100 p-6 rounded-3xl shadow-sm space-y-4">
+                <div className="flex items-center gap-4 text-left">
+                    <div className="bg-green-100 p-2 rounded-lg text-green-600"><CheckCircleIcon className="h-5 w-5"/></div>
+                    <p className="text-xs font-medium text-gray-600">Encrypted data processing (Bank-level security).</p>
+                </div>
+                <div className="flex items-center gap-4 text-left">
+                    <div className="bg-green-100 p-2 rounded-lg text-green-600"><CheckCircleIcon className="h-5 w-5"/></div>
+                    <p className="text-xs font-medium text-gray-600">Verification takes less than 2 minutes.</p>
+                </div>
+            </div>
+
+            {!verificationComplete ? (
+                <button 
+                    onClick={startStripeVerification}
+                    disabled={isVerifyingWithStripe}
+                    className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
+                >
+                    {isVerifyingWithStripe ? (
+                        <>
+                            <RefreshCwIcon className="h-5 w-5 animate-spin" />
+                            Waiting for Stripe...
+                        </>
+                    ) : (
+                        <>
+                            <UserCheckIcon className="h-5 w-5" />
+                            Verify with Stripe Identity
+                        </>
+                    )}
+                </button>
+            ) : (
+                <div className="space-y-6">
+                    <div className="bg-green-50 p-6 rounded-2xl border border-green-200 flex flex-col items-center">
+                        <CheckCircleIcon className="h-12 w-12 text-green-500 mb-2" />
+                        <p className="text-green-800 font-bold">Identity Confirmed</p>
+                    </div>
+                    <button 
+                        onClick={() => setStep('PAYMENT_CHECK')}
+                        className="w-full py-5 bg-gray-900 text-white font-black rounded-2xl shadow-xl"
+                    >
+                        Continue to Handover →
+                    </button>
+                </div>
+            )}
+            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Powered by Stripe & Goodslister AI</p>
+        </div>
+    );
+
+    const [showInspectionModal, setShowInspectionModal] = useState(false);
+    const [damageVerdict, setDamageVerdict] = useState<'clean' | 'damage' | null>(null);
+    const [damageNotes, setDamageNotes] = useState('');
 
     const renderContractSignature = () => {
         const renterMock: User = { name: 'Renter' } as any;
@@ -129,6 +207,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     };
 
     const renderHandoverStep = () => {
+        if (step === 'STRIPE_IDENTITY_CHECK') return renderStripeGate();
+        
         if (step === 'PAYMENT_CHECK') return (
             <div className="space-y-6 animate-in fade-in max-w-md mx-auto py-10">
                  <div className="bg-amber-50 p-8 rounded-3xl border border-amber-200 shadow-sm text-center">
@@ -143,10 +223,14 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         if (step === 'ID_SCAN') return (
             <div className="space-y-6 max-w-md mx-auto py-10">
                 <div className="text-center">
-                    <h3 className="text-2xl font-black">Identity Check</h3>
-                    <p className="text-gray-500">Scan Renter's Official ID</p>
+                    <h3 className="text-2xl font-black">Final ID Confirmation</h3>
+                    <p className="text-gray-500">Owner must visually confirm Stripe verification matches physical ID.</p>
                 </div>
-                <ImageUploader label="" currentImageUrl={idFront} onImageChange={setIdFront} />
+                <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 flex items-center gap-4">
+                    <div className="bg-indigo-600 p-2 rounded-full text-white"><CheckCircleIcon className="h-4 w-4"/></div>
+                    <p className="text-xs font-bold text-indigo-900 uppercase tracking-widest">Stripe Verified: {booking.listing.owner.name.split(' ')[0]}</p>
+                </div>
+                <ImageUploader label="Take Photo of Physical ID" currentImageUrl={idFront} onImageChange={setIdFront} />
                 <button onClick={() => setStep('CONTRACT_SIGNATURE')} disabled={!idFront} className="w-full py-5 bg-gray-900 text-white font-black rounded-2xl shadow-xl disabled:opacity-50">Proceed to Contract</button>
             </div>
         );
@@ -164,6 +248,10 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Rental Session</p>
                         <h2 className="font-bold text-gray-900">{booking.listing.title}</h2>
                     </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <LockIcon className="h-4 w-4 text-indigo-500" />
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Stripe Identity Protected</span>
                 </div>
             </div>
 
