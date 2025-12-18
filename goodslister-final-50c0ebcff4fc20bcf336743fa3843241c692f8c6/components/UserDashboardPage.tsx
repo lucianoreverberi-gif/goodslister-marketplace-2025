@@ -1,7 +1,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Session, Listing, Booking, Page } from '../types';
-import { PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, WandSparklesIcon, ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, PencilIcon, XIcon, LandmarkIcon, CalculatorIcon, ScanIcon, CameraIcon, HeartIcon, UserCheckIcon, TrashIcon, LockIcon, BellIcon, GlobeIcon, AlertTriangleIcon, CheckIcon, ShieldCheckIcon } from './icons';
+import { 
+    PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, 
+    ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, 
+    CalendarIcon, EyeIcon, PencilIcon, XIcon, LandmarkIcon, 
+    CalculatorIcon, ScanIcon, CameraIcon, HeartIcon, UserCheckIcon, 
+    TrashIcon, LockIcon, BellIcon, GlobeIcon, AlertTriangleIcon, 
+    CheckIcon, ShieldCheckIcon, TrendUpIcon 
+} from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import ListingCard from './ListingCard';
@@ -25,100 +32,99 @@ interface UserDashboardPageProps {
     onNavigate: (page: Page) => void;
 }
 
-type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security' | 'favorites';
+type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites';
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ 
     user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onUpdateProfile,
     onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate, onNavigate
 }) => {
-    const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
+    const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
     const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
+    
     useEffect(() => { setLocalBookings(bookings); }, [bookings]);
 
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
-        { id: 'profile', name: 'Profile & Settings', icon: UserCheckIcon },
-        { id: 'analytics', name: 'Analytics', icon: BarChartIcon },
-        { id: 'listings', name: 'My Listings', icon: PackageIcon },
+        { id: 'analytics', name: 'Performance', icon: BarChartIcon },
         { id: 'bookings', name: 'Reservations', icon: CalendarIcon },
+        { id: 'listings', name: 'My Equipment', icon: PackageIcon },
         { id: 'favorites', name: 'Saved Items', icon: HeartIcon },
-        { id: 'security', name: 'Security', icon: ShieldIcon },
-        { id: 'billing', name: 'Payments', icon: DollarSignIcon },
+        { id: 'profile', name: 'Public Profile', icon: UserCheckIcon },
+        { id: 'security', name: 'Trust & ID', icon: ShieldIcon },
+        { id: 'billing', name: 'Payouts', icon: DollarSignIcon },
     ];
 
-    const handleBookingDecision = async (bookingId: string, action: 'approve' | 'reject') => {
-        try {
-            const res = await fetch('/api/bookings/approve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookingId, action, ownerId: user.id })
-            });
-            if (res.ok) {
-                const newStatus = action === 'approve' ? 'confirmed' : 'rejected';
-                setLocalBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus as any } : b));
-            }
-        } catch (e) {
-            alert("Action failed. Check connection.");
-        }
-    };
-
     const renderSecurityTab = () => (
-        <div className="space-y-6 animate-in fade-in">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <ShieldCheckIcon className="h-6 w-6 text-indigo-600" />
-                    Identity & Security
+                <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+                    <ShieldCheckIcon className="h-7 w-7 text-indigo-600" />
+                    Identity & Trust Shield
                 </h3>
-                <p className="text-gray-500 text-sm mt-2">Verified users have 3x higher booking rates and full platform insurance coverage.</p>
+                <p className="text-gray-500 text-sm mt-2">Nivel de verificación actual: <span className="font-bold text-indigo-600">{user.isIdVerified ? 'Máximo (Nivel 3)' : 'Básico (Nivel 1)'}</span></p>
                 
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className={`p-6 rounded-2xl border-2 transition-all ${user.isIdVerified ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-dashed border-gray-200'}`}>
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={`p-6 rounded-3xl border-2 transition-all ${user.isIdVerified ? 'bg-green-50 border-green-200 shadow-sm' : 'bg-white border-dashed border-gray-200 hover:border-indigo-300'}`}>
                         <div className="flex justify-between items-start mb-4">
-                            <div className={`p-2 rounded-lg ${user.isIdVerified ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                            <div className={`p-3 rounded-2xl ${user.isIdVerified ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
                                 <UserCheckIcon className="h-6 w-6" />
                             </div>
-                            {user.isIdVerified ? <span className="text-[10px] font-black text-green-600 uppercase">Verified</span> : <span className="text-[10px] font-black text-gray-400 uppercase">Pending</span>}
+                            {user.isIdVerified ? 
+                                <span className="text-[10px] font-black bg-green-500 text-white px-2 py-1 rounded-full uppercase tracking-widest">Verified</span> : 
+                                <span className="text-[10px] font-black bg-gray-100 text-gray-400 px-2 py-1 rounded-full uppercase tracking-widest">Action Required</span>
+                            }
                         </div>
-                        <h4 className="font-bold text-gray-900">Stripe Identity</h4>
-                        <p className="text-xs text-gray-500 mt-1">Government ID + Biometric Facial Match.</p>
+                        <h4 className="font-bold text-gray-900 text-lg">Stripe Identity</h4>
+                        <p className="text-xs text-gray-500 mt-2 leading-relaxed">Escaneo biométrico de documento oficial. Necesario para transacciones de alto valor y seguros náuticos.</p>
                         {!user.isIdVerified && (
                             <button 
                                 onClick={() => onVerificationUpdate(user.id, 'id')}
-                                className="mt-4 w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors"
+                                className="mt-6 w-full py-3 bg-indigo-600 text-white text-xs font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 uppercase tracking-widest"
                             >
-                                Verify Identity Now
+                                Verify Identity with Stripe
                             </button>
                         )}
                     </div>
 
-                    <div className={`p-6 rounded-2xl border-2 transition-all ${user.isPhoneVerified ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-dashed border-gray-200'}`}>
+                    <div className={`p-6 rounded-3xl border-2 transition-all ${user.isPhoneVerified ? 'bg-blue-50 border-blue-200 shadow-sm' : 'bg-white border-dashed border-gray-200 hover:border-blue-300'}`}>
                         <div className="flex justify-between items-start mb-4">
-                            <div className={`p-2 rounded-lg ${user.isPhoneVerified ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                            <div className={`p-3 rounded-2xl ${user.isPhoneVerified ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
                                 <PhoneIcon className="h-6 w-6" />
                             </div>
-                            {user.isPhoneVerified ? <span className="text-[10px] font-black text-blue-600 uppercase">Linked</span> : <span className="text-[10px] font-black text-gray-400 uppercase">Unlinked</span>}
+                            {user.isPhoneVerified ? 
+                                <span className="text-[10px] font-black bg-blue-500 text-white px-2 py-1 rounded-full uppercase tracking-widest">Active</span> : 
+                                <span className="text-[10px] font-black bg-gray-100 text-gray-400 px-2 py-1 rounded-full uppercase tracking-widest">Unlinked</span>
+                            }
                         </div>
-                        <h4 className="font-bold text-gray-900">Phone SMS</h4>
-                        <p className="text-xs text-gray-500 mt-1">For critical delivery alerts & secure login.</p>
+                        <h4 className="font-bold text-gray-900 text-lg">Mobile Authentication</h4>
+                        <p className="text-xs text-gray-500 mt-2 leading-relaxed">Verificación vía SMS para alertas críticas en el momento de la entrega del equipo.</p>
                         {!user.isPhoneVerified && (
                             <button 
                                 onClick={() => onVerificationUpdate(user.id, 'phone')}
-                                className="mt-4 w-full py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors"
+                                className="mt-6 w-full py-3 bg-blue-600 text-white text-xs font-black rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 uppercase tracking-widest"
                             >
-                                Link Mobile
+                                Link Phone Number
                             </button>
                         )}
                     </div>
                 </div>
             </div>
 
-            <div className="bg-indigo-900 p-8 rounded-3xl text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><LockIcon className="h-32 w-32"/></div>
-                <div className="relative z-10">
-                    <h4 className="font-bold text-indigo-200 text-xs uppercase tracking-widest mb-2">Platform Policy</h4>
-                    <h3 className="text-xl font-bold">Why verify my ID?</h3>
-                    <p className="text-indigo-100 text-sm mt-4 leading-relaxed max-w-lg">
-                        Goodslister is a peer-to-peer adventure community. We use Stripe Identity to ensure that everyone is who they say they are, reducing equipment theft by 99% and enabling specialized insurance for boats and powersports.
-                    </p>
+            <div className="bg-indigo-900 p-8 rounded-[2rem] text-white relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 -mr-10 -mt-10">
+                    <ShieldIcon className="h-64 w-64"/>
+                </div>
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                    <div className="flex-1 text-center md:text-left">
+                        <h4 className="font-bold text-indigo-300 text-[10px] uppercase tracking-[0.2em] mb-3">Security Infrastructure</h4>
+                        <h3 className="text-2xl font-black leading-tight">Your data is handled by Stripe.</h3>
+                        <p className="text-indigo-100/70 text-sm mt-4 leading-relaxed max-w-lg">
+                            Goodslister no almacena tus documentos. Utilizamos la misma tecnología que los bancos internacionales para procesar tu identidad, asegurando un entorno 100% libre de fraude para dueños y aventureros.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-4 bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
+                        <LockIcon className="h-8 w-8 text-indigo-300" />
+                        <span className="text-xs font-bold leading-tight">AES-256 <br/>Encryption</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -126,37 +132,54 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
 
     const renderContent = () => {
         switch (activeTab) {
+            case 'analytics': return <AnalyticsDashboard bookings={localBookings} listings={listings} />;
+            
             case 'profile': return (
-                <div className="space-y-8 animate-in fade-in">
-                    {!user.isIdVerified && listings.length > 0 && (
-                        <div className="bg-amber-50 border border-amber-200 p-6 rounded-3xl flex items-center gap-6">
-                            <div className="bg-amber-100 p-4 rounded-2xl text-amber-600"><AlertTriangleIcon className="h-8 w-8"/></div>
-                            <div>
-                                <h4 className="font-black text-amber-900 uppercase text-xs tracking-tighter">Owner Verification Required</h4>
-                                <p className="text-sm text-amber-800 mt-1">You must verify your identity before you can complete your first handover or receive payouts.</p>
-                                <button onClick={() => setActiveTab('security')} className="mt-3 text-sm font-bold text-amber-900 underline underline-offset-4 decoration-2">Complete Verification →</button>
-                            </div>
+                <div className="space-y-8 animate-in fade-in duration-500">
+                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="h-40 bg-gradient-to-r from-cyan-400 via-indigo-500 to-blue-600 relative">
+                            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                         </div>
-                    )}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="h-32 bg-gradient-to-r from-cyan-500 to-blue-600 relative"></div>
-                        <div className="px-8 pb-8">
-                            <div className="relative -mt-12 mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                                <div className="w-28 h-28 rounded-full border-4 border-white shadow-md bg-white overflow-hidden">
-                                    <ImageUploader currentImageUrl={user.avatarUrl} onImageChange={(url) => onUpdateAvatar(user.id, url)} label="" />
+                        <div className="px-10 pb-10">
+                            <div className="relative -mt-16 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                                <div className="relative group">
+                                    <div className="w-36 h-36 rounded-[2rem] border-[6px] border-white shadow-2xl bg-white overflow-hidden">
+                                        <ImageUploader currentImageUrl={user.avatarUrl} onImageChange={(url) => onUpdateAvatar(user.id, url)} label="" />
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-xl border-4 border-white shadow-lg">
+                                        <PencilIcon className="h-4 w-4" />
+                                    </div>
                                 </div>
-                                <button onClick={() => onViewPublicProfile(user.id)} className="px-4 py-2 border border-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50">View Public Profile</button>
+                                <div className="flex-1 text-center sm:text-left">
+                                    <h2 className="text-3xl font-black text-gray-900">{user.name}</h2>
+                                    <p className="text-gray-500 font-medium">@{user.email.split('@')[0]}</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={() => onViewPublicProfile(user.id)} className="px-6 py-2.5 bg-gray-900 text-white text-xs font-black rounded-xl hover:bg-black transition-all shadow-lg uppercase tracking-widest">Preview Profile</button>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-800 mb-2 text-left">About You</label>
-                                    <textarea defaultValue={user.bio} className="w-full border-gray-200 rounded-xl p-4 text-sm" placeholder="Tell the community about yourself..." rows={5} />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 border-t pt-10">
+                                <div className="md:col-span-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 block text-left">Your Bio</label>
+                                    <textarea 
+                                        defaultValue={user.bio} 
+                                        className="w-full border-gray-100 bg-gray-50/50 rounded-3xl p-6 text-sm text-gray-700 focus:ring-2 focus:ring-cyan-500 transition-all" 
+                                        placeholder="Tell the community who you are and what equipment you're passionate about..." 
+                                        rows={5} 
+                                    />
+                                    <button onClick={() => onUpdateProfile(user.bio || '', user.avatarUrl)} className="mt-4 px-6 py-2 bg-cyan-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-md">Save Changes</button>
                                 </div>
-                                <div className="space-y-4">
-                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase">Trust Badges</h4>
-                                    <div className="flex gap-2">
-                                        {user.isIdVerified && <span className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-[10px] font-black flex items-center gap-1"><ShieldCheckIcon className="h-3 w-3"/> ID Verified</span>}
-                                        {user.isPhoneVerified && <span className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-[10px] font-black flex items-center gap-1"><CheckCircleIcon className="h-3 w-3"/> Phone Linked</span>}
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Verification Badges</h4>
+                                    <div className="space-y-3">
+                                        <div className={`flex items-center gap-3 p-4 rounded-2xl border ${user.isIdVerified ? 'bg-indigo-50/50 border-indigo-100 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-400'}`}>
+                                            <ShieldCheckIcon className="h-5 w-5" />
+                                            <span className="text-xs font-black uppercase tracking-tighter">ID Verified</span>
+                                        </div>
+                                        <div className={`flex items-center gap-3 p-4 rounded-2xl border ${user.isPhoneVerified ? 'bg-blue-50/50 border-blue-100 text-blue-700' : 'bg-gray-50 border-gray-100 text-gray-400'}`}>
+                                            <CheckCircleIcon className="h-5 w-5" />
+                                            <span className="text-xs font-black uppercase tracking-tighter">Mobile Linked</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -164,37 +187,80 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                     </div>
                 </div>
             );
+            
             case 'security': return renderSecurityTab();
-            case 'analytics': return <AnalyticsDashboard bookings={localBookings} listings={listings} />;
+            
             case 'bookings': return <BookingsManager bookings={localBookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
+            
             case 'listings': return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {listings.map(l => (
-                        <div key={l.id} className="relative group">
-                            <ListingCard listing={l} onClick={onListingClick || (() => {})} />
-                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => onEditListing && onEditListing(l.id)} className="p-2 bg-white rounded-full shadow-md text-gray-600 hover:text-cyan-600"><PencilIcon className="h-4 w-4"/></button>
-                                <button onClick={() => onDeleteListing(l.id)} className="p-2 bg-white rounded-full shadow-md text-gray-600 hover:text-red-600"><TrashIcon className="h-4 w-4"/></button>
+                <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-3xl font-black text-gray-900 tracking-tighter">My Equipment Portfolio</h2>
+                        <button onClick={() => onNavigate('createListing')} className="px-6 py-2.5 bg-cyan-600 text-white text-xs font-black rounded-xl hover:bg-cyan-700 transition-all shadow-lg uppercase tracking-widest">+ List New Gear</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {listings.map(l => (
+                            <div key={l.id} className="relative group">
+                                <ListingCard listing={l} onClick={onListingClick || (() => {})} />
+                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                                    <button onClick={(e) => { e.stopPropagation(); onEditListing?.(l.id); }} className="p-3 bg-white rounded-2xl shadow-xl text-gray-600 hover:text-cyan-600 hover:scale-110 active:scale-95 transition-all"><PencilIcon className="h-5 w-5"/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); onDeleteListing(l.id); }} className="p-3 bg-white rounded-2xl shadow-xl text-gray-600 hover:text-red-600 hover:scale-110 active:scale-95 transition-all"><TrashIcon className="h-5 w-5"/></button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                        {listings.length === 0 && (
+                            <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-gray-100">
+                                <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"><PackageIcon className="h-10 w-10 text-gray-300" /></div>
+                                <h3 className="text-xl font-bold text-gray-400">No equipment listed yet</h3>
+                                <p className="text-gray-500 mt-2 text-sm">Empieza a ganar dinero alquilando tu equipo de aventura.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
-            default: return <div className="p-12 text-center text-gray-400">Section coming soon...</div>;
+
+            case 'favorites': return (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <h2 className="text-3xl font-black text-gray-900 tracking-tighter mb-8">My Wishlist</h2>
+                    {favoriteListings.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {favoriteListings.map(l => <ListingCard key={l.id} listing={l} onClick={onListingClick || (() => {})} isFavorite={true} onToggleFavorite={onToggleFavorite} />)}
+                        </div>
+                    ) : (
+                        <div className="py-20 text-center bg-white rounded-[2rem] border border-gray-100">
+                            <HeartIcon className="h-16 w-16 text-gray-100 mx-auto mb-4" />
+                            <p className="text-gray-400 font-bold">Your saved items will appear here.</p>
+                        </div>
+                    )}
+                </div>
+            );
+
+            default: return <div className="p-20 text-center text-gray-300 italic animate-pulse">This module is being optimized...</div>;
         }
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                <div className="flex flex-col md:flex-row gap-10">
-                    <aside className="md:w-64 flex-shrink-0">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 sticky top-24">
+        <div className="bg-[#fcfdfe] min-h-screen">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="flex flex-col lg:flex-row gap-12">
+                    <aside className="lg:w-72 flex-shrink-0">
+                        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 p-4 sticky top-28">
                              {tabs.map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center px-4 py-3 rounded-xl text-sm font-bold transition-all mb-1 ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
-                                    <tab.icon className={`h-5 w-5 mr-3 ${activeTab === tab.id ? 'text-cyan-400' : 'text-gray-400'}`} /> {tab.name}
+                                <button 
+                                    key={tab.id} 
+                                    onClick={() => setActiveTab(tab.id)} 
+                                    className={`w-full flex items-center px-6 py-4 rounded-[1.5rem] text-sm font-black transition-all mb-2 ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-2xl shadow-gray-900/20' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'}`}
+                                >
+                                    <tab.icon className={`h-5 w-5 mr-4 ${activeTab === tab.id ? 'text-cyan-400' : 'text-gray-400'}`} /> 
+                                    {tab.name}
                                 </button>
                             ))}
+                            <div className="mt-10 pt-10 border-t border-gray-50 px-4">
+                                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-3xl">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Help & Support</p>
+                                    <p className="text-xs text-indigo-900 font-bold leading-relaxed">Need help with a booking? Contact our Trust Team.</p>
+                                </div>
+                            </div>
                         </div>
                     </aside>
                     <main className="flex-1">{renderContent()}</main>
@@ -204,10 +270,8 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
     );
 };
 
-// ... Internal components (BookingsManager) remain mostly same ...
-
 const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusUpdate: (id: string, status: string) => Promise<void> }> = ({ bookings, userId, onStatusUpdate }) => {
-    const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
+    const [mode, setMode] = useState<'renting' | 'hosting'>('hosting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     
@@ -221,10 +285,12 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusU
     const pastBookings = displayedBookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
 
     return (
-        <div>
+        <div className="animate-in fade-in duration-500">
              {activeSessionBooking && (
-                 <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
-                     <div className="absolute top-4 right-4 z-50"><button onClick={() => setActiveSessionBooking(null)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full"><XIcon className="h-6 w-6 text-gray-600" /></button></div>
+                 <div className="fixed inset-0 z-[100] bg-white overflow-y-auto">
+                     <div className="absolute top-8 right-8 z-[110]">
+                        <button onClick={() => setActiveSessionBooking(null)} className="bg-gray-100 hover:bg-gray-200 p-3 rounded-2xl transition-all"><XIcon className="h-6 w-6 text-gray-600" /></button>
+                     </div>
                      <RentalSessionWizard 
                         booking={activeSessionBooking}
                         initialMode={sessionInitialMode}
@@ -234,35 +300,82 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusU
                  </div>
              )}
 
-             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                <h2 className="text-2xl font-bold text-gray-900">{mode === 'renting' ? 'My Trips' : 'Reservations'}</h2>
-                <div className="bg-white p-1 rounded-lg border border-gray-200 shadow-sm flex">
-                    <button onClick={() => setMode('renting')} className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${mode === 'renting' ? 'bg-cyan-100 text-cyan-700' : 'text-gray-500'}`}>Renting</button>
-                    <button onClick={() => setMode('hosting')} className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${mode === 'hosting' ? 'bg-cyan-100 text-cyan-700' : 'text-gray-500'}`}>Hosting</button>
+             <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6">
+                <h2 className="text-3xl font-black text-gray-900 tracking-tighter">Reservations</h2>
+                <div className="bg-gray-100 p-1.5 rounded-2xl flex shadow-inner">
+                    <button onClick={() => setMode('hosting')} className={`px-6 py-2.5 text-xs font-black rounded-xl uppercase tracking-widest transition-all ${mode === 'hosting' ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-400'}`}>I'm Hosting</button>
+                    <button onClick={() => setMode('renting')} className={`px-6 py-2.5 text-xs font-black rounded-xl uppercase tracking-widest transition-all ${mode === 'renting' ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-400'}`}>I'm Renting</button>
                 </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-12">
+                {/* Active Sessions */}
                 {activeBookings.length > 0 && (
-                    <div className="bg-white p-4 rounded-3xl shadow-sm border border-cyan-100">
-                        <h3 className="font-bold text-cyan-900 mb-4 ml-2">Active Sessions</h3>
-                        {activeBookings.map(b => (
-                            <div key={b.id} className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-gray-50 rounded-2xl transition-colors">
-                                <div>
-                                    <p className="font-bold text-gray-900">{b.listing.title}</p>
-                                    <p className="text-xs text-gray-500">{format(new Date(b.startDate), 'MMM dd')} - {format(new Date(b.endDate), 'MMM dd')}</p>
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-cyan-100/50 border border-cyan-50 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 h-1.5 w-full bg-cyan-500"></div>
+                        <h3 className="font-black text-cyan-900 mb-6 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                            ACTIVE SESSIONS
+                        </h3>
+                        <div className="space-y-4">
+                            {activeBookings.map(b => (
+                                <div key={b.id} className="flex flex-col md:flex-row items-center justify-between p-6 bg-cyan-50/30 border border-cyan-100/50 rounded-3xl hover:bg-cyan-50 transition-colors">
+                                    <div className="mb-4 md:mb-0 text-center md:text-left">
+                                        <p className="font-black text-gray-900 text-lg">{b.listing.title}</p>
+                                        <p className="text-xs text-cyan-600 font-bold mt-1 uppercase tracking-widest">{format(new Date(b.startDate), 'MMM dd')} - {format(new Date(b.endDate), 'MMM dd')}</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => { setActiveSessionBooking(b); setSessionInitialMode(b.status === 'active' ? 'return' : 'handover'); }}
+                                        className={`px-10 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95 ${b.status === 'active' ? 'bg-orange-500 text-white' : 'bg-cyan-600 text-white'}`}
+                                    >
+                                        {b.status === 'active' ? 'Finalize Return' : 'Begin Handover'}
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={() => { setActiveSessionBooking(b); setSessionInitialMode(b.status === 'active' ? 'return' : 'handover'); }}
-                                    className={`px-6 py-2 rounded-xl font-bold text-xs shadow-md transition-all ${b.status === 'active' ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-green-600 text-white hover:bg-green-700'}`}
-                                >
-                                    {b.status === 'active' ? 'Return' : 'Start Handover'}
-                                </button>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 )}
-                {/* Tables for future/past omitted for brevity - same logic as original */}
+
+                {/* Upcoming */}
+                <div>
+                    <h3 className="font-black text-gray-400 text-[10px] uppercase tracking-[0.2em] mb-4 ml-2">Future Expeditions</h3>
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                        {futureBookings.length > 0 ? (
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50/50"><tr className="text-[10px] text-gray-400 uppercase tracking-widest font-black"><th className="p-6">Item</th><th className="p-6">Dates</th><th className="p-6">Status</th></tr></thead>
+                                <tbody>
+                                    {futureBookings.map(b => (
+                                        <tr key={b.id} className="border-b last:border-0 border-gray-50">
+                                            <td className="p-6 font-bold text-gray-900">{b.listing.title}</td>
+                                            <td className="p-6 text-gray-500 font-medium">{format(new Date(b.startDate), 'MMM dd')}</td>
+                                            <td className="p-6"><span className="bg-green-50 text-green-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Confirmed</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : <div className="p-10 text-center text-gray-400 text-xs italic">No upcoming bookings.</div>}
+                    </div>
+                </div>
+
+                {/* History */}
+                <div>
+                    <h3 className="font-black text-gray-400 text-[10px] uppercase tracking-[0.2em] mb-4 ml-2">Session History</h3>
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden opacity-60 grayscale-[0.5]">
+                        {pastBookings.length > 0 ? (
+                            <table className="w-full text-sm text-left">
+                                <tbody>
+                                    {pastBookings.map(b => (
+                                        <tr key={b.id} className="border-b last:border-0 border-gray-50">
+                                            <td className="p-6 font-bold text-gray-900">{b.listing.title}</td>
+                                            <td className="p-6 text-gray-500 font-medium">{format(new Date(b.endDate), 'MMM dd, yyyy')}</td>
+                                            <td className="p-6 text-right"><span className="text-xs font-black uppercase tracking-widest text-gray-300">{b.status}</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : <div className="p-10 text-center text-gray-400 text-xs italic">Clear history.</div>}
+                    </div>
+                </div>
             </div>
         </div>
     );
