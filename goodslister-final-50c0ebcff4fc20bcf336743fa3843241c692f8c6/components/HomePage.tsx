@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Listing, HeroSlide, Banner, ListingCategory, CategoryImagesMap, Page } from '../types';
 import ListingCard from './ListingCard';
@@ -130,20 +131,27 @@ const HomePage: React.FC<HomePageProps> = ({
     const featuredListings = listings.filter(l => l.isFeatured);
 
     const handleBannerClick = (e: React.MouseEvent, banner: Banner) => {
+        // Allow default for external links or if modifier keys are pressed
         if (banner.linkUrl?.startsWith('http') || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        
         e.preventDefault();
+        
         if (banner.linkUrl) {
             const path = banner.linkUrl.startsWith('/') ? banner.linkUrl.substring(1) : banner.linkUrl;
+            
             if (path === 'explore') onNavigate('explore');
             else if (path === 'createListing' || path === 'create-listing') onNavigate('createListing');
             else if (path === 'aiAssistant' || path === 'ai-assistant') onNavigate('aiAssistant');
             else if (path === 'userDashboard' || path === 'dashboard') onNavigate('userDashboard');
-            else onNavigate(path as Page); 
+            else {
+                onNavigate(path as Page); 
+            }
         } else {
             onCreateListing(); 
         }
     };
 
+    // Helper to get HREF for banners
     const getBannerHref = (banner: Banner) => {
         if (!banner.linkUrl) return '/create-listing';
         return banner.linkUrl;
@@ -197,6 +205,7 @@ const HomePage: React.FC<HomePageProps> = ({
             );
         }
 
+        // Default 'overlay' layout
         return (
             <div key={banner.id} className="relative bg-gray-800 h-[500px] text-white flex items-center justify-center overflow-hidden rounded-2xl shadow-xl">
                 <div className="absolute inset-0">
@@ -218,6 +227,7 @@ const HomePage: React.FC<HomePageProps> = ({
         );
     };
 
+    // Helper for navigation links in grid
     const handleGridLinkClick = (e: React.MouseEvent, page: Page) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
         e.preventDefault();
@@ -273,226 +283,243 @@ const HomePage: React.FC<HomePageProps> = ({
                 </>}
             </div>
 
-            <div id="how-it-works" className="bg-white py-16 sm:py-24">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">How does Goodslister work?</h2>
-                    <p className="mt-4 text-lg leading-8 text-gray-600">Renting has never been so easy, fast, and secure.</p>
-                    <div className="flex justify-center mt-8 mb-12">
-                        <div className="bg-gray-100 p-1 rounded-lg inline-flex">
-                            <button onClick={() => setHowItWorksTab('renter')} className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${howItWorksTab === 'renter' ? 'bg-white text-cyan-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>For Renters</button>
-                            <button onClick={() => setHowItWorksTab('owner')} className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${howItWorksTab === 'owner' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>For Owners</button>
+            <>
+                {/* How it Works Section */}
+                <div id="how-it-works" className="bg-white py-16 sm:py-24">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">How does Goodslister work?</h2>
+                        <p className="mt-4 text-lg leading-8 text-gray-600">Renting has never been so easy, fast, and secure.</p>
+                        
+                        {/* Renter/Owner Toggle */}
+                        <div className="flex justify-center mt-8 mb-12">
+                            <div className="bg-gray-100 p-1 rounded-lg inline-flex">
+                                <button
+                                    onClick={() => setHowItWorksTab('renter')}
+                                    className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                                        howItWorksTab === 'renter' 
+                                            ? 'bg-white text-cyan-600 shadow-sm' 
+                                            : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                                >
+                                    For Renters
+                                </button>
+                                <button
+                                    onClick={() => setHowItWorksTab('owner')}
+                                    className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                                        howItWorksTab === 'owner' 
+                                            ? 'bg-white text-green-600 shadow-sm' 
+                                            : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                                >
+                                    For Owners
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
+                            {howItWorksTab === 'renter' ? (
+                                <>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
+                                            <SearchIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">1. Search and Find</h3>
+                                        <p className="mt-2 text-base text-gray-600">Explore thousands of items listed by verified owners in your area. Use our smart search to find exactly what you need.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                                        <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
+                                            <ShieldCheckIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">2. Book with Confidence</h3>
+                                        <p className="mt-2 text-base text-gray-600">Communicate directly with the owner, agree on the dates, and pay securely through our platform with built-in protection.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                                        <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
+                                            <SmileIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">3. Enjoy the Adventure</h3>
+                                        <p className="mt-2 text-base text-gray-600">Pick up the item and live your experience. When you're done, return the item and rate the owner.</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                            <UploadCloudIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">1. List your item</h3>
+                                        <p className="mt-2 text-base text-gray-600">Upload photos and set your price. Our AI will help you write a description that attracts more renters instantly.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                                        <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                            <MessageSquareIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">2. Accept Bookings</h3>
+                                        <p className="mt-2 text-base text-gray-600">Receive requests from verified users. Chat with them to coordinate pickup and approve the booking.</p>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                                        <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                            <WalletIcon className="h-8 w-8" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">3. Get Paid</h3>
+                                        <p className="mt-2 text-base text-gray-600">Earn passive income. Payments are secure and automatically deposited into your account.</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="mt-12">
+                            <a href="/how-it-works" onClick={(e) => handleGridLinkClick(e, 'howItWorks')} className="text-cyan-600 hover:text-cyan-800 font-semibold hover:underline">
+                                Learn more details &rarr;
+                            </a>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
-                        {howItWorksTab === 'renter' ? (
-                            <>
-                                <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
-                                        <SearchIcon className="h-8 w-8" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">1. Search and Find</h3>
-                                    <p className="mt-2 text-base text-gray-600">Explore thousands of items listed by verified owners in your area. Use our smart search to find exactly what you need.</p>
-                                </div>
-                                <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-                                    <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
-                                        <ShieldCheckIcon className="h-8 w-8" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">2. Book with Confidence</h3>
-                                    <p className="mt-2 text-base text-gray-600">Communicate directly with the owner, agree on the dates, and pay securely through our platform with built-in protection.</p>
-                                </div>
-                                <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                                    <div className="bg-cyan-100 text-cyan-600 rounded-full p-4 mb-4">
-                                        <SmileIcon className="h-8 w-8" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">3. Enjoy the Adventure</h3>
-                                    <p className="mt-2 text-base text-gray-600">Pick up the item and live your experience. When you're done, return the item and rate the owner.</p>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
-                                        <UploadCloudIcon className="h-8 w-8" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">1. List your item</h3>
-                                    <p className="mt-2 text-base text-gray-600">Upload photos and set your price. Our AI will help you write a description that attracts more renters instantly.</p>
-                                </div>
-                                <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-                                    <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
-                                        <MessageSquareIcon className="h-8 w-8" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">2. Accept Bookings</h3>
-                                    <p className="mt-2 text-base text-gray-600">Receive requests from verified users. Chat with them to coordinate pickup and approve the booking.</p>
-                                </div>
-                                <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                                    <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
-                                        <WalletIcon className="h-8 w-8" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">3. Get Paid</h3>
-                                    <p className="mt-2 text-base text-gray-600">Earn passive income. Payments are secure and automatically deposited into your account.</p>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                    <div className="mt-12">
-                        <a href="/how-it-works" onClick={(e) => handleGridLinkClick(e, 'howItWorks')} className="text-cyan-600 hover:text-cyan-800 font-semibold hover:underline">
-                            Learn more details &rarr;
-                        </a>
-                    </div>
                 </div>
-            </div>
 
-            {featuredListings.length > 0 && (
-                 <div className="bg-gray-50 py-16 sm:py-24">
+                {/* Featured Listings */}
+                {featuredListings.length > 0 && (
+                     <div className="bg-gray-50 py-16 sm:py-24">
+                        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl text-center mb-12">Featured Goods</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {featuredListings.map(listing => (
+                                    <ListingCard 
+                                        key={listing.id} 
+                                        listing={listing} 
+                                        onClick={onListingClick}
+                                        isFavorite={favorites.includes(listing.id)}
+                                        onToggleFavorite={onToggleFavorite}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Categories Section */}
+                <div className="bg-white py-16 sm:py-24">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl text-center mb-12">Featured Goods</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {featuredListings.map(listing => (
-                                <ListingCard 
-                                    key={listing.id} 
-                                    listing={listing} 
-                                    onClick={onListingClick}
-                                    isFavorite={favorites.includes(listing.id)}
-                                    onToggleFavorite={onToggleFavorite}
+                         <div className="text-center mb-12">
+                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Explore Universes of Adventure</h2>
+                            <p className="mt-4 text-lg leading-8 text-gray-600">Each category is a portal to a new experience.</p>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                            {Object.entries(categoryImages).map(([category, imageUrl]) => (
+                                <CategoryCard
+                                    key={category}
+                                    name={category}
+                                    imageUrl={imageUrl}
+                                    onClick={handleCategoryClick}
                                 />
                             ))}
                         </div>
                     </div>
                 </div>
-            )}
 
-            <div className="bg-white py-16 sm:py-24">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Explore Universes of Adventure</h2>
-                        <p className="mt-4 text-lg leading-8 text-gray-600">Each category is a portal to a new experience.</p>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                        {Object.entries(categoryImages).map(([category, imageUrl]) => (
-                            <CategoryCard
-                                key={category}
-                                name={category}
-                                imageUrl={imageUrl}
-                                onClick={handleCategoryClick}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-gray-50 py-16 sm:py-24">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Intelligence, Integrated.</h2>
-                    <p className="mt-4 text-lg leading-8 text-gray-600 max-w-3xl mx-auto">We've designed a platform where AI works for you, making everything simpler, faster, and safer.</p>
-                    <div className="mt-20 flex flex-wrap justify-center gap-8">
-                        <div 
-                            onClick={() => document.getElementById('hero-search-input')?.focus()}
-                            className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
-                        >
-                            <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
-                                <BrainIcon className="h-10 w-10" />
+                {/* AI Features Section */}
+                <div className="bg-gray-50 py-16 sm:py-24">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Intelligence, Integrated.</h2>
+                        <p className="mt-4 text-lg leading-8 text-gray-600 max-w-3xl mx-auto">We've designed a platform where AI works for you, making everything simpler, faster, and safer.</p>
+                        <div className="mt-20 flex flex-wrap justify-center gap-8">
+                            <div 
+                                onClick={() => document.getElementById('hero-search-input')?.focus()}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <BrainIcon className="h-10 w-10" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Neural Search</h3>
+                                <p className="mt-2 text-base text-gray-600">Describe what you're looking for in your own words. Our AI interprets your intent to find the perfect gear.</p>
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Neural Search</h3>
-                            <p className="mt-2 text-base text-gray-600">Describe what you're looking for in your own words. Our AI interprets your intent to find the perfect gear.</p>
-                        </div>
-                        
-                        <div 
-                            onClick={() => onNavigate('aiAssistant')}
-                            className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
-                        >
-                            <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
-                                <UserCheckIcon className="h-10 w-10" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">AI Identity Guard</h3>
-                            <p className="mt-2 text-base text-gray-600">Seguridad de nivel bancario. Nuestra IA escanea identificaciones oficiales para eliminar el fraude y garantizar tu tranquilidad.</p>
-                        </div>
-
-                        <a 
-                            href="/ai-assistant"
-                            onClick={(e) => handleGridLinkClick(e, 'aiAssistant')}
-                            className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
-                        >
-                            <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
-                                <FileSignatureIcon className="h-10 w-10" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Smart Contracts</h3>
-                            <p className="mt-2 text-base text-gray-600">Generate detailed rental agreements in seconds. AI protects your interests with clear and concise clauses.</p>
-                        </a>
-                        <a 
-                            href="/create-listing"
-                            onClick={(e) => handleGridLinkClick(e, 'createListing')}
-                            className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
-                        >
-                            <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
-                                <ZapIcon className="h-10 w-10" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Optimized Listings</h3>
-                            <p className="mt-2 text-base text-gray-600">Create high-impact listings with a single click. Our AI writes descriptions that capture attention and convert.</p>
-                        </a>
-                        <a 
-                            href="/explore"
-                            onClick={(e) => handleGridLinkClick(e, 'explore')}
-                            className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
-                        >
-                            <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
-                                <GlobeIcon className="h-10 w-10" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Multilingual Chat</h3>
-                            <p className="mt-2 text-base text-gray-600">Communicate globally with instant AI-powered translations directly in your chat conversations.</p>
-                        </a>
-                        <a 
-                            href="/dashboard"
-                            onClick={(e) => handleGridLinkClick(e, 'userDashboard')}
-                            className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
-                        >
-                            <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
-                                <ScanIcon className="h-10 w-10" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">AI Smart Inspector</h3>
-                            <p className="mt-2 text-base text-gray-600">Automatically compare before/after photos to detect damage and process claims fairly in seconds.</p>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="bg-white py-16 sm:py-24">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Your Trust is Our Priority</h2>
-                    <p className="mt-4 text-lg leading-8 text-gray-600">We build a safe community so you can rent with peace of mind.</p>
-                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
-                                <UserCheckIcon className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">Profile Verification</h3>
-                            <p className="mt-2 text-base text-gray-600">We verify the identity of all our members to ensure safe and reliable interactions.</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center">
-                            <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
-                                <WalletIcon className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">Secure and Protected Payments</h3>
-                            <p className="mt-2 text-base text-gray-600">We process all payments through an encrypted gateway to protect your financial information.</p>
-                        </div>
-                        <div className="flex flex-col items-center text-center">
-                            <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
-                                <MessageCircleIcon className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">24/7 Support</h3>
-                            <p className="mt-2 text-base text-gray-600">Our support team is available day and night to help you with any questions or issues.</p>
+                            <a 
+                                href="/ai-assistant"
+                                onClick={(e) => handleGridLinkClick(e, 'aiAssistant')}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <FileSignatureIcon className="h-10 w-10" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Smart Contracts</h3>
+                                <p className="mt-2 text-base text-gray-600">Generate detailed rental agreements in seconds. AI protects your interests with clear and concise clauses.</p>
+                            </a>
+                            <a 
+                                href="/create-listing"
+                                onClick={(e) => handleGridLinkClick(e, 'createListing')}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <ZapIcon className="h-10 w-10" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Optimized Listings</h3>
+                                <p className="mt-2 text-base text-gray-600">Create high-impact listings with a single click. Our AI writes descriptions that capture attention and convert.</p>
+                            </a>
+                            <a 
+                                href="/explore"
+                                onClick={(e) => handleGridLinkClick(e, 'explore')}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <GlobeIcon className="h-10 w-10" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Multilingual Chat</h3>
+                                <p className="mt-2 text-base text-gray-600">Communicate globally with instant AI-powered translations directly in your chat conversations.</p>
+                            </a>
+                            <a 
+                                href="/dashboard"
+                                onClick={(e) => handleGridLinkClick(e, 'userDashboard')}
+                                className="flex flex-col items-center text-center cursor-pointer group hover:bg-blue-50 p-6 rounded-xl transition-all duration-300 hover:scale-105 w-full sm:w-72"
+                            >
+                                <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
+                                    <ScanIcon className="h-10 w-10" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">AI Smart Inspector</h3>
+                                <p className="mt-2 text-base text-gray-600">Automatically compare before/after photos to detect damage and process claims fairly in seconds.</p>
+                            </a>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <FAQSection />
-
-            <div className="py-16 sm:py-24">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
-                    {banners.map(banner => renderBanner(banner))}
+                
+                {/* Trust & Safety Section */}
+                <div className="bg-white py-16 sm:py-24">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Your Trust is Our Priority</h2>
+                        <p className="mt-4 text-lg leading-8 text-gray-600">We build a safe community so you can rent with peace of mind.</p>
+                        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                    <UserCheckIcon className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">Profile Verification</h3>
+                                <p className="mt-2 text-base text-gray-600">We verify the identity of all our members to ensure safe and reliable interactions.</p>
+                            </div>
+                            <div className="flex flex-col items-center text-center">
+                                <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                    <WalletIcon className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">Secure and Protected Payments</h3>
+                                <p className="mt-2 text-base text-gray-600">We process all payments through an encrypted gateway to protect your financial information.</p>
+                            </div>
+                            <div className="flex flex-col items-center text-center">
+                                <div className="bg-green-100 text-green-600 rounded-full p-4 mb-4">
+                                    <MessageCircleIcon className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">24/7 Support</h3>
+                                <p className="mt-2 text-base text-gray-600">Our support team is available day and night to help you with any questions or issues.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+                {/* FAQ Section */}
+                <FAQSection />
+
+                {/* Banners */}
+                <div className="py-16 sm:py-24">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+                        {banners.map(banner => renderBanner(banner))}
+                    </div>
+                </div>
+            </>
         </main>
     );
 };
