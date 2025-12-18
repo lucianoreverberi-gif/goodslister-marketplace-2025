@@ -38,6 +38,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
     user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onUpdateProfile,
     onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate, onNavigate
 }) => {
+    // FIX: Cambiado a 'analytics' por defecto para el demo
     const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
     const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
     
