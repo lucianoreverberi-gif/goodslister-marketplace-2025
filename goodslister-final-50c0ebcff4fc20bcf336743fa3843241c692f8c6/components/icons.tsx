@@ -1,7 +1,37 @@
+
 import React from 'react';
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 
+export const SlidersIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <line x1="4" y1="21" x2="4" y2="14"></line>
+        <line x1="4" y1="10" x2="4" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12" y2="3"></line>
+        <line x1="20" y1="21" x2="20" y2="16"></line>
+        <line x1="20" y1="12" x2="20" y2="3"></line>
+        <line x1="2" y1="14" x2="6" y2="14"></line>
+        <line x1="10" y1="8" x2="14" y2="8"></line>
+        <line x1="18" y1="16" x2="22" y2="16"></line>
+    </svg>
+);
+
+export const TagIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+        <line x1="7" y1="7" x2="7.01" y2="7"></line>
+    </svg>
+);
+
+export const DollarSignIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <line x1="12" y1="1" x2="12" y2="23"></line>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+    </svg>
+);
+
+// ... (Rest of existing icons)
 export const CheckIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <polyline points="20 6 9 17 4 12"></polyline>
@@ -103,13 +133,6 @@ export const PackageIcon: React.FC<IconProps> = (props) => (
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
         <line x1="12" y1="22.08" x2="12" y2="12"></line>
-    </svg>
-);
-
-export const DollarSignIcon: React.FC<IconProps> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <line x1="12" y1="1" x2="12" y2="23"></line>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
     </svg>
 );
 
@@ -223,15 +246,6 @@ export const LightbulbIcon: React.FC<IconProps> = (props) => (
     </svg>
 );
 
-export const LayoutDashboardIcon: React.FC<IconProps> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <rect x="3" y="3" width="7" height="7"></rect>
-        <rect x="14" y="3" width="7" height="7"></rect>
-        <rect x="14" y="14" width="7" height="7"></rect>
-        <rect x="3" y="14" width="7" height="7"></rect>
-    </svg>
-);
-
 export const UsersIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -255,29 +269,6 @@ export const CreditCardIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
         <line x1="1" y1="10" x2="23" y2="10"></line>
-    </svg>
-);
-
-export const LayoutOverlayIcon: React.FC<IconProps> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <rect x="6" y="8" width="12" height="8" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
-    </svg>
-);
-
-export const LayoutSplitIcon: React.FC<IconProps> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="12" y1="3" x2="12" y2="21"></line>
-        <rect x="14" y="6" width="5" height="12" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
-    </svg>
-);
-
-export const LayoutWideIcon: React.FC<IconProps> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="3" y1="14" x2="21" y2="14"></line>
-        <rect x="5" y="16" width="14" height="3" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
     </svg>
 );
 
@@ -385,20 +376,6 @@ export const RocketIcon: React.FC<IconProps> = (props) => (
         <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
         <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
         <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
-    </svg>
-);
-
-export const SlidersIcon: React.FC<IconProps> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <line x1="4" y1="21" x2="4" y2="14"></line>
-        <line x1="4" y1="10" x2="4" y2="3"></line>
-        <line x1="12" y1="21" x2="12" y2="12"></line>
-        <line x1="12" y1="8" x2="12" y2="3"></line>
-        <line x1="20" y1="21" x2="20" y2="16"></line>
-        <line x1="20" y1="12" x2="20" y2="3"></line>
-        <line x1="2" y1="14" x2="6" y2="14"></line>
-        <line x1="10" y1="8" x2="14" y2="8"></line>
-        <line x1="18" y1="16" x2="22" y2="16"></line>
     </svg>
 );
 
@@ -664,13 +641,6 @@ export const ChevronUpIcon: React.FC<IconProps> = (props) => (
     </svg>
 );
 
-export const TagIcon: React.FC<IconProps> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-        <line x1="7" y1="7" x2="7.01" y2="7"></line>
-    </svg>
-);
-
 export const FuelIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <line x1="3" y1="22" x2="15" y2="22"></line>
@@ -700,5 +670,41 @@ export const FileWarningIcon: React.FC<IconProps> = (props) => (
         <polyline points="14 2 14 8 20 8"></polyline>
         <line x1="12" y1="13" x2="12" y2="17"></line>
         <line x1="12" y1="9" x2="12" y2="9"></line>
+    </svg>
+);
+
+// FIX: Added missing LayoutDashboardIcon to resolve module resolution errors in AdminPage and ExplorePage.
+export const LayoutDashboardIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+    </svg>
+);
+
+// FIX: Added missing LayoutOverlayIcon to resolve module resolution error in AdminPage.
+export const LayoutOverlayIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <rect x="6" y="8" width="12" height="8" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
+    </svg>
+);
+
+// FIX: Added missing LayoutSplitIcon to resolve module resolution error in AdminPage.
+export const LayoutSplitIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="12" y1="3" x2="12" y2="21"></line>
+        <rect x="14" y="6" width="5" height="12" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
+    </svg>
+);
+
+// FIX: Added missing LayoutWideIcon to resolve module resolution error in AdminPage.
+export const LayoutWideIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="3" y1="14" x2="21" y2="14"></line>
+        <rect x="5" y="16" width="14" height="3" fill="currentColor" fillOpacity="0.2" stroke="none"></rect>
     </svg>
 );
