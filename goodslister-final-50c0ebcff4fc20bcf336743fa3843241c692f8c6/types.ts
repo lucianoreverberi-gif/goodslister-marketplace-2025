@@ -36,6 +36,7 @@ export interface User {
     totalReviews?: number;
     status?: 'active' | 'suspended';
     favorites: string[];
+    // FIX: Added 'role' property to support SUPER_ADMIN checks and other role-based logic.
     role?: string;
 }
 
@@ -81,9 +82,8 @@ export interface Listing {
     itinerary?: string;
     priceUnit?: PriceUnit;
     instantBookingEnabled?: boolean;
+    // NEW: Persist legal strategy choice
     legalTemplateSelection?: 'standard' | 'custom';
-    // NEW: Manual input for legal identification in contracts
-    legalItemName?: string;
 }
 
 export interface HeroSlide {

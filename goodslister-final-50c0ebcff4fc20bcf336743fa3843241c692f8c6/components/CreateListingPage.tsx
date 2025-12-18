@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { generateListingDescription, improveDescription, shortenDescription, expandDescription } from '../services/geminiService';
 import { ListingCategory, User, Listing, ListingType, PriceUnit } from '../types';
 import { subcategories } from '../constants';
-import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon, ZapIcon, ShieldCheckIcon, LockIcon, FileSignatureIcon, PenToolIcon, CheckCircleIcon, AnchorIcon } from './icons';
+// FIX: Added 'CheckCircleIcon' to the imported icons list to resolve "Cannot find name" error.
+import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon, ZapIcon, ShieldCheckIcon, LockIcon, FileSignatureIcon, PenToolIcon, CheckCircleIcon } from './icons';
 import SmartAdvisory from './SmartAdvisory';
 import AICoverGeneratorStep from './AICoverGeneratorStep';
 
@@ -23,12 +24,13 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const [title, setTitle] = useState(initialData?.title || '');
     const [features, setFeatures] = useState<string[]>(initialData ? [] : ['']); 
     const [description, setDescription] = useState(initialData?.description || '');
+    const [sources, setSources] = useState<any[]>([]);
     const [category, setCategory] = useState<ListingCategory | ''>(initialData?.category || '');
     const [subcategory, setSubcategory] = useState(initialData?.subcategory || '');
     const [aiAction, setAiAction] = useState<'generate' | 'improve' | 'shorten' | 'expand' | null>(null);
     
+    const [advisoryEnabled, setAdvisoryEnabled] = useState(false);
     const [legalSelection, setLegalSelection] = useState<'standard' | 'custom'>(initialData?.legalTemplateSelection || 'standard');
-    const [legalItemName, setLegalItemName] = useState(initialData?.legalItemName || '');
 
     const initialLocationStr = initialData ? `${initialData.location.city}, ${initialData.location.state}, ${initialData.location.country}` : '';
     const [location, setLocation] = useState(initialLocationStr);
@@ -88,20 +90,28 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     }, []);
 
     const isCharterStyle = () => category === ListingCategory.BOATS || category === ListingCategory.ATVS_UTVS || (category === ListingCategory.WATER_SPORTS && subcategory.toLowerCase().includes('jet ski'));
+    const isGuideStyle = () => category === ListingCategory.BIKES || category === ListingCategory.WINTER_SPORTS || category === ListingCategory.CAMPING || (category === ListingCategory.WATER_SPORTS && !subcategory.toLowerCase().includes('jet ski'));
 
-    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => { setCategory(e.target.value as ListingCategory); setSubcategory(''); };
+    const handleAddFeature = () => { if(features.length < 5) setFeatures([...features, '']); };
+    const handleFeatureChange = (index: number, value: string) => { const newFeatures = [...features]; newFeatures[index] = value; setFeatures(newFeatures); };
+    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => { setCategory(e.target.value as ListingCategory); setSubcategory(''); setAdvisoryEnabled(false); };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (!files || files.length === 0) return;
         setIsUploading(true);
+        const uploadedUrls: string[] = [];
         for (const file of Array.from(files) as File[]) {
             try {
                 const response = await fetch(`/api/upload-image?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
+                if (!response.ok) throw new Error('Upload failed');
                 const { url } = await response.json();
-                setImageUrls(prev => [...prev, url]);
-            } catch (error) { alert(`Error uploading ${file.name}`); }
+                uploadedUrls.push(url);
+            } catch (error) {
+                alert(`Error uploading ${file.name}`);
+            }
         }
+        setImageUrls(prev => [...prev, ...uploadedUrls]);
         setIsUploading(false);
     };
 
@@ -111,21 +121,29 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         if (!title.trim() || !location.trim()) { setGenerationError("Title and location required."); return; }
         setAiAction('generate');
         try {
-            const result = await generateListingDescription(title, location, features.filter(f => f.trim() !== ''));
+            const contextFeatures = features.filter(f => f.trim() !== '');
+            const result = await generateListingDescription(title, location, contextFeatures);
             setDescription(result.description);
+            setSources(result.sources);
         } catch (error) { setGenerationError('Error generating.'); } finally { setAiAction(null); }
     };
     
-    const handleImproveDescription = async () => {
+    const createTextHandler = (action: 'improve' | 'shorten' | 'expand', serviceFn: (text: string) => Promise<string>) => async () => {
         if (!description.trim()) return;
-        setAiAction('improve');
-        try { setDescription(await improveDescription(description)); } finally { setAiAction(null); }
+        setAiAction(action);
+        try { const newText = await serviceFn(description); setDescription(newText); } 
+        catch (error) {} finally { setAiAction(null); }
     };
+
+    const handleImproveDescription = createTextHandler('improve', improveDescription);
+    const handleShortenDescription = createTextHandler('shorten', shortenDescription);
+    const handleExpandDescription = createTextHandler('expand', expandDescription);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentUser) return;
         setIsSubmitting(true);
+        setSubmitMessage('');
 
         const locationParts = location.split(',');
         const listingData: Listing = {
@@ -149,7 +167,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             owner: currentUser,
             images: imageUrls,
             videoUrl,
+            isFeatured: initialData?.isFeatured || false,
+            rating: initialData?.rating || 0,
+            reviewsCount: initialData?.reviewsCount || 0,
             ownerRules: legalSelection === 'custom' ? ownerRules : '',
+            bookedDates: initialData?.bookedDates || [],
+            hasCommercialInsurance: false,
             securityDeposit: parseFloat(securityDeposit) || 0,
             operatorLicenseId,
             fuelPolicy,
@@ -157,10 +180,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             whatsIncluded,
             itinerary,
             instantBookingEnabled,
-            legalTemplateSelection: legalSelection,
-            legalItemName: legalSelection === 'standard' ? legalItemName : undefined,
-            rating: initialData?.rating || 0,
-            reviewsCount: initialData?.reviewsCount || 0,
+            legalTemplateSelection: legalSelection
         };
 
         try {
@@ -173,11 +193,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         <div className="bg-gray-50 min-h-screen py-12">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6">
-                    <ChevronLeftIcon className="h-5 w-5" /> Cancel
+                    <ChevronLeftIcon className="h-5 w-5" />
+                    {isEditing ? 'Cancel' : 'Home'}
                 </button>
                 
                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg border border-gray-200">
-                    <div className="p-8 border-b">
+                    <div className="p-6 sm:p-8 border-b">
                         <h1 className="text-2xl font-bold">{isEditing ? 'Edit Listing' : 'Create Listing'}</h1>
                         <div className="mt-6 flex bg-gray-100 p-1 rounded-md">
                             <button type="button" onClick={() => setListingType('rental')} className={`flex-1 py-2 text-sm font-bold rounded ${listingType === 'rental' ? 'bg-white text-cyan-700 shadow' : 'text-gray-500'}`}>Rent Gear</button>
@@ -185,21 +206,34 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="p-8 space-y-8">
+                    <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
                         <div className="space-y-6">
-                            <div><label className="block text-sm font-bold text-gray-800">Title for Renter (Marketplace Display)</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md" placeholder="e.g. Sea Ray 210 in Key Biscayne" /></div>
+                            <div><label className="block text-sm font-bold text-gray-800">Title</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md" /></div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div><label className="block text-sm font-bold text-gray-800">Category</label><select value={category} onChange={handleCategoryChange} className="mt-2 block w-full border-gray-300 rounded-md">{Object.values(ListingCategory).map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div>
+                                <div><label className="block text-sm font-bold text-gray-800">Category</label><select value={category} onChange={handleCategoryChange} className="mt-2 block w-full border-gray-300 rounded-md"><option value="" disabled>Select...</option>{Object.values(ListingCategory).map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div>
                                 <div><label className="block text-sm font-bold text-gray-800">Subcategory</label><select value={subcategory} onChange={e => setSubcategory(e.target.value)} disabled={!category} className="mt-2 block w-full border-gray-300 rounded-md">{category && (subcategories[category as ListingCategory] || []).map((sub: string) => <option key={sub} value={sub}>{sub}</option>)}</select></div>
                             </div>
                             <div><label className="block text-sm font-bold text-gray-800">Location</label><input ref={locationInputRef} type="text" value={location} onChange={e => setLocation(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md" /></div>
                         </div>
+
+                        {listingType === 'experience' && category && (
+                            <div className="bg-purple-50 p-6 rounded-lg border border-purple-100 space-y-6">
+                                <h3 className="font-bold text-purple-900 flex items-center gap-2"><SparklesIcon className="h-5 w-5" /> Experience Details</h3>
+                                {isCharterStyle() && (
+                                    <div className="space-y-4">
+                                        <div><label className="block text-sm font-semibold text-purple-900">License ID</label><input type="text" value={operatorLicenseId} onChange={e => setOperatorLicenseId(e.target.value)} className="mt-1 block w-full border-purple-200" /></div>
+                                        <div><label className="block text-sm font-semibold text-purple-900">Fuel Policy</label><select value={fuelPolicy} onChange={e => setFuelPolicy(e.target.value as any)} className="mt-1 block w-full border-purple-200"><option value="extra">Renter Pays</option><option value="included">Included</option></select></div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* LEGAL SHIELD SECTION */}
                         <div className="bg-gray-900 text-white rounded-2xl p-8 relative overflow-hidden shadow-2xl">
                              <div className="absolute top-0 right-0 p-4 opacity-10"><ShieldCheckIcon className="h-48 w-48" /></div>
                              <div className="relative z-10">
                                  <h3 className="text-xl font-bold flex items-center gap-3"><LockIcon className="h-6 w-6 text-cyan-400" /> Legal Protection Shield</h3>
+                                 <p className="text-gray-400 text-sm mt-2">Standardize your security. Choose how you want to handle contracts and liability.</p>
                                  
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
                                      <div 
@@ -210,7 +244,10 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                             <FileSignatureIcon className={`h-5 w-5 ${legalSelection === 'standard' ? 'text-cyan-400' : 'text-gray-500'}`} />
                                             <span className="font-bold text-sm">Goodslister Standard</span>
                                          </div>
-                                         <p className="text-xs text-gray-400 leading-relaxed">Instantly deploy professional contracts based on your category.</p>
+                                         <p className="text-xs text-gray-400 leading-relaxed">
+                                             Instantly deploy a category-specific rental agreement and liability waiver verified for peer-to-peer security.
+                                         </p>
+                                         {legalSelection === 'standard' && <div className="mt-3 flex items-center gap-1.5 text-cyan-400 text-[10px] font-black uppercase tracking-widest"><CheckCircleIcon className="h-3 w-3" /> Recommended</div>}
                                      </div>
 
                                      <div 
@@ -219,44 +256,23 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                      >
                                          <div className="flex items-center gap-2 mb-3">
                                             <PenToolIcon className={`h-5 w-5 ${legalSelection === 'custom' ? 'text-purple-400' : 'text-gray-500'}`} />
-                                            <span className="font-bold text-sm">Custom Rules</span>
+                                            <span className="font-bold text-sm">My Own Rules</span>
                                          </div>
-                                         <p className="text-xs text-gray-400 leading-relaxed">Provide your own specific terms for this rental.</p>
+                                         <p className="text-xs text-gray-400 leading-relaxed">
+                                             Use your own custom text for rental terms. Note: Platform protection fund may be limited for custom contracts.
+                                         </p>
                                      </div>
                                  </div>
 
-                                 {legalSelection === 'standard' && (
-                                     <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-2xl animate-in fade-in zoom-in-95 duration-500">
-                                         <div className="flex items-center gap-2 mb-4">
-                                             <AnchorIcon className="h-5 w-5 text-cyan-400" />
-                                             <label className="text-sm font-black uppercase tracking-widest text-cyan-100">Legal Identification (Required)</label>
-                                         </div>
-                                         <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                                             Para que el contrato sea válido ante un tribunal o seguro, el bien debe estar identificado correctamente. **No uses el título comercial de arriba.**
-                                         </p>
-                                         <input 
-                                            type="text" 
-                                            value={legalItemName}
-                                            onChange={e => setLegalItemName(e.target.value)}
-                                            className="w-full bg-gray-800 border-gray-700 text-white rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-600 shadow-inner"
-                                            placeholder={category === ListingCategory.BOATS ? "Ej: Sea Ray 210 Select (Hull ID: SER12345B505)" : "Ej: Yamaha VX 1000 (Serial: YAMA-9988X)"}
-                                            required={legalSelection === 'standard'}
-                                         />
-                                         <div className="mt-4 flex items-start gap-2 text-[10px] text-gray-500">
-                                             <InfoIcon className="h-3 w-3 mt-0.5" />
-                                             <p>Este nombre aparecerá en el contrato digital que el inquilino firmará al pagar.</p>
-                                         </div>
-                                     </div>
-                                 )}
-
                                  {legalSelection === 'custom' && (
                                      <div className="mt-6 animate-in fade-in">
+                                         <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Your Custom Rules</label>
                                          <textarea 
                                             value={ownerRules}
                                             onChange={e => setOwnerRules(e.target.value)}
                                             rows={4}
-                                            className="w-full bg-gray-800 border-gray-700 text-white rounded-lg p-3 text-sm"
-                                            placeholder="Escribe tus propias reglas legales..."
+                                            className="w-full bg-gray-800 border-gray-700 text-white rounded-lg p-3 text-sm focus:ring-purple-500"
+                                            placeholder="Paste your specific rules here..."
                                          />
                                      </div>
                                  )}
@@ -265,19 +281,19 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
                         {/* Media */}
                         <div className="space-y-4">
-                            <label className="block text-sm font-bold text-gray-800">Photos (Real condition)</label>
+                            <label className="block text-sm font-bold text-gray-800">Images</label>
                             <AICoverGeneratorStep realPhotoCount={imageUrls.length} onImageGenerated={url => setImageUrls([url, ...imageUrls])} />
-                            <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex justify-center cursor-pointer"><label className="text-center cursor-pointer"><UploadCloudIcon className="mx-auto h-12 w-12 text-gray-400" /><span className="mt-2 block text-sm text-cyan-600 font-bold">Upload Real Photos</span><input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={isUploading} /></label></div>
+                            <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex justify-center cursor-pointer"><label className="text-center cursor-pointer"><UploadCloudIcon className="mx-auto h-12 w-12 text-gray-400" /><span className="mt-2 block text-sm text-cyan-600">Upload Photos</span><input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={isUploading} /></label></div>
                             <div className="grid grid-cols-4 gap-4 mt-4">{imageUrls.map((url, i) => (<div key={i} className="relative group"><img src={url} className="h-20 w-full object-cover rounded" /><button type="button" onClick={() => handleRemoveImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><XIcon className="h-3 w-3" /></button></div>))}</div>
                         </div>
 
                         {/* Description */}
                         <div>
-                            <div className="flex justify-between items-center mb-1"><label className="block text-sm font-bold text-gray-800">Description</label></div>
+                            <div className="flex justify-between items-center mb-1"><label className="block text-sm font-bold text-gray-800">Description</label><span className="text-xs text-cyan-700 bg-cyan-50 px-2 py-1 rounded-full flex items-center gap-1"><SparklesIcon className="h-3 w-3" />AI-Writer</span></div>
                             <textarea id="description" rows={6} value={description} onChange={e => setDescription(e.target.value)} className="w-full border-gray-300 rounded-md" />
-                            <div className="mt-3 flex gap-2">
-                                <button type="button" onClick={handleGenerateDescription} className="px-4 py-2 bg-white border text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-gray-50"><WandSparklesIcon className="h-4 w-4 text-cyan-600" /> AI Writer</button>
-                                <button type="button" onClick={handleImproveDescription} className="px-4 py-2 bg-white border text-xs font-bold rounded-lg hover:bg-gray-50">Refine Text</button>
+                            <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+                                <button type="button" onClick={handleGenerateDescription} className="px-3 py-1.5 bg-white border text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-gray-50"><WandSparklesIcon className="h-4 w-4 text-cyan-600" /> New Description</button>
+                                <button type="button" onClick={handleImproveDescription} className="px-3 py-1.5 bg-white border text-xs font-bold rounded-lg hover:bg-gray-50">Refine</button>
                             </div>
                         </div>
 
@@ -289,7 +305,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
                         <div className="pt-6 border-t flex justify-end gap-4">
                             <button type="button" onClick={onBack} className="px-6 py-2 border rounded-lg font-bold">Cancel</button>
-                            <button type="submit" disabled={isSubmitting || (legalSelection === 'standard' && !legalItemName)} className="px-8 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-black disabled:opacity-50">{isSubmitting ? 'Saving...' : 'Publish'}</button>
+                            <button type="submit" disabled={isSubmitting} className="px-8 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-black disabled:opacity-50">{isSubmitting ? 'Saving...' : 'Publish'}</button>
                         </div>
                     </form>
                 </div>

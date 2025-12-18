@@ -7,92 +7,110 @@ export enum ContractType {
     POWERSPORTS_WAIVER = "Risk Warning, Waiver & Release of Liability",
     MOTOR_VEHICLE = "Private Vehicle Rental & Bailment Agreement",
     EQUIPMENT_RENTAL = "Recreational Equipment Rental Agreement",
-    ADVENTURE_WAIVER = "Assumption of Risk & Safety Agreement",
-    BICYCLE_RENTAL = "Bicycle Rental Agreement",
-    SURFBOARD_RENTAL = "Surfboard Rental Agreement"
+    ADVENTURE_WAIVER = "Assumption of Risk & Safety Agreement"
 }
 
 export class LegalService {
 
-    /**
-     * Decision Matrix to determine the specific legal template.
-     */
     public static getContractType(listing: Listing): ContractType {
+        const { category } = listing;
+
+        switch (category) {
+            case ListingCategory.BOATS:
+                return ContractType.BAREBOAT;
+            
+            case ListingCategory.MOTORCYCLES:
+            case ListingCategory.ATVS_UTVS:
+                return ContractType.POWERSPORTS_WAIVER;
+
+            case ListingCategory.RVS:
+                return ContractType.MOTOR_VEHICLE;
+
+            case ListingCategory.WINTER_SPORTS:
+            case ListingCategory.WATER_SPORTS:
+                // Check if motorized
+                if (listing.subcategory?.toLowerCase().includes('jet') || listing.subcategory?.toLowerCase().includes('motor')) {
+                    return ContractType.POWERSPORTS_WAIVER;
+                }
+                return ContractType.ADVENTURE_WAIVER;
+
+            case ListingCategory.BIKES:
+            case ListingCategory.CAMPING:
+            default:
+                return ContractType.EQUIPMENT_RENTAL;
+        }
+    }
+
+    /**
+     * Standardized Clauses for different categories
+     */
+    private static getCategorySpecificBody(listing: Listing): string {
         const cat = listing.category;
-        const sub = (listing.subcategory || '').toLowerCase();
+        const sub = listing.subcategory?.toLowerCase() || '';
 
-        // 1. SURFBOARD SPECIFIC
-        if (cat === ListingCategory.WATER_SPORTS && sub.includes('surfboard')) {
-            return ContractType.SURFBOARD_RENTAL;
+        if (cat === ListingCategory.CAMPING) {
+            return `
+                <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">1. SANITATION & CARE</h3>
+                <p>Lessee agrees to return all camping equipment (tents, stoves, sleeping gear) in a dry, clean, and organized state. A $50 sanitation fee applies to items returned wet or with significant debris, as this compromises long-term integrity.</p>
+                <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">2. FIRE SAFETY</h3>
+                <p>Lessee assumes all liability for damages caused by campfire embers, stove misuse, or proximity of heat sources to synthetic fabrics.</p>
+            `;
         }
 
-        // 2. BIKE SPECIFIC (Excluding Scooters)
-        if (cat === ListingCategory.BIKES && !sub.includes('scooter')) {
-            return ContractType.BICYCLE_RENTAL;
+        if (cat === ListingCategory.WINTER_SPORTS) {
+            return `
+                <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">1. BINDING & SAFETY WARNING</h3>
+                <p>Lessee acknowledges that bindings do not release in all circumstances and do not guarantee safety. Lessee assumes all risks inherent in the sport of skiing/snowboarding, including terrain hazards and collisions.</p>
+                <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">2. BASE & EDGE PROTECTION</h3>
+                <p>Damages to bases (core shots) or edges from rocks/pavement will be billed at standard professional shop rates ($80+ per repair).</p>
+            `;
         }
 
-        // 3. BOATS (Bareboat)
-        if (cat === ListingCategory.BOATS) {
-            return ContractType.BAREBOAT;
+        if (cat === ListingCategory.MOTORCYCLES || cat === ListingCategory.ATVS_UTVS) {
+            return `
+                <h3 class="font-bold text-red-700 mt-4 mb-2">1. EXTREME ASSUMPTION OF RISK</h3>
+                <p>The operation of a ${cat} is an inherently dangerous activity. Lessee acknowledges potential for severe bodily injury or death. Lessee represents they possess the skill and license to operate this specific machine.</p>
+                <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">2. GEOGRAPHIC LIMITS</h3>
+                <p>The vehicle shall not be operated outside of authorized trails or public roads. Crossing international or state borders without prior written consent from Owner is a material breach.</p>
+            `;
         }
 
-        // 4. POWERSPORTS (Motorized Water/Land)
-        if (
-            cat === ListingCategory.MOTORCYCLES || 
-            cat === ListingCategory.ATVS_UTVS ||
-            sub.includes('jet ski') || 
-            sub.includes('motor') ||
-            sub.includes('snowmobile')
-        ) {
-            return ContractType.POWERSPORTS_WAIVER;
-        }
-
-        // 5. VEHICLE / RV
         if (cat === ListingCategory.RVS) {
-            return ContractType.MOTOR_VEHICLE;
+            return `
+                <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">1. BAILMENT & ROADSIDE</h3>
+                <p>This agreement is a temporary bailment for hire. Lessee is responsible for monitoring all fluid levels and tire pressures during the term. Any mechanical warning lights must result in immediate cessation of operation.</p>
+                <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">2. WASTE DISPOSAL</h3>
+                <p>Septic tanks (Black/Gray water) must be returned empty. Failure to do so results in a mandatory $150 disposal fee.</p>
+            `;
         }
 
-        return ContractType.EQUIPMENT_RENTAL;
+        return `
+            <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">1. USE OF PROPERTY</h3>
+            <p>The equipment shall be used solely for its intended recreational purpose. Commercial use, sub-leasing, or use in sanctioned competitions is prohibited.</p>
+            <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">2. REPLACEMENT VALUE</h3>
+            <p>In the event of total loss or theft, Lessee is liable for the full current market replacement value of the item, plus loss-of-use revenue for the Owner during the replacement period.</p>
+        `;
     }
 
     public static generateContractHtml(listing: Listing, renter: User, startDate: Date, endDate: Date, totalPrice: number): string {
         const contractType = this.getContractType(listing);
         
-        // Dispatch to specific generators
-        if (contractType === ContractType.SURFBOARD_RENTAL) {
-            return this.generateSurfboardContract(listing, renter, startDate, endDate, totalPrice);
-        }
-        
-        if (contractType === ContractType.BICYCLE_RENTAL) {
-            return this.generateBicycleContract(listing, renter, startDate, endDate, totalPrice);
-        }
-        
+        // Handle Florida Bareboat separately as it's highly specialized
         if (contractType === ContractType.BAREBOAT) {
+            // ... (Keeping the robust Florida Bareboat logic already implemented) ...
             return this.generateFloridaBareboatContract(listing, renter, startDate, endDate, totalPrice);
         }
 
-        // Default Fallback
-        return this.generateDefaultContract(listing, renter, startDate, endDate, totalPrice, contractType);
-    }
-
-    /**
-     * GENERATOR: SURFBOARD RENTAL AGREEMENT
-     */
-    private static generateSurfboardContract(listing: Listing, renter: User, startDate: Date, endDate: Date, totalPrice: number): string {
-        const formalItemName = (listing.legalItemName || listing.title).toUpperCase();
-        const location = `${listing.location.city}, ${listing.location.state}`;
-        const currentDate = format(new Date(), 'MMMM do, yyyy');
-        const startStr = format(startDate, 'MMM dd, yyyy p');
-        const endStr = format(endDate, 'MMM dd, yyyy p');
+        const dateStr = format(new Date(), 'MMMM do, yyyy');
+        const startStr = format(startDate, 'MMM dd, yyyy h:mm aa');
+        const endStr = format(endDate, 'MMM dd, yyyy h:mm aa');
 
         return `
-            <div class="legal-contract font-serif text-sm leading-relaxed text-gray-800 text-justify">
-                <div class="text-center mb-8 border-b-2 border-black pb-4">
-                    <h1 class="text-2xl font-bold uppercase tracking-wide">SURFBOARD RENTAL AGREEMENT</h1>
-                    <p class="text-[10px] mt-1 text-gray-500 uppercase font-bold tracking-widest">Goodslister Marine-V1.2 | Water Sports Certified</p>
+            <div class="legal-contract font-sans text-sm leading-relaxed text-gray-800">
+                <div class="text-center mb-8 border-b-2 border-gray-900 pb-4">
+                    <h1 class="text-xl font-black uppercase tracking-tight">${contractType}</h1>
+                    <p class="text-xs text-gray-500 mt-1 uppercase font-bold tracking-widest">Goodslister Standard Version 2.1</p>
                 </div>
-
-                <p class="mb-6">This Rental Agreement ("Agreement") is made and entered into on this date <strong>${currentDate}</strong> in <strong>${location}</strong>.</p>
 
                 <div class="grid grid-cols-2 gap-4 mb-8 bg-gray-50 p-4 rounded border">
                     <div>
@@ -105,149 +123,58 @@ export class LegalService {
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    <section>
-                        <h4 class="font-bold underline uppercase mb-2">1. RENTAL EQUIPMENT</h4>
-                        <p>The Owner agrees to rent to the Renter, and the Renter agrees to rent the following equipment (hereinafter referred to as the "Surfboard" or "Equipment"):</p>
-                        <p class="mt-2 p-3 bg-white border font-bold text-blue-900">Item Description: ${formalItemName}</p>
-                        
-                        <div class="mt-3 p-3 border border-dashed border-gray-300 rounded">
-                            <p class="text-xs font-bold mb-1">Included Accessories:</p>
-                            <p class="text-xs">[ ] Leash/Leg rope &nbsp;&nbsp; [ ] Fins &nbsp;&nbsp; [ ] Board Bag &nbsp;&nbsp; [ ] Wetsuit</p>
-                        </div>
-                        
-                        <p class="mt-2 text-xs italic"><strong>Condition:</strong> The Renter acknowledges that they have inspected the Surfboard (including the deck, bottom, rails, and fins) and confirms that it is in good condition, free of open cracks, deep dings, or delamination, except as otherwise noted in writing.</p>
-                    </section>
+                <div class="space-y-4">
+                    <p>This Agreement is entered into on <strong>${dateStr}</strong>. Owner hereby rents to Renter the following property: <strong>${listing.title.toUpperCase()}</strong> for the period of <strong>${startStr}</strong> through <strong>${endStr}</strong>.</p>
+                    
+                    ${this.getCategorySpecificBody(listing)}
 
-                    <section>
-                        <h4 class="font-bold underline uppercase mb-2">2. RENTAL PERIOD</h4>
-                        <div class="grid grid-cols-2 gap-4 text-xs font-bold">
-                            <div class="p-2 border bg-gray-50">START: ${startStr}</div>
-                            <div class="p-2 border bg-gray-50">END: ${endStr}</div>
-                        </div>
-                        <p class="mt-2 text-xs">The Equipment must be returned by the agreed date and time. Late returns may be subject to additional fees.</p>
-                    </section>
+                    <h3 class="font-bold border-b border-gray-200 mt-4 mb-2">INDEMNIFICATION</h3>
+                    <p>Renter agrees to indemnify, defend, and hold harmless Owner and Goodslister Inc. from any and all claims, actions, suits, procedures, costs, expenses, damages and liabilities, including attorney’s fees brought as a result of Renter's use of the Property.</p>
 
-                    <section>
-                        <h4 class="font-bold underline uppercase mb-2">3. PAYMENT AND SECURITY DEPOSIT</h4>
-                        <ul class="space-y-1">
-                            <li><strong>Total Rental Price:</strong> $${totalPrice.toFixed(2)}</li>
-                            <li><strong>Security Deposit:</strong> $${listing.securityDeposit || 0}</li>
-                        </ul>
-                        <p class="mt-2 text-xs"><strong>Use of Deposit:</strong> Deductions will be made for professional repair costs for dings, cracks, broken fin boxes, excessive cleaning (removal of tar/wax in prohibited areas), or loss of accessories.</p>
-                    </section>
-
-                    <section>
-                        <h4 class="font-bold underline uppercase mb-2 text-red-700">4. USE, CARE AND SPECIFIC PROHIBITIONS</h4>
-                        <p><strong>a) Heat and Sun Damage (Delamination):</strong> The Renter shall NEVER leave the Surfboard exposed to direct sunlight when not in use, nor inside a hot vehicle. Heat causes the fiberglass to separate from the foam ("delamination"). <strong>The Renter is fully liable for this specific damage.</strong></p>
-                        <p class="mt-1"><strong>b) Handling:</strong> The Surfboard must not be dragged across sand, rocks, or pavement.</p>
-                        <p class="mt-1"><strong>c) Competency:</strong> The Renter certifies that they are a competent swimmer and possess sufficient skills to handle the Surfboard in the prevailing ocean conditions.</p>
-                    </section>
-
-                    <section>
-                        <h4 class="font-bold underline uppercase mb-2">5. DAMAGE, DESTRUCTION, AND LOSS</h4>
-                        <p><strong>a) Minor Damage:</strong> Renter pays for repairs of any dings or cracks. <strong>b) Total Destruction ("Snap" or "Buckle"):</strong> If the Surfboard is snapped in half or suffers structural buckling, the Renter agrees to pay the <strong>full replacement value</strong> of the board. <strong>c) Theft or Loss at Sea:</strong> Renter is liable for the full replacement value.</p>
-                    </section>
-
-                    <section>
-                        <h4 class="font-bold underline uppercase mb-2">6. RELEASE OF LIABILITY AND ASSUMPTION OF RISK</h4>
-                        <p>The Renter understands that surfing is a hazardous activity. <strong>a) Assumption of Risk:</strong> Renter knowingly assumes all risks including drowning, collisions, and marine life interaction. <strong>b) Indemnification:</strong> The Renter hereby releases and agrees to <strong>hold harmless</strong> the Owner from any claims regarding injury, death, or property damage.</p>
-                    </section>
-
-                    <section>
-                        <h4 class="font-bold underline uppercase mb-2">7. GOVERNING LAW</h4>
-                        <p>This Agreement shall be governed by the laws of <strong>${location}</strong>.</p>
-                    </section>
-                </div>
-
-                <div class="mt-10 pt-6 border-t border-black">
-                    <div class="grid grid-cols-2 gap-12">
-                        <div class="text-center">
-                            <p class="font-bold italic text-blue-900 border-b border-black mb-1">${listing.owner.name.toUpperCase()}</p>
-                            <p class="text-[9px] uppercase font-black text-gray-400">Digital Signature: Owner</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="font-bold italic text-blue-900 border-b border-black mb-1">${renter.name.toUpperCase()}</p>
-                            <p class="text-[9px] uppercase font-black text-gray-400">Digital Signature: Renter</p>
-                        </div>
+                    <div class="mt-8 p-4 bg-yellow-50 rounded border border-yellow-200">
+                        <p class="text-xs italic"><strong>Note to Owner:</strong> This is a standard template provided by Goodslister for convenience. It does not constitute specific legal advice. Please have your legal counsel review for your local jurisdiction.</p>
                     </div>
                 </div>
-
-                <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100 text-[10px] text-gray-600 space-y-2">
-                    <p class="font-bold text-blue-900 uppercase">Key Terms Explained (Glosario):</p>
-                    <p>• <strong>Delamination (Cláusula 4a):</strong> Fiber separating from foam due to heat. Avoid direct sun or hot cars.</p>
-                    <p>• <strong>Buckle (Cláusula 5b):</strong> Structural crease/wrinkle in the board, making it unsafe/unusable.</p>
-                    <p>• <strong>Indemnification:</strong> Renter takes responsibility for third-party damages, protecting the Owner's assets.</p>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * GENERATOR: BICYCLE RENTAL AGREEMENT
-     */
-    private static generateBicycleContract(listing: Listing, renter: User, startDate: Date, endDate: Date, totalPrice: number): string {
-        const formalItemName = (listing.legalItemName || listing.title).toUpperCase();
-        const location = `${listing.location.city}, ${listing.location.state}`;
-        const currentDate = format(new Date(), 'MMMM do, yyyy');
-        const startStr = format(startDate, 'MMM dd, yyyy p');
-        const endStr = format(endDate, 'MMM dd, yyyy p');
-
-        return `
-            <div class="legal-contract font-serif text-sm leading-relaxed text-gray-800 text-justify">
-                <div class="text-center mb-8 border-b-2 border-black pb-4">
-                    <h1 class="text-2xl font-bold uppercase tracking-wide">BICYCLE RENTAL AGREEMENT</h1>
-                    <p class="text-xs mt-1">Goodslister Standard Bike-V1.0</p>
-                </div>
-                <p class="mb-6">This Rental Agreement ("Agreement") is made and entered into on this date <strong>${currentDate}</strong> in <strong>${location}</strong>.</p>
-                <div class="mb-6 space-y-2">
-                    <p><strong>BETWEEN:</strong> THE OWNER: ${listing.owner.name.toUpperCase()} <strong>AND</strong> THE RENTER: ${renter.name.toUpperCase()}</p>
-                </div>
-                <div class="space-y-6">
-                    <section>
-                        <h4 class="font-bold underline uppercase">1. RENTAL EQUIPMENT</h4>
-                        <p class="p-2 bg-gray-50 border-l-4 border-gray-400 font-bold">Item: ${formalItemName}</p>
-                    </section>
-                    <section>
-                        <h4 class="font-bold underline uppercase">3. PAYMENT AND SECURITY DEPOSIT</h4>
-                        <p>Rental Price: $${totalPrice.toFixed(2)} | Deposit: $${listing.securityDeposit || 0}</p>
-                    </section>
-                    <section>
-                        <h4 class="font-bold underline uppercase">6. RELEASE OF LIABILITY</h4>
-                        <p>The Renter hereby releases, waives, and agrees to <strong>indemnify and hold harmless</strong> the Owner from any and all claims.</p>
-                    </section>
-                </div>
-                <div class="mt-12 pt-8 border-t border-gray-300 grid grid-cols-2 gap-8">
-                    <div class="border-b border-black pb-2 font-bold italic text-blue-900">${listing.owner.name.toUpperCase()}</div>
-                    <div class="border-b border-black pb-2 font-bold italic text-blue-900">${renter.name.toUpperCase()}</div>
-                </div>
-            </div>
-        `;
-    }
-
-    private static generateDefaultContract(listing: Listing, renter: User, startDate: Date, endDate: Date, totalPrice: number, type: ContractType): string {
-        const formalItemName = (listing.legalItemName || listing.title).toUpperCase();
-        return `
-            <div class="legal-contract font-sans text-sm leading-relaxed text-gray-800 p-4">
-                <h1 class="text-xl font-black uppercase mb-4">${type}</h1>
-                <p>Owner: ${listing.owner.name}</p>
-                <p>Renter: ${renter.name}</p>
-                <p>Property: ${formalItemName}</p>
-                <div class="mt-4 p-4 bg-gray-100 rounded">Terms for ${listing.category} apply.</div>
             </div>
         `;
     }
 
     private static generateFloridaBareboatContract(listing: Listing, renter: User, startDate: Date, endDate: Date, totalPrice: number): string {
-        const formalItemName = (listing.legalItemName || listing.title).toUpperCase();
+        const hostName = listing.owner.name.toUpperCase();
+        const startStr = format(startDate, "h:mm aa 'on' MMM dd, yyyy");
+        const endStr = format(endDate, "h:mm aa 'on' MMM dd, yyyy");
+        const vesselDescription = `${listing.title} (${listing.subcategory || 'Vessel'})`.toUpperCase();
+        const cruisingArea = `${listing.location.city}, ${listing.location.state}`;
+
         return `
             <div class="legal-contract font-serif text-sm leading-relaxed text-justify">
                 <div class="text-center mb-8 border-b-2 border-black pb-4">
                     <h1 class="text-2xl font-bold uppercase tracking-wide">Bareboat Charter Agreement</h1>
                     <p class="text-sm font-bold mt-2 text-blue-700 uppercase">Florida Statutory Compliance Edition</p>
                 </div>
-                <p class="mb-4">This Charter Agreement constitutes a <strong>full demise</strong> of the Vessel identified as: <strong>${formalItemName}</strong> from OWNER to RENTER.</p>
-                <div class="mt-4 p-4 border rounded">Details for Florida SB 606 included.</div>
+
+                <p class="mb-4">This Charter Agreement constitutes a <strong>full demise</strong> of the Vessel from OWNER to RENTER. RENTER shall have full possession, command, and navigation of the Vessel during the Charter Period.</p>
+
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-black text-gray-900 underline uppercase">1. Command and Control</h4>
+                        <p>OWNER represents that they shall NOT provide a captain. RENTER has the absolute right to select a captain of their choice, provided the captain is properly licensed by the USCG for the vessel type and size.</p>
+                    </div>
+
+                    <div>
+                        <h4 class="font-black text-gray-900 underline uppercase">2. Insurance & SB 606</h4>
+                        <p>In accordance with Florida SB 606, OWNER warrants that the vessel carries valid liability insurance. RENTER is responsible for any deductible ($${listing.securityDeposit || 500}) in the event of an incident.</p>
+                    </div>
+
+                    <div>
+                        <h4 class="font-black text-gray-900 underline uppercase">3. Condition and Inspection</h4>
+                        <p>RENTER agrees to participate in the Goodslister Digital Handover Inspection. The resulting photos shall be the conclusive evidence of the vessel's condition at time of delivery.</p>
+                    </div>
+                </div>
+
+                <div class="mt-12 pt-6 border-t border-black text-[10px] text-gray-400">
+                    <p>DOCUMENT ID: BARE-FL-${listing.id.slice(-6)}-${Date.now().toString().slice(-4)}</p>
+                </div>
             </div>
         `;
     }
