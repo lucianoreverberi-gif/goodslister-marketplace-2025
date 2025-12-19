@@ -1,4 +1,3 @@
-
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
@@ -29,17 +28,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const user = userRes.rows[0];
     
-    // Verify current
+    // Validar contraseña actual
     if (!verifyPassword(currentPassword, user.password_salt, user.password_hash)) {
-        return res.status(401).json({ error: 'Current password incorrect' });
+        return res.status(401).json({ error: 'La contraseña actual es incorrecta.' });
     }
 
-    // Hash and save new
+    // Hashear y guardar la nueva
     const { salt, hash } = hashPassword(newPassword);
     await sql`UPDATE users SET password_hash = ${hash}, password_salt = ${salt} WHERE id = ${userId}`;
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to update password' });
+    console.error(error);
+    return res.status(500).json({ error: 'Error al actualizar la contraseña' });
   }
 }

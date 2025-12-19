@@ -1,4 +1,3 @@
-
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -8,20 +7,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { userId } = req.body;
 
   try {
-    // 1. Check for active listings or bookings
-    const listings = await sql`SELECT id FROM listings WHERE owner_id = ${userId}`;
-    if (listings.rows.length > 0) {
-        // In a real app, we might force delete or ask to disable first. 
-        // Here we'll delete the user's listings first to satisfy constraints.
-        await sql`DELETE FROM listings WHERE owner_id = ${userId}`;
-    }
+    // 1. Limpiar listings del usuario (por integridad referencial)
+    await sql`DELETE FROM listings WHERE owner_id = ${userId}`;
+    
+    // 2. Limpiar mensajes y participantes (si aplica)
+    await sql`DELETE FROM conversation_participants WHERE user_id = ${userId}`;
+    await sql`DELETE FROM messages WHERE sender_id = ${userId}`;
 
-    // 2. Delete the user
+    // 3. Eliminar usuario
     await sql`DELETE FROM users WHERE id = ${userId}`;
 
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: 'Failed to delete account' });
+    return res.status(500).json({ error: 'Error al eliminar la cuenta' });
   }
 }
