@@ -72,6 +72,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Total Earnings */}
                     <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 relative overflow-hidden group">
                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] relative z-10">Total Earnings</p>
                         <p className="text-4xl font-black text-gray-900 mt-3 relative z-10">${totalEarnings.toLocaleString()}</p>
@@ -83,17 +84,19 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                         </div>
                     </div>
 
+                    {/* Active Listings */}
                     <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Active Listings</p>
                         <p className="text-4xl font-black text-gray-900 mt-3">{listings.length}</p>
                         <div className="mt-5 flex items-center gap-2">
                              <div className="flex -space-x-2.5">
-                                 {listings.slice(0, 3).map((l, i) => <img key={i} src={l.images[0]} className="w-8 h-8 rounded-full border-2 border-white object-cover" />)}
+                                 {listings.slice(0, 3).map((l, i) => <img key={i} src={l.images[0]} className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm" />)}
                              </div>
                              <span className="text-[11px] font-black text-gray-400 ml-1">Items online</span>
                         </div>
                     </div>
 
+                    {/* Avg Quality */}
                     <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Avg. Quality</p>
                         <p className="text-4xl font-black text-gray-900 mt-3">{avgRating.toFixed(1)}</p>
@@ -102,11 +105,12 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                         </div>
                     </div>
 
+                    {/* Profile Views */}
                     <div className="bg-[#2d2d5f] p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-200/50 text-white relative overflow-hidden">
                         <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] relative z-10">Profile Views</p>
                         <p className="text-4xl font-black mt-3 relative z-10">1.2k</p>
                         <div className="mt-6 h-2 w-full bg-white/10 rounded-full overflow-hidden relative z-10">
-                            <div className="h-full bg-cyan-400 w-3/4 rounded-full"></div>
+                            <div className="h-full bg-cyan-400 w-3/4 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.5)]"></div>
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-transparent"></div>
                     </div>
@@ -218,13 +222,17 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                         placeholder="Share your adventure story..." 
                                         rows={6} 
                                     />
-                                    <button onClick={() => onUpdateProfile(user.bio || '', user.avatarUrl)} className="mt-6 px-8 py-3 bg-cyan-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest">Update Profile</button>
+                                    <button onClick={() => onUpdateProfile(user.bio || '', user.avatarUrl)} className="mt-6 px-8 py-3 bg-cyan-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-cyan-100">Update Profile</button>
                                 </div>
                                 <div className="space-y-8">
                                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Trust Assets</h4>
                                     <div className={`flex items-center gap-4 p-5 rounded-3xl border ${user.isIdVerified ? 'bg-indigo-50/50 border-indigo-100 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-300'}`}>
                                         <ShieldCheckIcon className="h-7 w-7" />
                                         <span className="text-sm font-black uppercase tracking-tight">Identity Verified</span>
+                                    </div>
+                                    <div className={`flex items-center gap-4 p-5 rounded-3xl border ${user.isPhoneVerified ? 'bg-green-50/50 border-green-100 text-green-700' : 'bg-gray-50 border-gray-100 text-gray-300'}`}>
+                                        <PhoneIcon className="h-7 w-7" />
+                                        <span className="text-sm font-black uppercase tracking-tight">Mobile Linked</span>
                                     </div>
                                 </div>
                             </div>
@@ -304,7 +312,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
 };
 
 const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusUpdate: (id: string, status: string) => Promise<void> }> = ({ bookings, userId, onStatusUpdate }) => {
-    const [mode, setMode] = useState<'hosting' | 'renting'>('hosting');
+    const [mode, setMode] = useState<'hosting' | 'renting'>('renting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     
