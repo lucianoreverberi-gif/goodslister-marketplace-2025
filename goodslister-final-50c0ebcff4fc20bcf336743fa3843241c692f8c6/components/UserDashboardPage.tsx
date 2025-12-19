@@ -4,8 +4,7 @@ import {
     PackageIcon, DollarSignIcon, BarChartIcon, StarIcon, 
     ShieldIcon, CalendarIcon, EyeIcon, PencilIcon, XIcon, 
     HeartIcon, UserCheckIcon, TrashIcon, TrendUpIcon, 
-    AlertTriangleIcon, ShieldCheckIcon, PhoneIcon, MailIcon,
-    CreditCardIcon, CheckCircleIcon, LockIcon
+    ShieldCheckIcon, PhoneIcon
 } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
@@ -73,8 +72,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Total Earnings */}
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 relative overflow-hidden group transition-all hover:scale-[1.02]">
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 relative overflow-hidden group">
                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] relative z-10">Total Earnings</p>
                         <p className="text-4xl font-black text-gray-900 mt-3 relative z-10">${totalEarnings.toLocaleString()}</p>
                         <div className="mt-5 flex items-center gap-1.5 text-green-500 font-black text-xs relative z-10">
@@ -85,20 +83,18 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                         </div>
                     </div>
 
-                    {/* Active Listings */}
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group transition-all hover:scale-[1.02]">
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Active Listings</p>
                         <p className="text-4xl font-black text-gray-900 mt-3">{listings.length}</p>
                         <div className="mt-5 flex items-center gap-2">
                              <div className="flex -space-x-2.5">
-                                 {listings.slice(0, 3).map((l, i) => <img key={i} src={l.images[0]} className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm" />)}
+                                 {listings.slice(0, 3).map((l, i) => <img key={i} src={l.images[0]} className="w-8 h-8 rounded-full border-2 border-white object-cover" />)}
                              </div>
                              <span className="text-[11px] font-black text-gray-400 ml-1">Items online</span>
                         </div>
                     </div>
 
-                    {/* Avg Quality */}
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group transition-all hover:scale-[1.02]">
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Avg. Quality</p>
                         <p className="text-4xl font-black text-gray-900 mt-3">{avgRating.toFixed(1)}</p>
                         <div className="mt-5 flex text-yellow-400 gap-0.5">
@@ -106,12 +102,11 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                         </div>
                     </div>
 
-                    {/* Profile Views (The Indigo Card) */}
-                    <div className="bg-[#2d2d5f] p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-200/50 text-white relative overflow-hidden transition-all hover:scale-[1.02]">
+                    <div className="bg-[#2d2d5f] p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-200/50 text-white relative overflow-hidden">
                         <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] relative z-10">Profile Views</p>
                         <p className="text-4xl font-black mt-3 relative z-10">1.2k</p>
                         <div className="mt-6 h-2 w-full bg-white/10 rounded-full overflow-hidden relative z-10">
-                            <div className="h-full bg-cyan-400 w-3/4 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.5)]"></div>
+                            <div className="h-full bg-cyan-400 w-3/4 rounded-full"></div>
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-transparent"></div>
                     </div>
@@ -123,8 +118,8 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                         <div className="h-64 flex items-end gap-4 px-2">
                             {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
                                 <div key={i} className="flex-1 flex flex-col items-center group relative">
-                                    <div style={{ height: `${h}%` }} className="w-full bg-gray-100 rounded-t-2xl group-hover:bg-cyan-500 transition-all cursor-pointer shadow-sm">
-                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-black shadow-xl">
+                                    <div style={{ height: `${h}%` }} className="w-full bg-gray-100 rounded-t-2xl group-hover:bg-cyan-500 transition-all cursor-pointer">
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-black">
                                             ${h * 15}
                                         </div>
                                     </div>
@@ -138,24 +133,20 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                         <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Upcoming Revenue</h3>
                         <div className="space-y-5">
                             {localBookings.filter(b => b.status === 'confirmed').slice(0, 3).map(b => (
-                                <div key={b.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl border border-gray-100 transition-all hover:bg-gray-50">
+                                <div key={b.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl">
                                     <div className="flex items-center gap-5">
-                                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-50 text-cyan-600">
+                                        <div className="p-3 bg-white rounded-2xl shadow-sm text-cyan-600">
                                             <PackageIcon className="h-6 w-6" />
                                         </div>
                                         <div>
                                             <p className="text-base font-black text-gray-900 leading-tight">{b.listing.title}</p>
-                                            <p className="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">{format(new Date(b.startDate), 'MMM dd, yyyy')}</p>
+                                            <p className="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">{format(new Date(b.startDate), 'MMM dd')}</p>
                                         </div>
                                     </div>
-                                    <p className="text-lg font-black text-gray-900 tracking-tight">${b.totalPrice}</p>
+                                    <p className="text-lg font-black text-gray-900">${b.totalPrice}</p>
                                 </div>
                             ))}
-                            {localBookings.filter(b => b.status === 'confirmed').length === 0 && (
-                                <div className="py-20 text-center">
-                                    <p className="text-gray-400 font-bold italic">No pending payouts.</p>
-                                </div>
-                            )}
+                            {localBookings.filter(b => b.status === 'confirmed').length === 0 && <p className="text-center py-20 text-gray-400 italic font-bold">No pending payouts.</p>}
                         </div>
                     </div>
                 </div>
@@ -171,15 +162,15 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                 <div className="animate-in fade-in duration-500">
                     <div className="flex justify-between items-center mb-10">
                         <h2 className="text-4xl font-black text-gray-900 tracking-tighter">My Equipment</h2>
-                        <button onClick={() => onNavigate('createListing')} className="px-8 py-3.5 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 transition-all shadow-xl shadow-cyan-100 uppercase tracking-widest">+ List New Gear</button>
+                        <button onClick={() => onNavigate('createListing')} className="px-8 py-3.5 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 shadow-xl uppercase tracking-widest">+ List New Gear</button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {listings.map(l => (
                             <div key={l.id} className="relative group">
                                 <ListingCard listing={l} onClick={onListingClick || (() => {})} />
                                 <div className="absolute top-5 right-5 flex gap-3 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                                    <button onClick={(e) => { e.stopPropagation(); onEditListing?.(l.id); }} className="p-3.5 bg-white rounded-2xl shadow-2xl text-gray-600 hover:text-cyan-600 hover:scale-110 active:scale-95 transition-all border border-gray-50"><PencilIcon className="h-5 w-5"/></button>
-                                    <button onClick={(e) => { e.stopPropagation(); onDeleteListing(l.id); }} className="p-3.5 bg-white rounded-2xl shadow-2xl text-gray-600 hover:text-red-600 hover:scale-110 active:scale-95 transition-all border border-gray-50"><TrashIcon className="h-5 w-5"/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); onEditListing?.(l.id); }} className="p-3.5 bg-white rounded-2xl shadow-2xl text-gray-600 hover:text-cyan-600 transition-all"><PencilIcon className="h-5 w-5"/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); onDeleteListing(l.id); }} className="p-3.5 bg-white rounded-2xl shadow-2xl text-gray-600 hover:text-red-600 transition-all"><TrashIcon className="h-5 w-5"/></button>
                                 </div>
                             </div>
                         ))}
@@ -203,44 +194,37 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
             );
             case 'profile': return (
                 <div className="space-y-8 animate-in fade-in duration-500">
-                    <div className="bg-white rounded-[3rem] shadow-xl shadow-gray-100/50 border border-gray-50 overflow-hidden">
+                    <div className="bg-white rounded-[3rem] shadow-xl border border-gray-50 overflow-hidden">
                         <div className="h-48 bg-gradient-to-r from-cyan-400 via-indigo-500 to-blue-600"></div>
                         <div className="px-12 pb-12">
                             <div className="relative -mt-20 mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-8">
-                                <div className="relative group mx-auto sm:mx-0">
+                                <div className="relative mx-auto sm:mx-0">
                                     <div className="w-40 h-40 rounded-[2.5rem] border-[8px] border-white shadow-2xl bg-white overflow-hidden">
                                         <ImageUploader currentImageUrl={user.avatarUrl} onImageChange={(url) => onUpdateAvatar(user.id, url)} label="" />
-                                    </div>
-                                    <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-3 rounded-2xl border-4 border-white shadow-xl">
-                                        <PencilIcon className="h-5 w-5" />
                                     </div>
                                 </div>
                                 <div className="flex-1 text-center sm:text-left">
                                     <h2 className="text-4xl font-black text-gray-900 tracking-tight">{user.name}</h2>
                                     <p className="text-gray-500 font-bold mt-1 text-lg">@{user.email.split('@')[0]}</p>
                                 </div>
-                                <button onClick={() => onViewPublicProfile(user.id)} className="px-8 py-3.5 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl uppercase tracking-widest">View Public Bio</button>
+                                <button onClick={() => onViewPublicProfile(user.id)} className="px-8 py-3.5 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black uppercase tracking-widest">View Public Bio</button>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 border-t border-gray-50 pt-12">
                                 <div className="md:col-span-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-5 block">Personal Mission</label>
                                     <textarea 
                                         defaultValue={user.bio} 
-                                        className="w-full border-gray-100 bg-gray-50/30 rounded-[2rem] p-8 text-sm text-gray-700 focus:ring-2 focus:ring-cyan-500 transition-all outline-none" 
+                                        className="w-full border-gray-100 bg-gray-50/30 rounded-[2rem] p-8 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-cyan-500" 
                                         placeholder="Share your adventure story..." 
                                         rows={6} 
                                     />
-                                    <button onClick={() => onUpdateProfile(user.bio || '', user.avatarUrl)} className="mt-6 px-8 py-3 bg-cyan-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-cyan-100">Update Profile</button>
+                                    <button onClick={() => onUpdateProfile(user.bio || '', user.avatarUrl)} className="mt-6 px-8 py-3 bg-cyan-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest">Update Profile</button>
                                 </div>
                                 <div className="space-y-8">
                                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Trust Assets</h4>
                                     <div className={`flex items-center gap-4 p-5 rounded-3xl border ${user.isIdVerified ? 'bg-indigo-50/50 border-indigo-100 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-300'}`}>
                                         <ShieldCheckIcon className="h-7 w-7" />
                                         <span className="text-sm font-black uppercase tracking-tight">Identity Verified</span>
-                                    </div>
-                                    <div className={`flex items-center gap-4 p-5 rounded-3xl border ${user.isPhoneVerified ? 'bg-green-50/50 border-green-100 text-green-700' : 'bg-gray-50 border-gray-100 text-gray-300'}`}>
-                                        <PhoneIcon className="h-7 w-7" />
-                                        <span className="text-sm font-black uppercase tracking-tight">Mobile Linked</span>
                                     </div>
                                 </div>
                             </div>
@@ -251,9 +235,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
             case 'security': return (
                  <div className="space-y-8 animate-in fade-in duration-500">
                     <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-xl shadow-gray-100/50">
-                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">Trust & ID</h3>
-                        <p className="text-gray-500 font-medium mb-10">Verification status and account protection.</p>
-                        
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-10">Trust & ID</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isIdVerified ? 'bg-green-50 border-green-200' : 'bg-white border-dashed border-gray-200'}`}>
                                 <div className="flex justify-between items-start mb-6">
@@ -262,7 +244,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                 </div>
                                 <h4 className="font-black text-gray-900 text-xl">Identity Shield</h4>
                                 <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Government ID scan and facial biometrics required for high-value rentals.</p>
-                                {!user.isIdVerified && <button onClick={() => onVerificationUpdate(user.id, 'id')} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-200 uppercase tracking-widest">Complete Verification</button>}
+                                {!user.isIdVerified && <button onClick={() => onVerificationUpdate(user.id, 'id')} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black uppercase tracking-widest">Complete Verification</button>}
                             </div>
 
                             <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isPhoneVerified ? 'bg-blue-50 border-blue-200' : 'bg-white border-dashed border-gray-200'}`}>
@@ -272,20 +254,20 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                 </div>
                                 <h4 className="font-black text-gray-900 text-xl">Mobile Auth</h4>
                                 <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Two-factor authentication for withdrawals and booking security alerts.</p>
-                                {!user.isPhoneVerified && <button onClick={() => onVerificationUpdate(user.id, 'phone')} className="mt-8 w-full py-4 bg-blue-600 text-white text-xs font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 uppercase tracking-widest">Verify Mobile</button>}
+                                {!user.isPhoneVerified && <button onClick={() => onVerificationUpdate(user.id, 'phone')} className="mt-8 w-full py-4 bg-blue-600 text-white text-xs font-black rounded-2xl hover:bg-blue-700 uppercase tracking-widest">Verify Mobile</button>}
                             </div>
                         </div>
                     </div>
                 </div>
             );
             case 'billing': return (
-                <div className="bg-white p-12 rounded-[3rem] border border-gray-100 shadow-xl shadow-gray-100/50 text-center animate-in fade-in duration-500">
+                <div className="bg-white p-12 rounded-[3rem] border border-gray-100 shadow-xl text-center animate-in fade-in duration-500">
                     <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8 text-gray-300">
                         <DollarSignIcon className="h-10 w-10" />
                     </div>
                     <h3 className="text-2xl font-black text-gray-900 tracking-tighter">Payout Settings</h3>
                     <p className="text-gray-500 mt-3 max-w-sm mx-auto font-medium">Connect your local bank account or Zelle to receive your rental earnings automatically.</p>
-                    <button className="mt-10 px-10 py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl uppercase tracking-widest">Setup Payouts</button>
+                    <button className="mt-10 px-10 py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black uppercase tracking-widest">Setup Payouts</button>
                 </div>
             );
             default: return <div className="py-20 text-center text-gray-300 italic animate-pulse">Loading section...</div>;
@@ -312,13 +294,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                     {tab.name}
                                 </button>
                             ))}
-                            <div className="mt-10 px-5 pb-5">
-                                <div className="bg-indigo-600/10 rounded-3xl p-6 border border-white/5">
-                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Help System</p>
-                                    <p className="text-xs text-indigo-100 font-bold leading-relaxed mb-4">Need help with your empire? Our AI strategist is online.</p>
-                                    <button onClick={() => onNavigate('aiAssistant')} className="text-[10px] font-black text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1 uppercase tracking-widest">Contact Support &rarr;</button>
-                                </div>
-                            </div>
                         </div>
                     </aside>
                     <main className="flex-1 overflow-hidden">{renderContent()}</main>
