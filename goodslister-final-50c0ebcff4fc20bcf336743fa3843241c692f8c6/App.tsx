@@ -106,13 +106,30 @@ const App: React.FC = () => {
     };
 
     const handleVerificationUpdate = async (userId: string, verificationType: 'email' | 'phone' | 'id') => {
-        const updatedUsers = await mockApi.updateUserVerification(userId, verificationType);
-        updateAppData({ users: updatedUsers });
-        const updatedSessionUser = updatedUsers.find(u => u.id === session?.id);
-        if (updatedSessionUser && session) {
-             setSession(s => s ? {...s, ...updatedSessionUser} : null);
+        // Optimistic session update for better UX
+        setSession(s => {
+            if (!s) return null;
+            const updates: Partial<Session> = {};
+            if (verificationType === 'phone') updates.isPhoneVerified = true;
+            if (verificationType === 'id') updates.isIdVerified = true;
+            if (verificationType === 'email') updates.isEmailVerified = true;
+            return { ...s, ...updates };
+        });
+
+        try {
+            const updatedUsers = await mockApi.updateUserVerification(userId, verificationType);
+            updateAppData({ users: updatedUsers });
+            
+            // Sync session with fresh DB data just in case
+            const freshUser = updatedUsers.find(u => u.id === userId);
+            if (freshUser) {
+                setSession(s => s ? { ...s, ...freshUser } : null);
+            }
+            
+            addNotification('success', 'Verified', `Your ${verificationType === 'phone' ? 'phone number' : verificationType} has been verified.`);
+        } catch (e) {
+            addNotification('message', 'Sync Error', 'Verified locally, but failed to save to server. Please refresh.');
         }
-        addNotification('success', 'Verified', `Your ${verificationType} has been successfully verified.`);
     };
 
     const renderPage = () => {

@@ -1,4 +1,3 @@
-
 // services/mockApiService.ts
 import { 
     User, Listing, HeroSlide, Banner, Conversation, 
@@ -278,7 +277,18 @@ export const addBanner = async (b: Banner) => { await sendAdminAction('addBanner
 export const deleteBanner = async (id: string) => { await sendAdminAction('deleteBanner', { id }); return []; };
 export const toggleFeaturedListing = async (id: string) => { await sendAdminAction('toggleFeatured', { id }); return []; };
 export const updateCategoryImage = async (category: ListingCategory, url: string) => { await sendAdminAction('updateCategoryImage', { category, url }); return {}; };
-export const updateUserVerification = async (userId: string, type: string) => { await sendAdminAction('updateUserVerification', { userId, type }); return []; };
-export const updateUserAvatar = async (userId: string, url: string) => { await sendAdminAction('updateUserAvatar', { userId, url }); return []; };
+
+export const updateUserVerification = async (userId: string, type: string) => { 
+    await sendAdminAction('updateUserVerification', { userId, type }); 
+    const data = await fetchAllData();
+    return data.users; 
+};
+
+export const updateUserAvatar = async (userId: string, url: string) => { 
+    await sendAdminAction('updateUserAvatar', { userId, url }); 
+    const data = await fetchAllData();
+    return data.users;
+};
+
 export const updateListingImage = async (listingId: string, newImageUrl: string) => { await sendAdminAction('updateListingImage', { listingId, newImageUrl }); return []; };
 export const updatePaymentApiKey = async (k: string) => k;
