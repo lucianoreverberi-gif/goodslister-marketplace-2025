@@ -367,41 +367,63 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
     const [error, setError] = useState('');
 
     const handleSendCode = async () => {
-        if (!phone || phone.length < 10) {
-            setError("Please enter a valid phone number.");
+        if (!phone || phone.replace(/\D/g, '').length < 10) {
+            setError("Please enter a valid 10-digit phone number.");
             return;
         }
         setError('');
         setIsLoading(true);
+
+        // Twilio requiere formato internacional E.164 (Ej: +17866581019)
+        const formattedPhone = phone.startsWith('+') ? phone : `+1${phone.replace(/\D/g, '')}`;
+
         try {
             const res = await fetch('/api/verify/phone', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'send', phoneNumber: phone })
+                body: JSON.stringify({ action: 'send', phoneNumber: formattedPhone })
             });
-            if (res.ok) setStep('code');
-            else setError('Failed to send code.');
-        } catch (e) { setError('Connection error.'); }
-        finally { setIsLoading(false); }
+            const data = await res.json();
+            
+            if (res.ok) {
+                setStep('code');
+            } else {
+                setError(data.error || 'Failed to send code. Check number format.');
+            }
+        } catch (e) { 
+            setError('Connection error. Try again.'); 
+        } finally { 
+            setIsLoading(false); 
+        }
     };
 
     const handleVerify = async () => {
-        if (!code || code.length !== 6) return;
+        if (!code || code.length !== 6) {
+            setError("Enter 6-digit code.");
+            return;
+        }
         setError('');
         setIsLoading(true);
+        const formattedPhone = phone.startsWith('+') ? phone : `+1${phone.replace(/\D/g, '')}`;
+
         try {
             const res = await fetch('/api/verify/phone', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'verify', phoneNumber: phone, code })
+                body: JSON.stringify({ action: 'verify', phoneNumber: formattedPhone, code })
             });
             const data = await res.json();
             if (res.ok && data.status === 'approved') {
                 onSuccess();
                 onClose();
-            } else setError('Invalid code.');
-        } catch (e) { setError('Verification failed.'); }
-        finally { setIsLoading(false); }
+            } else {
+                setError(data.message || 'Invalid code.');
+            }
+        } catch (e) { 
+            setError('Verification failed.'); 
+        } finally { 
+            setIsLoading(false); 
+        }
     };
 
     return (
@@ -416,10 +438,19 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
                         <p className="text-sm text-gray-500 font-medium">We'll send a 6-digit code to your mobile device.</p>
                         <div>
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Mobile Number</label>
-                            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 000 000 0000" className="w-full border-gray-100 bg-gray-50 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" />
+                            <div className="relative">
+                                <span className="absolute left-3 top-3.5 text-gray-400 text-sm font-bold">+1</span>
+                                <input 
+                                    type="tel" 
+                                    value={phone} 
+                                    onChange={e => setPhone(e.target.value)} 
+                                    placeholder="7866581019" 
+                                    className="w-full border-gray-100 bg-gray-50 rounded-2xl p-4 pl-10 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" 
+                                />
+                            </div>
                         </div>
-                        {error && <p className="text-xs text-red-600">{error}</p>}
-                        <button onClick={handleSendCode} disabled={!phone || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px]">
+                        {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
+                        <button onClick={handleSendCode} disabled={!phone || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px] shadow-xl">
                             {isLoading ? 'Sending...' : 'Send SMS Code'}
                         </button>
                     </div>
@@ -427,10 +458,11 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
                     <div className="space-y-6 animate-in slide-in-from-right-4">
                         <div className="text-center"><p className="text-sm text-gray-500 font-medium">Enter the code sent to</p><p className="font-black text-gray-900 mt-1">{phone}</p></div>
                         <input type="text" value={code} onChange={e => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0,6))} placeholder="000000" className="w-full text-center text-3xl font-black tracking-[0.5em] border-b-2 border-gray-100 focus:border-cyan-500 outline-none pb-4" />
-                        {error && <p className="text-xs text-red-600 text-center">{error}</p>}
-                        <button onClick={handleVerify} disabled={code.length !== 6 || isLoading} className="w-full py-4 bg-cyan-600 text-white font-black rounded-2xl hover:bg-cyan-700 uppercase tracking-widest text-[10px]">
+                        {error && <p className="text-xs text-red-600 text-center font-bold">{error}</p>}
+                        <button onClick={handleVerify} disabled={code.length !== 6 || isLoading} className="w-full py-4 bg-cyan-600 text-white font-black rounded-2xl hover:bg-cyan-700 uppercase tracking-widest text-[10px] shadow-xl">
                             {isLoading ? 'Verifying...' : 'Verify Code'}
                         </button>
+                        <button onClick={() => setStep('input')} className="w-full text-xs text-gray-400 hover:text-gray-600">Change number</button>
                     </div>
                 )}
             </div>
@@ -460,7 +492,7 @@ const IdVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void
                 <div className="space-y-6">
                     <p className="text-sm text-gray-500 font-medium">Upload a clear photo of your government-issued ID.</p>
                     <ImageUploader label="Front of ID" currentImageUrl={front} onImageChange={setFront} />
-                    <button onClick={handleSubmit} disabled={!front || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px]">
+                    <button onClick={handleSubmit} disabled={!front || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px] shadow-xl">
                         {isLoading ? 'Processing ID...' : 'Submit for Review'}
                     </button>
                 </div>
