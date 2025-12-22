@@ -4,12 +4,12 @@ import {
     PackageIcon, DollarSignIcon, BarChartIcon, StarIcon, 
     ShieldIcon, CalendarIcon, PencilIcon, XIcon, 
     HeartIcon, UserCheckIcon, TrashIcon, TrendUpIcon, 
-    ShieldCheckIcon, PhoneIcon, LockIcon, AlertTriangleIcon
+    ShieldCheckIcon, PhoneIcon, LockIcon, AlertTriangleIcon,
+    SmartphoneIcon, CreditCardIcon
 } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import ListingCard from './ListingCard';
-import RentalSessionWizard from './RentalSessionWizard';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -39,6 +39,8 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
     const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [showIdModal, setShowIdModal] = useState(false);
 
     useEffect(() => { setLocalBookings(bookings); }, [bookings]);
 
@@ -179,10 +181,16 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                 </div>
             );
             case 'bookings': return <BookingsManager bookings={localBookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
-            case 'security': return <SecurityManager user={user} onVerificationUpdate={onVerificationUpdate} onChangePassword={onChangePassword} onDeleteAccount={onDeleteAccount} />;
+            case 'security': return (
+                <>
+                    <SecurityManager user={user} onOpenPhone={() => setShowPhoneModal(true)} onOpenId={() => setShowIdModal(true)} onChangePassword={onChangePassword} onDeleteAccount={onDeleteAccount} />
+                    {showPhoneModal && <PhoneVerificationModal onClose={() => setShowPhoneModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'phone')} />}
+                    {showIdModal && <IdVerificationModal onClose={() => setShowIdModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'id')} />}
+                </>
+            );
             case 'profile': return (
                 <div className="space-y-8 animate-in fade-in duration-500">
-                    <div className="bg-white rounded-[3rem] shadow-xl border border-gray-50 overflow-hidden">
+                    <div className="bg-white rounded-[3rem] shadow-xl border border-gray-100 overflow-hidden">
                         <div className="h-48 bg-gradient-to-r from-cyan-400 via-indigo-500 to-blue-600"></div>
                         <div className="px-12 pb-12">
                             <div className="relative -mt-20 mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-8">
@@ -257,7 +265,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
     );
 };
 
-const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onChangePassword?: any, onDeleteAccount?: any }> = ({ user, onVerificationUpdate, onChangePassword, onDeleteAccount }) => {
+const SecurityManager: React.FC<{ user: Session, onOpenPhone: () => void, onOpenId: () => void, onChangePassword?: any, onDeleteAccount?: any }> = ({ user, onOpenPhone, onOpenId, onChangePassword, onDeleteAccount }) => {
     const [currentPass, setCurrentPass] = useState('');
     const [newPass, setNewPass] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
@@ -277,11 +285,9 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onCh
 
     return (
         <div className="space-y-12 animate-in fade-in duration-500">
-            {/* Trust & Verifications */}
             <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-xl">
                 <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-10">Identity & Trust</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* ID Verification */}
                     <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isIdVerified ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-dashed border-gray-200'}`}>
                         <div className="flex justify-between items-start mb-6">
                             <div className={`p-4 rounded-2xl ${user.isIdVerified ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}><UserCheckIcon className="h-8 w-8" /></div>
@@ -289,10 +295,9 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onCh
                         </div>
                         <h4 className="font-black text-gray-900 text-xl">Government ID</h4>
                         <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Required for high-value rentals and boat charters.</p>
-                        {!user.isIdVerified && <button onClick={() => onVerificationUpdate(user.id, 'id')} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-200 uppercase tracking-widest">Verify Identity</button>}
+                        {!user.isIdVerified && <button onClick={onOpenId} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-200 uppercase tracking-widest">Verify Identity</button>}
                     </div>
 
-                    {/* SMS Verification (RESTAURADO) */}
                     <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isPhoneVerified ? 'bg-green-50 border-green-100' : 'bg-white border-dashed border-gray-200'}`}>
                         <div className="flex justify-between items-start mb-6">
                             <div className={`p-4 rounded-2xl ${user.isPhoneVerified ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}><PhoneIcon className="h-8 w-8" /></div>
@@ -300,12 +305,11 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onCh
                         </div>
                         <h4 className="font-black text-gray-900 text-xl">SMS Verification</h4>
                         <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Link your mobile for instant booking notifications and security.</p>
-                        {!user.isPhoneVerified && <button onClick={() => onVerificationUpdate(user.id, 'phone')} className="mt-8 w-full py-4 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 transition-all shadow-xl shadow-cyan-100 uppercase tracking-widest">Link Phone (SMS)</button>}
+                        {!user.isPhoneVerified && <button onClick={onOpenPhone} className="mt-8 w-full py-4 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 transition-all shadow-xl shadow-cyan-100 uppercase tracking-widest">Link Phone (SMS)</button>}
                     </div>
                 </div>
             </div>
 
-            {/* Password Update */}
             <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-xl">
                 <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-8">Access Management</h3>
                 <form onSubmit={handlePasswordChange} className="max-w-md space-y-6">
@@ -323,7 +327,6 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onCh
                 </form>
             </div>
 
-            {/* Danger Zone */}
             <div className="bg-red-50 p-10 rounded-[3rem] border border-red-100 shadow-sm">
                 <h3 className="text-2xl font-black text-red-900 tracking-tighter mb-4 flex items-center gap-3">
                     <AlertTriangleIcon className="h-6 w-6" /> Danger Zone
@@ -352,6 +355,116 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onCh
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => {
+    const [step, setStep] = useState<'input' | 'code'>('input');
+    const [phone, setPhone] = useState('');
+    const [code, setCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSendCode = async () => {
+        if (!phone || phone.length < 10) {
+            setError("Please enter a valid phone number.");
+            return;
+        }
+        setError('');
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/verify/phone', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'send', phoneNumber: phone })
+            });
+            if (res.ok) setStep('code');
+            else setError('Failed to send code.');
+        } catch (e) { setError('Connection error.'); }
+        finally { setIsLoading(false); }
+    };
+
+    const handleVerify = async () => {
+        if (!code || code.length !== 6) return;
+        setError('');
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/verify/phone', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'verify', phoneNumber: phone, code })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'approved') {
+                onSuccess();
+                onClose();
+            } else setError('Invalid code.');
+        } catch (e) { setError('Verification failed.'); }
+        finally { setIsLoading(false); }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm p-8 relative overflow-hidden">
+                <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><XIcon className="h-6 w-6" /></button>
+                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                    <SmartphoneIcon className="h-7 w-7 text-cyan-600" /> Phone Verify
+                </h3>
+                {step === 'input' ? (
+                    <div className="space-y-6">
+                        <p className="text-sm text-gray-500 font-medium">We'll send a 6-digit code to your mobile device.</p>
+                        <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Mobile Number</label>
+                            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 000 000 0000" className="w-full border-gray-100 bg-gray-50 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" />
+                        </div>
+                        {error && <p className="text-xs text-red-600">{error}</p>}
+                        <button onClick={handleSendCode} disabled={!phone || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px]">
+                            {isLoading ? 'Sending...' : 'Send SMS Code'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-6 animate-in slide-in-from-right-4">
+                        <div className="text-center"><p className="text-sm text-gray-500 font-medium">Enter the code sent to</p><p className="font-black text-gray-900 mt-1">{phone}</p></div>
+                        <input type="text" value={code} onChange={e => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0,6))} placeholder="000000" className="w-full text-center text-3xl font-black tracking-[0.5em] border-b-2 border-gray-100 focus:border-cyan-500 outline-none pb-4" />
+                        {error && <p className="text-xs text-red-600 text-center">{error}</p>}
+                        <button onClick={handleVerify} disabled={code.length !== 6 || isLoading} className="w-full py-4 bg-cyan-600 text-white font-black rounded-2xl hover:bg-cyan-700 uppercase tracking-widest text-[10px]">
+                            {isLoading ? 'Verifying...' : 'Verify Code'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const IdVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => {
+    const [step, setStep] = useState<1 | 2>(1);
+    const [front, setFront] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async () => {
+        setIsLoading(true);
+        await new Promise(r => setTimeout(r, 2000));
+        onSuccess();
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm p-8 relative overflow-hidden">
+                <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><XIcon className="h-6 w-6" /></button>
+                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                    <CreditCardIcon className="h-7 w-7 text-indigo-600" /> ID Verify
+                </h3>
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-500 font-medium">Upload a clear photo of your government-issued ID.</p>
+                    <ImageUploader label="Front of ID" currentImageUrl={front} onImageChange={setFront} />
+                    <button onClick={handleSubmit} disabled={!front || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px]">
+                        {isLoading ? 'Processing ID...' : 'Submit for Review'}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

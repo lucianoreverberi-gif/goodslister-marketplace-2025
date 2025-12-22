@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -106,6 +105,16 @@ const App: React.FC = () => {
         }
     };
 
+    const handleVerificationUpdate = async (userId: string, verificationType: 'email' | 'phone' | 'id') => {
+        const updatedUsers = await mockApi.updateUserVerification(userId, verificationType);
+        updateAppData({ users: updatedUsers });
+        const updatedSessionUser = updatedUsers.find(u => u.id === session?.id);
+        if (updatedSessionUser && session) {
+             setSession(s => s ? {...s, ...updatedSessionUser} : null);
+        }
+        addNotification('success', 'Verified', `Your ${verificationType} has been successfully verified.`);
+    };
+
     const renderPage = () => {
         switch (page) {
             case 'explore': return <ExplorePage listings={appData.listings} onListingClick={(id) => { setSelectedListingId(id); handleNavigate('listingDetail'); }} initialFilters={initialExploreFilters} onClearInitialFilters={() => setInitialExploreFilters(null)} favorites={session?.favorites || []} onToggleFavorite={() => {}} />;
@@ -113,7 +122,7 @@ const App: React.FC = () => {
                 const l = appData.listings.find((x: any) => x.id === selectedListingId);
                 return l ? <ListingDetailPage listing={l} onBack={() => handleNavigate('explore')} onStartConversation={(list) => { setChatContext({ listing: list, recipient: list.owner }); setIsChatInboxOpen(true); }} currentUser={session} onCreateBooking={async () => ({} as any)} isFavorite={false} onToggleFavorite={() => {}} /> : null;
             case 'userDashboard':
-                return session ? <UserDashboardPage user={session} listings={appData.listings.filter((l: any) => l.owner.id === session.id)} bookings={appData.bookings.filter((b: any) => b.renterId === session.id || b.listing.owner.id === session.id)} favoriteListings={appData.listings.filter((l: any) => session.favorites?.includes(l.id))} onVerificationUpdate={() => {}} onUpdateAvatar={async () => {}} onUpdateProfile={async () => {}} onListingClick={(id) => { setSelectedListingId(id); handleNavigate('listingDetail'); }} onEditListing={(id) => { setListingToEdit(appData.listings.find((x: any) => x.id === id)); handleNavigate('editListing'); }} onToggleFavorite={() => {}} onViewPublicProfile={() => {}} onDeleteListing={async () => {}} onBookingStatusUpdate={async () => {}} onNavigate={handleNavigate} onDeleteAccount={handleDeleteAccount} onChangePassword={handleChangePassword} /> : <p>Inicia sesión</p>;
+                return session ? <UserDashboardPage user={session} listings={appData.listings.filter((l: any) => l.owner.id === session.id)} bookings={appData.bookings.filter((b: any) => b.renterId === session.id || b.listing.owner.id === session.id)} favoriteListings={appData.listings.filter((l: any) => session.favorites?.includes(l.id))} onVerificationUpdate={handleVerificationUpdate} onUpdateAvatar={async () => {}} onUpdateProfile={async () => {}} onListingClick={(id) => { setSelectedListingId(id); handleNavigate('listingDetail'); }} onEditListing={(id) => { setListingToEdit(appData.listings.find((x: any) => x.id === id)); handleNavigate('editListing'); }} onToggleFavorite={() => {}} onViewPublicProfile={() => {}} onDeleteListing={async () => {}} onBookingStatusUpdate={async () => {}} onNavigate={handleNavigate} onDeleteAccount={handleDeleteAccount} onChangePassword={handleChangePassword} /> : <p>Inicia sesión</p>;
             case 'home':
             default:
                 return <HomePage onListingClick={(id) => { setSelectedListingId(id); handleNavigate('listingDetail'); }} onCreateListing={() => handleNavigate('createListing')} onSearch={(c) => { setInitialExploreFilters(c); handleNavigate('explore'); }} onNavigate={handleNavigate} listings={appData.listings} heroSlides={appData.heroSlides} banners={appData.banners} categoryImages={appData.categoryImages} favorites={session?.favorites || []} onToggleFavorite={() => {}} />;
