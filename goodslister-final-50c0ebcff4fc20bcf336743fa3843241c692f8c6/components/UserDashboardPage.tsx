@@ -137,7 +137,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                         <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Upcoming Revenue</h3>
                         <div className="space-y-5">
                             {localBookings.filter(b => b.status === 'confirmed').slice(0, 3).map(b => (
-                                <div key={b.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl">
+                                <div key={b.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl border border-gray-100 transition-all hover:bg-gray-50">
                                     <div className="flex items-center gap-5">
                                         <div className="p-3 bg-white rounded-2xl shadow-sm text-cyan-600">
                                             <PackageIcon className="h-6 w-6" />
@@ -147,7 +147,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                             <p className="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">{format(new Date(b.startDate), 'MMM dd')}</p>
                                         </div>
                                     </div>
-                                    <p className="text-lg font-black text-gray-900">${b.totalPrice}</p>
+                                    <p className="text-lg font-black text-gray-900 tracking-tight">${b.totalPrice}</p>
                                 </div>
                             ))}
                             {localBookings.filter(b => b.status === 'confirmed').length === 0 && <p className="text-center py-20 text-gray-400 italic font-bold">No pending payouts.</p>}
@@ -252,7 +252,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                                 </div>
                                 <h4 className="font-black text-gray-900 text-xl">Identity Shield</h4>
                                 <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Government ID scan and facial biometrics required for high-value rentals.</p>
-                                {!user.isIdVerified && <button onClick={() => onVerificationUpdate(user.id, 'id')} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black uppercase tracking-widest">Complete Verification</button>}
+                                {!user.isIdVerified && <button onClick={() => onVerificationUpdate(user.id, 'id')} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-200 uppercase tracking-widest">Complete Verification</button>}
                             </div>
 
                             <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isPhoneVerified ? 'bg-blue-50 border-blue-200' : 'bg-white border-dashed border-gray-200'}`}>
@@ -312,7 +312,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
 };
 
 const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusUpdate: (id: string, status: string) => Promise<void> }> = ({ bookings, userId, onStatusUpdate }) => {
-    const [mode, setMode] = useState<'hosting' | 'renting'>('renting');
+    const [mode, setMode] = useState<'hosting' | 'renting'>('hosting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     
