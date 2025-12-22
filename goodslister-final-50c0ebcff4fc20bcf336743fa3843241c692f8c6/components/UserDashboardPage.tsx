@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Session, Listing, Booking, Page } from '../types';
+import { Session, Listing, Booking, InspectionPhoto } from '../types';
+import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
 import { 
-    PackageIcon, DollarSignIcon, BarChartIcon, StarIcon, 
-    ShieldIcon, CalendarIcon, PencilIcon, XIcon, 
-    HeartIcon, UserCheckIcon, TrashIcon, TrendUpIcon, 
-    ShieldCheckIcon, PhoneIcon, LockIcon, AlertTriangleIcon,
-    SmartphoneIcon, CreditCardIcon
+    PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, 
+    LightbulbIcon, MegaphoneIcon, WandSparklesIcon, ShieldIcon, MailIcon, 
+    PhoneIcon, CreditCardIcon, CheckCircleIcon, CalendarIcon, EyeIcon, 
+    PencilIcon, RocketIcon, XIcon, LandmarkIcon, CalculatorIcon, 
+    UmbrellaIcon, SmartphoneIcon, CameraFaceIcon, ScanIcon, 
+    FileWarningIcon, GavelIcon, CameraIcon, HeartIcon, 
+    UserCheckIcon, TrashIcon, AlertTriangleIcon, SparklesIcon,
+    ChevronRightIcon, ChevronLeftIcon, InfoIcon, ShieldCheckIcon
 } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import ListingCard from './ListingCard';
+import RentalSessionWizard from './RentalSessionWizard';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -25,332 +30,351 @@ interface UserDashboardPageProps {
     onViewPublicProfile: (userId: string) => void;
     onDeleteListing: (listingId: string) => Promise<void>;
     onBookingStatusUpdate: (bookingId: string, status: string) => Promise<void>;
-    onNavigate: (page: Page) => void;
-    onDeleteAccount?: () => Promise<void>;
-    onChangePassword?: (current: string, next: string) => Promise<boolean>;
 }
 
-type DashboardTab = 'analytics' | 'bookings' | 'listings' | 'favorites' | 'profile' | 'security' | 'billing';
+type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'aiAssistant' | 'security' | 'favorites';
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ 
     user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onUpdateProfile,
-    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate, onNavigate,
-    onDeleteAccount, onChangePassword
+    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate 
 }) => {
-    const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
-    const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
+    const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
     const [showPhoneModal, setShowPhoneModal] = useState(false);
     const [showIdModal, setShowIdModal] = useState(false);
-
-    useEffect(() => { setLocalBookings(bookings); }, [bookings]);
+    const [listingToDelete, setListingToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
-        { id: 'analytics', name: 'Performance', icon: BarChartIcon },
-        { id: 'bookings', name: 'Reservations', icon: CalendarIcon },
+        { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon },
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
+        { id: 'bookings', name: 'My Bookings', icon: CalendarIcon },
         { id: 'favorites', name: 'Saved Items', icon: HeartIcon },
-        { id: 'profile', name: 'Public Profile', icon: UserCheckIcon },
-        { id: 'security', name: 'Security & ID', icon: ShieldIcon },
-        { id: 'billing', name: 'Payouts', icon: DollarSignIcon },
+        { id: 'security', name: 'Security & Verification', icon: ShieldIcon },
+        { id: 'billing', name: 'Billing', icon: DollarSignIcon },
+        { id: 'analytics', name: 'Analytics', icon: BarChartIcon },
+        { id: 'aiAssistant', name: 'AI Assistant', icon: BrainCircuitIcon },
     ];
 
-    const renderAnalytics = () => {
-        const totalEarnings = localBookings
-            .filter(b => b.status === 'completed' || b.status === 'active')
-            .reduce((acc, curr) => acc + (curr.balanceDueOnSite || curr.totalPrice), 0);
+    const handleDeleteConfirm = async () => {
+        if (!listingToDelete) return;
+        setIsDeleting(true);
+        try {
+            await onDeleteListing(listingToDelete);
+            setListingToDelete(null); 
+        } catch (e) {
+            console.error(e);
+            alert("Failed to delete listing.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // --- SUB-COMPONENTS ---
+
+    const ProfileSettingsTab: React.FC = () => {
+        const [bio, setBio] = useState(user.bio || '');
+        const [avatar, setAvatar] = useState(user.avatarUrl);
+        const [isSaving, setIsSaving] = useState(false);
+        const [saveMessage, setSaveMessage] = useState('');
         
-        const avgRating = listings.length > 0 
-            ? listings.reduce((acc, l) => acc + l.rating, 0) / listings.length 
-            : 5.0;
+        const handleSave = async () => { 
+            setIsSaving(true); 
+            await onUpdateProfile(bio, avatar); 
+            setSaveMessage('Saved!'); 
+            setIsSaving(false); 
+            setTimeout(() => setSaveMessage(''), 3000);
+        };
 
         return (
-            <div className="space-y-12 animate-in fade-in duration-700">
-                <div className="flex justify-between items-end">
-                    <div>
-                        <h2 className="text-5xl font-black text-gray-900 tracking-tighter">Dashboard</h2>
-                        <p className="text-gray-500 font-medium mt-2 text-lg">Real-time performance of your adventure gear.</p>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 space-y-8 animate-in fade-in duration-500">
+                <div className="flex flex-col sm:flex-row gap-8 items-center sm:items-start">
+                    <div className="w-32 h-32 relative group">
+                        <div className="w-full h-full rounded-full overflow-hidden border-4 border-gray-50 shadow-md">
+                             <ImageUploader currentImageUrl={avatar} onImageChange={setAvatar} label="" />
+                        </div>
+                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center pointer-events-none transition-opacity">
+                            <CameraIcon className="text-white h-6 w-6" />
+                        </div>
                     </div>
-                    <div className="bg-white px-5 py-2.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-2 mb-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
-                        <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Live Updates</span>
+                    <div className="flex-1 text-center sm:text-left">
+                        <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
+                        <p className="text-sm text-gray-500 mt-1">Manage your public identity and profile bio.</p>
+                        <button onClick={() => onViewPublicProfile(user.id)} className="mt-4 text-xs font-bold text-cyan-600 border border-cyan-600 px-3 py-1 rounded-full hover:bg-cyan-50 transition-colors">View Public Profile</button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 relative overflow-hidden group">
-                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] relative z-10">Total Earnings</p>
-                        <p className="text-4xl font-black text-gray-900 mt-3 relative z-10">${totalEarnings.toLocaleString()}</p>
-                        <div className="mt-5 flex items-center gap-1.5 text-green-500 font-black text-xs relative z-10">
-                            <TrendUpIcon className="h-4 w-4" /> +12.4%
-                        </div>
-                        <div className="absolute -right-6 -top-6 text-gray-50/50">
-                            <DollarSignIcon className="h-32 w-32" />
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Active Listings</p>
-                        <p className="text-4xl font-black text-gray-900 mt-3">{listings.length}</p>
-                        <div className="mt-5 flex items-center gap-2">
-                             <div className="flex -space-x-2.5">
-                                 {listings.slice(0, 3).map((l, i) => <img key={i} src={l.images[0]} className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm" />)}
-                             </div>
-                             <span className="text-[11px] font-black text-gray-400 ml-1">Live gear</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 group">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Avg. Rating</p>
-                        <p className="text-4xl font-black text-gray-900 mt-3">{avgRating.toFixed(1)}</p>
-                        <div className="mt-5 flex text-yellow-400 gap-0.5">
-                            {[1,2,3,4,5].map(i => <StarIcon key={i} className="h-4 w-4" />)}
-                        </div>
-                    </div>
-
-                    <div className="bg-[#2d2d5f] p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
-                        <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] relative z-10">Visibility</p>
-                        <p className="text-4xl font-black mt-3 relative z-10">1.2k</p>
-                        <div className="mt-6 h-2 w-full bg-white/10 rounded-full overflow-hidden relative z-10">
-                            <div className="h-full bg-cyan-400 w-3/4 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.5)]"></div>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-transparent"></div>
-                    </div>
+                <div className="space-y-4">
+                    <label className="block font-bold text-gray-700 uppercase text-xs tracking-widest">Public Bio</label>
+                    <textarea 
+                        value={bio} 
+                        onChange={e => setBio(e.target.value)} 
+                        className="w-full border border-gray-200 rounded-xl p-4 text-gray-700 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all" 
+                        rows={6} 
+                        placeholder="Tell others about your adventure style..."
+                    />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div className="bg-white p-10 rounded-[3rem] border border-gray-50 shadow-sm min-h-[400px]">
-                        <h3 className="text-2xl font-black text-gray-900 mb-10 tracking-tight">Revenue Flow</h3>
-                        <div className="h-64 flex items-end gap-4 px-2">
-                            {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center group relative">
-                                    <div style={{ height: `${h}%` }} className="w-full bg-gray-100 rounded-t-2xl group-hover:bg-cyan-500 transition-all cursor-pointer">
-                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-black">
-                                            ${h * 15}
-                                        </div>
-                                    </div>
-                                    <span className="text-[10px] font-black text-gray-300 mt-5 uppercase tracking-widest">Day {i+1}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-10 rounded-[3rem] border border-gray-50 shadow-sm">
-                        <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Upcoming Payouts</h3>
-                        <div className="space-y-5">
-                            {localBookings.filter(b => b.status === 'confirmed').slice(0, 3).map(b => (
-                                <div key={b.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl border border-gray-100 transition-all hover:bg-gray-50">
-                                    <div className="flex items-center gap-5">
-                                        <div className="p-3 bg-white rounded-2xl shadow-sm text-cyan-600">
-                                            <PackageIcon className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-base font-black text-gray-900 leading-tight">{b.listing.title}</p>
-                                            <p className="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">{format(new Date(b.startDate), 'MMM dd')}</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-lg font-black text-gray-900 tracking-tight">${b.totalPrice}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={handleSave} 
+                        disabled={isSaving}
+                        className="px-8 py-3 bg-cyan-600 text-white font-bold rounded-xl shadow-lg hover:bg-cyan-700 disabled:opacity-50 transition-all transform active:scale-95"
+                    >
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    {saveMessage && (
+                        <span className="text-green-600 font-bold flex items-center gap-1 animate-in slide-in-from-left-2">
+                            <CheckCircleIcon className="h-5 w-5" />
+                            {saveMessage}
+                        </span>
+                    )}
                 </div>
             </div>
         );
     };
 
+    const AIOptimizer: React.FC = () => {
+        const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+        const [advice, setAdvice] = useState<string>('');
+        const [isLoading, setIsLoading] = useState(false);
+        const [activeType, setActiveType] = useState<ListingAdviceType | null>(null);
+
+        const handleGetAdvice = async (type: ListingAdviceType) => {
+            const listing = listings.find(l => l.id === selectedListingId);
+            if (!listing) return;
+            
+            setIsLoading(true);
+            setActiveType(type);
+            setAdvice('');
+            try {
+                const res = await getListingAdvice(listing, type);
+                setAdvice(res);
+            } catch (e) {
+                setAdvice("Failed to generate AI advice. Please try again.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        return (
+            <div className="space-y-8 animate-in fade-in duration-500">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="bg-indigo-100 p-3 rounded-full text-indigo-600">
+                            <BrainCircuitIcon className="h-8 w-8" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900">AI Listing Strategist</h2>
+                            <p className="text-gray-500 text-sm">Optimize your performance and beat the local competition.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                            <label className="block text-sm font-bold text-gray-700">Choose a listing to analyze</label>
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                {listings.map(l => (
+                                    <div 
+                                        key={l.id} 
+                                        onClick={() => setSelectedListingId(l.id)}
+                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${selectedListingId === l.id ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-gray-100 hover:border-indigo-200 bg-white'}`}
+                                    >
+                                        <img src={l.images[0]} className="w-12 h-12 rounded-lg object-cover" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-gray-900 truncate text-sm">{l.title}</p>
+                                            <p className="text-xs text-gray-500">${l.pricePerDay || l.pricePerHour} / {l.pricingType}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="block text-sm font-bold text-gray-700">Pick a strategy goal</label>
+                            <div className="grid grid-cols-1 gap-3">
+                                <button onClick={() => handleGetAdvice('improvement')} disabled={!selectedListingId || isLoading} className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-left transition-all disabled:opacity-50">
+                                    <div className="bg-cyan-100 p-2 rounded-lg text-cyan-600"><WandSparklesIcon className="h-5 w-5" /></div>
+                                    <div><p className="font-bold text-gray-900 text-sm">Improve Title & Description</p><p className="text-xs text-gray-500">SEO optimization and better conversions.</p></div>
+                                </button>
+                                <button onClick={() => handleGetAdvice('pricing')} disabled={!selectedListingId || isLoading} className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-left transition-all disabled:opacity-50">
+                                    <div className="bg-green-100 p-2 rounded-lg text-green-600"><DollarSignIcon className="h-5 w-5" /></div>
+                                    <div><p className="font-bold text-gray-900 text-sm">Analyze Pricing</p><p className="text-xs text-gray-500">Get a competitive market assessment.</p></div>
+                                </button>
+                                <button onClick={() => handleGetAdvice('promotion')} disabled={!selectedListingId || isLoading} className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-left transition-all disabled:opacity-50">
+                                    <div className="bg-purple-100 p-2 rounded-lg text-purple-600"><MegaphoneIcon className="h-5 w-5" /></div>
+                                    <div><p className="font-bold text-gray-900 text-sm">Create Social Campaign</p><p className="text-xs text-gray-500">AI-written post for Instagram/Facebook.</p></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {advice && (
+                    <div className="bg-white rounded-xl shadow-lg border border-indigo-100 overflow-hidden animate-in zoom-in-95 duration-500">
+                        <div className="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex items-center justify-between">
+                            <h3 className="font-bold text-indigo-900 flex items-center gap-2"><LightbulbIcon className="h-5 w-5" /> Strategy Insights</h3>
+                            <button onClick={() => setAdvice('')} className="text-indigo-400 hover:text-indigo-600"><XIcon className="h-5 w-5" /></button>
+                        </div>
+                        <div className="p-8"><div className="prose prose-indigo max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: advice.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>').replace(/^- (.*?)$/gm, '<li class="ml-4">$1</li>') }} /></div>
+                    </div>
+                )}
+
+                {isLoading && (
+                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                        <div className="w-16 h-16 border-4 border-indigo-100 rounded-full relative">
+                            <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                            <SparklesIcon className="absolute inset-0 m-auto h-6 w-6 text-indigo-400 animate-pulse" />
+                        </div>
+                        <p className="text-indigo-600 font-bold animate-pulse">Refining strategy with AI...</p>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const VerificationItem: React.FC<{icon: React.ElementType, text: string, isVerified: boolean, onVerify: () => void}> = ({ icon: Icon, text, isVerified, onVerify }) => (
+         <li className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-transparent hover:border-gray-200 transition-all">
+            <div className="flex items-center">
+                <Icon className={`w-6 h-6 mr-4 ${isVerified ? 'text-green-600' : 'text-gray-400'}`} />
+                <span className={`font-bold ${isVerified ? 'text-gray-900' : 'text-gray-500'}`}>{text}</span>
+            </div>
+            {isVerified ? (
+                <div className="flex items-center text-green-600 font-bold text-xs uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                    <CheckCircleIcon className="w-4 h-4 mr-1.5" /> Verified
+                </div>
+            ) : (
+                <button onClick={onVerify} className="px-4 py-1.5 text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 rounded-full shadow-md">Verify</button>
+            )}
+        </li>
+    );
+
+    const SecurityTab: React.FC = () => {
+        const score = (user.isEmailVerified ? 25 : 0) + (user.isPhoneVerified ? 25 : 0) + (user.isIdVerified ? 50 : 0);
+        return (
+            <div className="space-y-8 animate-in fade-in duration-500">
+                 <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    <div className="flex flex-col items-center justify-center text-center border-b lg:border-b-0 lg:border-r pb-8 lg:pb-0 lg:pr-12">
+                        <div className="relative w-32 h-32 flex items-center justify-center rounded-full border-8 border-gray-100">
+                            <span className="text-3xl font-black text-gray-900">{score}%</span>
+                            <div className="absolute inset-0 border-8 border-cyan-500 rounded-full" style={{ clipPath: `polygon(50% 50%, -50% -50%, ${score}% -50%, ${score}% 150%, -50% 150%)` }}></div>
+                        </div>
+                        <h3 className="text-lg font-bold mt-4 text-gray-900">Trust Score</h3>
+                    </div>
+                     <div className="lg:col-span-2">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">Required Verifications</h3>
+                        <ul className="space-y-4">
+                            <VerificationItem icon={MailIcon} text="Email address" isVerified={!!user.isEmailVerified} onVerify={() => onVerificationUpdate(user.id, 'email')} />
+                            <VerificationItem icon={PhoneIcon} text="Phone SMS" isVerified={!!user.isPhoneVerified} onVerify={() => setShowPhoneModal(true)} />
+                            <VerificationItem icon={UserCheckIcon} text="Identity Document" isVerified={!!user.isIdVerified} onVerify={() => setShowIdModal(true)} />
+                        </ul>
+                    </div>
+                 </div>
+            </div>
+        );
+    };
+
+    const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusUpdate: (id: string, status: string) => Promise<void> }> = ({ bookings, userId, onStatusUpdate }) => {
+        const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
+        const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
+        const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
+        const displayedBookings = mode === 'renting' ? bookings.filter(b => b.renterId === userId) : bookings.filter(b => b.listing.owner.id === userId);
+        return (
+            <div className="animate-in fade-in duration-500">
+                {activeSessionBooking && (
+                    <div className="fixed inset-0 z-[100] bg-white overflow-y-auto">
+                        <RentalSessionWizard booking={activeSessionBooking} initialMode={sessionInitialMode} onStatusChange={(s) => onStatusUpdate(activeSessionBooking.id, s)} onComplete={() => setActiveSessionBooking(null)} />
+                    </div>
+                )}
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-4">
+                    <h2 className="text-2xl font-bold text-gray-900">Manage Reservations</h2>
+                    <div className="bg-white p-1 rounded-xl border shadow-sm flex">
+                        <button onClick={() => setMode('renting')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'renting' ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>Renting</button>
+                        <button onClick={() => setMode('hosting')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'hosting' ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>Hosting</button>
+                    </div>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50"><tr><th className="p-4 font-bold text-gray-500">Item</th><th className="p-4 font-bold text-gray-500">Dates</th><th className="p-4 font-bold text-gray-500">Status</th><th className="p-4 font-bold text-gray-500 text-right">Actions</th></tr></thead>
+                        <tbody>
+                            {displayedBookings.map(b => (
+                                <tr key={b.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                                    <td className="p-4"><p className="font-bold text-gray-900">{b.listing.title}</p></td>
+                                    <td className="p-4 text-gray-600">{format(new Date(b.startDate), 'MMM dd')} - {format(new Date(b.endDate), 'MMM dd')}</td>
+                                    <td className="p-4"><span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{b.status}</span></td>
+                                    <td className="p-4 text-right">
+                                        {b.status === 'confirmed' && <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="text-xs font-bold text-white bg-cyan-600 px-3 py-1.5 rounded-lg">Handover</button>}
+                                        {b.status === 'active' && <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="text-xs font-bold text-white bg-orange-600 px-3 py-1.5 rounded-lg">Return</button>}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    }
+
     const renderContent = () => {
         switch (activeTab) {
-            case 'analytics': return renderAnalytics();
+            case 'profile': return <ProfileSettingsTab />;
             case 'listings': return (
                 <div className="animate-in fade-in duration-500">
-                    <div className="flex justify-between items-center mb-10">
-                        <h2 className="text-4xl font-black text-gray-900 tracking-tighter">My Listings</h2>
-                        <button onClick={() => onNavigate('createListing')} className="px-8 py-3.5 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 shadow-xl uppercase tracking-widest">+ List New Gear</button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-bold text-gray-900">My Listings</h2><button className="px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl">+ Add New</button></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {listings.map(l => (
                             <div key={l.id} className="relative group">
-                                <ListingCard listing={l} onClick={onListingClick || (() => {})} />
-                                <div className="absolute top-5 right-5 flex gap-3 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                                    <button onClick={(e) => { e.stopPropagation(); onEditListing?.(l.id); }} className="p-3.5 bg-white rounded-2xl shadow-2xl text-gray-600 hover:text-cyan-600 transition-all"><PencilIcon className="h-5 w-5"/></button>
-                                    <button onClick={(e) => { e.stopPropagation(); onDeleteListing(l.id); }} className="p-3.5 bg-white rounded-2xl shadow-2xl text-gray-600 hover:text-red-600 transition-all"><TrashIcon className="h-5 w-5"/></button>
+                                <ListingCard listing={l} onClick={onListingClick || (() => {})} isFavorite={favoriteListings?.some(fl => fl.id === l.id)} onToggleFavorite={onToggleFavorite} />
+                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={(e) => { e.stopPropagation(); onEditListing?.(l.id); }} className="p-2 bg-white rounded-full shadow-lg text-gray-500 hover:text-cyan-600"><PencilIcon className="h-4 w-4" /></button>
+                                    <button onClick={(e) => { e.stopPropagation(); setListingToDelete(l.id); }} className="p-2 bg-white rounded-full shadow-lg text-gray-500 hover:text-red-600"><TrashIcon className="h-4 w-4" /></button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
             );
-            case 'bookings': return <BookingsManager bookings={localBookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
-            case 'security': return (
-                <>
-                    <SecurityManager user={user} onOpenPhone={() => setShowPhoneModal(true)} onOpenId={() => setShowIdModal(true)} onChangePassword={onChangePassword} onDeleteAccount={onDeleteAccount} />
-                    {showPhoneModal && <PhoneVerificationModal onClose={() => setShowPhoneModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'phone')} />}
-                    {showIdModal && <IdVerificationModal onClose={() => setShowIdModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'id')} />}
-                </>
-            );
-            case 'profile': return (
-                <div className="space-y-8 animate-in fade-in duration-500">
-                    <div className="bg-white rounded-[3rem] shadow-xl border border-gray-100 overflow-hidden">
-                        <div className="h-48 bg-gradient-to-r from-cyan-400 via-indigo-500 to-blue-600"></div>
-                        <div className="px-12 pb-12">
-                            <div className="relative -mt-20 mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-8">
-                                <div className="relative mx-auto sm:mx-0">
-                                    <div className="w-40 h-40 rounded-[2.5rem] border-[8px] border-white shadow-2xl bg-white overflow-hidden">
-                                        <ImageUploader currentImageUrl={user.avatarUrl} onImageChange={(url) => onUpdateAvatar(user.id, url)} label="" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 text-center sm:text-left">
-                                    <h2 className="text-4xl font-black text-gray-900 tracking-tight">{user.name}</h2>
-                                    <p className="text-gray-500 font-bold mt-1 text-lg">@{user.email.split('@')[0]}</p>
-                                </div>
-                                <button onClick={() => onViewPublicProfile(user.id)} className="px-8 py-3.5 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black uppercase tracking-widest">Public Bio</button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 border-t border-gray-50 pt-12">
-                                <div className="md:col-span-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-5 block">Personal Mission</label>
-                                    <textarea 
-                                        defaultValue={user.bio} 
-                                        className="w-full border-gray-100 bg-gray-50/30 rounded-[2rem] p-8 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-cyan-500" 
-                                        placeholder="Share your adventure story..." 
-                                        rows={6} 
-                                    />
-                                    <button onClick={() => onUpdateProfile(user.bio || '', user.avatarUrl)} className="mt-6 px-8 py-3 bg-cyan-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-cyan-100">Update Profile</button>
-                                </div>
-                                <div className="space-y-8">
-                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Trust Assets</h4>
-                                    <div className={`flex items-center gap-4 p-5 rounded-3xl border ${user.isIdVerified ? 'bg-indigo-50/50 border-indigo-100 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-300'}`}>
-                                        <ShieldCheckIcon className="h-7 w-7" />
-                                        <span className="text-sm font-black uppercase tracking-tight">Identity Verified</span>
-                                    </div>
-                                    <div className={`flex items-center gap-4 p-5 rounded-3xl border ${user.isPhoneVerified ? 'bg-green-50/50 border-green-100 text-green-700' : 'bg-gray-50 border-gray-100 text-gray-300'}`}>
-                                        <PhoneIcon className="h-7 w-7" />
-                                        <span className="text-sm font-black uppercase tracking-tight">Mobile Linked</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            case 'bookings': return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
+            case 'favorites': return (
+                <div className="animate-in fade-in duration-500">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-8">Your Saved Items</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {favoriteListings?.map(l => <ListingCard key={l.id} listing={l} onClick={onListingClick || (() => {})} isFavorite={true} onToggleFavorite={onToggleFavorite} />)}
                     </div>
                 </div>
             );
-            default: return <div className="py-20 text-center text-gray-300 italic animate-pulse">Loading section...</div>;
+            case 'security': return <SecurityTab />;
+            case 'aiAssistant': return <AIOptimizer />;
+            default: return <div className="py-20 text-center text-gray-400">Detailed analytics coming soon.</div>;
         }
     };
 
     return (
         <div className="bg-[#fcfdfe] min-h-screen">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="flex flex-col lg:flex-row gap-16">
-                    <aside className="lg:w-80 flex-shrink-0">
-                        <div className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 p-5 sticky top-28">
-                             <div className="px-4 py-8 mb-4">
-                                <p className="text-[9px] font-black text-cyan-600 uppercase tracking-[0.4em] mb-1">Control Hub</p>
-                                <p className="text-xl font-black text-gray-900 tracking-tight">Main Menu</p>
-                             </div>
-                             {tabs.map(tab => (
-                                <button 
-                                    key={tab.id} 
-                                    onClick={() => setActiveTab(tab.id)} 
-                                    className={`w-full flex items-center px-7 py-5 rounded-[1.8rem] text-sm font-black transition-all mb-2.5 ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-xl' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
-                                >
-                                    <tab.icon className={`h-5 w-5 mr-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-400'}`} /> 
-                                    {tab.name}
-                                </button>
-                            ))}
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                <div className="flex flex-col lg:flex-row gap-12">
+                    <aside className="lg:w-72 flex-shrink-0">
+                        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sticky top-24">
+                            <nav className="flex flex-col space-y-1">
+                                {tabs.map(tab => (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}><tab.icon className={`h-5 w-5 mr-3 ${activeTab === tab.id ? 'text-white' : 'text-gray-400'}`} /> {tab.name}</button>
+                                ))}
+                            </nav>
                         </div>
                     </aside>
-                    <main className="flex-1 overflow-hidden">{renderContent()}</main>
+                    <main className="flex-1 overflow-hidden min-h-[600px]">{renderContent()}</main>
                 </div>
             </div>
-        </div>
-    );
-};
-
-const SecurityManager: React.FC<{ user: Session, onOpenPhone: () => void, onOpenId: () => void, onChangePassword?: any, onDeleteAccount?: any }> = ({ user, onOpenPhone, onOpenId, onChangePassword, onDeleteAccount }) => {
-    const [currentPass, setCurrentPass] = useState('');
-    const [newPass, setNewPass] = useState('');
-    const [isUpdating, setIsUpdating] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-    const handlePasswordChange = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!onChangePassword) return;
-        setIsUpdating(true);
-        const success = await onChangePassword(currentPass, newPass);
-        if (success) {
-            setCurrentPass('');
-            setNewPass('');
-        }
-        setIsUpdating(false);
-    };
-
-    return (
-        <div className="space-y-12 animate-in fade-in duration-500">
-            <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-xl">
-                <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-10">Identity & Trust</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isIdVerified ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-dashed border-gray-200'}`}>
-                        <div className="flex justify-between items-start mb-6">
-                            <div className={`p-4 rounded-2xl ${user.isIdVerified ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}><UserCheckIcon className="h-8 w-8" /></div>
-                            {user.isIdVerified && <span className="text-[10px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">Verified</span>}
-                        </div>
-                        <h4 className="font-black text-gray-900 text-xl">Government ID</h4>
-                        <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Required for high-value rentals and boat charters.</p>
-                        {!user.isIdVerified && <button onClick={onOpenId} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-200 uppercase tracking-widest">Verify Identity</button>}
-                    </div>
-
-                    <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isPhoneVerified ? 'bg-green-50 border-green-100' : 'bg-white border-dashed border-gray-200'}`}>
-                        <div className="flex justify-between items-start mb-6">
-                            <div className={`p-4 rounded-2xl ${user.isPhoneVerified ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}><PhoneIcon className="h-8 w-8" /></div>
-                            {user.isPhoneVerified && <span className="text-[10px] font-black bg-green-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">Linked</span>}
-                        </div>
-                        <h4 className="font-black text-gray-900 text-xl">SMS Verification</h4>
-                        <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Link your mobile for instant booking notifications and security.</p>
-                        {!user.isPhoneVerified && <button onClick={onOpenPhone} className="mt-8 w-full py-4 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 transition-all shadow-xl shadow-cyan-100 uppercase tracking-widest">Link Phone (SMS)</button>}
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-xl">
-                <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-8">Access Management</h3>
-                <form onSubmit={handlePasswordChange} className="max-w-md space-y-6">
-                    <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Current Password</label>
-                        <input type="password" value={currentPass} onChange={e => setCurrentPass(e.target.value)} className="w-full border-gray-100 bg-gray-50/50 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" required />
-                    </div>
-                    <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">New Secure Password</label>
-                        <input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} className="w-full border-gray-100 bg-gray-50/50 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" required />
-                    </div>
-                    <button type="submit" disabled={isUpdating} className="px-10 py-4 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 shadow-lg shadow-cyan-100 uppercase tracking-widest">
-                        {isUpdating ? 'Updating...' : 'Update Password'}
-                    </button>
-                </form>
-            </div>
-
-            <div className="bg-red-50 p-10 rounded-[3rem] border border-red-100 shadow-sm">
-                <h3 className="text-2xl font-black text-red-900 tracking-tighter mb-4 flex items-center gap-3">
-                    <AlertTriangleIcon className="h-6 w-6" /> Danger Zone
-                </h3>
-                <p className="text-sm text-red-700 font-medium mb-8">Permanently delete your account and all associated data. This action cannot be undone.</p>
-                <button 
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="px-8 py-3.5 border-2 border-red-200 text-red-600 text-[10px] font-black rounded-2xl hover:bg-red-600 hover:text-white transition-all uppercase tracking-widest"
-                >
-                    Close Account Forever
-                </button>
-            </div>
-
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl border border-gray-100">
-                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600">
-                            <TrashIcon className="h-10 w-10" />
-                        </div>
-                        <h4 className="text-2xl font-black text-gray-900 mb-2">Are you sure?</h4>
-                        <p className="text-sm text-gray-500 font-medium mb-8 leading-relaxed">This will delete your listings, reviews, and earning history permanently.</p>
+            {showPhoneModal && <PhoneVerificationModal onClose={() => setShowPhoneModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'phone')} />}
+            {showIdModal && <IdVerificationModal onClose={() => setShowIdModal(false)} onSuccess={() => onVerificationUpdate(user.id, 'id')} />}
+            {listingToDelete && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110] animate-in fade-in">
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-gray-100">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6"><TrashIcon className="h-10 w-10 text-red-600" /></div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Delete Listing?</h3>
+                        <p className="text-gray-600 mb-8 leading-relaxed">This action cannot be undone. All future bookings for this item will be cancelled.</p>
                         <div className="flex gap-4">
-                            <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 text-xs font-black rounded-2xl hover:bg-gray-200 uppercase tracking-widest">Cancel</button>
-                            <button onClick={() => { setShowDeleteConfirm(false); onDeleteAccount?.(); }} className="flex-1 py-4 bg-red-600 text-white text-xs font-black rounded-2xl hover:bg-red-700 shadow-xl shadow-red-100 uppercase tracking-widest">Yes, Delete</button>
+                            <button onClick={() => setListingToDelete(null)} className="flex-1 py-3.5 border-2 border-gray-100 text-gray-600 font-bold rounded-xl">Keep It</button>
+                            <button onClick={handleDeleteConfirm} disabled={isDeleting} className="flex-1 py-3.5 bg-red-600 text-white font-bold rounded-xl">{isDeleting ? 'Deleting...' : 'Yes, Delete'}</button>
                         </div>
                     </div>
                 </div>
@@ -365,104 +389,45 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
     const [code, setCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-
     const handleSendCode = async () => {
-        if (!phone || phone.replace(/\D/g, '').length < 10) {
-            setError("Please enter a valid 10-digit phone number.");
-            return;
-        }
-        setError('');
-        setIsLoading(true);
-
-        // Twilio requiere formato internacional E.164 (Ej: +17866581019)
+        if (!phone || phone.replace(/\D/g, '').length < 10) { setError("Please enter a valid 10-digit phone number."); return; }
+        setError(''); setIsLoading(true);
         const formattedPhone = phone.startsWith('+') ? phone : `+1${phone.replace(/\D/g, '')}`;
-
         try {
-            const res = await fetch('/api/verify/phone', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'send', phoneNumber: formattedPhone })
-            });
+            const res = await fetch('/api/verify/phone', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'send', phoneNumber: formattedPhone }) });
             const data = await res.json();
-            
-            if (res.ok) {
-                setStep('code');
-            } else {
-                setError(data.error || 'Failed to send code. Check number format.');
-            }
-        } catch (e) { 
-            setError('Connection error. Try again.'); 
-        } finally { 
-            setIsLoading(false); 
-        }
+            if (res.ok) setStep('code'); else setError(data.error || 'Failed to send code.');
+        } catch (e) { setError('Connection error. Try again.'); } finally { setIsLoading(false); }
     };
-
     const handleVerify = async () => {
-        if (!code || code.length !== 6) {
-            setError("Enter 6-digit code.");
-            return;
-        }
-        setError('');
-        setIsLoading(true);
+        if (!code || code.length !== 6) return;
+        setError(''); setIsLoading(true);
         const formattedPhone = phone.startsWith('+') ? phone : `+1${phone.replace(/\D/g, '')}`;
-
         try {
-            const res = await fetch('/api/verify/phone', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'verify', phoneNumber: formattedPhone, code })
-            });
+            const res = await fetch('/api/verify/phone', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'verify', phoneNumber: formattedPhone, code }) });
             const data = await res.json();
-            if (res.ok && data.status === 'approved') {
-                onSuccess();
-                onClose();
-            } else {
-                setError(data.message || 'Invalid code.');
-            }
-        } catch (e) { 
-            setError('Verification failed.'); 
-        } finally { 
-            setIsLoading(false); 
-        }
+            if (res.ok && data.status === 'approved') { onSuccess(); onClose(); } else setError(data.message || 'Invalid code.');
+        } catch (e) { setError('Verification failed.'); } finally { setIsLoading(false); }
     };
-
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm p-8 relative overflow-hidden">
-                <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><XIcon className="h-6 w-6" /></button>
-                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
-                    <SmartphoneIcon className="h-7 w-7 text-cyan-600" /> Phone Verify
-                </h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden relative border border-gray-100 p-8">
+                <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"><XIcon className="h-6 w-6" /></button>
+                <div className="bg-cyan-50 w-16 h-16 rounded-full flex items-center justify-center mb-6 text-cyan-600"><SmartphoneIcon className="h-8 w-8" /></div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Verify Phone</h3>
                 {step === 'input' ? (
                     <div className="space-y-6">
-                        <p className="text-sm text-gray-500 font-medium">We'll send a 6-digit code to your mobile device.</p>
-                        <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Mobile Number</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-3.5 text-gray-400 text-sm font-bold">+1</span>
-                                <input 
-                                    type="tel" 
-                                    value={phone} 
-                                    onChange={e => setPhone(e.target.value)} 
-                                    placeholder="7866581019" 
-                                    className="w-full border-gray-100 bg-gray-50 rounded-2xl p-4 pl-10 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" 
-                                />
-                            </div>
-                        </div>
-                        {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
-                        <button onClick={handleSendCode} disabled={!phone || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px] shadow-xl">
-                            {isLoading ? 'Sending...' : 'Send SMS Code'}
-                        </button>
+                        <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Mobile Number</label>
+                        <div className="relative"><span className="absolute left-4 top-3 text-gray-400 font-bold">+1</span><input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="786-000-0000" className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500 outline-none" /></div></div>
+                        {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+                        <button onClick={handleSendCode} disabled={!phone || isLoading} className="w-full py-4 bg-gray-900 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px]">{isLoading ? 'Sending...' : 'Send Verification Code'}</button>
                     </div>
                 ) : (
                     <div className="space-y-6 animate-in slide-in-from-right-4">
-                        <div className="text-center"><p className="text-sm text-gray-500 font-medium">Enter the code sent to</p><p className="font-black text-gray-900 mt-1">{phone}</p></div>
-                        <input type="text" value={code} onChange={e => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0,6))} placeholder="000000" className="w-full text-center text-3xl font-black tracking-[0.5em] border-b-2 border-gray-100 focus:border-cyan-500 outline-none pb-4" />
+                        <div className="text-center p-4 bg-cyan-50 rounded-xl"><p className="text-xs text-cyan-700 font-medium">Code sent to</p><p className="font-bold text-cyan-900">{phone}</p></div>
+                        <input type="text" value={code} onChange={e => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0,6))} placeholder="000000" className="w-full text-center text-4xl font-mono font-black tracking-[0.2em] border-b-2 border-gray-100 focus:border-cyan-500 outline-none pb-4 bg-transparent" autoFocus />
                         {error && <p className="text-xs text-red-600 text-center font-bold">{error}</p>}
-                        <button onClick={handleVerify} disabled={code.length !== 6 || isLoading} className="w-full py-4 bg-cyan-600 text-white font-black rounded-2xl hover:bg-cyan-700 uppercase tracking-widest text-[10px] shadow-xl">
-                            {isLoading ? 'Verifying...' : 'Verify Code'}
-                        </button>
-                        <button onClick={() => setStep('input')} className="w-full text-xs text-gray-400 hover:text-gray-600">Change number</button>
+                        <div className="flex gap-3"><button onClick={() => setStep('input')} className="flex-1 py-3 text-gray-500 text-xs font-bold">Back</button><button onClick={handleVerify} disabled={code.length !== 6 || isLoading} className="flex-[2] py-4 bg-cyan-600 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px]">{isLoading ? '...' : 'Verify Code'}</button></div>
                     </div>
                 )}
             </div>
@@ -471,61 +436,25 @@ const PhoneVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => v
 };
 
 const IdVerificationModal: React.FC<{ onClose: () => void, onSuccess: () => void }> = ({ onClose, onSuccess }) => {
-    const [step, setStep] = useState<1 | 2>(1);
-    const [front, setFront] = useState('');
+    const [step, setStep] = useState<1 | 2 | 3>(1);
+    const [idFront, setIdFront] = useState('');
+    const [idBack, setIdBack] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    const handleSubmit = async () => {
-        setIsLoading(true);
-        await new Promise(r => setTimeout(r, 2000));
-        onSuccess();
-        onClose();
-    };
-
+    const handleNext = () => { if (step === 1 && idFront) setStep(2); else if (step === 2 && idBack) handleSubmit(); };
+    const handleSubmit = async () => { setIsLoading(true); await new Promise(r => setTimeout(r, 2500)); onSuccess(); onClose(); };
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm p-8 relative overflow-hidden">
-                <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><XIcon className="h-6 w-6" /></button>
-                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
-                    <CreditCardIcon className="h-7 w-7 text-indigo-600" /> ID Verify
-                </h3>
-                <div className="space-y-6">
-                    <p className="text-sm text-gray-500 font-medium">Upload a clear photo of your government-issued ID.</p>
-                    <ImageUploader label="Front of ID" currentImageUrl={front} onImageChange={setFront} />
-                    <button onClick={handleSubmit} disabled={!front || isLoading} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black uppercase tracking-widest text-[10px] shadow-xl">
-                        {isLoading ? 'Processing ID...' : 'Submit for Review'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusUpdate: (id: string, status: string) => Promise<void> }> = ({ bookings, userId, onStatusUpdate }) => {
-    const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
-    const displayedBookings = mode === 'renting' ? bookings.filter(b => b.renterId === userId) : bookings.filter(b => b.listing.owner.id === userId);
-    return (
-        <div className="animate-in fade-in duration-500">
-             <div className="flex flex-col sm:flex-row justify-between items-center mb-12 gap-8">
-                <h2 className="text-4xl font-black text-gray-900 tracking-tighter">Reservations</h2>
-                <div className="bg-gray-100 p-1.5 rounded-2xl flex shadow-inner border border-gray-200/50">
-                    <button onClick={() => setMode('hosting')} className={`px-10 py-3 text-xs font-black rounded-xl uppercase tracking-widest transition-all ${mode === 'hosting' ? 'bg-white text-gray-900 shadow-xl' : 'text-gray-400'}`}>I'm Hosting</button>
-                    <button onClick={() => setMode('renting')} className={`px-10 py-3 text-xs font-black rounded-xl uppercase tracking-widest transition-all ${mode === 'renting' ? 'bg-white text-gray-900 shadow-xl' : 'text-gray-400'}`}>I'm Renting</button>
-                </div>
-            </div>
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50/50"><tr className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black"><th className="p-8">Item</th><th className="p-8 text-center">Dates</th><th className="p-8 text-right">Status</th></tr></thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {displayedBookings.map(b => (
-                            <tr key={b.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="p-8 font-black text-gray-900 text-base">{b.listing.title}</td>
-                                <td className="p-8 text-gray-500 font-bold text-center">{format(new Date(b.startDate), 'MMM dd')}</td>
-                                <td className="p-8 text-right"><span className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100">{b.status}</span></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden relative border border-gray-100 p-8">
+                <div className="flex justify-between items-center mb-8"><h3 className="font-bold text-gray-900 flex items-center gap-2"><UserCheckIcon className="h-5 w-5 text-indigo-600" /> Identity Check</h3><button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XIcon className="h-5 w-5" /></button></div>
+                {!isLoading ? (
+                    <div className="space-y-6">
+                        <div className="text-center mb-6"><h4 className="text-xl font-bold text-gray-900">{step === 1 ? 'Front of ID' : 'Back of ID'}</h4><p className="text-sm text-gray-500 mt-1">Ensure the text and edges are clearly visible.</p></div>
+                        <div className="aspect-[4/3]"><ImageUploader label="" currentImageUrl={step === 1 ? idFront : idBack} onImageChange={step === 1 ? setIdFront : setIdBack} /></div>
+                        <button onClick={handleNext} disabled={(step === 1 && !idFront) || (step === 2 && !idBack)} className="w-full mt-8 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl uppercase tracking-widest text-[10px]">{step === 1 ? 'Continue' : 'Finish & Upload'}</button>
+                    </div>
+                ) : (
+                    <div className="text-center py-12 space-y-6 animate-in zoom-in-95"><div className="relative w-20 h-20 mx-auto"><div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div><div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div><ShieldIcon className="absolute inset-0 m-auto h-8 w-8 text-indigo-400" /></div><h4 className="text-xl font-bold text-gray-900">Validating ID</h4><p className="text-sm text-gray-500">Checking document authenticity via AI...</p></div>
+                )}
             </div>
         </div>
     );
