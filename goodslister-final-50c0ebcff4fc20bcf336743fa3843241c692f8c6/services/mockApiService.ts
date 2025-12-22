@@ -77,7 +77,6 @@ const sendAdminAction = async (action: string, payload: any) => {
 
 export const loginUser = async (email: string, password?: string): Promise<User | null> => {
     try {
-        // LLAMADA REAL AL ENDPOINT DE LOGIN
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -88,7 +87,6 @@ export const loginUser = async (email: string, password?: string): Promise<User 
             return await response.json();
         }
         
-        // Fallback local solo si falla el servidor por red
         const data = await fetchAllData();
         return data.users.find(u => u.email === email) || null;
     } catch (e) {
@@ -112,6 +110,32 @@ export const registerUser = async (name: string, email: string, password?: strin
     } catch (e) {
         console.error("Registration failed:", e);
         return null;
+    }
+};
+
+export const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, currentPassword, newPassword }),
+        });
+        return response.ok;
+    } catch (e) {
+        return false;
+    }
+};
+
+export const deleteAccount = async (userId: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/auth/delete-account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+        });
+        return response.ok;
+    } catch (e) {
+        return false;
     }
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Session, Listing, Booking, Page } from '../types';
 import { 
@@ -26,13 +27,16 @@ interface UserDashboardPageProps {
     onDeleteListing: (listingId: string) => Promise<void>;
     onBookingStatusUpdate: (bookingId: string, status: string) => Promise<void>;
     onNavigate: (page: Page) => void;
+    onDeleteAccount?: () => Promise<void>;
+    onChangePassword?: (current: string, next: string) => Promise<boolean>;
 }
 
 type DashboardTab = 'analytics' | 'bookings' | 'listings' | 'favorites' | 'profile' | 'security' | 'billing';
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = ({ 
     user, listings, bookings, onVerificationUpdate, onUpdateAvatar, onUpdateProfile,
-    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate, onNavigate
+    onListingClick, onEditListing, favoriteListings = [], onToggleFavorite, onViewPublicProfile, onDeleteListing, onBookingStatusUpdate, onNavigate,
+    onDeleteAccount, onChangePassword
 }) => {
     const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
     const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
@@ -71,7 +75,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                     </div>
                 </div>
 
-                {/* KPI Premium Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-100/50 border border-gray-50 relative overflow-hidden group">
                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] relative z-10">Total Earnings</p>
@@ -177,7 +180,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
                 </div>
             );
             case 'bookings': return <BookingsManager bookings={localBookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
-            case 'security': return <SecurityManager user={user} onVerificationUpdate={onVerificationUpdate} />;
+            case 'security': return <SecurityManager user={user} onVerificationUpdate={onVerificationUpdate} onChangePassword={onChangePassword} onDeleteAccount={onDeleteAccount} />;
             case 'profile': return (
                 <div className="space-y-8 animate-in fade-in duration-500">
                     <div className="bg-white rounded-[3rem] shadow-xl border border-gray-50 overflow-hidden">
@@ -255,7 +258,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = ({
     );
 };
 
-const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any }> = ({ user, onVerificationUpdate }) => {
+const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onChangePassword?: any, onDeleteAccount?: any }> = ({ user, onVerificationUpdate, onChangePassword, onDeleteAccount }) => {
     const [currentPass, setCurrentPass] = useState('');
     const [newPass, setNewPass] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
@@ -263,13 +266,14 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any }> = 
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!onChangePassword) return;
         setIsUpdating(true);
-        // Simulate API
-        await new Promise(r => setTimeout(r, 1000));
-        alert("Password updated successfully.");
+        const success = await onChangePassword(currentPass, newPass);
+        if (success) {
+            setCurrentPass('');
+            setNewPass('');
+        }
         setIsUpdating(false);
-        setCurrentPass('');
-        setNewPass('');
     };
 
     return (
@@ -332,7 +336,7 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any }> = 
                         <p className="text-sm text-gray-500 font-medium mb-8 leading-relaxed">This will delete your listings, reviews, and earning history permanently.</p>
                         <div className="flex gap-4">
                             <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 text-xs font-black rounded-2xl hover:bg-gray-200 uppercase tracking-widest">Cancel</button>
-                            <button onClick={() => alert('Account deleted (Simulated)')} className="flex-1 py-4 bg-red-600 text-white text-xs font-black rounded-2xl hover:bg-red-700 shadow-xl shadow-red-100 uppercase tracking-widest">Yes, Delete</button>
+                            <button onClick={() => { setShowDeleteConfirm(false); onDeleteAccount?.(); }} className="flex-1 py-4 bg-red-600 text-white text-xs font-black rounded-2xl hover:bg-red-700 shadow-xl shadow-red-100 uppercase tracking-widest">Yes, Delete</button>
                         </div>
                     </div>
                 </div>
