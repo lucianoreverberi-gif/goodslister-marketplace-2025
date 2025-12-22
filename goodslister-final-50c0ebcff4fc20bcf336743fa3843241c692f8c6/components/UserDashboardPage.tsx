@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Session, Listing, Booking, Page } from '../types';
 import { 
     PackageIcon, DollarSignIcon, BarChartIcon, StarIcon, 
-    ShieldIcon, CalendarIcon, EyeIcon, PencilIcon, XIcon, 
+    ShieldIcon, CalendarIcon, PencilIcon, XIcon, 
     HeartIcon, UserCheckIcon, TrashIcon, TrendUpIcon, 
     ShieldCheckIcon, PhoneIcon, LockIcon, AlertTriangleIcon
 } from './icons';
@@ -278,18 +277,30 @@ const SecurityManager: React.FC<{ user: Session, onVerificationUpdate: any, onCh
 
     return (
         <div className="space-y-12 animate-in fade-in duration-500">
-            {/* Identity Shield */}
+            {/* Trust & Verifications */}
             <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-xl">
-                <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-10">Identity Shield</h3>
+                <h3 className="text-3xl font-black text-gray-900 tracking-tighter mb-10">Identity & Trust</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isIdVerified ? 'bg-green-50 border-green-200' : 'bg-white border-dashed border-gray-200'}`}>
+                    {/* ID Verification */}
+                    <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isIdVerified ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-dashed border-gray-200'}`}>
                         <div className="flex justify-between items-start mb-6">
-                            <div className={`p-4 rounded-2xl ${user.isIdVerified ? 'bg-green-500 text-white shadow-lg shadow-green-100' : 'bg-gray-100 text-gray-400'}`}><UserCheckIcon className="h-8 w-8" /></div>
-                            {user.isIdVerified && <span className="text-[10px] font-black bg-green-500 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">Verified</span>}
+                            <div className={`p-4 rounded-2xl ${user.isIdVerified ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}><UserCheckIcon className="h-8 w-8" /></div>
+                            {user.isIdVerified && <span className="text-[10px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">Verified</span>}
                         </div>
                         <h4 className="font-black text-gray-900 text-xl">Government ID</h4>
-                        <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">A verified ID is required to host or rent high-value adventure gear.</p>
-                        {!user.isIdVerified && <button onClick={() => onVerificationUpdate(user.id, 'id')} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-200 uppercase tracking-widest">Complete Verification</button>}
+                        <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Required for high-value rentals and boat charters.</p>
+                        {!user.isIdVerified && <button onClick={() => onVerificationUpdate(user.id, 'id')} className="mt-8 w-full py-4 bg-gray-900 text-white text-xs font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-200 uppercase tracking-widest">Verify Identity</button>}
+                    </div>
+
+                    {/* SMS Verification (RESTAURADO) */}
+                    <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${user.isPhoneVerified ? 'bg-green-50 border-green-100' : 'bg-white border-dashed border-gray-200'}`}>
+                        <div className="flex justify-between items-start mb-6">
+                            <div className={`p-4 rounded-2xl ${user.isPhoneVerified ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}><PhoneIcon className="h-8 w-8" /></div>
+                            {user.isPhoneVerified && <span className="text-[10px] font-black bg-green-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">Linked</span>}
+                        </div>
+                        <h4 className="font-black text-gray-900 text-xl">SMS Verification</h4>
+                        <p className="text-xs text-gray-500 mt-3 leading-relaxed font-bold">Link your mobile for instant booking notifications and security.</p>
+                        {!user.isPhoneVerified && <button onClick={() => onVerificationUpdate(user.id, 'phone')} className="mt-8 w-full py-4 bg-cyan-600 text-white text-xs font-black rounded-2xl hover:bg-cyan-700 transition-all shadow-xl shadow-cyan-100 uppercase tracking-widest">Link Phone (SMS)</button>}
                     </div>
                 </div>
             </div>
