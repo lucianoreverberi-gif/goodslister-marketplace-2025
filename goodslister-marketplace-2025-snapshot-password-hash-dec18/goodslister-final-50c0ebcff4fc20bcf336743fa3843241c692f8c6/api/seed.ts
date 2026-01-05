@@ -2,16 +2,7 @@
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { mockUsers, mockListings, mockBookings } from '../constants';
-import crypto from 'crypto';
-
-// Inline helper to avoid module resolution issues
-function hashPassword(password: string): { salt: string; hash: string } {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto
-    .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
-    .toString('hex');
-  return { salt, hash };
-}
+import { hashPassword } from '../lib/auth-utils';
 
 export default async function handler(
   req: VercelRequest,
@@ -41,7 +32,7 @@ export default async function handler(
       );
     `;
 
-    // 2. Create Listings Table
+    // 2. Create Listings Table (Added country_code, currency, instant_booking_enabled)
     await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id VARCHAR(255) PRIMARY KEY,
@@ -101,7 +92,7 @@ export default async function handler(
         );
     `;
     
-    // ... Other Tables
+    // ... (Rest of tables: payments, hero_slides, banners, inspections, reviews, site_config, conversations...)
     await sql`CREATE TABLE IF NOT EXISTS payments (id VARCHAR(255) PRIMARY KEY, booking_id VARCHAR(255) REFERENCES bookings(id), payer_id VARCHAR(255) REFERENCES users(id), payee_id VARCHAR(255) REFERENCES users(id), amount NUMERIC(10, 2), platform_fee NUMERIC(10, 2), protection_fee NUMERIC(10, 2), owner_payout NUMERIC(10, 2), status VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
     await sql`CREATE TABLE IF NOT EXISTS hero_slides (id VARCHAR(255) PRIMARY KEY, title TEXT, subtitle TEXT, image_url TEXT)`;
     await sql`CREATE TABLE IF NOT EXISTS banners (id VARCHAR(255) PRIMARY KEY, title TEXT, description TEXT, button_text TEXT, image_url TEXT, layout TEXT DEFAULT 'overlay', link_url TEXT)`;
@@ -112,7 +103,7 @@ export default async function handler(
     await sql`CREATE TABLE IF NOT EXISTS conversation_participants (conversation_id VARCHAR(255) REFERENCES conversations(id), user_id VARCHAR(255), PRIMARY KEY (conversation_id, user_id))`;
     await sql`CREATE TABLE IF NOT EXISTS messages (id VARCHAR(255) PRIMARY KEY, conversation_id VARCHAR(255) REFERENCES conversations(id), sender_id VARCHAR(255), content TEXT, is_read BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
 
-    // Run migrations
+    // Run migrations for existing columns if needed
     try {
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS listing_type VARCHAR(20) DEFAULT 'rental'`;
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS operator_license_id TEXT`;
@@ -137,13 +128,14 @@ export default async function handler(
         // SECURITY MIGRATION
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
         await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_salt TEXT`;
-        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT`;
-        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP`;
     } catch (e) {
         console.log("Migration skipped", e);
     }
 
     // --- SEEDING STRATEGY ---
+    
+    // 1. Users
+    // NOTE: For mock users, we generate a default hash for "password"
     const defaultAuth = hashPassword("password");
 
     for (const user of mockUsers) {
@@ -161,6 +153,7 @@ export default async function handler(
     }
     console.log('Users synced');
 
+    // 2. Listings
     for (const listing of mockListings) {
         const ownerExists = mockUsers.find(u => u.id === listing.owner.id);
         if (ownerExists) {
@@ -188,6 +181,7 @@ export default async function handler(
     }
     console.log('Listings synced');
 
+    // 3. Bookings
     for (const booking of mockBookings) {
         const listingExists = mockListings.find(l => l.id === booking.listingId);
         const renterExists = mockUsers.find(u => u.id === booking.renterId);
