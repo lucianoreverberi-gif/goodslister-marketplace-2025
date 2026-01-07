@@ -1,4 +1,3 @@
-
 // FIX: Removed google.maps type reference as type definitions are not available.
 // All google.maps types will be treated as 'any'.
 
@@ -9,6 +8,7 @@ import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon } from './icons
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';
 import { ListingCardSkeleton } from './ui/Skeleton';
+import { subcategories } from '../constants';
 
 interface ExplorePageProps {
     listings: Listing[];
@@ -39,6 +39,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     // Filter and sort state
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
+    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
     const maxPrice = useMemo(() => Math.max(...listings.map(l => l.pricePerDay || 0), 100), [listings]);
     const [priceRange, setPriceRange] = useState<number>(maxPrice);
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
@@ -169,15 +170,33 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         setSelectedCategories(prev => {
             // Reset manual search flag when user changes filters, so map can auto-fit to new results
             setUserManuallySearched(false);
-            return prev.includes(category)
+            const newCategories = prev.includes(category)
                 ? prev.filter(c => c !== category)
                 : [...prev, category];
+            
+            // Clean up subcategories that no longer belong to selected categories
+            setSelectedSubcategories(prevSubs => {
+                const availableSubs = newCategories.flatMap(cat => subcategories[cat] || []);
+                return prevSubs.filter(sub => availableSubs.includes(sub));
+            });
+
+            return newCategories;
+        });
+    };
+
+    const handleSubcategoryToggle = (subcategory: string) => {
+        setSelectedSubcategories(prev => {
+            setUserManuallySearched(false);
+            return prev.includes(subcategory)
+                ? prev.filter(s => s !== subcategory)
+                : [...prev, subcategory];
         });
     };
 
     const clearFilters = () => {
         setSearchTerm('');
         setSelectedCategories([]);
+        setSelectedSubcategories([]);
         setPriceRange(maxPrice);
         setSortBy('rating_desc');
         setLocationFilter('');
@@ -185,6 +204,11 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         setMapCenter(defaultCenter);
         setUserManuallySearched(false);
     };
+
+    const availableSubcategories = useMemo(() => {
+        if (selectedCategories.length === 0) return [];
+        return Array.from(new Set(selectedCategories.flatMap(cat => subcategories[cat] || [])));
+    }, [selectedCategories]);
 
     const filteredAndSortedListings = useMemo(() => {
         let filtered = listings.filter(listing => {
@@ -195,6 +219,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
 
             const matchesCategory = selectedCategories.length > 0 ? 
                 selectedCategories.includes(listing.category) : true;
+            
+            const matchesSubcategory = selectedSubcategories.length > 0 ?
+                selectedSubcategories.includes(listing.subcategory || '') : true;
             
             // Improved Location Matching: Split by comma to handle "City, State" better
             const locationFilterLower = locationFilter.toLowerCase();
@@ -208,7 +235,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesPrice = price ? price <= priceRange : true;
 
 
-            return matchesSearch && matchesCategory && matchesPrice && matchesLocation;
+            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation;
         });
 
         switch (sortBy) {
@@ -224,7 +251,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         }
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, priceRange, sortBy, locationFilter]);
+    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -358,7 +385,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                                         onClick={() => handleCategoryToggle(category)}
                                         className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
                                             selectedCategories.includes(category)
-                                                ? 'bg-cyan-600 text-white'
+                                                ? 'bg-cyan-600 text-white shadow-sm'
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                         }`}
                                     >
@@ -367,6 +394,28 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                                 ))}
                             </div>
                         </div>
+
+                        {/* Subcategory Filter */}
+                        {availableSubcategories.length > 0 && (
+                            <div className="animate-in fade-in slide-in-from-top-1">
+                                <label className="block text-sm font-bold text-gray-800">Subcategory</label>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {availableSubcategories.map(sub => (
+                                        <button
+                                            key={sub}
+                                            onClick={() => handleSubcategoryToggle(sub)}
+                                            className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                                                selectedSubcategories.includes(sub)
+                                                    ? 'bg-cyan-600 text-white shadow-sm'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {sub}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                          {/* Search Filter */}
                         <div>
