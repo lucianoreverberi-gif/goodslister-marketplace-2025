@@ -919,6 +919,31 @@ const FinancialsTab: React.FC = () => {
                         className="block w-full pl-10 sm:text-sm border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 h-10"
                     />
                 </div>
+
+                              {/* Filter Dropdowns */}
+                              <div className="flex gap-3 w-full md:w-auto">
+                                                  <select
+                                                                        value={filterCategory}
+                                                                        onChange={(e) => setFilterCategory(e.target.value)}
+                                                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 bg-white text-sm font-medium"
+                                                                      >
+                                                                        <option value="all">📊 All Transactions</option>
+                                                                        <option value="income">⬆️ Income (Revenue, Fees, Insurance)</option>
+                                                                        <option value="expense">⬇️ Expenses (Payouts, Claims)</option>
+                                                                      </select>
+
+                                                  <select
+                                                                        value={filterStatus}
+                                                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 bg-white text-sm font-medium"
+                                                                      >
+                                                                        <option value="all">✅ All Status</option>
+                                                                        <option value="cleared">✅ Cleared</option>
+                                                                        <option value="pending">⏳ Pending</option>
+                                                                        <option value="processed">🔄 Processed</option>
+                                                                        <option value="held">🚫 Held</option>
+                                                                      </select>
+                                                </div>
                 
                 <div className="flex gap-2 w-full md:w-auto overflow-x-auto">
                     <select 
