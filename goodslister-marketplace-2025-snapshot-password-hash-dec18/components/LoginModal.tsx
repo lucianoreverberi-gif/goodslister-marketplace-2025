@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import ForgotPasswordModal from './ForgotPasswordModal';
 import { XIcon, EyeIcon, EyeOffIcon, UserCheckIcon } from './icons';
 
 interface LoginModalProps {
@@ -17,6 +18,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
+      const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -168,7 +170,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                 <div className="text-right mt-2">
                   <button
                     type="button"
-                    onClick={() => alert('Feature coming soon! Please contact support.')}
+                    onClick={() => setShowForgotPassword(true))}
                     className="text-sm text-cyan-600 hover:text-cyan-800 font-medium"
                   >
                     Forgot password?
@@ -210,6 +212,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                 </div>
             </div>
         </div>
+
+              {showForgotPassword && (
+        <ForgotPasswordModal onClose={() => setShowForgotPassword(false)} />
+      )}
     );
 };
 
