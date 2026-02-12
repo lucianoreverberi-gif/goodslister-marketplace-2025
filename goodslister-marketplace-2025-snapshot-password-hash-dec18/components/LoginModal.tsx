@@ -171,7 +171,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                   <button
                     type="button"
                 onClick={() => setShowForgotPassword(true)}                    className="text-sm text-cyan-600 hover:text-cyan-800 font-medium"
-                                      className="text-sm text-cyan-600 hover:text-cyan-800 font-medium"
                   >
                     Forgot password?
                   </button>
