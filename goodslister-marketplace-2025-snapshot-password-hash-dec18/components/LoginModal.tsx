@@ -170,11 +170,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                 <div className="text-right mt-2">
                   <button
                     type="button"
-                    onClick={() => setShowForgotPassword(true))}
-                    className="text-sm text-cyan-600 hover:text-cyan-800 font-medium"
+                onClick={() => setShowForgotPassword(true)}                    className="text-sm text-cyan-600 hover:text-cyan-800 font-medium"
+                                      className="text-sm text-cyan-600 hover:text-cyan-800 font-medium"
                   >
                     Forgot password?
-                  </button
+                  </button>
                 </div>
               )}
                         {error && <p className="text-sm text-red-600 text-center">{error}</p>}
