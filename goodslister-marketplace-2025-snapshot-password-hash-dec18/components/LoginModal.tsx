@@ -1,4 +1,4 @@
-
+setShowForgotPassword(true))}    setShowForgotPassword(true)}
 import React, { useState } from 'react';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import { XIcon, EyeIcon, EyeOffIcon, UserCheckIcon } from './icons';
