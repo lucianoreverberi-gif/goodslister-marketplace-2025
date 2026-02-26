@@ -1,22 +1,12 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Listing } from '../types';
-import { XIcon, SendIcon, LanguagesIcon, ChevronLeftIcon, MessageSquareIcon } from './icons';
-import { translateText } from '../services/geminiService';
-import { useChatSocket } from '../hooks/useChatSocket';
+import { User } from '../../types';
+import { SendIcon, LanguagesIcon, ChevronLeftIcon, MessageSquareIcon } from '../icons';
+import { translateText } from '../../services/geminiService';
+import { useChatSocket } from '../../hooks/useChatSocket';
 
-interface ChatInboxModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    currentUser: User;
-    // Context for starting a new chat
-    initialContext?: {
-        listing?: Listing;
-        recipient?: User;
-        conversationId?: string;
-    } | null;
-    userLanguage: string;
-    onLanguageChange: (lang: string) => void;
+interface ChatLayoutProps {
+    initialSelectedId: string | null;
+    currentUser: User | null;
 }
 
 const LanguageSelector: React.FC<{ selectedLang: string, onChange: (lang: string) => void }> = ({ selectedLang, onChange}) => {
@@ -34,117 +24,86 @@ const LanguageSelector: React.FC<{ selectedLang: string, onChange: (lang: string
     );
 };
 
-const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, currentUser, initialContext, userLanguage, onLanguageChange }) => {
-    // 1. Hook into real backend data
-    const { conversations, sendMessage, loading } = useChatSocket(currentUser.id);
+const ChatLayout: React.FC<ChatLayoutProps> = ({ initialSelectedId, currentUser }) => {
+    const [activeConversationId, setActiveConversationId] = useState<string | null>(initialSelectedId);
+    const [userLanguage, setUserLanguage] = useState('English');
     
-    // 2. Local State
-    const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+    // Hook: Pass active ID so it returns the correct merged message stream
+    const { conversations, messages, sendMessage, loading } = useChatSocket(currentUser?.id, activeConversationId);
+    
     const [messageInput, setMessageInput] = useState('');
     const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
     const [isTranslating, setIsTranslating] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // 3. Handle Initial Context (Deep Linking from "Chat with Owner")
     useEffect(() => {
-        if (isOpen && initialContext) {
-            if (initialContext.conversationId) {
-                // If we know the ID, just open it
-                setActiveConversationId(initialContext.conversationId);
-            } else if (initialContext.listing && initialContext.recipient) {
-                // Check if we already have a conversation for this listing
-                const existing = conversations.find((c: any) => 
-                    c.listing?.id === initialContext.listing?.id
-                );
-                if (existing) {
-                    setActiveConversationId(existing.id);
-                } else {
-                    // We are in "Draft" mode (New Conversation)
-                    setActiveConversationId('NEW_DRAFT');
-                }
-            }
+        if (initialSelectedId) {
+            setActiveConversationId(initialSelectedId);
         }
-    }, [isOpen, initialContext, conversations]); // conversations dependency ensures we react when data loads
+    }, [initialSelectedId]);
 
-    // 4. Determine Active Data
-    // Can be a real existing conversation OR a draft
-    const activeConversation = activeConversationId !== 'NEW_DRAFT' 
-        ? conversations.find(c => c.id === activeConversationId)
-        : null;
+    const activeConversation = conversations.find(c => c.id === activeConversationId);
 
-    const draftRecipient = activeConversationId === 'NEW_DRAFT' ? initialContext?.recipient : null;
-    const draftListing = activeConversationId === 'NEW_DRAFT' ? initialContext?.listing : null;
-
-    // 5. Scroll to bottom
+    // Scroll to bottom
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [activeConversation?.fullMessages, activeConversationId]);
+    }, [messages.length, activeConversationId]);
 
-    // 6. Translation Effect
+    // Translation Logic
     useEffect(() => {
-        if (!activeConversation || !activeConversation.fullMessages) return;
-
+        if (!activeConversation || !activeConversation.fullMessages || !currentUser) return;
         const translateAllMessages = async () => {
             if (userLanguage === 'English') {
                  setTranslatedMessages({}); 
                  return;
             }
-
             setIsTranslating(true);
             const translations: Record<string, string> = {};
-            // Filter messages not from me
-            const messagesToTranslate = activeConversation.fullMessages.filter(
+            const messagesToTranslate = activeConversation.fullMessages!.filter(
                 (msg: any) => msg.senderId !== currentUser.id && msg.text
             );
-
             await Promise.all(messagesToTranslate.map(async (msg: any) => {
                 const translatedText = await translateText(msg.text, userLanguage, "English");
                 translations[msg.id] = translatedText;
             }));
-
             setTranslatedMessages(translations);
             setIsTranslating(false);
         };
-
         translateAllMessages();
-    }, [activeConversation, userLanguage, currentUser.id]);
+    }, [activeConversation, userLanguage, currentUser]);
 
     const handleSend = async () => {
-        if (!messageInput.trim()) return;
+        if (!messageInput.trim() || !activeConversationId) return;
+        
+        const text = messageInput;
+        setMessageInput(''); 
 
-        if (activeConversationId === 'NEW_DRAFT' && draftListing && draftRecipient) {
-            // Sending first message creates the conversation in backend
-            await sendMessage(messageInput, undefined, draftListing.id, draftRecipient.id);
-            // After sending, the next poll will pick up the new conversation
-            // We temporarily clear input and wait for sync
-            setMessageInput('');
-            // Optional: Optimistically switch to a 'loading' state or wait for the conversation to appear in list
-        } else if (activeConversationId) {
-            await sendMessage(messageInput, activeConversationId);
-            setMessageInput('');
-        }
+        await sendMessage(text, activeConversationId);
     };
 
-    if (!isOpen) return null;
+    if (!currentUser) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-gray-500">
+                <p>Please log in to view your messages.</p>
+            </div>
+        );
+    }
 
     return (
-         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-[80vh] flex overflow-hidden border border-gray-200">
+        <div className="container mx-auto px-4 py-8">
+            <div className="bg-white rounded-2xl shadow-xl h-[70vh] flex overflow-hidden border border-gray-200">
                 
                 {/* SIDEBAR (List) */}
-                <div className={`w-full md:w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col ${activeConversationId || activeConversationId === 'NEW_DRAFT' ? 'hidden md:flex' : 'flex'}`}>
-                    <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-gray-800">Inbox</h2>
-                        <button onClick={onClose} className="md:hidden text-gray-500">
-                            <XIcon className="h-6 w-6" />
-                        </button>
+                <div className={`w-full md:w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col ${activeConversationId ? 'hidden md:flex' : 'flex'}`}>
+                    <div className="p-4 border-b border-gray-200 bg-white">
+                        <h2 className="text-xl font-bold text-gray-800">Messages</h2>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto">
                         {loading && conversations.length === 0 && (
-                            <div className="p-8 text-center text-gray-400 text-sm">Loading chats...</div>
+                            <div className="p-8 text-center text-gray-400 text-sm">Syncing chats...</div>
                         )}
                         
                         {!loading && conversations.length === 0 && (
@@ -166,7 +125,7 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
                                         <div className="flex justify-between items-baseline">
                                             <h3 className="text-sm font-bold text-gray-900 truncate">{convo.participant.name}</h3>
                                             <span className="text-xs text-gray-400">
-                                                {new Date(convo.lastMessage.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric'})}
+                                                {convo.lastMessage.timestamp instanceof Date ? convo.lastMessage.timestamp.toLocaleDateString([], {month: 'short', day: 'numeric'}) : ''}
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-500 truncate mt-0.5">
@@ -181,53 +140,42 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
                 </div>
 
                 {/* CHAT AREA */}
-                <div className={`flex-1 flex flex-col bg-white ${!activeConversationId && activeConversationId !== 'NEW_DRAFT' ? 'hidden md:flex' : 'flex'}`}>
+                <div className={`flex-1 flex flex-col bg-white ${!activeConversationId ? 'hidden md:flex' : 'flex'}`}>
                     
-                    {/* Chat Header */}
                     {activeConversationId ? (
                         <>
-                            <header className="p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
+                            <header className="p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10 bg-white">
                                 <div className="flex items-center gap-3">
                                     <button onClick={() => setActiveConversationId(null)} className="md:hidden text-gray-500">
                                         <ChevronLeftIcon className="h-6 w-6" />
                                     </button>
                                     
                                     <img 
-                                        src={activeConversation ? activeConversation.participant.avatar : draftRecipient?.avatarUrl} 
+                                        src={activeConversation?.participant.avatar || 'https://i.pravatar.cc/150'} 
                                         alt="" 
                                         className="w-10 h-10 rounded-full border border-gray-200" 
                                     />
                                     <div>
                                         <h3 className="font-bold text-gray-900">
-                                            {activeConversation ? activeConversation.participant.name : draftRecipient?.name}
+                                            {activeConversation?.participant.name || 'Chat'}
                                         </h3>
                                         <p className="text-xs text-cyan-600 font-medium truncate max-w-[200px]">
-                                            {activeConversation?.listing?.title || draftListing?.title}
+                                            {activeConversation?.listing?.title}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border">
                                         <LanguagesIcon className="h-4 w-4 text-gray-500" />
-                                        <LanguageSelector selectedLang={userLanguage} onChange={onLanguageChange} />
+                                        <LanguageSelector selectedLang={userLanguage} onChange={setUserLanguage} />
                                     </div>
-                                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                                        <XIcon className="h-6 w-6" />
-                                    </button>
                                 </div>
                             </header>
 
                             {/* Messages */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
-                                {activeConversationId === 'NEW_DRAFT' && (
-                                    <div className="text-center py-10 text-gray-400 text-sm">
-                                        <p>This is the start of your conversation with {draftRecipient?.name} regarding <strong>{draftListing?.title}</strong>.</p>
-                                        <p className="mt-2 text-xs">Say hi! 👋</p>
-                                    </div>
-                                )}
-
-                                {activeConversation && activeConversation.fullMessages?.map((msg: any) => {
-                                    const isMe = msg.senderId === currentUser.id;
+                                {messages.map((msg: any) => {
+                                    const isMe = msg.senderId === 'me' || msg.senderId === currentUser.id;
                                     const translated = translatedMessages[msg.id];
                                     
                                     return (
@@ -239,9 +187,14 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
                                                         Original: "{msg.text}"
                                                     </p>
                                                 )}
-                                                <span className={`text-[10px] block mt-1 text-right ${isMe ? 'text-cyan-100' : 'text-gray-400'}`}>
-                                                    {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                </span>
+                                                <div className={`flex items-center justify-end gap-1 mt-1`}>
+                                                    <span className={`text-[10px] ${isMe ? 'text-cyan-100' : 'text-gray-400'}`}>
+                                                        {msg.timestamp instanceof Date ? msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
+                                                    </span>
+                                                    {isMe && msg.status === 'sent' && (
+                                                        <span className="text-[10px] opacity-70">✓</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -259,11 +212,12 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
                                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                                         placeholder="Type a message..."
                                         className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent focus:bg-white focus:border-cyan-500 focus:ring-0 rounded-full transition-all text-sm"
+                                        autoFocus
                                     />
                                     <button 
                                         onClick={handleSend}
                                         disabled={!messageInput.trim()} 
-                                        className="absolute right-2 p-2 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="absolute right-2 p-2 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                                     >
                                         <SendIcon className="h-4 w-4" />
                                     </button>
@@ -284,4 +238,4 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
     );
 };
 
-export default ChatInboxModal;
+export default ChatLayout;

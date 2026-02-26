@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        // FIX: Support both API_KEY and GEMINI_API_KEY environment variables
+        // Allow either API_KEY or GEMINI_API_KEY to be used
         'process.env.API_KEY': JSON.stringify(env.API_KEY || env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.API_KEY || env.GEMINI_API_KEY)
       },
