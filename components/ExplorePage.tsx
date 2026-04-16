@@ -4,6 +4,7 @@
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Listing, ListingCategory } from '../types';
+import { subcategories } from '../constants';
 import ListingCard from './ListingCard';
 import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon } from './icons';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
@@ -38,6 +39,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     // Filter and sort state
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
+    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
     const maxPrice = useMemo(() => Math.max(...listings.map(l => l.pricePerDay || 0), 100), [listings]);
     const [priceRange, setPriceRange] = useState<number>(maxPrice);
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
@@ -84,6 +86,12 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             onClearInitialFilters(); // Clear after applying to prevent re-applying
         }
     }, [initialFilters, onClearInitialFilters]);
+
+    // Clean up subcategories when categories change
+    useEffect(() => {
+        const validSubcategories = selectedCategories.flatMap(cat => subcategories[cat] || []);
+        setSelectedSubcategories(prev => prev.filter(sub => validSubcategories.includes(sub)));
+    }, [selectedCategories]);
 
 
     // Callback to store the map instance once it's loaded
@@ -170,6 +178,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
     const clearFilters = () => {
         setSearchTerm('');
         setSelectedCategories([]);
+        setSelectedSubcategories([]);
         setPriceRange(maxPrice);
         setSortBy('rating_desc');
         setLocationFilter('');
@@ -188,6 +197,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesCategory = selectedCategories.length > 0 ? 
                 selectedCategories.includes(listing.category) : true;
             
+            const matchesSubcategory = selectedSubcategories.length > 0 ?
+                (listing.subcategory && selectedSubcategories.includes(listing.subcategory)) : true;
+
             // Improved Location Matching: Split by comma to handle "City, State" better
             const locationFilterLower = locationFilter.toLowerCase();
             const matchesLocation = locationFilter ?
@@ -200,7 +212,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             const matchesPrice = price ? price <= priceRange : true;
 
 
-            return matchesSearch && matchesCategory && matchesPrice && matchesLocation;
+            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation;
         });
 
         switch (sortBy) {
@@ -216,7 +228,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
         }
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, priceRange, sortBy, locationFilter]);
+    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -356,6 +368,33 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                                 ))}
                             </div>
                         </div>
+
+                        {/* Subcategory Filter */}
+                        {selectedCategories.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800">Subcategory</label>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {selectedCategories.flatMap(cat => subcategories[cat] || []).map(sub => (
+                                        <button
+                                            key={sub}
+                                            onClick={() => {
+                                                setUserManuallySearched(false);
+                                                setSelectedSubcategories(prev => 
+                                                    prev.includes(sub) ? prev.filter(s => s !== sub) : [...prev, sub]
+                                                );
+                                            }}
+                                            className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                                                selectedSubcategories.includes(sub)
+                                                    ? 'bg-cyan-600 text-white'
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            {sub}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                          {/* Search Filter */}
                         <div>

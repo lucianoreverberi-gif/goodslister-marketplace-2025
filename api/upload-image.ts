@@ -9,23 +9,31 @@ export default async function handler(
     return response.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { filename } = request.query;
+  const { filename, folder } = request.query;
 
   if (!filename || Array.isArray(filename)) {
     return response.status(400).json({ error: 'Filename is required' });
   }
 
+  const folderPath = folder && !Array.isArray(folder) ? `${folder}/` : '';
+  const fullPath = `${folderPath}${filename}`;
+
   try {
-    // Vercel Node.js functions provide the body as a stream or buffer depending on config
-    // For large files, we might need to handle the stream
-    const blob = await put(filename, request, {
+    // Check if token exists
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return response.status(500).json({ error: 'Server configuration error: Missing BLOB_READ_WRITE_TOKEN' });
+    }
+
+    // Vercel Blob 'put' can handle the request stream directly if bodyParser is disabled
+    const blob = await put(fullPath, request, {
       access: 'public',
     });
 
     return response.status(200).json(blob);
   } catch (error) {
     console.error('Error uploading to Vercel Blob:', error);
-    return response.status(500).json({ error: 'Error uploading image' });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return response.status(500).json({ error: `Upload failed: ${message}` });
   }
 }
 

@@ -43,7 +43,8 @@ interface ListingDetailPageProps {
         totalPrice: number, 
         paymentMethod: 'platform' | 'direct',
         protectionType: 'waiver' | 'insurance',
-        protectionFee: number
+        protectionFee: number,
+        securityDeposit: number
     ) => Promise<Booking>;
     isFavorite: boolean;
     onToggleFavorite: (id: string) => void;
@@ -83,12 +84,13 @@ interface PaymentSelectionModalProps {
     rentalCost: number;
     serviceFee: number;
     protectionFee: number;
+    securityDeposit: number;
     onConfirm: (method: 'platform' | 'direct') => void;
     onClose: () => void;
     isProcessing: boolean;
 }
 
-const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, onConfirm, onClose, isProcessing }) => {
+const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, onConfirm, onClose, isProcessing }) => {
     const totalFees = serviceFee + protectionFee;
 
     return (
@@ -98,7 +100,7 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rent
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Checkout</h2>
-                            <p className="text-slate-500 text-sm font-medium mt-1">Pay fees securely via Goodslister</p>
+                            <p className="text-slate-500 text-sm font-medium mt-1">Secure your trip with Goodslister</p>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><XIcon className="h-6 w-6 text-slate-400" /></button>
                     </div>
@@ -116,9 +118,19 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rent
                                 <span className="text-cyan-700 font-bold">Protection & Legal Shield</span>
                                 <span className="text-cyan-900 font-black">${protectionFee.toFixed(2)}</span>
                             </div>
+                            <div className="flex justify-between text-sm pt-2 border-t border-cyan-200">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-cyan-700 font-bold">Security Deposit</span>
+                                    <span className="bg-cyan-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-black">HELD</span>
+                                </div>
+                                <span className="text-cyan-900 font-black">${securityDeposit.toFixed(2)}</span>
+                            </div>
                             <div className="pt-3 border-t border-cyan-200 flex justify-between">
-                                <span className="text-cyan-800 font-black">DUE NOW</span>
-                                <span className="text-xl text-cyan-900 font-black tracking-tight">${totalFees.toFixed(2)}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-cyan-800 font-black uppercase text-[10px]">Total Due Now</span>
+                                    <span className="text-[9px] font-bold text-cyan-600 italic">Deposit is held, not charged</span>
+                                </div>
+                                <span className="text-2xl text-cyan-900 font-black tracking-tight">${(totalFees + securityDeposit).toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -224,9 +236,10 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         }
         
         const serviceFee = rentalTotal * 0.10; 
+        const securityDeposit = listing.securityDeposit || 0;
         const totalPrice = rentalTotal + protectionFee + serviceFee;
 
-        return { unitCount, rentalTotal, protectionFee, serviceFee, totalPrice };
+        return { unitCount, rentalTotal, protectionFee, serviceFee, securityDeposit, totalPrice };
     };
 
     const priceDetails = getPriceDetails();
@@ -266,7 +279,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                 priceDetails.totalPrice, 
                 paymentMethod,
                 'insurance',
-                priceDetails.protectionFee
+                priceDetails.protectionFee,
+                priceDetails.securityDeposit
             );
             setSuccessfulBooking(newBooking);
             setRange(undefined); 
@@ -293,6 +307,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                     rentalCost={priceDetails.rentalTotal}
                     serviceFee={priceDetails.serviceFee}
                     protectionFee={priceDetails.protectionFee}
+                    securityDeposit={priceDetails.securityDeposit}
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
@@ -389,8 +404,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     <div className="bg-slate-900 rounded-[2rem] p-8 text-white space-y-4 mb-6 shadow-2xl shadow-slate-200 animate-in fade-in duration-500">
                                         <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Rental Subtotal</span><span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span></div>
                                         <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Platform Fees</span><span className="font-black text-white">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span></div>
-                                        <div className="flex justify-between font-black text-3xl pt-4 border-t border-white/10 tracking-tight"><span>Total</span><span className="text-cyan-400">${priceDetails.totalPrice.toFixed(2)}</span></div>
-                                        <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest text-center pt-2">Fees collected now to secure request</p>
+                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Security Deposit (Held)</span><span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span></div>
+                                        <div className="flex justify-between font-black text-3xl pt-4 border-t border-white/10 tracking-tight"><span>Total</span><span className="text-cyan-400">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</span></div>
+                                        <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest text-center pt-2">Fees & Deposit collected now to secure request</p>
                                     </div>
                                 )}
 

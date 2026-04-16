@@ -31,6 +31,7 @@ interface UserDashboardPageProps {
     onViewPublicProfile: (userId: string) => void;
     onDeleteListing: (listingId: string) => Promise<void>;
     onBookingStatusUpdate: (bookingId: string, status: string) => Promise<void>;
+    onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void;
 }
 
 type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant';
@@ -192,7 +193,12 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
     );
 };
 
-const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusUpdate: (id: string, status: string) => Promise<void> }> = ({ bookings, userId, onStatusUpdate }) => {
+const BookingsManager: React.FC<{ 
+    bookings: Booking[], 
+    userId: string, 
+    onStatusUpdate: (id: string, status: string) => Promise<void>,
+    onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void
+}> = ({ bookings, userId, onStatusUpdate, onUpdateDepositStatus }) => {
     const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
@@ -208,6 +214,7 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusU
                         booking={activeSessionBooking} 
                         initialMode={sessionInitialMode} 
                         onStatusChange={(status) => onStatusUpdate(activeSessionBooking.id, status)} 
+                        onUpdateDepositStatus={onUpdateDepositStatus}
                         onComplete={() => setActiveSessionBooking(null)} 
                      />
                  </div>
@@ -228,12 +235,26 @@ const BookingsManager: React.FC<{ bookings: Booking[], userId: string, onStatusU
                             <div>
                                 <h4 className="font-bold leading-tight text-gray-900">{b.listing.title}</h4>
                                 <p className="text-xs text-slate-500 mt-1">{format(new Date(b.startDate), 'MMM dd')} - {format(new Date(b.endDate), 'MMM dd, yyyy')}</p>
-                                <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                    b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                                    b.status === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                                }`}>
-                                    {b.status}
-                                </span>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                        b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                                        b.status === 'active' ? 'bg-blue-100 text-blue-700' : 
+                                        b.status === 'completed' ? 'bg-slate-100 text-slate-600' :
+                                        'bg-slate-100 text-slate-500'
+                                    }`}>
+                                        {b.status}
+                                    </span>
+                                    {b.securityDeposit && b.securityDeposit > 0 && (
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
+                                            b.depositStatus === 'held' ? 'bg-cyan-600 text-white' :
+                                            b.depositStatus === 'released' ? 'bg-emerald-100 text-emerald-700' :
+                                            b.depositStatus === 'disputed' ? 'bg-red-100 text-red-700' :
+                                            'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            <LockIcon className="h-2.5 w-2.5" /> Deposit: {b.depositStatus || 'held'}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="flex gap-2 w-full md:w-auto justify-end">
@@ -355,7 +376,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
     const { 
         user, listings, bookings, favoriteListings, onListingClick, onEditListing, 
         onDeleteListing, onToggleFavorite, onUpdateAvatar, onUpdateProfile, 
-        onVerificationUpdate, onBookingStatusUpdate, onViewPublicProfile 
+        onVerificationUpdate, onBookingStatusUpdate, onUpdateDepositStatus, onViewPublicProfile 
     } = props;
     const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
     const [listingToBoost, setListingToBoost] = useState<Listing | null>(null);
@@ -423,7 +444,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                     </div>
                 );
             case 'bookings':
-                return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} />;
+                return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'security':
                 return <SecurityTab user={user} onVerify={(type) => onVerificationUpdate(user.id, type)} />;
             case 'aiAssistant':

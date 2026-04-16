@@ -235,7 +235,8 @@ const App: React.FC = () => {
         totalPrice: number, 
         paymentMethod: 'platform' | 'direct',
         protectionType: 'waiver' | 'insurance', 
-        protectionFee: number
+        protectionFee: number,
+        securityDeposit: number
     ): Promise<Booking> => {
         if (!session) {
             throw new Error("You must be logged in to book an item.");
@@ -255,7 +256,8 @@ const App: React.FC = () => {
             balanceDueOnSite,
             paymentMethod,
             protectionType, 
-            protectionFee
+            protectionFee,
+            securityDeposit
         );
         
         // Update app state with the new booking and the updated listing (with new bookedDates)
@@ -297,6 +299,27 @@ const App: React.FC = () => {
         await mockApi.updateBookingStatus(bookingId, newStatus);
         
         addNotification('success', 'Status Updated', `Booking marked as ${newStatus}.`);
+    };
+
+    // NEW: Handle Security Deposit Status Update
+    const handleUpdateDepositStatus = async (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => {
+        // 1. Optimistic Update
+        const updatedBookings = appData.bookings.map((b: Booking) => 
+            b.id === bookingId ? { ...b, depositStatus: newStatus } : b
+        );
+        updateAppData({ bookings: updatedBookings });
+
+        // 2. Persist
+        await mockApi.updateDepositStatus(bookingId, newStatus);
+        
+        const statusMessages = {
+            held: 'Deposit is being held securely.',
+            released: 'Deposit has been released to the renter.',
+            disputed: 'Deposit is under review due to a dispute.',
+            claimed: 'Deposit has been claimed by the host.'
+        };
+        
+        addNotification('info', 'Deposit Status', statusMessages[newStatus]);
     };
 
     const handleVerificationUpdate = async (userId: string, verificationType: 'email' | 'phone' | 'id') => {
@@ -508,6 +531,7 @@ const App: React.FC = () => {
                 return session?.isAdmin ? <AdminPage 
                     users={users}
                     listings={listings}
+                    bookings={bookings}
                     heroSlides={heroSlides}
                     banners={banners}
                     logoUrl={logoUrl}
@@ -526,6 +550,7 @@ const App: React.FC = () => {
                     onUpdateListingImage={handleUpdateListingImage}
                     onViewListing={handleListingClick}
                     onDeleteListing={handleDeleteListing}
+                    onUpdateDepositStatus={handleUpdateDepositStatus}
                 /> : <p>Access Denied.</p>;
              case 'userDashboard':
                 return session ? <UserDashboardPage 
@@ -543,6 +568,7 @@ const App: React.FC = () => {
                     onViewPublicProfile={() => handleViewUserProfile(session.id)} // Pass navigation handler
                     onDeleteListing={handleDeleteListing} // NEW PROP
                     onBookingStatusUpdate={handleBookingStatusUpdate} // NEW PROP ADDED
+                    onUpdateDepositStatus={handleUpdateDepositStatus} // NEW PROP
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;

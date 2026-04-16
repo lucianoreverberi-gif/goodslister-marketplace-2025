@@ -64,6 +64,20 @@ export const updateBookingStatus = async (bookingId: string, status: string): Pr
     }
 };
 
+export const updateDepositStatus = async (bookingId: string, status: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/admin-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'updateDepositStatus', payload: { bookingId, status } }),
+        });
+        return response.ok;
+    } catch (e) {
+        console.error("Failed to update deposit status:", e);
+        return false;
+    }
+};
+
 export const sendEmail = async (type: string, to: string, data: any): Promise<boolean> => {
     try {
         const response = await fetch('/api/send-email', {
@@ -104,7 +118,8 @@ export const createBooking = async (
     balanceDueOnSite: number,
     paymentMethod: 'platform' | 'direct',
     protectionType: 'waiver' | 'insurance',
-    protectionFee: number
+    protectionFee: number,
+    securityDeposit: number
 ): Promise<{ newBooking: Booking, updatedListing: Listing }> => {
     try {
         const data = await fetchAllData();
@@ -116,7 +131,8 @@ export const createBooking = async (
             body: JSON.stringify({ 
                 listingId, renterId, startDate: startDate.toISOString(), 
                 endDate: endDate.toISOString(), totalPrice, amountPaidOnline, 
-                balanceDueOnSite, paymentMethod, protectionType, protectionFee 
+                balanceDueOnSite, paymentMethod, protectionType, protectionFee,
+                securityDeposit
             }),
         });
 

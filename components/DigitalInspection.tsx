@@ -11,17 +11,44 @@ interface DigitalInspectionProps {
     onCancel: () => void;
 }
 
+const CATEGORY_INSPECTION_CONFIG: Partial<Record<ListingCategory, { id: string; label: string; desc: string; checklist: string[] }[]>> = {
+    [ListingCategory.BOATS]: [
+        { id: 'front', label: 'Bow & Hull', desc: 'Check for cracks or impact marks on the front hull.', checklist: ['No hull cracks', 'Anchor present', 'Navigation lights work'] },
+        { id: 'right', label: 'Starboard Side', desc: 'Full profile of the right side.', checklist: ['Fenders in place', 'No dock rash', 'Rub rail intact'] },
+        { id: 'left', label: 'Port Side', desc: 'Full profile of the left side.', checklist: ['Fenders in place', 'No dock rash', 'Rub rail intact'] },
+        { id: 'rear', label: 'Stern & Propeller', desc: 'CRITICAL: Check the propeller and engine mount.', checklist: ['Propeller blades intact', 'No fishing line in hub', 'Engine tilt works', 'Drain plug in place'] }
+    ],
+    [ListingCategory.WATER_SPORTS]: [
+        { id: 'front', label: 'Front & Intake', desc: 'Check the front hull and intake grate.', checklist: ['Intake grate clear', 'No hull damage', 'Storage bin closed'] },
+        { id: 'right', label: 'Right Side', desc: 'Full profile view.', checklist: ['Sponsons intact', 'No deep scratches'] },
+        { id: 'left', label: 'Left Side', desc: 'Full profile view.', checklist: ['Sponsons intact', 'No deep scratches'] },
+        { id: 'rear', label: 'Jet Pump & Reboarding', desc: 'Check the nozzle and reboarding step.', checklist: ['Jet nozzle moves freely', 'Reboarding step works', 'Lanyard present'] }
+    ],
+    [ListingCategory.RVS]: [
+        { id: 'front', label: 'Front & Cab', desc: 'Check windshield and front cap.', checklist: ['No windshield chips', 'Front cap intact', 'Wipers functional'] },
+        { id: 'right', label: 'Passenger Side', desc: 'Check awning and storage doors.', checklist: ['Awning fabric intact', 'Storage doors lock', 'Tires condition'] },
+        { id: 'left', label: 'Driver Side', desc: 'Check utility connections.', checklist: ['Slide-out seals ok', 'Utility ports intact', 'Tires condition'] },
+        { id: 'rear', label: 'Rear & Roof', desc: 'Check ladder and roof seals.', checklist: ['Ladder secure', 'Roof seals intact', 'Rear camera works'] }
+    ],
+    [ListingCategory.MOTORCYCLES]: [
+        { id: 'front', label: 'Front Fork & Brakes', desc: 'Check forks, brakes, and tire.', checklist: ['No fork leaks', 'Brake pads ok', 'Tire tread good'] },
+        { id: 'right', label: 'Right Side', desc: 'Check exhaust and footpegs.', checklist: ['Exhaust secure', 'Footpegs intact', 'No oil leaks'] },
+        { id: 'left', label: 'Left Side', desc: 'Check chain/belt and shifter.', checklist: ['Chain tension ok', 'Shifter moves freely', 'Kickstand secure'] },
+        { id: 'rear', label: 'Rear Wheel & Lights', desc: 'Check rear tire and signals.', checklist: ['Signals work', 'Brake light works', 'Tire tread good'] }
+    ]
+};
+
 const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, handoverReferencePhotos, onComplete, onCancel }) => {
     const [step, setStep] = useState(0);
     const [photos, setPhotos] = useState<InspectionPhoto[]>([]);
     const [damageReported, setDamageReported] = useState(false);
     
-    // Mínimo 4 fotos requerido
-    const angles = [
-        { id: 'front', label: 'Front View', desc: 'Capture the main face and lights.' },
-        { id: 'right', label: 'Right Side', desc: 'Full profile view.' },
-        { id: 'left', label: 'Left Side', desc: 'Full profile view.' },
-        { id: 'rear', label: 'Rear/Detailed', desc: 'Back side and critical parts (propeller/engine).' }
+    const category = booking.listing.category;
+    const angles = CATEGORY_INSPECTION_CONFIG[category] || [
+        { id: 'front', label: 'Front View', desc: 'Capture the main face and lights.', checklist: ['No visible cracks', 'Lights intact'] },
+        { id: 'right', label: 'Right Side', desc: 'Full profile view.', checklist: ['No scratches', 'Tires/Wheels ok'] },
+        { id: 'left', label: 'Left Side', desc: 'Full profile view.', checklist: ['No scratches', 'Tires/Wheels ok'] },
+        { id: 'rear', label: 'Rear/Detailed', desc: 'Back side and critical parts.', checklist: ['Engine/Exhaust ok', 'Rear lights work'] }
     ];
 
     const currentAngle = angles[step];
@@ -94,8 +121,23 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
                                 <CameraIcon className="h-10 w-10 text-cyan-500" />
                             </div>
                             <h2 className="text-2xl font-black text-white mb-2">{currentAngle.label}</h2>
-                            <p className="text-slate-400 text-sm mb-10">{currentAngle.desc}</p>
+                            <p className="text-slate-400 text-sm mb-6">{currentAngle.desc}</p>
                             
+                            {/* Expert Checklist */}
+                            <div className="mb-10 bg-white/5 border border-white/10 rounded-2xl p-4 text-left">
+                                <h4 className="text-cyan-500 font-black text-[10px] uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <ZapIcon className="h-3 w-3" /> Expert Checklist
+                                </h4>
+                                <ul className="space-y-2">
+                                    {currentAngle.checklist.map((item, idx) => (
+                                        <li key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+                                            <CheckCircleIcon className="h-3 w-3 text-emerald-500" />
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
                             <div className="bg-white/5 border border-white/10 p-2 rounded-3xl">
                                 <ImageUploader label="" currentImageUrl="" onImageChange={handlePhotoUpload} />
                             </div>

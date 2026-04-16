@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon, SearchIcon, RefreshCwIcon } from './icons';
+import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon, Booking } from '../types';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon, SearchIcon, RefreshCwIcon, CalendarIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'bookings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings';
 
 interface AdminPageProps {
     users: User[];
     listings: Listing[];
+    bookings: Booking[];
     heroSlides: HeroSlide[];
     banners: Banner[];
     logoUrl: string;
@@ -27,6 +28,7 @@ interface AdminPageProps {
     onUpdateListingImage: (listingId: string, newImageUrl: string) => Promise<void>;
     onViewListing: (id: string) => void;
     onDeleteListing: (id: string) => Promise<void>;
+    onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void;
 }
 
 // Restored missing mock data definitions required by the Admin dashboard components
@@ -1003,9 +1005,167 @@ const SystemHealth: React.FC = () => {
 
 const RiskFundTab = InsuranceStrategyConfig;
 
+const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: string, status: 'held' | 'released' | 'disputed' | 'claimed') => void }> = ({ bookings, onUpdateDepositStatus }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('All Statuses');
+    const [filterDeposit, setFilterDeposit] = useState('All Deposits');
+
+    const statuses = ['All Statuses', 'confirmed', 'active', 'completed', 'cancelled'];
+    const depositStatuses = ['All Deposits', 'held', 'released', 'disputed', 'claimed'];
+
+    const filteredBookings = useMemo(() => {
+        return bookings.filter(b => {
+            const matchesSearch = b.listing.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                 b.id.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = filterStatus === 'All Statuses' || b.status === filterStatus;
+            const matchesDeposit = filterDeposit === 'All Deposits' || b.depositStatus === filterDeposit;
+            return matchesSearch && matchesStatus && matchesDeposit;
+        });
+    }, [bookings, searchQuery, filterStatus, filterDeposit]);
+
+    const getStatusStyles = (status: string) => {
+        switch (status) {
+            case 'confirmed': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            case 'active': return 'bg-blue-50 text-blue-600 border-blue-100';
+            case 'completed': return 'bg-gray-50 text-gray-600 border-gray-100';
+            case 'cancelled': return 'bg-red-50 text-red-600 border-red-100';
+            default: return 'bg-gray-50 text-gray-500';
+        }
+    };
+
+    const getDepositStyles = (status: string) => {
+        switch (status) {
+            case 'held': return 'bg-cyan-50 text-cyan-600 border-cyan-100';
+            case 'released': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            case 'disputed': return 'bg-red-50 text-red-600 border-red-100 font-bold';
+            case 'claimed': return 'bg-amber-50 text-amber-600 border-amber-100';
+            default: return 'bg-gray-50 text-gray-500';
+        }
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Booking Management</h2>
+                <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-2xl border border-amber-100 text-sm font-bold">
+                    <LockIcon className="h-4 w-4" />
+                    <span>Escrow Control Active</span>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-5 w-5 text-slate-400" />
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Active Reservations</h3>
+                        <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full uppercase ml-2">{filteredBookings.length} total</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input 
+                                type="text"
+                                placeholder="Search Booking ID or Listing"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500/20 outline-none font-medium text-slate-700"
+                            />
+                        </div>
+                        
+                        <select 
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500/20 cursor-pointer"
+                        >
+                            {statuses.map(st => <option key={st} value={st}>{st}</option>)}
+                        </select>
+
+                        <select 
+                            value={filterDeposit}
+                            onChange={(e) => setFilterDeposit(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500/20 cursor-pointer"
+                        >
+                            {depositStatuses.map(st => <option key={st} value={st}>{st}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-400 border-b border-slate-100">
+                            <tr>
+                                <th className="p-4 font-black uppercase text-[10px] tracking-widest">Booking ID</th>
+                                <th className="p-4 font-black uppercase text-[10px] tracking-widest">Listing</th>
+                                <th className="p-4 font-black uppercase text-[10px] tracking-widest">Status</th>
+                                <th className="p-4 font-black uppercase text-[10px] tracking-widest">Security Deposit</th>
+                                <th className="p-4 font-black uppercase text-[10px] tracking-widest">Deposit Status</th>
+                                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {filteredBookings.length > 0 ? (
+                                filteredBookings.map((b) => (
+                                    <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="p-4 font-mono text-[11px] text-slate-400 font-bold">{b.id}</td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <img src={b.listing.images[0]} className="w-8 h-8 rounded-lg object-cover" />
+                                                <span className="font-bold text-slate-800">{b.listing.title}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusStyles(b.status)}`}>
+                                                {b.status}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 font-black text-slate-900">
+                                            {b.securityDeposit ? `$${b.securityDeposit}` : 'N/A'}
+                                        </td>
+                                        <td className="p-4">
+                                            {b.securityDeposit ? (
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getDepositStyles(b.depositStatus || 'held')}`}>
+                                                    {b.depositStatus || 'held'}
+                                                </span>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            {b.securityDeposit && (b.depositStatus === 'held' || b.depositStatus === 'disputed' || !b.depositStatus) && (
+                                                <div className="flex justify-end gap-2">
+                                                    <button 
+                                                        onClick={() => onUpdateDepositStatus(b.id, 'released')}
+                                                        className="px-3 py-1 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 transition-all"
+                                                    >
+                                                        RELEASE
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => onUpdateDepositStatus(b.id, 'claimed')}
+                                                        className="px-3 py-1 bg-red-600 text-white text-[10px] font-black rounded-lg hover:bg-red-700 transition-all"
+                                                    >
+                                                        CLAIM
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={6} className="p-12 text-center text-slate-400 italic font-bold">No bookings found matching your filters.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AdminPage: React.FC<AdminPageProps> = ({ 
     users, 
     listings, 
+    bookings,
     heroSlides, 
     banners, 
     logoUrl,
@@ -1023,7 +1183,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
     onUpdateCategoryImage,
     onUpdateListingImage,
     onViewListing,
-    onDeleteListing
+    onDeleteListing,
+    onUpdateDepositStatus
 }) => {
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
@@ -1045,6 +1206,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
     const tabs: { id: AdminTab; name: string; icon: React.ElementType }[] = [
         { id: 'dashboard', name: 'Command Center', icon: LayoutDashboardIcon },
+        { id: 'bookings', name: 'Bookings', icon: CalendarIcon },
         { id: 'financials', name: 'Financials', icon: DollarSignIcon }, 
         { id: 'risk_fund', name: 'Risk & Insurance', icon: UmbrellaIcon },
         { id: 'disputes', name: 'Disputes', icon: GavelIcon },
@@ -1160,6 +1322,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                         </div>
                     </div>
                 );
+            case 'bookings':
+                return <BookingsTab bookings={bookings} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'financials':
                 return <FinancialsTab />;
             case 'risk_fund':

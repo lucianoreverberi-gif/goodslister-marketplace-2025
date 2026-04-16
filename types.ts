@@ -152,6 +152,8 @@ export interface Booking {
     };
     paymentMethod?: 'platform' | 'direct';
     status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
+    securityDeposit?: number;
+    depositStatus?: 'held' | 'released' | 'disputed' | 'claimed';
     inspectionResult?: 'clean' | 'damaged';
     hasHandoverInspection?: boolean;
     hasReturnInspection?: boolean;
