@@ -32,31 +32,50 @@ interface Notification {
 }
 
 const App: React.FC = () => {
-    const [page, setPage] = useState<Page>('home');
+    const [page, setPage] = useState<Page>(() => {
+        const hash = window.location.hash.replace('#', '') as Page;
+        return hash || 'home';
+    });
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-    // NEW: State for public profile viewing
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
     
-    const [session, setSession] = useState<Session | null>(null);
+    // Initialize session from localStorage if available
+    const [session, setSession] = useState<Session | null>(() => {
+        const savedSession = localStorage.getItem('goodslister_session');
+        if (savedSession) {
+            try {
+                return JSON.parse(savedSession);
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    });
+
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
-    // Edit Listing State
+    // Sync session to localStorage whenever it changes
+    useEffect(() => {
+        if (session) {
+            localStorage.setItem('goodslister_session', JSON.stringify(session));
+        } else {
+            localStorage.removeItem('goodslister_session');
+        }
+    }, [session]);
+    
+    // ... rest of state ...
     const [listingToEdit, setListingToEdit] = useState<Listing | undefined>(undefined);
 
     // Chat State
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
     const [chatContext, setChatContext] = useState<{ listing?: Listing, recipient?: User, conversationId?: string } | null>(null);
     const [userLanguage, setUserLanguage] = useState('English');
-    // Deep linking for main layout chat
     const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
 
     // Notification System State
     const [notifications, setNotifications] = useState<Notification[]>([]);
 
-    // This state now holds all data fetched from our mock API
     const [appData, setAppData] = useState<any | null>(null);
-
-    // State to pass search criteria from HomePage to ExplorePage
     const [initialExploreFilters, setInitialExploreFilters] = useState<FilterCriteria | null>(null);
     
     // Fetch initial data on mount
@@ -64,6 +83,18 @@ const App: React.FC = () => {
         const loadData = async () => {
             const allData = await mockApi.fetchAllData();
             setAppData(allData);
+            
+            // If we have a session, refresh user data from latest appData
+            const savedSession = localStorage.getItem('goodslister_session');
+            if (savedSession && allData.users) {
+                try {
+                    const parsed = JSON.parse(savedSession);
+                    const freshUser = allData.users.find((u: User) => u.id === parsed.id);
+                    if (freshUser) {
+                        setSession({ ...freshUser, isAdmin: freshUser.email.includes('admin') || freshUser.email === 'lucianoreverberi@gmail.com' });
+                    }
+                } catch (e) {}
+            }
         };
 
         loadData();
@@ -76,7 +107,18 @@ const App: React.FC = () => {
 
     const handleNavigate = useCallback((newPage: Page) => {
         setPage(newPage);
+        window.location.hash = newPage;
         window.scrollTo(0, 0);
+    }, []);
+
+    // Listen to hash changes for direct URL navigation
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.replace('#', '') as Page;
+            if (hash) setPage(hash);
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
 
     // NEW: Handle navigating to user profile

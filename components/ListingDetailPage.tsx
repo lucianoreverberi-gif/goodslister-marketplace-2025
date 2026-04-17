@@ -1,11 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 // FIX: Added RefreshCwIcon and RocketIcon to the import list to resolve "Cannot find name" errors.
 import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, RefreshCwIcon, RocketIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
 
 const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
     const createMarkup = (markdownText: string) => {
@@ -90,11 +94,57 @@ interface PaymentSelectionModalProps {
     isProcessing: boolean;
 }
 
-const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, onConfirm, onClose, isProcessing }) => {
+const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, onConfirm, onClose, isProcessing }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [error, setError] = useState<string | null>(null);
+    const [processingPayment, setProcessingPayment] = useState(false);
+    
     const totalFees = serviceFee + protectionFee;
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!stripe || !elements) return;
+        
+        setProcessingPayment(true);
+        setError(null);
+        
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) return;
+
+        try {
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+            });
+
+            if (error) {
+                setError(error.message || 'Payment method failed.');
+                setProcessingPayment(false);
+                return;
+            }
+
+            // Mock backend call to our own api endpoint
+            const res = await fetch('/api/create-payment-intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: totalFees, paymentMethodId: paymentMethod.id })
+            });
+
+            if (!res.ok) {
+                throw new Error('Payment processing failed on server');
+            }
+
+            onConfirm('platform');
+        } catch (err: any) {
+            setError(err.message || 'An error occurred during payment processing.');
+            setProcessingPayment(false);
+        }
+    };
+
     return (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <form onSubmit={handleSubmit} className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl relative overflow-hidden flex flex-col animate-in zoom-in duration-300">
                 <div className="p-8 bg-slate-50 border-b border-slate-100">
                     <div className="flex justify-between items-start">
@@ -102,7 +152,7 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rent
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Checkout</h2>
                             <p className="text-slate-500 text-sm font-medium mt-1">Secure your trip with Goodslister</p>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><XIcon className="h-6 w-6 text-slate-400" /></button>
+                        <button type="button" onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><XIcon className="h-6 w-6 text-slate-400" /></button>
                     </div>
                 </div>
 
@@ -135,26 +185,23 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rent
                         </div>
                     </div>
 
-                    {/* Fake Stripe Form */}
+                    {/* Real Stripe Form */}
                     <div className="space-y-4">
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Card Information</label>
-                            <div className="relative">
-                                <input type="text" placeholder="4242 4242 4242 4242" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-mono focus:ring-2 focus:ring-cyan-500/20 outline-none" />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1 opacity-50">
-                                    <CreditCardIcon className="h-5 w-5" />
-                                </div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Card details</label>
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                                <CardElement options={{
+                                    style: {
+                                        base: {
+                                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                                            fontSize: '14px',
+                                            color: '#334155',
+                                            '::placeholder': { color: '#94a3b8' }
+                                        }
+                                    }
+                                }} />
                             </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry</label>
-                                <input type="text" placeholder="MM / YY" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-mono focus:ring-2 focus:ring-cyan-500/20 outline-none" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">CVC</label>
-                                <input type="text" placeholder="123" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-mono focus:ring-2 focus:ring-cyan-500/20 outline-none" />
-                            </div>
+                            {error && <p className="text-xs text-red-500 font-bold mt-2">{error}</p>}
                         </div>
                     </div>
 
@@ -169,17 +216,26 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rent
                         <span className="text-lg font-black text-cyan-400">${rentalCost.toFixed(2)}</span>
                     </div>
                     <button 
-                        onClick={() => onConfirm('direct')}
-                        disabled={isProcessing}
+                        type="submit"
+                        disabled={isProcessing || processingPayment || !stripe}
                         className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl font-black shadow-xl shadow-cyan-900/20 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
                     >
-                        {isProcessing ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : <>Pay ${totalFees.toFixed(2)} & Request Trip <RocketIcon className="h-5 w-5" /></>}
+                        {(isProcessing || processingPayment) ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : <>Pay ${totalFees.toFixed(2)} & Request Trip <RocketIcon className="h-5 w-5" /></>}
+                    </button>
+                    <button type="button" onClick={() => onConfirm('direct')} disabled={isProcessing || processingPayment} className="w-full text-xs font-bold text-slate-400 hover:text-white transition-colors">
+                        Or pay full amount later (Skip checkout)
                     </button>
                 </div>
             </div>
-        </div>
+        </form>
     );
 };
+
+const StripeCheckout: React.FC<PaymentSelectionModalProps> = (props) => (
+    <Elements stripe={stripePromise}>
+        <StripeCheckoutForm {...props} />
+    </Elements>
+);
 
 const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
