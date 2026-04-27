@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information and settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "registeredDate": { "type": "string", "format": "date-time" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "bio": { "type": "string" },
+        "isEmailVerified": { "type": "boolean" },
+        "isPhoneVerified": { "type": "boolean" },
+        "isIdVerified": { "type": "boolean" },
+        "licenseVerified": { "type": "boolean" },
+        "averageRating": { "type": "number" },
+        "totalReviews": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "favorites": { "type": "array", "items": { "type": "string" } },
+        "role": { "type": "string", "enum": ["SUPER_ADMIN", "REGION_MANAGER", "SUPPORT_AGENT", "USER"] },
+        "homeRegion": { "type": "string" }
+      },
+      "required": ["id", "name", "email"]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "Item or experience available for rent",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "subcategory": { "type": "string" },
+        "pricePerDay": { "type": "number" },
+        "pricePerHour": { "type": "number" },
+        "pricingType": { "type": "string", "enum": ["daily", "hourly"] },
+        "location": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "country": { "type": "string" },
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          }
+        },
+        "ownerId": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "isFeatured": { "type": "boolean" },
+        "isInstantBook": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewsCount": { "type": "number" },
+        "bookedDates": { "type": "array", "items": { "type": "string" } },
+        "approvalStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "engineCC": { "type": "number" }
+      },
+      "required": ["id", "title", "ownerId", "category"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Reservation record for a listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "listingId": { "type": "string" },
+        "renterId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "active", "completed", "cancelled"] },
+        "protectionType": { "type": "string", "enum": ["waiver", "insurance"] },
+        "amountPaidOnline": { "type": "number" },
+        "balanceDueOnSite": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "listingId", "renterId", "startDate", "endDate", "totalPrice", "status"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/listings/{listingId}": {
+      "schema": "Listing",
+      "description": "Rentable items"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Rental bookings"
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "type": "object", "properties": { "id": { "type": "string" }, "participants": { "type": "array" }, "listingId": { "type": "string" } } },
+      "description": "Chat threads"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages in a conversation"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "type": "object", "properties": { "id": { "type": "string" }, "bookingId": { "type": "string" }, "authorId": { "type": "string" }, "targetId": { "type": "string" }, "rating": { "type": "number" }, "comment": { "type": "string" }, "createdAt": { "type": "string" } } },
+      "description": "User and host reviews"
+    }
+  }
+}

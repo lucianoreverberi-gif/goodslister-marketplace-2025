@@ -275,4 +275,45 @@ export class LegalService {
 
         return header + body + commonClauses + footerPolicy;
     }
+
+    /**
+     * Determines if a driver's license or operator's certificate is required
+     * based on the listing category, engine CC, and location.
+     */
+    public static isLicenseRequired(listing: Listing): boolean {
+        const { category, subcategory, engineCC } = listing;
+        const sub = subcategory ? subcategory.toLowerCase() : '';
+        
+        // 1. MOTORCYCLES: 50cc+ typically requires a M-class license
+        if (category === ListingCategory.MOTORCYCLES) {
+            const cc = engineCC || 0;
+            if (cc >= 50) return true;
+        }
+
+        // 2. ATVs & UTVs: Usually require a valid Driver's License for rentals
+        if (category === ListingCategory.ATVS_UTVS) {
+            return true;
+        }
+
+        // 3. RVs: Always require a valid Driver's License
+        if (category === ListingCategory.RVS) {
+            return true;
+        }
+
+        // 4. WATER SPORTS (PWC / Jet Skis) & WINTER SPORTS (Snowmobiles): Require Operator licenses
+        const isJetSki = category === ListingCategory.WATER_SPORTS && (sub.includes('jet') || sub.includes('pwc') || sub.includes('waverunner'));
+        const isSnowmobile = category === ListingCategory.WINTER_SPORTS && sub.includes('snowmobile');
+        
+        if (isJetSki || isSnowmobile) {
+            return true;
+        }
+
+        // 5. BOATS: Motorized vessels often require Boating Safety IDs
+        if (category === ListingCategory.BOATS) {
+            // Almost all motorized boat rentals should verify identity/Boating safety
+            return true;
+        }
+        
+        return false;
+    }
 }

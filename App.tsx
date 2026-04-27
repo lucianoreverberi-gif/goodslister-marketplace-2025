@@ -3,6 +3,8 @@
 // session management, and data handling, resolving module resolution errors.
 // FIX: Corrected the import for React and its hooks to resolve multiple "Cannot find name" errors.
 import React, { useState, useCallback, useEffect } from 'react';
+import { auth, signInWithGoogle } from './services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
@@ -218,6 +220,45 @@ const App: React.FC = () => {
                 handleNavigate('admin');
             }
             return true;
+        }
+        return false;
+    };
+
+    const handleGoogleLogin = async (): Promise<boolean> => {
+        try {
+            const firebaseUser = await signInWithGoogle();
+            if (firebaseUser) {
+                // Check if user exists in our appData, otherwise "register" them
+                const existingUser = appData.users.find((u: User) => u.email === firebaseUser.email);
+                
+                let userToSession: User;
+                if (existingUser) {
+                    userToSession = existingUser;
+                } else {
+                    // Create basic user profile from Google data
+                    const newUser: User = {
+                        id: firebaseUser.uid,
+                        name: firebaseUser.displayName || 'Google User',
+                        email: firebaseUser.email || '',
+                        registeredDate: new Date().toISOString(),
+                        avatarUrl: firebaseUser.photoURL || `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
+                        favorites: [],
+                        isEmailVerified: firebaseUser.emailVerified
+                    };
+                    // Update locally for now
+                    updateAppData({ users: [...appData.users, newUser] });
+                    userToSession = newUser;
+                }
+
+                const isAdmin = userToSession.email.includes('admin') || userToSession.email === 'lucianoreverberi@gmail.com';
+                setSession({ ...userToSession, isAdmin });
+                setIsLoginModalOpen(false);
+                addNotification('success', 'Authenticated with Google', `Welcome, ${userToSession.name}!`);
+                return true;
+            }
+        } catch (error) {
+            console.error("Google Login Failed:", error);
+            addNotification('info', 'Login Failed', 'Could not authenticate with Google.');
         }
         return false;
     };
@@ -701,6 +742,7 @@ const App: React.FC = () => {
                 <LoginModal 
                     onLogin={handleLogin}
                     onRegister={handleRegister}
+                    onGoogleLogin={handleGoogleLogin}
                     onClose={() => setIsLoginModalOpen(false)} 
                 />
             )}

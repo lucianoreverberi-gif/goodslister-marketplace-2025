@@ -53,6 +53,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
     // Experience Specific Fields
     const [operatorLicenseId, setOperatorLicenseId] = useState(initialData?.operatorLicenseId || '');
+    const [engineCC, setEngineCC] = useState(initialData?.engineCC?.toString() || '');
     const [fuelPolicy, setFuelPolicy] = useState<'included' | 'extra'>(initialData?.fuelPolicy || 'extra');
     const [skillLevel, setSkillLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'all_levels'>(initialData?.skillLevel || 'all_levels');
     const [whatsIncluded, setWhatsIncluded] = useState(initialData?.whatsIncluded || '');
@@ -273,6 +274,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             
             // New Experience Fields
             operatorLicenseId,
+            engineCC: parseFloat(engineCC) || 0,
             fuelPolicy,
             skillLevel,
             whatsIncluded,
@@ -398,6 +400,26 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                                 <option value="extra">Renter Pays Fuel (Extra)</option>
                                                 <option value="included">Fuel Included in Price</option>
                                             </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(category === ListingCategory.MOTORCYCLES || category === ListingCategory.ATVS_UTVS) && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-900 text-teal-900">Engine Displacement (CC)</label>
+                                            <input 
+                                                type="number" 
+                                                value={engineCC} 
+                                                onChange={e => setEngineCC(e.target.value)} 
+                                                className="mt-1 block w-full border-teal-200 rounded-md" 
+                                                placeholder="e.g., 250, 600, 1000" 
+                                            />
+                                            <p className="mt-1 text-xs text-teal-600">
+                                                {category === ListingCategory.MOTORCYCLES 
+                                                    ? "This helps determine if a motorcycle license is required in your state."
+                                                    : "Technical spec for the vehicle's power."}
+                                            </p>
                                         </div>
                                     </div>
                                 )}

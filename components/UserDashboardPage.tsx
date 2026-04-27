@@ -380,6 +380,43 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
     } = props;
     const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
     const [listingToBoost, setListingToBoost] = useState<Listing | null>(null);
+    
+    // Account Security State
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+    const [passwordMessage, setPasswordMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+    
+    // Account Closure State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleUpdatePassword = () => {
+        if (!newPassword || newPassword !== confirmPassword) {
+            setPasswordMessage({ text: 'Passwords do not match or are empty.', type: 'error' });
+            return;
+        }
+        setIsUpdatingPassword(true);
+        // Simulate API call
+        setTimeout(() => {
+            setIsUpdatingPassword(false);
+            setPasswordMessage({ text: 'Password updated successfully!', type: 'success' });
+            setNewPassword('');
+            setConfirmPassword('');
+            setTimeout(() => setPasswordMessage(null), 3000);
+        }, 1000);
+    };
+
+    const handleCloseAccount = () => {
+        setIsDeleting(true);
+        // Simulate API call
+        setTimeout(() => {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+            alert('Your account has been request for closure. You will be logged out shortly.');
+            window.location.reload(); // Refresh to logout for now in this demo
+        }, 2000);
+    };
 
     const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
         { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon },
@@ -410,7 +447,71 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Bio</label>
                                     <textarea defaultValue={user.bio} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-medium text-slate-600 min-h-[120px]" rows={4} />
                                 </div>
-                                <button onClick={() => onUpdateProfile(user.name, user.bio || '', user.avatarUrl)} className="px-8 py-3 bg-cyan-600 text-white font-black rounded-xl">Save Changes</button>
+                                <div className="pt-4 flex justify-end">
+                                    <button onClick={() => onUpdateProfile(user.name, user.bio || '', user.avatarUrl)} className="px-8 py-3 bg-cyan-600 text-white font-black rounded-xl hover:bg-cyan-700 transition-colors">Save Changes</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-slate-100">
+                            <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+                                <LockIcon className="h-5 w-5 text-indigo-500" /> Account Security
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">New Password</label>
+                                    <input 
+                                        type="password" 
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="••••••••" 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Confirm New Password</label>
+                                    <input 
+                                        type="password" 
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="••••••••" 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20" 
+                                    />
+                                </div>
+                            </div>
+                            {passwordMessage && (
+                                <div className={`mt-4 p-4 rounded-xl text-sm font-bold flex items-center gap-2 ${passwordMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                    {passwordMessage.type === 'success' ? <CheckCircleIcon className="h-5 w-5" /> : <AlertTriangleIcon className="h-5 w-5" />}
+                                    {passwordMessage.text}
+                                </div>
+                            )}
+                            <div className="mt-6 flex justify-end">
+                                <button 
+                                    onClick={handleUpdatePassword}
+                                    disabled={isUpdatingPassword}
+                                    className="px-8 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isUpdatingPassword ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : 'Update Password'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-slate-100">
+                            <h3 className="text-xl font-black text-red-600 mb-2 flex items-center gap-2">
+                                <FileWarningIcon className="h-5 w-5" /> Danger Zone
+                            </h3>
+                            <p className="text-sm text-slate-500 font-medium mb-6">Once you delete your account, there is no going back. Please be certain.</p>
+                            <div className="p-6 bg-red-50 rounded-3xl border border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div>
+                                    <h4 className="font-black text-red-900">Close Account</h4>
+                                    <p className="text-xs text-red-700 font-medium mt-1">Permanently delete your profile, listings, and history.</p>
+                                </div>
+                                <button 
+                                    onClick={() => setIsDeleteModalOpen(true)}
+                                    className="px-8 py-3 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2"
+                                >
+                                    <TrashIcon className="h-4 w-4" /> Delete My Account
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -540,6 +641,36 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                 </div>
             </div>
             {listingToBoost && <PromotionModal listing={listingToBoost} onClose={() => setListingToBoost(null)} />}
+            
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-10 text-center animate-in zoom-in duration-300">
+                        <div className="bg-red-100 text-red-600 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-100">
+                            <AlertTriangleIcon className="h-10 w-10" />
+                        </div>
+                        <h2 className="text-3xl font-black tracking-tight text-gray-900">Are you sure?</h2>
+                        <p className="text-slate-500 mt-4 font-medium leading-relaxed">
+                            This action is permanent and cannot be undone. All your data will be wiped from our systems.
+                        </p>
+                        <div className="mt-10 space-y-3">
+                            <button 
+                                onClick={handleCloseAccount}
+                                disabled={isDeleting}
+                                className="w-full py-4 bg-red-600 text-white font-black rounded-2xl hover:bg-red-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {isDeleting ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : 'Yes, Delete My Account'}
+                            </button>
+                            <button 
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                disabled={isDeleting}
+                                className="w-full py-4 bg-slate-100 text-slate-900 font-black rounded-2xl hover:bg-slate-200 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

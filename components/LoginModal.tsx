@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
-import { XIcon, EyeIcon, EyeOffIcon, UserCheckIcon } from './icons';
+import { XIcon, EyeIcon, EyeOffIcon, UserCheckIcon, GoogleIcon } from './icons';
 
 interface LoginModalProps {
     onLogin: (email: string, password: string) => Promise<boolean>;
     onRegister: (name: string, email: string, password: string) => Promise<boolean>;
+    onGoogleLogin: () => Promise<boolean>;
     onClose: () => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLogin, onClose }) => {
     const [isRegistering, setIsRegistering] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -169,12 +170,33 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onClose })
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:bg-cyan-400"
+                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:bg-cyan-400 transition-all font-black"
                             >
                                 {isLoading ? 'Processing...' : (isRegistering ? 'Sign Up' : 'Log In')}
                             </button>
                         </div>
                     </form>
+                    
+                    <div className="mt-6 relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white text-gray-500 font-bold">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-1 gap-3">
+                        <button
+                            type="button"
+                            onClick={onGoogleLogin}
+                            disabled={isLoading}
+                            className="w-full inline-flex justify-center py-3 px-4 rounded-lg shadow-sm bg-white text-sm font-black text-gray-700 border border-gray-300 hover:bg-gray-50 focus:outline-none transition-all active:scale-95"
+                        >
+                            <GoogleIcon className="h-5 w-5 mr-3" />
+                            {isRegistering ? 'Sign up with Google' : 'Login with Google'}
+                        </button>
+                    </div>
                     
                     {!isRegistering && (
                         <div className="mt-4">

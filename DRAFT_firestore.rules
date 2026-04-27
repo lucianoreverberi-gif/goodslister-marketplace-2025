@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'lucianoreverberi@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['SUPER_ADMIN', 'REGION_MANAGER']
+      );
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Entity Validations ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email']) &&
+             data.id is string && data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100;
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll(['id', 'title', 'ownerId', 'category']) &&
+             data.id is string && data.title is string && data.title.size() <= 200 &&
+             data.ownerId is string && data.category is string;
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['id', 'listingId', 'renterId', 'startDate', 'endDate', 'totalPrice', 'status']) &&
+             data.id is string && data.listingId is string && data.renterId is string &&
+             data.startDate is string && data.endDate is string &&
+             data.totalPrice is number && data.status is string;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().role == 'USER';
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(incoming()) && (
+        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'bio', 'avatarUrl', 'favorites', 'homeRegion']) && isOwner(userId)) ||
+        isAdmin()
+      );
+    }
+
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if isVerified() && isOwner(incoming().ownerId) && isValidListing(incoming()) && isValidId(listingId);
+      allow update: if isSignedIn() && (
+        (isOwner(existing().ownerId) && isValidListing(incoming()) && incoming().ownerId == existing().ownerId && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'images', 'pricePerDay', 'pricePerHour', 'pricingType', 'location', 'subcategory', 'engineCC', 'bookedDates', 'isInstantBook'])) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin() || (isSignedIn() && isOwner(existing().ownerId));
+    }
+
+    match /bookings/{bookingId} {
+      function isParticipant() {
+        return isOwner(existing().renterId) || isOwner(get(/databases/$(database)/documents/listings/$(existing().listingId)).data.ownerId);
+      }
+      
+      allow get: if isSignedIn() && isParticipant();
+      allow list: if isSignedIn() && (resource.data.renterId == request.auth.uid || 
+                    get(/databases/$(database)/documents/listings/$(resource.data.listingId)).data.ownerId == request.auth.uid);
+      
+      allow create: if isVerified() && isOwner(incoming().renterId) && isValidBooking(incoming()) && 
+                    exists(/databases/$(database)/documents/listings/$(incoming().listingId));
+      
+      allow update: if isSignedIn() && (
+        (isParticipant() && isValidBooking(incoming()) && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'depositStatus', 'inspectionResult'])) ||
+        isAdmin()
+      );
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isVerified() && request.auth.uid in incoming().participants;
+      
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow create: if isVerified() && isParticipant() && incoming().senderId == request.auth.uid && incoming().text.size() <= 2000;
+      }
+      
+      function isParticipant() {
+        return request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      }
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isVerified() && isOwner(incoming().authorId) && 
+                    exists(/databases/$(database)/documents/bookings/$(incoming().bookingId)) &&
+                    get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.status == 'completed';
+    }
+  }
+}

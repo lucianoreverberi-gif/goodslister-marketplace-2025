@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Booking, InspectionPhoto } from '../types';
+import { Booking, InspectionPhoto, ListingCategory } from '../types';
 // FIX: Added WalletIcon, ClockIcon, and RocketIcon to the import list to resolve "Cannot find name" errors.
 import { 
     CameraIcon, RefreshCwIcon, FuelIcon, 
@@ -36,9 +36,10 @@ interface RentalSessionWizardProps {
 }
 
 const IdentityVerificationStep: React.FC<{ 
-    bookingId: string, 
+    booking: Booking, 
     onVerified: (idUrl: string, faceUrl: string) => void 
-}> = ({ bookingId, onVerified }) => {
+}> = ({ booking, onVerified }) => {
+    const bookingId = booking.id;
     const [subStep, setSubStep] = useState<'intro' | 'scan_id' | 'face_scan' | 'verifying' | 'success'>('intro');
     const [idPhoto, setIdPhoto] = useState<string | null>(null);
     const [facePhoto, setFacePhoto] = useState<string | null>(null);
@@ -91,18 +92,30 @@ const IdentityVerificationStep: React.FC<{
                             <CreditCardIcon className="h-10 w-10 text-cyan-500" />
                         </div>
                         <div className="space-y-2">
-                            <h4 className="text-xl font-black text-slate-900">Scan Renter ID</h4>
-                            <p className="text-sm text-slate-500">Place the physical ID (Driver's License/Passport) in front of the camera.</p>
+                            <h4 className="text-xl font-black text-slate-900">
+                                {booking.listing.category === ListingCategory.BOATS || (booking.listing.category === ListingCategory.WATER_SPORTS && (booking.listing.subcategory?.toLowerCase().includes('jet') || booking.listing.subcategory?.toLowerCase().includes('pwc') || booking.listing.subcategory?.toLowerCase().includes('waverunner')))
+                                    ? "Scan Boating ID / License"
+                                    : "Scan Driver's License"}
+                            </h4>
+                            <p className="text-sm text-slate-500">
+                                {booking.listing.category === ListingCategory.MOTORCYCLES 
+                                    ? `Based on local laws for ${booking.listing.engineCC}cc vehicles, a valid motorcycle license is mandatory.`
+                                    : booking.listing.category === ListingCategory.BOATS || (booking.listing.category === ListingCategory.WATER_SPORTS && (booking.listing.subcategory?.toLowerCase().includes('jet') || booking.listing.subcategory?.toLowerCase().includes('pwc') || booking.listing.subcategory?.toLowerCase().includes('waverunner')))
+                                    ? "A valid Boating Safety Card or Operator License is required to operate this vessel."
+                                    : booking.listing.category === ListingCategory.WINTER_SPORTS && booking.listing.subcategory?.toLowerCase().includes('snowmobile')
+                                    ? "A valid Driver's License or Snowmobile Safety Certificate is required."
+                                    : "A valid Government-issued Driver's License is required to complete this handover."}
+                            </p>
                         </div>
                         <CameraCapture 
-                            label="Capture ID Document" 
+                            label="Capture License" 
                             onCapture={handleIdPhoto} 
                             aspectRatio="id-card" 
                             folder={`verifications/${bookingId}`}
                         />
                         <div className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 p-3 rounded-xl border border-slate-100">
                             <ShieldIcon className="h-3 w-3" />
-                            <span>Privacy: Photo is handled securely and NOT stored on this device</span>
+                            <span>Privacy: Data is verified instantly and then encrypted</span>
                         </div>
                     </div>
                 )}
@@ -193,6 +206,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
 
     // Verification Photos to cleanup later
     const [verificationPhotos, setVerificationPhotos] = useState<{id: string, face: string} | null>(null);
+
+    const requiresLicense = LegalService.isLicenseRequired(booking.listing);
 
     useEffect(() => {
         if (initialMode === 'return' || booking.status === 'active') {
@@ -291,7 +306,13 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                             <p className="text-xs text-slate-400 mt-4 font-bold">+ Security Deposit (Held separately if needed)</p>
                         </div>
                         <button 
-                            onClick={() => setStep('IDENTITY_VERIFICATION')}
+                            onClick={() => {
+                                if (requiresLicense) {
+                                    setStep('IDENTITY_VERIFICATION');
+                                } else {
+                                    setStep('CONTRACT_SIGNING');
+                                }
+                            }}
                             className="w-full py-5 bg-slate-900 hover:bg-black text-white font-black rounded-3xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95"
                         >
                             <CheckCircleIcon className="h-6 w-6 text-cyan-400" /> CONFIRM RECEIPT & PROCEED
@@ -301,7 +322,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
 
                 {step === 'IDENTITY_VERIFICATION' && (
                     <IdentityVerificationStep 
-                        bookingId={booking.id}
+                        booking={booking}
                         onVerified={(idUrl, faceUrl) => {
                             setVerificationPhotos({ id: idUrl, face: faceUrl });
                             setStep('CONTRACT_SIGNING');

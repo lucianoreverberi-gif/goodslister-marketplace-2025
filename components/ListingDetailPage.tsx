@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Listing, User, Booking, ListingCategory } from '../types';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { LegalService } from '../services/legalService';
 // FIX: Added RefreshCwIcon and RocketIcon to the import list to resolve "Cannot find name" errors.
 import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, RefreshCwIcon, RocketIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
+const stripePromise = loadStripe((import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
 
 const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
     const createMarkup = (markdownText: string) => {
@@ -268,6 +269,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
     const durationOptions = [1, 2, 3, 4, 5, 6, 8, 24];
 
+    const requiresLicense = LegalService.isLicenseRequired(listing);
+
     const getPriceDetails = () => {
         let rentalTotal = 0;
         let unitCount = 0;
@@ -414,6 +417,25 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                 </div>
                                 <h1 className="text-4xl font-black text-slate-900 mt-4 leading-tight tracking-tight">{listing.title}</h1>
                                 <div className="flex items-center text-sm text-slate-500 font-bold mt-4"><MapPinIcon className="h-4 w-4 mr-2 text-cyan-500" /><span>{listing.location.city}, {listing.location.state}</span></div>
+                                
+                                {requiresLicense && (
+                                    <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 animate-in slide-in-from-top-2">
+                                        <AlertTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-1" />
+                                        <div>
+                                            <p className="text-sm font-black text-amber-900">License / ID Required</p>
+                                            <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                                                {listing.category === ListingCategory.MOTORCYCLES && (listing.engineCC || 0) >= 50 
+                                                    ? `Based on local laws and engine size (${listing.engineCC}cc), a valid motorcycle license must be presented at pick-up.`
+                                                    : listing.category === ListingCategory.BOATS || (listing.category === ListingCategory.WATER_SPORTS && (listing.subcategory?.toLowerCase().includes('jet') || listing.subcategory?.toLowerCase().includes('pwc') || listing.subcategory?.toLowerCase().includes('waverunner')))
+                                                    ? "A valid Boating Safety ID or Operator license is required to operate this vessel."
+                                                    : listing.category === ListingCategory.WINTER_SPORTS && listing.subcategory?.toLowerCase().includes('snowmobile')
+                                                    ? "A valid Driver's License or Snowmobile Safety Certificate is required for this rental."
+                                                    : "A valid Government-issued Driver's License must be presented at pick-up."}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex items-baseline mt-6 border-b border-slate-100 pb-6">
                                      <span className="text-4xl font-black text-slate-900">${listing.pricingType === 'hourly' ? listing.pricePerHour : listing.pricePerDay}</span>
                                      <span className="text-sm font-bold text-slate-400 ml-1 uppercase">{listing.pricingType === 'hourly' ? '/hour' : '/day'}</span>
@@ -458,6 +480,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                 
                                 {priceDetails && (
                                     <div className="bg-slate-900 rounded-[2rem] p-8 text-white space-y-4 mb-6 shadow-2xl shadow-slate-200 animate-in fade-in duration-500">
+                                        {requiresLicense && (
+                                            <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 mb-2 flex items-center gap-2">
+                                                <AlertTriangleIcon className="h-4 w-4 text-amber-400" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-200">License will be verified at pick-up</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Rental Subtotal</span><span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span></div>
                                         <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Platform Fees</span><span className="font-black text-white">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span></div>
                                         <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Security Deposit (Held)</span><span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span></div>

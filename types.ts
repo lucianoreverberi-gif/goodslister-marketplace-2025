@@ -87,6 +87,7 @@ export interface Listing {
     securityDeposit?: number;
     listingType?: ListingType;
     operatorLicenseId?: string;
+    engineCC?: number;
     fuelPolicy?: 'included' | 'extra';
     skillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'all_levels';
     whatsIncluded?: string;
