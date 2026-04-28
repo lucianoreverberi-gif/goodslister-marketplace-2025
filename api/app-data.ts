@@ -15,7 +15,7 @@ export default async function handler(
     const { rows: listingsRaw } = await sql`SELECT * FROM listings`;
     const { rows: heroSlides } = await sql`SELECT * FROM hero_slides`;
     const { rows: banners } = await sql`SELECT * FROM banners`;
-    const { rows: siteConfig } = await sql`SELECT * FROM site_config LIMIT 1`;
+    const { rows: siteConfig } = await sql`SELECT * FROM site_config `;
     const { rows: bookingsRaw } = await sql`SELECT * FROM bookings`;
       const formattedHeroSlides = heroSlides.map((s: any) => ({
     id: s.id,
@@ -91,10 +91,9 @@ export default async function handler(
         hasReturnInspection: b.has_return_inspection,
     }));
 
-    const configRow = siteConfig[0] || {};
-const categoryImages = configRow.category_images ? JSON.parse(configRow.category_images as string) : {};    const logoUrl = configRow.logo_url || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
-    const paymentApiKey = configRow.payment_api_key || '';
-
+    const logoUrl = siteConfig.find(r => r.key === 'logo_url')?.value || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
+    const categoryImages = siteConfig.find(r => r.key === 'category_images')?.value ? JSON.parse(siteConfig.find(r => r.key === 'category_images')!.value as string) : {};
+    const paymentApiKey = siteConfig.find(r => r.key === 'payment_api_key')?.value || '';
     return response.status(200).json({
       users,
       listings: formattedListings,
