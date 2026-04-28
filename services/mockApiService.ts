@@ -21,13 +21,13 @@ interface AppData {
 
 export const fetchAllData = async (): Promise<AppData> => {
     try {
-        const response = await fetch('/api/app-data');
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        const data = await response.json();
+        
+                    const response = await fetch(`/api/app-data?t=${Date.now()}`);
+                const data = await response.json();
         return {
             users: data.users.length ? data.users : mockUsers,
             listings: data.listings.length ? data.listings : mockListings,
-            heroSlides: data.heroSlides.length ? data.heroSlides : initialHeroSlides,
+                        heroSlides: data.formattedHeroSlides?.length ? data.formattedHeroSlides : initialHeroSlides,
             banners: data.banners.length ? data.banners : initialBanners,
             categoryImages: data.categoryImages || initialCategoryImages,
             logoUrl: data.logoUrl || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
