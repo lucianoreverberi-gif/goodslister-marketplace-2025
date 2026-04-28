@@ -27,7 +27,7 @@ export const fetchAllData = async (): Promise<AppData> => {
         return {
             users: data.users.length ? data.users : mockUsers,
             listings: data.listings.length ? data.listings : mockListings,
-                        heroSlides: data.formattedHeroSlides?.length ? data.formattedHeroSlides : initialHeroSlides,
+                        heroSlides: data.heroSlides?.length ? data.heroSlides : initialHeroSlides,
             banners: data.banners.length ? data.banners : initialBanners,
             categoryImages: data.categoryImages || initialCategoryImages,
             logoUrl: data.logoUrl || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
