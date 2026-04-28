@@ -17,6 +17,12 @@ export default async function handler(
     const { rows: banners } = await sql`SELECT * FROM banners`;
     const { rows: siteConfig } = await sql`SELECT * FROM site_config LIMIT 1`;
     const { rows: bookingsRaw } = await sql`SELECT * FROM bookings`;
+      const formattedHeroSlides = heroSlides.map((s: any) => ({
+    id: s.id,
+    title: s.title,
+    subtitle: s.subtitle,
+    imageUrl: s.image_url,
+  }));
 
     // Reconstruct listings with their owner
     const formattedListings = listingsRaw.map((l: any) => ({
@@ -87,13 +93,13 @@ export default async function handler(
 
     const configRow = siteConfig[0] || {};
     const categoryImages = configRow.category_images || null;
-    const logoUrl = configRow.logo_url || '';
+    const logoUrl = configRow.logo_url || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
     const paymentApiKey = configRow.payment_api_key || '';
 
     return response.status(200).json({
       users,
       listings: formattedListings,
-      heroSlides,
+      formattedHeroSlides,
       banners,
       categoryImages,
       logoUrl,
@@ -109,7 +115,7 @@ export default async function handler(
       heroSlides: [],
       banners: [],
       categoryImages: null,
-      logoUrl: '',
+      logoUrl: 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
       paymentApiKey: '',
       bookings: []
     });
