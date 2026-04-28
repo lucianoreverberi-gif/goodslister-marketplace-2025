@@ -1,125 +1,145 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql } from '@vercel/postgres';
-import { ListingCategory } from '../types';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(
-  request: VercelRequest,
-  response: VercelResponse,
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate');
+
+  const defaultCategoryImages: Record<string, string> = {
+    "Motorcycles": 'https://images.unsplash.com/photo-1625043484555-5654b594199c?q=80&w=1974&auto=format&fit=crop',
+    "Bikes": 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=2070&auto=format&fit=crop',
+    "Boats": 'https://images.unsplash.com/photo-1593853992454-0371391a03a8?q=80&w=2070&auto=format&fit=crop',
+    "Camping": 'https://images.unsplash.com/photo-1537565266759-34f2b345716d?q=80&w=1974&auto=format&fit=crop',
+    "Winter Sports": 'https://images.unsplash.com/photo-1551690628-99de0e94411e?q=80&w=1974&auto=format&fit=crop',
+    "Water Sports": 'https://images.unsplash.com/photo-1570533158623-3a5101657c98?q=80&w=2070&auto=format&fit=crop',
+    "RVs": 'https://images.unsplash.com/photo-1558223533-4c5c7f186358?q=80&w=2070&auto=format&fit=crop',
+    "ATVs & UTVs": 'https://images.unsplash.com/photo-1634567292109-768a4b37f2c9?q=80&w=1974&auto=format&fit=crop',
+  };
+
   try {
-    if (!process.env.POSTGRES_URL) {
-      throw new Error("POSTGRES_URL is not configured.");
+    const logoQuery = await sql`SELECT value FROM site_config WHERE key = 'logo_url'`;
+    const slidesQuery = await sql`SELECT * FROM hero_slides`;
+    const bannersQuery = await sql`SELECT * FROM banners`;
+    const categoryImagesQuery = await sql`SELECT value FROM site_config WHERE key = 'category_images'`;
+    const usersQuery = await sql`SELECT * FROM users`;
+    const listingsQuery = await sql`SELECT * FROM listings`;
+    const bookingsQuery = await sql`SELECT * FROM bookings`;
+
+    const users = usersQuery.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      registeredDate: row.registered_date ? new Date(row.registered_date).toISOString().split('T')[0] : '',
+      avatarUrl: row.avatar_url,
+      isEmailVerified: row.is_email_verified,
+      isPhoneVerified: row.is_phone_verified,
+      isIdVerified: row.is_id_verified,
+      averageRating: Number(row.average_rating),
+      totalReviews: row.total_reviews,
+      favorites: row.favorites || []
+    }));
+
+    const listings = listingsQuery.rows.map(row => {
+      const owner = users.find(u => u.id === row.owner_id);
+      return {
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        category: row.category,
+        subcategory: row.subcategory,
+        pricePerDay: Number(row.price_per_day),
+        pricePerHour: Number(row.price_per_hour),
+        pricingType: row.pricing_type,
+        location: {
+          city: row.location_city,
+          state: row.location_state,
+          country: row.location_country,
+          latitude: Number(row.location_lat),
+          longitude: Number(row.location_lng)
+        },
+        owner: owner || (users.length > 0 ? users[0] : { id: 'deleted', name: 'Unknown', avatarUrl: '' }),
+        images: row.images || [],
+        videoUrl: row.video_url,
+        isFeatured: row.is_featured,
+        rating: Number(row.rating),
+        reviewsCount: row.reviews_count,
+        bookedDates: row.booked_dates || [],
+        ownerRules: row.owner_rules,
+        hasGpsTracker: row.has_gps_tracker,
+        hasCommercialInsurance: row.has_commercial_insurance,
+        securityDeposit: Number(row.security_deposit),
+        listingType: row.listing_type || 'rental',
+        operatorLicenseId: row.operator_license_id,
+        fuelPolicy: row.fuel_policy,
+        skillLevel: row.skill_level,
+        whatsIncluded: row.whats_included,
+        itinerary: row.itinerary,
+        priceUnit: row.price_unit || 'item'
+      };
+    });
+
+    const bookings = bookingsQuery.rows.map(row => {
+      const listing = listings.find(l => l.id === row.listing_id);
+      return {
+        id: row.id,
+        listingId: row.listing_id,
+        listing: listing,
+        renterId: row.renter_id,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        totalPrice: Number(row.total_price),
+        status: row.status,
+        protectionType: row.protection_type,
+        protectionFee: Number(row.protection_fee),
+        paymentMethod: row.payment_method
+      };
+    }).filter(b => b.listing);
+
+    const logoUrl = logoQuery.rows.length > 0 ? logoQuery.rows[0].value : '';
+    const heroSlides = slidesQuery.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      subtitle: row.subtitle,
+      imageUrl: row.image_url
+    }));
+    const banners = bannersQuery.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      buttonText: row.button_text,
+      imageUrl: row.image_url,
+      layout: row.layout || 'overlay',
+      linkUrl: row.link_url || ''
+    }));
+
+    let categoryImages = { ...defaultCategoryImages };
+    if (categoryImagesQuery.rows.length > 0) {
+      try {
+        const dbImages = JSON.parse(categoryImagesQuery.rows[0].value);
+        const merged = { ...defaultCategoryImages, ...dbImages };
+        categoryImages = {};
+        for (const key of Object.keys(defaultCategoryImages)) {
+          categoryImages[key] = merged[key] || defaultCategoryImages[key];
+        }
+      } catch (e) {
+        console.error("Error parsing category images:", e);
+      }
     }
 
-    const { rows: users } = await sql`SELECT * FROM users`;
-    const { rows: listingsRaw } = await sql`SELECT * FROM listings`;
-    const { rows: heroSlides } = await sql`SELECT * FROM hero_slides`;
-    const { rows: banners } = await sql`SELECT * FROM banners`;
-    const { rows: siteConfig } = await sql`SELECT * FROM site_config `;
-    const { rows: bookingsRaw } = await sql`SELECT * FROM bookings`;
-      const formattedHeroSlides = heroSlides.map((s: any) => ({
-    id: s.id,
-    title: s.title,
-    subtitle: s.subtitle,
-    imageUrl: s.image_url,
-  }));
-
-    // Reconstruct listings with their owner
-    const formattedListings = listingsRaw.map((l: any) => ({
-      id: l.id,
-      title: l.title,
-      description: l.description,
-      category: l.category as ListingCategory,
-      subcategory: l.subcategory,
-      pricePerDay: l.price_per_day,
-      pricePerHour: l.price_per_hour,
-      pricingType: l.pricing_type || 'daily',
-      location: {
-        city: l.location_city,
-        state: l.location_state,
-        country: l.location_country,
-        countryCode: l.location_country_code,
-        latitude: l.location_lat,
-        longitude: l.location_lng
-      },
-      currency: l.currency,
-      owner: users.find(u => u.id === l.owner_id) || { id: l.owner_id },
-      images: l.images || [],
-      videoUrl: l.video_url,
-      isFeatured: l.is_featured,
-      isInstantBook: l.is_instant_book,
-      rating: l.rating || 0,
-      reviewsCount: l.reviews_count || 0,
-      bookedDates: l.booked_dates || [],
-      ownerRules: l.owner_rules,
-      approvalStatus: l.approval_status || 'approved',
-      hasGpsTracker: l.has_gps_tracker,
-      hasCommercialInsurance: l.has_commercial_insurance,
-      securityDeposit: l.security_deposit,
-      listingType: l.listing_type || 'rental',
-      operatorLicenseId: l.operator_license_id,
-      fuelPolicy: l.fuel_policy,
-      skillLevel: l.skill_level,
-      whatsIncluded: l.whats_included,
-      itinerary: l.itinerary,
-      priceUnit: l.price_unit || 'item',
-      contractPreference: l.contract_preference || 'standard',
-      customContractUrl: l.custom_contract_url
-    }));
-
-    // Reconstruct bookings
-    const formattedBookings = bookingsRaw.map((b: any) => ({
-        id: b.id,
-        listingId: b.listing_id,
-        listing: formattedListings.find((l: any) => l.id === b.listing_id) || { id: b.listing_id },
-        renterId: b.renter_id,
-        startDate: b.start_date,
-        endDate: b.end_date,
-        totalPrice: b.total_price,
-        protectionType: b.protection_type,
-        protectionFee: b.protection_fee,
-        insurancePlan: b.insurance_plan,
-        amountPaidOnline: b.amount_paid_online,
-        balanceDueOnSite: b.balance_due_on_site,
-        contractSignature: b.contract_signature,
-        paymentMethod: b.payment_method,
-        status: b.status,
-        securityDeposit: b.security_deposit,
-        depositStatus: b.deposit_status,
-        inspectionResult: b.inspection_result,
-        hasHandoverInspection: b.has_handover_inspection,
-        hasReturnInspection: b.has_return_inspection,
-    }));
-
-    const logoUrl = siteConfig.find(r => r.key === 'logo_url')?.value || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
-    const categoryImages = siteConfig.find(r => r.key === 'category_images')?.value ? JSON.parse(siteConfig.find(r => r.key === 'category_images')!.value as string) : {};
-    const paymentApiKey = siteConfig.find(r => r.key === 'payment_api_key')?.value || '';
-    return response.status(200).json({
+    const appData = {
       users,
-      listings: formattedListings,
-siteConfig: {
-    logoUrl,
-    heroSlides: formattedHeroSlides,
-    banners,
-    categoryImages,
-  },
-  paymentApiKey,
-  bookings: formattedBookings
-    });
+      listings,
+      bookings,
+      logoUrl,
+      heroSlides,
+      banners,
+      categoryImages,
+      conversations: [],
+      paymentApiKey: 'pk_live_placeholder'
+    };
+
+    return res.status(200).json(appData);
   } catch (error) {
-    console.error("Error fetching data from Postgres:", error);
-    // Return empty fallback instead of crashing entirely, for frontend resilience
-    return response.status(200).json({
-      users: [],
-      listings: [],
-siteConfig: {
-      logoUrl: 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
-      heroSlides: [],
-      banners: [],
-      categoryImages: null,
-    },
-    paymentApiKey: '',
-    bookings: []
-    });
+    console.error("Failed to fetch app data:", error);
+    return res.status(500).json({ error: "Failed to fetch application data from database." });
   }
 }
