@@ -92,19 +92,20 @@ export default async function handler(
     }));
 
     const configRow = siteConfig[0] || {};
-    const categoryImages = configRow.category_images || null;
-    const logoUrl = configRow.logo_url || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
+const categoryImages = configRow.category_images ? JSON.parse(configRow.category_images as string) : {};    const logoUrl = configRow.logo_url || 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
     const paymentApiKey = configRow.payment_api_key || '';
 
     return response.status(200).json({
       users,
       listings: formattedListings,
-      formattedHeroSlides,
-      banners,
-      categoryImages,
-      logoUrl,
-      paymentApiKey,
-      bookings: formattedBookings
+siteConfig: {
+    logoUrl,
+    heroSlides: formattedHeroSlides,
+    banners,
+    categoryImages,
+  },
+  paymentApiKey,
+  bookings: formattedBookings
     });
   } catch (error) {
     console.error("Error fetching data from Postgres:", error);
@@ -112,12 +113,14 @@ export default async function handler(
     return response.status(200).json({
       users: [],
       listings: [],
+siteConfig: {
+      logoUrl: 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
       heroSlides: [],
       banners: [],
       categoryImages: null,
-      logoUrl: 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png',
-      paymentApiKey: '',
-      bookings: []
+    },
+    paymentApiKey: '',
+    bookings: []
     });
   }
 }
