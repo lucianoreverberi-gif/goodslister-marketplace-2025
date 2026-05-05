@@ -364,6 +364,18 @@ const App: React.FC = () => {
             if (success) {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
             }
+                        // Notify owner of new rental request
+                        const ownerUser = appData.users.find((u: any) => u.id === result.updatedListing.ownerId);
+                        if (ownerUser?.email) {
+                                          mockApi.sendEmail('booking_request', ownerUser.email, {
+                                                              ownerName: ownerUser.name || 'Owner',
+                                                              renterName: session.name,
+                                                              listingTitle: result.updatedListing.title,
+                                                              startDate: format(startDate, 'MMM dd, yyyy'),
+                                                              endDate: format(endDate, 'MMM dd, yyyy'),
+                                                              totalPrice: totalPrice.toFixed(2),
+                                          });
+                        }
         });
 
         return result.newBooking;
@@ -382,6 +394,17 @@ const App: React.FC = () => {
         await mockApi.updateBookingStatus(bookingId, newStatus);
         
         addNotification('success', 'Status Updated', `Booking marked as ${newStatus}.`);
+                    // Send email based on status change
+                    const bk = appData.bookings.find((b: any) => b.id === bookingId);
+                    if (bk && bk.renterEmail) {
+                                      if (newStatus === 'active') {
+                                                          mockApi.sendEmail('check_in', bk.renterEmail, { name: bk.renterName || 'Renter', listingTitle: bk.listingTitle || '', startDate: bk.startDate || '', endDate: bk.endDate || '', bookingId });
+                                      } else if (newStatus === 'completed') {
+                                                          mockApi.sendEmail('check_out', bk.renterEmail, { name: bk.renterName || 'Renter', listingTitle: bk.listingTitle || '', endDate: bk.endDate || '', bookingId });
+                                      } else if (newStatus === 'cancelled') {
+                                                          mockApi.sendEmail('booking_cancelled', bk.renterEmail, { name: bk.renterName || 'Renter', listingTitle: bk.listingTitle || '', bookingId });
+                                      }
+                    }
     };
 
     // NEW: Handle Security Deposit Status Update
