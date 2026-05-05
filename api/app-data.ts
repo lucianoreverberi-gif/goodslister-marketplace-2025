@@ -1,145 +1,173 @@
 import { sql } from '@vercel/postgres';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Helper: verify admin secret header for sensitive data
+function isAdminRequest(req: VercelRequest): boolean {
+    const secret = process.env.CRON_SECRET || process.env.APP_ADMIN_SECRET;
+    if (!secret) return false;
+    const header = req.headers['x-admin-secret'] as string | undefined;
+    return header === secret;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate');
+    // Only allow GET requests
+  if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Set cache headers - public data only (no sensitive user/booking data)
+  res.setHeader('Cache-Control', 'no-store');
+
+  const adminAccess = isAdminRequest(req);
 
   const defaultCategoryImages: Record<string, string> = {
-    "Motorcycles": 'https://images.unsplash.com/photo-1625043484555-5654b594199c?q=80&w=1974&auto=format&fit=crop',
-    "Bikes": 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=2070&auto=format&fit=crop',
-    "Boats": 'https://images.unsplash.com/photo-1593853992454-0371391a03a8?q=80&w=2070&auto=format&fit=crop',
-    "Camping": 'https://images.unsplash.com/photo-1537565266759-34f2b345716d?q=80&w=1974&auto=format&fit=crop',
-    "Winter Sports": 'https://images.unsplash.com/photo-1551690628-99de0e94411e?q=80&w=1974&auto=format&fit=crop',
-    "Water Sports": 'https://images.unsplash.com/photo-1570533158623-3a5101657c98?q=80&w=2070&auto=format&fit=crop',
-    "RVs": 'https://images.unsplash.com/photo-1558223533-4c5c7f186358?q=80&w=2070&auto=format&fit=crop',
-    "ATVs & UTVs": 'https://images.unsplash.com/photo-1634567292109-768a4b37f2c9?q=80&w=1974&auto=format&fit=crop',
+        "Motorcycles": 'https://images.unsplash.com/photo-1625043484555-5654b594199c?q=80&w=1974&auto=format&fit=crop',
+        "Bikes": 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=2070&auto=format&fit=crop',
+        "Boats": 'https://images.unsplash.com/photo-1593853992454-0371391a03a8?q=80&w=2070&auto=format&fit=crop',
+        "Camping": 'https://images.unsplash.com/photo-1537565266759-34f2b345716d?q=80&w=2070&auto=format&fit=crop',
+        "Winter Sports": 'https://images.unsplash.com/photo-1551690628-99de0e94411e?q=80&w=1974&auto=format&fit=crop',
+        "Water Sports": 'https://images.unsplash.com/photo-1570533158623-3a5101657c98?q=80&w=2070&auto=format&fit=crop',
+        "RVs": 'https://images.unsplash.com/photo-1558223533-4c5c7f186358?q=80&w=2070&auto=format&fit=crop',
+        "ATVs & UTVs": 'https://images.unsplash.com/photo-1634567292109-768a4b37f2c9?q=80&w=1974&auto=format&fit=crop',
   };
 
   try {
-    const logoQuery = await sql`SELECT value FROM site_config WHERE key = 'logo_url'`;
-    const slidesQuery = await sql`SELECT * FROM hero_slides`;
-    const bannersQuery = await sql`SELECT * FROM banners`;
-    const categoryImagesQuery = await sql`SELECT value FROM site_config WHERE key = 'category_images'`;
-    const usersQuery = await sql`SELECT * FROM users`;
-    const listingsQuery = await sql`SELECT * FROM listings`;
-    const bookingsQuery = await sql`SELECT * FROM bookings`;
+        const logoQuery = await sql`SELECT value FROM site_config WHERE key = 'logo_url'`;
+        const slidesQuery = await sql`SELECT * FROM hero_slides`;
+        const bannersQuery = await sql`SELECT * FROM banners`;
+        const categoryImagesQuery = await sql`SELECT value FROM site_config WHERE key = 'category_images'`;
+        const listingsQuery = await sql`SELECT * FROM listings`;
 
-    const users = usersQuery.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      registeredDate: row.registered_date ? new Date(row.registered_date).toISOString().split('T')[0] : '',
-      avatarUrl: row.avatar_url,
-      isEmailVerified: row.is_email_verified,
-      isPhoneVerified: row.is_phone_verified,
-      isIdVerified: row.is_id_verified,
-      averageRating: Number(row.average_rating),
-      totalReviews: row.total_reviews,
-      favorites: row.favorites || []
-    }));
+      // Sensitive queries — only run if admin secret is present
+      const usersQuery = adminAccess ? await sql`SELECT * FROM users` : { rows: [] };
+        const bookingsQuery = adminAccess ? await sql`SELECT * FROM bookings` : { rows: [] };
 
-    const listings = listingsQuery.rows.map(row => {
-      const owner = users.find(u => u.id === row.owner_id);
-      return {
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        category: row.category,
-        subcategory: row.subcategory,
-        pricePerDay: Number(row.price_per_day),
-        pricePerHour: Number(row.price_per_hour),
-        pricingType: row.pricing_type,
-        location: {
-          city: row.location_city,
-          state: row.location_state,
-          country: row.location_country,
-          latitude: Number(row.location_lat),
-          longitude: Number(row.location_lng)
-        },
-        owner: owner || (users.length > 0 ? users[0] : { id: 'deleted', name: 'Unknown', avatarUrl: '' }),
-        images: row.images || [],
-        videoUrl: row.video_url,
-        isFeatured: row.is_featured,
-        rating: Number(row.rating),
-        reviewsCount: row.reviews_count,
-        bookedDates: row.booked_dates || [],
-        ownerRules: row.owner_rules,
-        hasGpsTracker: row.has_gps_tracker,
-        hasCommercialInsurance: row.has_commercial_insurance,
-        securityDeposit: Number(row.security_deposit),
-        listingType: row.listing_type || 'rental',
-        operatorLicenseId: row.operator_license_id,
-        fuelPolicy: row.fuel_policy,
-        skillLevel: row.skill_level,
-        whatsIncluded: row.whats_included,
-        itinerary: row.itinerary,
-        priceUnit: row.price_unit || 'item'
-      };
-    });
+      // Public user info for listing owners (no emails, no sensitive data)
+      const publicUsersQuery = await sql`SELECT id, name, avatar_url, average_rating, total_reviews FROM users`;
+        const publicUsers = publicUsersQuery.rows.map(row => ({
+                id: row.id,
+                name: row.name,
+                avatarUrl: row.avatar_url,
+                averageRating: Number(row.average_rating),
+                totalReviews: row.total_reviews,
+        }));
 
-    const bookings = bookingsQuery.rows.map(row => {
-      const listing = listings.find(l => l.id === row.listing_id);
-      return {
-        id: row.id,
-        listingId: row.listing_id,
-        listing: listing,
-        renterId: row.renter_id,
-        startDate: row.start_date,
-        endDate: row.end_date,
-        totalPrice: Number(row.total_price),
-        status: row.status,
-        protectionType: row.protection_type,
-        protectionFee: Number(row.protection_fee),
-        paymentMethod: row.payment_method
-      };
-    }).filter(b => b.listing);
+      // Full user data only for admins
+      const users = adminAccess ? usersQuery.rows.map(row => ({
+              id: row.id,
+              name: row.name,
+              email: row.email,
+              registeredDate: row.registered_date ? new Date(row.registered_date).toISOString().split('T')[0] : '',
+              avatarUrl: row.avatar_url,
+              isEmailVerified: row.is_email_verified,
+              isPhoneVerified: row.is_phone_verified,
+              isIdVerified: row.is_id_verified,
+              averageRating: Number(row.average_rating),
+              totalReviews: row.total_reviews,
+              favorites: row.favorites || []
+      })) : [];
 
-    const logoUrl = logoQuery.rows.length > 0 ? logoQuery.rows[0].value : '';
-    const heroSlides = slidesQuery.rows.map(row => ({
-      id: row.id,
-      title: row.title,
-      subtitle: row.subtitle,
-      imageUrl: row.image_url
-    }));
-    const banners = bannersQuery.rows.map(row => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      buttonText: row.button_text,
-      imageUrl: row.image_url,
-      layout: row.layout || 'overlay',
-      linkUrl: row.link_url || ''
-    }));
+      const listings = listingsQuery.rows.map(row => {
+              const owner = publicUsers.find(u => u.id === row.owner_id);
+              return {
+                        id: row.id,
+                        title: row.title,
+                        description: row.description,
+                        category: row.category,
+                        subcategory: row.subcategory,
+                        pricePerDay: Number(row.price_per_day),
+                        pricePerHour: row.price_per_hour ? Number(row.price_per_hour) : undefined,
+                        location: row.location,
+                        city: row.city,
+                        state: row.state,
+                        latitude: Number(row.location_lat),
+                        longitude: Number(row.location_lng),
+                        owner: owner || { id: 'deleted', name: 'Unknown', avatarUrl: '' },
+                        images: row.images || [],
+                        videoUrl: row.video_url,
+                        isFeatured: row.is_featured,
+                        rating: Number(row.rating),
+                        reviewsCount: row.reviews_count,
+                        bookedDates: row.booked_dates || [],
+                        ownerRules: row.owner_rules,
+                        hasGpsTracker: row.has_gps_tracker,
+                        hasCommercialInsurance: row.has_commercial_insurance,
+                        securityDeposit: Number(row.security_deposit),
+                        listingType: row.listing_type || 'rental',
+                        operatorLicenseId: row.operator_license_id,
+                        fuelPolicy: row.fuel_policy,
+                        skillLevel: row.skill_level,
+                        whatsIncluded: row.whats_included,
+                        itinerary: row.itinerary,
+                        priceUnit: row.price_unit || 'item'
+              };
+      });
 
-    let categoryImages = { ...defaultCategoryImages };
-    if (categoryImagesQuery.rows.length > 0) {
-      try {
-        const dbImages = JSON.parse(categoryImagesQuery.rows[0].value);
-        const merged = { ...defaultCategoryImages, ...dbImages };
-        categoryImages = {};
-        for (const key of Object.keys(defaultCategoryImages)) {
-          categoryImages[key] = merged[key] || defaultCategoryImages[key];
+      // Bookings — admin only
+      const bookings = adminAccess ? bookingsQuery.rows.map(row => {
+              const listing = listings.find(l => l.id === row.listing_id);
+              return {
+                        id: row.id,
+                        listingId: row.listing_id,
+                        listing: listing,
+                        renterId: row.renter_id,
+                        startDate: row.start_date,
+                        endDate: row.end_date,
+                        totalPrice: Number(row.total_price),
+                        status: row.status,
+                        createdAt: row.created_at,
+              };
+      }) : [];
+
+      const logoUrl = logoQuery.rows.length > 0 ? logoQuery.rows[0].value : '';
+
+      const heroSlides = slidesQuery.rows.map(row => ({
+              id: row.id,
+              title: row.title,
+              subtitle: row.subtitle,
+              backgroundImage: row.background_image,
+              order: row.order,
+      }));
+
+      const banners = bannersQuery.rows.map(row => ({
+              id: row.id,
+              title: row.title,
+              description: row.description,
+              buttonText: row.button_text,
+              imageUrl: row.image_url,
+              layout: row.layout || 'overlay',
+              linkUrl: row.link_url || ''
+      }));
+
+      let categoryImages = { ...defaultCategoryImages };
+        if (categoryImagesQuery.rows.length > 0) {
+                try {
+                          const dbImages = JSON.parse(categoryImagesQuery.rows[0].value);
+                          const merged = { ...defaultCategoryImages, ...dbImages };
+                          categoryImages = {};
+                          for (const key of Object.keys(defaultCategoryImages)) {
+                                      categoryImages[key] = merged[key] || defaultCategoryImages[key];
+                          }
+                } catch (e) {
+                          console.error("Error parsing category images:", e);
+                }
         }
-      } catch (e) {
-        console.error("Error parsing category images:", e);
-      }
-    }
 
-    const appData = {
-      users,
-      listings,
-      bookings,
-      logoUrl,
-      heroSlides,
-      banners,
-      categoryImages,
-      conversations: [],
-      paymentApiKey: 'pk_live_placeholder'
-    };
+      const appData = {
+              users,
+              listings,
+              bookings,
+              logoUrl,
+              heroSlides,
+              banners,
+              categoryImages,
+              conversations: [],
+              paymentApiKey: 'pk_live_placeholder'
+      };
 
-    return res.status(200).json(appData);
+      return res.status(200).json(appData);
   } catch (error) {
-    console.error("Failed to fetch app data:", error);
-    return res.status(500).json({ error: "Failed to fetch application data from database." });
+        console.error("Failed to fetch app data:", error);
+        return res.status(500).json({ error: "Failed to fetch application data from database." });
   }
 }
