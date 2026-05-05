@@ -6,7 +6,7 @@ function isAdminRequest(req: VercelRequest): boolean {
     const secret = process.env.CRON_SECRET || process.env.APP_ADMIN_SECRET;
     if (!secret) return false;
     const header = req.headers['x-admin-secret'] as string | undefined;
-    return header === secret;
+    return header === secret;h
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -77,9 +77,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         subcategory: row.subcategory,
                         pricePerDay: Number(row.price_per_day),
                         pricePerHour: row.price_per_hour ? Number(row.price_per_hour) : undefined,
-                        location: row.location,
-                        city: row.city,
-                        state: row.state,
+                    location: {
+                        city: row.city || '',
+                        state: row.state || '',
+                        country: row.country || 'USA',
+                        address: row.location || '',
+                    },
                         latitude: Number(row.location_lat),
                         longitude: Number(row.location_lng),
                         owner: owner || { id: 'deleted', name: 'Unknown', avatarUrl: '' },
