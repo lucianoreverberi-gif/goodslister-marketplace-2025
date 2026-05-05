@@ -4,7 +4,7 @@
 // FIX: Corrected the import for React and its hooks to resolve multiple "Cannot find name" errors.
 import React, { useState, useCallback, useEffect } from 'react';
 import { auth, signInWithGoogle } from './services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
@@ -205,8 +205,7 @@ const App: React.FC = () => {
 
         // Persist
         await mockApi.toggleFavorite(session.id, listingId);
-    };
-
+// Send Welcome Email via Resend
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
         const user = await mockApi.loginUser(email);
         if (user) {
@@ -223,6 +222,18 @@ const App: React.FC = () => {
         }
         return false;
     };
+
+                const handlePasswordReset = async (email: string): Promise<boolean> => {
+                                try {
+                                                    await sendPasswordResetEmail(auth, email);
+                                                    // Also send our branded password_reset email via Resend
+                                                    mockApi.sendEmail('password_reset', email, {
+                                                                            name: email.split('@')[0],
+                                                                            resetUrl: 'https://www.goodslister.com',
+                                                    });
+                                                    addNotification('success', 'Email Sent', `Password reset instructions sent to ${email}.`);
+                                                    return true;
+                                } catch (error: any) {
 
     const handleGoogleLogin = async (): Promise<boolean> => {
         try {
