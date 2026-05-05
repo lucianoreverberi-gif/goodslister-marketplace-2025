@@ -235,6 +235,14 @@ const App: React.FC = () => {
                                                     return true;
                                 } catch (error: any) {
 
+                                                                if ((error as any).code === 'auth/user-not-found') {
+                                                                                                    addNotification('error', 'Not Found', `No account found for ${email}.`);
+                                                                } else {
+                                                                                                    addNotification('error', 'Error', 'Failed to send password reset email.');
+                                                                }
+                                                                return false;
+                                }
+                };
     const handleGoogleLogin = async (): Promise<boolean> => {
         try {
             const firebaseUser = await signInWithGoogle();
