@@ -72,13 +72,13 @@ export class LegalService {
      * Based on the provided PDF text with dynamic replacements.
      */
     private static generateFloridaBareboatContract(listing: Listing, renter: User, startDate: Date, endDate: Date, totalPrice: number): string {
-        const hostName = (listing.owner?.name || 'Unknown Host').toUpperCase();
+        const hostName = listing.owner.name.toUpperCase();
         // FIX: Escaped the 'on' string literal using single quotes inside the format string.
         // date-fns treats 'o' as ordinal number token, causing errors if not escaped.
         const startStr = format(startDate, "h:mm aa 'on' MMM dd, yyyy");
         const endStr = format(endDate, "h:mm aa 'on' MMM dd, yyyy");
         const vesselDescription = `${listing.title} (${listing.subcategory || 'Vessel'})`.toUpperCase();
-        const cruisingArea = `${listing.location?.city || 'the area'}, ${listing.location?.state || ''} and surrounding coastal waters`;
+        const cruisingArea = `${listing.location.city}, ${listing.location.state} and surrounding coastal waters`;
         const maxGuests = "As per USCG Capacity Plate"; // Default if not in listing data
         const securityDeposit = listing.securityDeposit ? `$${listing.securityDeposit.toFixed(2)}` : "$0.00";
 
@@ -208,7 +208,7 @@ export class LegalService {
                 <div class="grid grid-cols-2 gap-6">
                     <div>
                         <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Lessor (Owner)</p>
-                        <p class="font-medium text-gray-900 text-base">${listing.owner?.name || 'Unknown Host'}</p>
+                        <p class="font-medium text-gray-900 text-base">${listing.owner.name}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Lessee (Renter)</p>

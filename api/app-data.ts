@@ -37,13 +37,7 @@ export default async function handler(
         longitude: l.location_lng
       },
       currency: l.currency,
-      owner: users.find(u => u.id === l.owner_id) || { 
-        id: l.owner_id, 
-        name: 'Unknown Host', 
-        avatarUrl: `https://i.pravatar.cc/150?u=${l.owner_id}`,
-        registeredDate: new Date().toISOString(),
-        email: '' 
-      },
+      owner: users.find(u => u.id === l.owner_id) || { id: l.owner_id },
       images: l.images || [],
       videoUrl: l.video_url,
       isFeatured: l.is_featured,

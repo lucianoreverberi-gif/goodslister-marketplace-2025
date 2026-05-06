@@ -38,7 +38,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const [advisoryEnabled, setAdvisoryEnabled] = useState(false);
 
     // Location
-    const initialLocationStr = initialData ? `${initialData.location?.city || ''}${initialData.location?.city && initialData.location?.state ? ', ' : ''}${initialData.location?.state || ''}${initialData.location?.state && initialData.location?.country ? ', ' : ''}${initialData.location?.country || ''}` : '';
+    const initialLocationStr = initialData ? `${initialData.location.city}, ${initialData.location.state}, ${initialData.location.country}` : '';
     const [location, setLocation] = useState(initialLocationStr);
     
     // Media & Rules
@@ -258,8 +258,8 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                 city: locationParts[0]?.trim() || location,
                 state: locationParts[1]?.trim() || '',
                 country: locationParts[locationParts.length - 1]?.trim() || '',
-                latitude: initialData?.location?.latitude || 0, 
-                longitude: initialData?.location?.longitude || 0
+                latitude: initialData?.location.latitude || 0, 
+                longitude: initialData?.location.longitude || 0
             },
             owner: currentUser,
             images: imageUrls,

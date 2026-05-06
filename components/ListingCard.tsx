@@ -54,7 +54,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, isFavorite,
                 </p>
                 <div className="flex items-center text-sm text-gray-600 mt-2">
                     <MapPinIcon className="h-4 w-4 mr-1 flex-shrink-0" />
-                    <span>{listing?.location?.city || 'Location unknown'}, {listing?.location?.state || ''}</span>
+                    <span>{listing.location.city}, {listing.location.state}</span>
                 </div>
                  <div className="mt-4 flex justify-between items-center text-sm pt-4 border-t border-gray-100">
                     <div className="flex items-center">
@@ -63,8 +63,8 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, isFavorite,
                         <span className="text-gray-500 ml-1">({listing.reviewsCount} reviews)</span>
                     </div>
                      <div className="flex items-center">
-                         <img src={listing.owner?.avatarUrl || `https://i.pravatar.cc/150?u=${listing.id}`} alt={listing.owner?.name || 'Host'} className="w-6 h-6 rounded-full mr-2"/>
-                         <span className="text-gray-600">{(listing.owner?.name || 'Host').split(' ')[0]}</span>
+                         <img src={listing.owner.avatarUrl} alt={listing.owner.name} className="w-6 h-6 rounded-full mr-2"/>
+                         <span className="text-gray-600">{listing.owner.name.split(' ')[0]}</span>
                      </div>
                 </div>
             </div>

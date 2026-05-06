@@ -204,9 +204,7 @@ const BookingsManager: React.FC<{
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     const [processingId, setProcessingId] = useState<string | null>(null);
     
-    const displayedBookings = mode === 'renting' 
-        ? bookings.filter(b => b.renterId === userId && b.listing) 
-        : bookings.filter(b => b.listing?.owner?.id === userId);
+    const displayedBookings = mode === 'renting' ? bookings.filter(b => b.renterId === userId) : bookings.filter(b => b.listing.owner.id === userId);
 
     return (
         <div className="animate-in fade-in duration-500">
@@ -233,9 +231,9 @@ const BookingsManager: React.FC<{
                 {displayedBookings.map(b => (
                     <div key={b.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-900">
                         <div className="flex items-center gap-4 w-full md:w-auto">
-                            <img src={b.listing?.images?.[0] || 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=400&auto=format&fit=crop'} className="w-16 h-16 rounded-2xl object-cover bg-slate-100" />
+                            <img src={b.listing.images[0]} className="w-16 h-16 rounded-2xl object-cover bg-slate-100" />
                             <div>
-                                <h4 className="font-bold leading-tight text-gray-900">{b.listing?.title || 'Trip'}</h4>
+                                <h4 className="font-bold leading-tight text-gray-900">{b.listing.title}</h4>
                                 <p className="text-xs text-slate-500 mt-1">{format(new Date(b.startDate), 'MMM dd')} - {format(new Date(b.endDate), 'MMM dd, yyyy')}</p>
                                 <div className="flex items-center gap-2 mt-2">
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
