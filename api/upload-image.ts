@@ -1,5 +1,6 @@
 import { put } from '@vercel/blob';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { requireAdmin } from './_lib/admin-auth';
 
 export default async function handler(
   request: VercelRequest,
@@ -9,10 +10,23 @@ export default async function handler(
     return response.status(405).json({ error: 'Method not allowed' });
   }
 
+  const auth = await requireAdmin(request);
+  if (!auth.ok) {
+    return response.status(401).json({ error: auth.error });
+  }
+
   const { filename, folder } = request.query;
 
   if (!filename || Array.isArray(filename)) {
     return response.status(400).json({ error: 'Filename is required' });
+  }
+
+  // Validate extension
+  const filenameStr = String(filename);
+  const extension = filenameStr.split('.').pop()?.toLowerCase() || '';
+  const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+  if (!allowedExtensions.includes(extension)) {
+    return response.status(400).json({ error: 'Invalid file type' });
   }
 
   const folderPath = folder && !Array.isArray(folder) ? `${folder}/` : '';
