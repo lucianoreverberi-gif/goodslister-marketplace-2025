@@ -203,9 +203,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             // Improved Location Matching: Split by comma to handle "City, State" better
             const locationFilterLower = locationFilter.toLowerCase();
             const matchesLocation = locationFilter ?
-                listing.location.city.toLowerCase().includes(locationFilterLower) ||
-                listing.location.state.toLowerCase().includes(locationFilterLower) ||
-                listing.location.country.toLowerCase().includes(locationFilterLower)
+                (listing.location?.city || '').toLowerCase().includes(locationFilterLower) ||
+                (listing.location?.state || '').toLowerCase().includes(locationFilterLower) ||
+                (listing.location?.country || '').toLowerCase().includes(locationFilterLower)
                 : true;
 
             const price = listing.pricingType === 'daily' ? listing.pricePerDay : listing.pricePerHour;
@@ -241,16 +241,20 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             // If there's only one result, center and zoom directly on it
             if (filteredAndSortedListings.length === 1) {
                 const singleListing = filteredAndSortedListings[0];
-                map.panTo({
-                    lat: singleListing.location.latitude,
-                    lng: singleListing.location.longitude,
-                });
-                map.setZoom(14); // A good zoom level for a city area
+                if (singleListing.location?.latitude && singleListing.location?.longitude) {
+                    map.panTo({
+                        lat: singleListing.location.latitude,
+                        lng: singleListing.location.longitude,
+                    });
+                    map.setZoom(14); // A good zoom level for a city area
+                }
             } else {
                 // If there are multiple results, fit them all within the map bounds
                 const bounds = new (window as any).google.maps.LatLngBounds();
                 filteredAndSortedListings.forEach(listing => {
-                    bounds.extend({ lat: listing.location.latitude, lng: listing.location.longitude });
+                    if (listing.location?.latitude && listing.location?.longitude) {
+                        bounds.extend({ lat: listing.location.latitude, lng: listing.location.longitude });
+                    }
                 });
                 map.fitBounds(bounds);
             }
@@ -483,24 +487,26 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                     options={{ disableDefaultUI: true, zoomControl: true, streetViewControl: false, mapTypeControl: false }}
                 >
                     {filteredAndSortedListings.map(listing => (
-                        <Marker
-                            key={listing.id}
-                            position={{ lat: listing.location.latitude, lng: listing.location.longitude }}
-                            onClick={() => setSelectedListing(listing)}
-                            onMouseOver={() => setHoveredListingId(listing.id)}
-                            onMouseOut={() => setHoveredListingId(null)}
-                            icon={{
-                                // FIX: Cast 'window' to 'any' to access 'google.maps' without type definitions.
-                                path: (window as any).google.maps.SymbolPath.CIRCLE,
-                                scale: hoveredListingId === listing.id ? 10 : 7,
-                                fillColor: hoveredListingId === listing.id ? "#06B6D4" : "#10B981",
-                                fillOpacity: 0.9,
-                                strokeColor: "white",
-                                strokeWeight: 2,
-                            }}
-                        />
+                        listing.location?.latitude && listing.location?.longitude && (
+                            <Marker
+                                key={listing.id}
+                                position={{ lat: listing.location.latitude, lng: listing.location.longitude }}
+                                onClick={() => setSelectedListing(listing)}
+                                onMouseOver={() => setHoveredListingId(listing.id)}
+                                onMouseOut={() => setHoveredListingId(null)}
+                                icon={{
+                                    // FIX: Cast 'window' to 'any' to access 'google.maps' without type definitions.
+                                    path: (window as any).google.maps.SymbolPath.CIRCLE,
+                                    scale: hoveredListingId === listing.id ? 10 : 7,
+                                    fillColor: hoveredListingId === listing.id ? "#06B6D4" : "#10B981",
+                                    fillOpacity: 0.9,
+                                    strokeColor: "white",
+                                    strokeWeight: 2,
+                                }}
+                            />
+                        )
                     ))}
-                    {selectedListing && (
+                    {selectedListing && selectedListing.location?.latitude && selectedListing.location?.longitude && (
                         <InfoWindow
                             position={{ lat: selectedListing.location.latitude, lng: selectedListing.location.longitude }}
                             onCloseClick={() => setSelectedListing(null)}

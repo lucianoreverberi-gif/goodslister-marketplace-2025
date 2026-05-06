@@ -16,7 +16,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ listings, onImageUpdate
         setLoadingStates(prev => ({ ...prev, [listing.id]: true }));
         setErrorStates(prev => ({ ...prev, [listing.id]: null }));
         try {
-            const locationContext = `in ${listing.location.city}, ${listing.location.country}`;
+            const locationContext = `in ${listing?.location?.city || 'the area'}, ${listing?.location?.country || ''}`;
             const newImageUrl = await generateImageForListing(listing.title, locationContext);
             onImageUpdate(listing.id, newImageUrl);
         } catch (error) {

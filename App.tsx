@@ -4,7 +4,7 @@
 // FIX: Corrected the import for React and its hooks to resolve multiple "Cannot find name" errors.
 import React, { useState, useCallback, useEffect } from 'react';
 import { auth, signInWithGoogle } from './services/firebase';
-import { onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
@@ -205,7 +205,8 @@ const App: React.FC = () => {
 
         // Persist
         await mockApi.toggleFavorite(session.id, listingId);
-// Send Welcome Email via Resend
+    };
+
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
         const user = await mockApi.loginUser(email);
         if (user) {
@@ -223,26 +224,6 @@ const App: React.FC = () => {
         return false;
     };
 
-                const handlePasswordReset = async (email: string): Promise<boolean> => {
-                                try {
-                                                    await sendPasswordResetEmail(auth, email);
-                                                    // Also send our branded password_reset email via Resend
-                                                    mockApi.sendEmail('password_reset', email, {
-                                                                            name: email.split('@')[0],
-                                                                            resetUrl: 'https://www.goodslister.com',
-                                                    });
-                                                    addNotification('success', 'Email Sent', `Password reset instructions sent to ${email}.`);
-                                                    return true;
-                                } catch (error: any) {
-
-                                                                if ((error as any).code === 'auth/user-not-found') {
-                                                                                                    addNotification('error', 'Not Found', `No account found for ${email}.`);
-                                                                } else {
-                                                                                                    addNotification('error', 'Error', 'Failed to send password reset email.');
-                                                                }
-                                                                return false;
-                                }
-                };
     const handleGoogleLogin = async (): Promise<boolean> => {
         try {
             const firebaseUser = await signInWithGoogle();
@@ -383,18 +364,6 @@ const App: React.FC = () => {
             if (success) {
                 addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
             }
-                        // Notify owner of new rental request
-                        const ownerUser = appData.users.find((u: any) => u.id === result.updatedListing.ownerId);
-                        if (ownerUser?.email) {
-                                          mockApi.sendEmail('booking_request', ownerUser.email, {
-                                                              ownerName: ownerUser.name || 'Owner',
-                                                              renterName: session.name,
-                                                              listingTitle: result.updatedListing.title,
-                                                              startDate: format(startDate, 'MMM dd, yyyy'),
-                                                              endDate: format(endDate, 'MMM dd, yyyy'),
-                                                              totalPrice: totalPrice.toFixed(2),
-                                          });
-                        }
         });
 
         return result.newBooking;
@@ -413,17 +382,6 @@ const App: React.FC = () => {
         await mockApi.updateBookingStatus(bookingId, newStatus);
         
         addNotification('success', 'Status Updated', `Booking marked as ${newStatus}.`);
-                    // Send email based on status change
-                    const bk = appData.bookings.find((b: any) => b.id === bookingId);
-                    if (bk && bk.renterEmail) {
-                                      if (newStatus === 'active') {
-                                                          mockApi.sendEmail('check_in', bk.renterEmail, { name: bk.renterName || 'Renter', listingTitle: bk.listingTitle || '', startDate: bk.startDate || '', endDate: bk.endDate || '', bookingId });
-                                      } else if (newStatus === 'completed') {
-                                                          mockApi.sendEmail('check_out', bk.renterEmail, { name: bk.renterName || 'Renter', listingTitle: bk.listingTitle || '', endDate: bk.endDate || '', bookingId });
-                                      } else if (newStatus === 'cancelled') {
-                                                          mockApi.sendEmail('booking_cancelled', bk.renterEmail, { name: bk.renterName || 'Renter', listingTitle: bk.listingTitle || '', bookingId });
-                                      }
-                    }
     };
 
     // NEW: Handle Security Deposit Status Update

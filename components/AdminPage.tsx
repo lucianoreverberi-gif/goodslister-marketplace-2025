@@ -1223,7 +1223,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
     // --- FILTERING LOGIC ---
     const filteredListings = useMemo(() => {
         if (selectedRegion === 'GLOBAL') return listings;
-        return listings.filter(l => l.location.countryCode === selectedRegion);
+        return listings.filter(l => l.location?.countryCode === selectedRegion);
     }, [listings, selectedRegion]);
 
     const filteredUsers = useMemo(() => {
@@ -1443,12 +1443,12 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <tr key={listing.id} className="border-b">
                                             <td className="p-3">{listing.title}</td>
                                             <td className="p-3">{listing.category}</td>
-                                            <td className="p-3">{listing.owner.name}</td>
+                                            <td className="p-3">{listing.owner?.name || 'Unknown Host'}</td>
                                             <td className="p-3">${listing.pricePerDay} <span className="text-gray-400 text-xs">{listing.currency}</span></td>
                                             <td className="p-3 text-gray-600">
                                                 <div className="flex items-center gap-1">
                                                     <MapPinIcon className="h-3 w-3" />
-                                                    {listing.location.city}, {listing.location.country}
+                                                    {listing?.location?.city || 'Location'}, {listing?.location?.country || ''}
                                                 </div>
                                             </td>
                                             <td className="p-3 text-right flex justify-end gap-2">

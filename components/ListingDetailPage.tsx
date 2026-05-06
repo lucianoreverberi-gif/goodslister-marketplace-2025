@@ -65,7 +65,7 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
             <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900">Request Sent!</h2>
             <p className="text-gray-600 mt-2">
-                We've processed your fees. The owner <strong>{booking.listing.owner.name}</strong> has been notified to approve your trip.
+                We've processed your fees. The owner <strong>{booking.listing.owner?.name || 'the host'}</strong> has been notified to approve your trip.
             </p>
             <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
                 <div className="flex items-center justify-between mb-2">
@@ -416,7 +416,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     )}
                                 </div>
                                 <h1 className="text-4xl font-black text-slate-900 mt-4 leading-tight tracking-tight">{listing.title}</h1>
-                                <div className="flex items-center text-sm text-slate-500 font-bold mt-4"><MapPinIcon className="h-4 w-4 mr-2 text-cyan-500" /><span>{listing.location.city}, {listing.location.state}</span></div>
+                                <div className="flex items-center text-sm text-slate-500 font-bold mt-4"><MapPinIcon className="h-4 w-4 mr-2 text-cyan-500" /><span>{listing?.location?.city || 'Location'}, {listing?.location?.state || ''}</span></div>
                                 
                                 {requiresLicense && (
                                     <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 animate-in slide-in-from-top-2">
@@ -446,9 +446,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                              <div className="mt-8">
                                 <div className="flex items-center justify-between">
                                       <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity" onClick={onViewOwnerProfile}>
-                                        <img src={listing.owner.avatarUrl} alt={listing.owner.name} className="w-12 h-12 rounded-2xl object-cover mr-4 shadow-sm border border-slate-100"/>
+                                        <img src={listing.owner?.avatarUrl || `https://i.pravatar.cc/150?u=${listing.id}`} alt={listing.owner?.name || 'Host'} className="w-12 h-12 rounded-2xl object-cover mr-4 shadow-sm border border-slate-100"/>
                                         <div>
-                                            <p className="font-black text-slate-900 text-sm">{listing.owner.name}</p>
+                                            <p className="font-black text-slate-900 text-sm">{listing.owner?.name || 'Unknown Host'}</p>
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verified Host</p>
                                         </div>
                                     </div>
