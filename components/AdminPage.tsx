@@ -3,6 +3,7 @@ import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, D
 import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon, SearchIcon, RefreshCwIcon, CalendarIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
+import { uploadAdminImage, saveSiteConfig, saveHeroSlides, saveBanners } from '../services/adminApi';
 
 type AdminTab = 'dashboard' | 'users' | 'listings' | 'bookings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings';
 
@@ -59,6 +60,52 @@ const mockLedger = [
     { id: 'txn_107', date: '2024-05-12', category: 'REVENUE', description: 'Fixed Service Fee (Tier 2)', amount: 25.00, status: 'CLEARED', user: 'Guest #1204' },
     { id: 'txn_108', date: '2024-05-12', category: 'PAYOUT', description: 'Rental Payment to Host', amount: -200.00, status: 'CLEARED', user: 'Host: Ana R.' },
 ];
+
+const AdminContentPicker: React.FC<{
+    label: string, 
+    currentUrl: string, 
+    onUrlChange: (url: string) => void,
+    folder?: string,
+    helpText?: string
+}> = ({ label, currentUrl, onUrlChange, folder = 'admin', helpText }) => {
+    const [loading, setLoading] = useState(false);
+    return (
+        <div className="space-y-2">
+            <div className="flex justify-between items-end">
+                <label className="block text-sm font-bold text-slate-700">{label}</label>
+                {helpText && <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{helpText}</span>}
+            </div>
+            <div className="flex items-center gap-4 p-4 border rounded-2xl bg-slate-50 group hover:border-cyan-200 transition-colors">
+                <div className="w-20 h-20 bg-white rounded-xl border overflow-hidden shadow-sm flex-shrink-0">
+                    <img src={currentUrl} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1">
+                    <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                setLoading(true);
+                                try {
+                                    const url = await uploadAdminImage(file, folder);
+                                    onUrlChange(url);
+                                } catch (err) {
+                                    console.error(err);
+                                    alert('Upload failed. Check if you are correctly signed in as the authorized admin.');
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }
+                        }}
+                        className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-gray-900 file:text-white hover:file:bg-black transition-all cursor-pointer"
+                    />
+                    {loading && <p className="text-[10px] text-cyan-600 font-black uppercase mt-2 animate-pulse">Uploading to server...</p>}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const FinancialsTab: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -1189,6 +1236,36 @@ const AdminPage: React.FC<AdminPageProps> = ({
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     const [uploadingStates, setUploadingStates] = useState<{[key: string]: boolean}>({});
 
+    // --- Content Persistence States ---
+    const [localLogoUrl, setLocalLogoUrl] = useState(logoUrl);
+    const [localHeroSlides, setLocalHeroSlides] = useState(heroSlides);
+    const [localBanners, setLocalBanners] = useState(banners);
+    const [localCategoryImages, setLocalCategoryImages] = useState(categoryImages);
+    const [isSavingContent, setIsSavingContent] = useState(false);
+
+    useEffect(() => {
+        setLocalLogoUrl(logoUrl);
+        setLocalHeroSlides(heroSlides);
+        setLocalBanners(banners);
+        setLocalCategoryImages(categoryImages);
+    }, [logoUrl, heroSlides, banners, categoryImages]);
+
+    const handleSaveAllContent = async () => {
+        setIsSavingContent(true);
+        try {
+            await saveSiteConfig('logo_url', localLogoUrl);
+            await saveSiteConfig('category_images', JSON.stringify(localCategoryImages));
+            await saveHeroSlides(localHeroSlides);
+            await saveBanners(localBanners);
+            alert('Homepage content persisted to cloud successfully!');
+        } catch (err) {
+            console.error(err);
+            alert('Failed to save content. Please ensure you have admin privileges.');
+        } finally {
+            setIsSavingContent(false);
+        }
+    };
+
     // --- Global Region Context ---
     const [selectedRegion, setSelectedRegion] = useState<string>('GLOBAL'); 
 
@@ -1479,134 +1556,194 @@ const AdminPage: React.FC<AdminPageProps> = ({
                     </div>
                 );
             case 'content':
+                const displayCategoryImages = { ...initialCategoryImages, ...localCategoryImages };
                 return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">Edit Homepage Content</h2>
-                        <div className="space-y-8">
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-lg font-semibold mb-4">Site Logo</h3>
-                                <ImageUploader
-                                    label="Logo (JPG or PNG). Will be displayed in the header and footer."
-                                    currentImageUrl={logoUrl}
-                                    onImageChange={(newUrl) => wrapImageUpdate('logo', () => onUpdateLogo(newUrl))}
-                                    isLoading={uploadingStates['logo']}
-                                />
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="flex justify-between items-center mb-8">
+                             <div>
+                                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Content Management</h2>
+                                <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1">Home Experience & Branding</p>
+                             </div>
+                             <button 
+                                onClick={handleSaveAllContent}
+                                disabled={isSavingContent}
+                                className="px-8 py-3 bg-gray-900 text-white rounded-[2rem] font-bold hover:bg-black transition-all flex items-center gap-2 shadow-2xl disabled:opacity-50 active:scale-95 group"
+                            >
+                                <RocketIcon className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                {isSavingContent ? 'Persisting...' : 'Persist Changes'}
+                            </button>
+                        </div>
+
+                        {/* Site Logo Section */}
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-10">
+                            <div className="flex items-center gap-3 mb-6">
+                                <PaletteIcon className="w-6 h-6 text-slate-400" />
+                                <h3 className="text-xl font-black text-slate-900">Brand Identity</h3>
                             </div>
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-lg font-semibold mb-4">Hero Section</h3>
-                                {heroSlides.map(slide => (
-                                    <div key={slide.id} className="relative space-y-4 border rounded-lg p-4 pt-8 mb-6 last:mb-0">
-                                        <button 
-                                            onClick={() => onDeleteSlide(slide.id)} 
-                                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors"
-                                            aria-label="Delete slide"
-                                        >
-                                            <XIcon className="h-5 w-5" />
-                                        </button>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">Title</label>
-                                            <input type="text" value={slide.title} onChange={e => onUpdateSlide(slide.id, 'title', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">Subtitle</label>
-                                            <input type="text" value={slide.subtitle} onChange={e => onUpdateSlide(slide.id, 'subtitle', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
-                                        </div>
-                                        <ImageUploader 
-                                            label="Background Image"
-                                            currentImageUrl={slide.imageUrl}
-                                            onImageChange={(newUrl) => wrapImageUpdate(slide.id, () => onUpdateSlide(slide.id, 'imageUrl', newUrl))}
-                                            isLoading={uploadingStates[slide.id]}
-                                        />
-                                    </div>
-                                ))}
-                                <button onClick={onAddSlide} className="mt-4 w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-cyan-500 hover:text-cyan-600 font-semibold transition-colors">
+                            <AdminContentPicker
+                                label="Primary Site Logo"
+                                helpText="Recommended: SVG or Transparent PNG"
+                                currentUrl={localLogoUrl}
+                                onUrlChange={setLocalLogoUrl}
+                            />
+                        </div>
+                        {/* Hero Section */}
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-10">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center gap-3">
+                                    <LayoutOverlayIcon className="w-6 h-6 text-slate-400" />
+                                    <h3 className="text-xl font-black text-slate-900">Hero Carousel</h3>
+                                </div>
+                                <button 
+                                    onClick={() => setLocalHeroSlides([...localHeroSlides, { id: `slide_${Date.now()}`, title: 'New Adventure', subtitle: 'Explore the unexplored', imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&q=80' }])} 
+                                    className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                                >
                                     + Add New Slide
                                 </button>
                             </div>
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-lg font-semibold mb-4">Category Images</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.entries(displayCategoryImages).map(([category, imageUrl]) => (
-                                        <div key={category}>
-                                            <ImageUploader
-                                                label={category}
-                                                currentImageUrl={imageUrl}
-                                                onImageChange={(newUrl) => wrapImageUpdate(category, () => onUpdateCategoryImage(category as ListingCategory, newUrl))}
-                                                isLoading={uploadingStates[category]}
-                                            />
+                            <div className="space-y-6">
+                                {localHeroSlides.map((slide, index) => (
+                                    <div key={slide.id} className="relative bg-slate-50 rounded-[2rem] p-8 border border-slate-100">
+                                        <div className="absolute top-4 left-4 w-6 h-6 bg-white rounded-full border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-400">
+                                            {index + 1}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-lg font-semibold mb-4">Promotional Banners</h3>
-                                {banners.map(banner => (
-                                    <div key={banner.id} className="relative space-y-4 border rounded-lg p-4 pt-8 mb-6 last:mb-0">
                                         <button 
-                                            onClick={() => onDeleteBanner(banner.id)} 
-                                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors"
-                                            aria-label="Delete banner"
+                                            onClick={() => setLocalHeroSlides(prev => prev.filter(s => s.id !== slide.id))} 
+                                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                                         >
-                                            <XIcon className="h-5 w-5" />
+                                            <TrashIcon className="h-4 w-4" />
                                         </button>
-                                        
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Banner Layout</label>
-                                            <div className="flex gap-4">
-                                                {['overlay', 'split', 'wide'].map((layout) => (
-                                                    <button
-                                                        key={layout}
-                                                        onClick={() => onUpdateBanner(banner.id, 'layout', layout)}
-                                                        className={`flex flex-col items-center p-2 rounded-lg border transition-all ${
-                                                            (banner.layout || 'overlay') === layout 
-                                                                ? 'border-cyan-500 bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500' 
-                                                                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-                                                        }`}
-                                                    >
-                                                        {layout === 'overlay' && <LayoutOverlayIcon className="w-8 h-8 mb-1" />}
-                                                        {layout === 'split' && <LayoutSplitIcon className="w-8 h-8 mb-1" />}
-                                                        {layout === 'wide' && <LayoutWideIcon className="w-8 h-8 mb-1" />}
-                                                        <span className="text-xs font-medium capitalize">{layout}</span>
-                                                    </button>
-                                                ))}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Headline</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={slide.title} 
+                                                        onChange={e => setLocalHeroSlides(prev => prev.map(s => s.id === slide.id ? {...s, title: e.target.value} : s))} 
+                                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-900 outline-none focus:ring-4 focus:ring-cyan-500/10 text-lg" 
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Support Text</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={slide.subtitle} 
+                                                        onChange={e => setLocalHeroSlides(prev => prev.map(s => s.id === slide.id ? {...s, subtitle: e.target.value} : s))} 
+                                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl font-medium text-slate-600 outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">Title</label>
-                                            <input type="text" value={banner.title} onChange={e => onUpdateBanner(banner.id, 'title', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">Description</label>
-                                            <textarea value={banner.description} onChange={e => onUpdateBanner(banner.id, 'description', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500" rows={3}/>
-                                        </div>
-                                        <ImageUploader
-                                            label="Banner Image"
-                                            currentImageUrl={banner.imageUrl}
-                                            onImageChange={(newUrl) => wrapImageUpdate(banner.id, () => onUpdateBanner(banner.id, 'imageUrl', newUrl))}
-                                            isLoading={uploadingStates[banner.id]}
-                                        />
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">Button Text</label>
-                                            <input type="text" value={banner.buttonText} onChange={e => onUpdateBanner(banner.id, 'buttonText', e.target.value)} className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">Button Link (Optional)</label>
-                                            <input 
-                                                type="text" 
-                                                value={banner.linkUrl || ''} 
-                                                onChange={e => onUpdateBanner(banner.id, 'linkUrl', e.target.value)} 
-                                                className="mt-1 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
-                                                placeholder="e.g., /explore or /createListing"
+                                            <AdminContentPicker
+                                                label="Slide Creative"
+                                                folder="hero"
+                                                currentUrl={slide.imageUrl}
+                                                onUrlChange={(url) => setLocalHeroSlides(prev => prev.map(s => s.id === slide.id ? {...s, imageUrl: url} : s))}
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">Use local paths (like '/explore') or full URLs.</p>
                                         </div>
                                     </div>
                                 ))}
-                                 <button onClick={onAddBanner} className="mt-4 w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-cyan-500 hover:text-cyan-600 font-semibold transition-colors">
+                            </div>
+                        </div>
+                        {/* Categories Section */}
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-10">
+                             <div className="flex items-center gap-3 mb-8">
+                                <LayoutWideIcon className="w-6 h-6 text-slate-400" />
+                                <h3 className="text-xl font-black text-slate-900">Category Experience</h3>
+                             </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {Object.entries(displayCategoryImages).map(([category, imageUrl]) => (
+                                    <AdminContentPicker
+                                        key={category}
+                                        label={category}
+                                        folder="categories"
+                                        currentUrl={imageUrl}
+                                        onUrlChange={(url) => setLocalCategoryImages(prev => ({ ...prev, [category]: url }))}
+                                    />
+                                ))}
+                             </div>
+                        </div>
+                        {/* Banners Section */}
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mt-10">
+                             <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center gap-3">
+                                    <LayoutSplitIcon className="w-6 h-6 text-slate-400" />
+                                    <h3 className="text-xl font-black text-slate-900">Promotional Banners</h3>
+                                </div>
+                                <button 
+                                    onClick={() => setLocalBanners([...localBanners, { id: `banner_${Date.now()}`, title: 'Exclusive Deal', description: 'Limited time adventure', buttonText: 'Claim Now', imageUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80', layout: 'split', linkUrl: '/explore' }])} 
+                                    className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                                >
                                     + Add New Banner
                                 </button>
                             </div>
+                            <div className="space-y-6">
+                                {localBanners.map(banner => (
+                                    <div key={banner.id} className="relative bg-slate-50 rounded-[2rem] p-8 border border-slate-100">
+                                        <button 
+                                            onClick={() => setLocalBanners(prev => prev.filter(b => b.id !== banner.id))} 
+                                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                        >
+                                            <TrashIcon className="h-4 w-4" />
+                                        </button>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Banner Title</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={banner.title} 
+                                                        onChange={e => setLocalBanners(prev => prev.map(b => b.id === banner.id ? {...b, title: e.target.value} : b))} 
+                                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-900 outline-none focus:ring-4 focus:ring-cyan-500/10" 
+                                                    />
+                                                </div>
+                                                 <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Visual Layout</label>
+                                                    <div className="flex gap-2">
+                                                        {['overlay', 'split', 'wide'].map((l) => (
+                                                            <button 
+                                                                key={l}
+                                                                onClick={() => setLocalBanners(prev => prev.map(b => b.id === banner.id ? {...b, layout: l as any} : b))}
+                                                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${banner.layout === l ? 'bg-gray-900 text-white border-gray-900 shadow-lg' : 'bg-white text-slate-400 border-slate-200 hover:border-cyan-200'}`}
+                                                            >
+                                                                {l}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                     <div>
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CTA Label</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={banner.buttonText} 
+                                                            onChange={e => setLocalBanners(prev => prev.map(b => b.id === banner.id ? {...b, buttonText: e.target.value} : b))} 
+                                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-900 outline-none focus:ring-4 focus:ring-cyan-500/10 text-xs" 
+                                                        />
+                                                    </div>
+                                                     <div>
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Target Route</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={banner.linkUrl} 
+                                                            onChange={e => setLocalBanners(prev => prev.map(b => b.id === banner.id ? {...b, linkUrl: e.target.value} : b))} 
+                                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-900 outline-none focus:ring-4 focus:ring-cyan-500/10 text-xs font-mono" 
+                                                            placeholder="/explore" 
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <AdminContentPicker
+                                                label="Banner Creative"
+                                                folder="banners"
+                                                currentUrl={banner.imageUrl}
+                                                onUrlChange={(url) => setLocalBanners(prev => prev.map(b => b.id === banner.id ? {...b, imageUrl: url} : b))}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <h3 className="text-lg font-semibold mb-4">Featured Items</h3>
                                 <div className="space-y-6">
@@ -1635,7 +1772,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                 </div>
                             </div>
                         </div>
-                    </div>
                 );
             case 'billing':
                 return <BillingSettings currentApiKey={paymentApiKey} onSaveApiKey={onUpdatePaymentApiKey} />;
