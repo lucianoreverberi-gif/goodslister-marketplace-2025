@@ -1,6 +1,6 @@
 import { put } from '@vercel/blob';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAdmin } from './_lib/admin-auth';
+import { requireAdmin } from '../lib/admin-auth';
 
 export default async function handler(
   request: VercelRequest,
