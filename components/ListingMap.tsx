@@ -29,7 +29,7 @@ interface ListingMapProps {
 }
 
 // TODO: For production, this key should be moved to a secure environment variable (e.g., process.env.API_KEY).
-const API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
+const API_KEY = 'AIzaSyCvFj8kvMmCc_AtqEAJ1b5feMTpj8EsZS4';
 const LIBRARIES: ("places")[] = ['places'];
 
 const ListingMap: React.FC<ListingMapProps> = ({ center }) => {

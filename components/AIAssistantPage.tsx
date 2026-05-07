@@ -5,7 +5,7 @@ import { getAIAdvice } from '../services/geminiService';
 import { BrainCircuitIcon, MapPinIcon, SparklesIcon, LightbulbIcon, ShieldCheckIcon } from './icons';
 
 // API Key for Google Maps (Consistent with other components)
-const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
+const MAPS_API_KEY = 'AIzaSyCvFj8kvMmCc_AtqEAJ1b5feMTpj8EsZS4';
 
 const AIAssistantPage: React.FC = () => {
     // Form State

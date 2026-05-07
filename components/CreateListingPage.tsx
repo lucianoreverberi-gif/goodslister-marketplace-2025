@@ -7,7 +7,7 @@ import SmartAdvisory from './SmartAdvisory';
 import AICoverGeneratorStep from './AICoverGeneratorStep';
 
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
-const MAPS_API_KEY = 'AIzaSyBXEVAhsLGBPWixJlR7dv5FLdybcr5SOP0';
+const MAPS_API_KEY = 'AIzaSyCvFj8kvMmCc_AtqEAJ1b5feMTpj8EsZS4';
 
 interface CreateListingPageProps {
     onBack: () => void;
