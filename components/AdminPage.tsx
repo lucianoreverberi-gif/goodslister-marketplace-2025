@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon, Booking } from '../types';
-import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon, SearchIcon, RefreshCwIcon, CalendarIcon } from './icons';
+import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon, SearchIcon, RefreshCwIcon, CalendarIcon, SparklesIcon, StarIcon } from './icons';
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
@@ -781,7 +781,7 @@ const MarketingTab: React.FC = () => {
                         onClick={() => setView('coupons')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${view === 'coupons' ? 'bg-white shadow text-cyan-600' : 'text-gray-500'}`}
                     >
-                        Coupons & Discounts
+                        Promo Codes
                     </button>
                 </div>
             </div>
@@ -864,84 +864,111 @@ const MarketingTab: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                // COUPONS VIEW (EXISTING)
                 <>
-                    <div className="flex justify-end mb-4">
-                        <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 flex items-center gap-2">
-                            <TicketIcon className="h-5 w-5" />
-                            Create Coupon
-                        </button>
-                    </div>
-
-                    {showCreate && (
-                        <div className="bg-white p-6 rounded-lg shadow mb-6 border border-cyan-100 animate-in fade-in slide-in-from-top-2">
-                            <h3 className="font-bold text-lg mb-4">New Coupon Configuration</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code</label>
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden mb-8">
+                        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                <TicketIcon className="h-5 w-5 text-cyan-500" />
+                                Create Promo Code
+                            </h3>
+                            <p className="text-xs text-slate-400 font-bold uppercase mt-1">Generate new discount vouchers for the community</p>
+                        </div>
+                        <div className="p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Code Name</label>
                                     <input 
                                         type="text" 
                                         value={newCode} 
                                         onChange={e => setNewCode(e.target.value)} 
-                                        className="w-full border-gray-300 rounded-md uppercase font-mono" 
-                                        placeholder="SUMMER25"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-cyan-500/20 outline-none uppercase font-mono placeholder:lowercase" 
+                                        placeholder="e.g. SUMMER25"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                                <div className="space-y-2 text-sm font-bold">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Discount Type</label>
                                     <select 
                                         value={newType} 
                                         onChange={e => setNewType(e.target.value as any)} 
-                                        className="w-full border-gray-300 rounded-md"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500/20 cursor-pointer"
                                     >
                                         <option value="percentage">Percentage (%)</option>
                                         <option value="fixed">Fixed Amount ($)</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Value</label>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Value</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            value={newDiscount} 
+                                            onChange={e => setNewDiscount(Number(e.target.value))} 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                                            {newType === 'percentage' ? '%' : '$'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Expiry Date</label>
                                     <input 
-                                        type="number" 
-                                        value={newDiscount} 
-                                        onChange={e => setNewDiscount(Number(e.target.value))} 
-                                        className="w-full border-gray-300 rounded-md"
+                                        type="date" 
+                                        defaultValue="2025-12-31"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-cyan-500/20 outline-none"
                                     />
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-2">
-                                <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
-                                <button onClick={handleCreateCoupon} disabled={!newCode} className="px-4 py-2 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 disabled:opacity-50">Launch Coupon</button>
+                            <div className="flex justify-end">
+                                <button 
+                                    onClick={handleCreateCoupon} 
+                                    disabled={!newCode} 
+                                    className="px-8 py-3 bg-cyan-600 text-white font-black rounded-2xl hover:bg-cyan-700 disabled:opacity-50 transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+                                >
+                                    <SparklesIcon className="h-5 w-5" />
+                                    CREATE PROMO CODE
+                                </button>
                             </div>
                         </div>
-                    )}
+                    </div>
 
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 border-b">
+                            <thead className="bg-slate-50 border-b border-slate-100 text-slate-400">
                                 <tr>
-                                    <th className="p-4 font-medium text-gray-500">Code</th>
-                                    <th className="p-4 font-medium text-gray-500">Discount</th>
-                                    <th className="p-4 font-medium text-gray-500">Usage</th>
-                                    <th className="p-4 font-medium text-gray-500">Status</th>
-                                    <th className="p-4 font-medium text-gray-500">Expiry</th>
+                                    <th className="p-4 font-black uppercase text-[10px] tracking-widest">Code</th>
+                                    <th className="p-4 font-black uppercase text-[10px] tracking-widest">Discount</th>
+                                    <th className="p-4 font-black uppercase text-[10px] tracking-widest">Usage</th>
+                                    <th className="p-4 font-black uppercase text-[10px] tracking-widest">Status</th>
+                                    <th className="p-4 font-black uppercase text-[10px] tracking-widest">Expiry</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {coupons.map(coupon => (
-                                    <tr key={coupon.id} className="border-b last:border-0 hover:bg-gray-50">
-                                        <td className="p-4 font-mono font-bold text-gray-800">{coupon.code}</td>
-                                        <td className="p-4 text-green-600 font-bold">
-                                            {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `-$${coupon.discountValue}`}
+                                    <tr key={coupon.id} className="border-b last:border-0 hover:bg-slate-50/50">
+                                        <td className="p-4 font-mono font-black text-slate-800 text-lg tracking-tighter">{coupon.code}</td>
+                                        <td className="p-4">
+                                            <span className="px-2 py-0.5 rounded border border-emerald-100 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase">
+                                                {coupon.discountType === 'percentage' ? `${coupon.discountValue}% OFF` : `-$${coupon.discountValue}`}
+                                            </span>
                                         </td>
-                                        <td className="p-4 text-gray-600">
-                                            {coupon.usedCount} / {coupon.usageLimit}
+                                        <td className="p-4 text-slate-400 font-bold">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden w-24">
+                                                    <div 
+                                                        className="h-full bg-cyan-500" 
+                                                        style={{ width: `${(coupon.usedCount / coupon.usageLimit) * 100}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-[10px]">{coupon.usedCount}/{coupon.usageLimit}</span>
+                                            </div>
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${coupon.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${coupon.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
                                                 {coupon.status}
                                             </span>
                                         </td>
-                                        <td className="p-4 text-gray-500">{coupon.expiryDate}</td>
+                                        <td className="p-4 text-slate-400 font-bold text-xs">{coupon.expiryDate}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -1130,22 +1157,69 @@ const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: s
                                             ) : '-'}
                                         </td>
                                         <td className="p-4 text-right">
-                                            {b.securityDeposit && (b.depositStatus === 'held' || b.depositStatus === 'disputed' || !b.depositStatus) && (
-                                                <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-2">
+                                                {/* Status Specific Actions */}
+                                                {b.status === 'pending' && (
+                                                    <>
+                                                        <button 
+                                                            onClick={() => alert(`Approved booking ${b.id}`)}
+                                                            className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all"
+                                                        >
+                                                            APPROVE
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => alert(`Rejected booking ${b.id}`)}
+                                                            className="px-3 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg hover:bg-red-600 transition-all"
+                                                        >
+                                                            REJECT
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {b.status === 'active' && (
+                                                    <>
+                                                        <button 
+                                                            onClick={() => alert(`Details for booking ${b.id}`)}
+                                                            className="px-3 py-1 bg-blue-500 text-white text-[10px] font-black rounded-lg hover:bg-blue-600 transition-all"
+                                                        >
+                                                            DETAILS
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => alert(`Cancelled booking ${b.id}`)}
+                                                            className="px-3 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg hover:bg-red-600 transition-all"
+                                                        >
+                                                            CANCEL
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {b.status === 'completed' && (
                                                     <button 
-                                                        onClick={() => onUpdateDepositStatus(b.id, 'released')}
-                                                        className="px-3 py-1 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 transition-all"
+                                                        onClick={() => alert(`Archive for booking ${b.id}`)}
+                                                        className="px-3 py-1 bg-slate-400 text-white text-[10px] font-black rounded-lg hover:bg-slate-500 transition-all"
                                                     >
-                                                        RELEASE
+                                                        DETAILS
                                                     </button>
-                                                    <button 
-                                                        onClick={() => onUpdateDepositStatus(b.id, 'claimed')}
-                                                        className="px-3 py-1 bg-red-600 text-white text-[10px] font-black rounded-lg hover:bg-red-700 transition-all"
-                                                    >
-                                                        CLAIM
-                                                    </button>
-                                                </div>
-                                            )}
+                                                )}
+
+                                                {/* Deposit Escrow Actions */}
+                                                {b.securityDeposit && (b.depositStatus === 'held' || b.depositStatus === 'disputed' || !b.depositStatus) && (
+                                                    <div className="flex border-l border-slate-100 pl-2 gap-2">
+                                                        <button 
+                                                            onClick={() => onUpdateDepositStatus(b.id, 'released')}
+                                                            className="p-1 px-2 border border-emerald-500 text-emerald-600 text-[9px] font-black rounded hover:bg-emerald-50 transition-all"
+                                                            title="Release Escrow"
+                                                        >
+                                                            RELEASE
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => onUpdateDepositStatus(b.id, 'claimed')}
+                                                            className="p-1 px-2 border border-red-500 text-red-600 text-[9px] font-black rounded hover:bg-red-50 transition-all"
+                                                            title="Claim Escrow"
+                                                        >
+                                                            CLAIM
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -1191,6 +1265,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
     // --- Global Region Context ---
     const [selectedRegion, setSelectedRegion] = useState<string>('GLOBAL'); 
+    const [disputes, setDisputes] = useState<Dispute[]>(mockDisputes);
 
     const wrapImageUpdate = async (loadingKey: string, updateFn: () => Promise<void>) => {
         setUploadingStates(prev => ({ ...prev, [loadingKey]: true }));
@@ -1334,42 +1409,74 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 return <GlobalSettingsTab />;
             case 'disputes':
                 return (
-                    <div>
+                    <div className="animate-in fade-in duration-500">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold">Dispute Resolution Center</h2>
-                            <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">2 Active Cases</span>
+                            <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">Active Cases</span>
                         </div>
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                             <table className="w-full text-left text-sm">
-                                <thead className="bg-gray-50 border-b">
+                                <thead className="bg-slate-50 border-b border-slate-100 text-slate-400">
                                     <tr>
-                                        <th className="p-4 font-medium text-gray-500">ID</th>
-                                        <th className="p-4 font-medium text-gray-500">Reason</th>
-                                        <th className="p-4 font-medium text-gray-500">Amount</th>
-                                        <th className="p-4 font-medium text-gray-500">Status</th>
-                                        <th className="p-4 font-medium text-gray-500">Action</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">ID</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Reason</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Amount</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Status</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {mockDisputes.map(dispute => (
-                                        <tr key={dispute.id} className="border-b last:border-0 hover:bg-gray-50">
-                                            <td className="p-4 font-mono text-gray-600">{dispute.id}</td>
+                                    {disputes.map(dispute => (
+                                        <tr key={dispute.id} className="border-b last:border-0 hover:bg-slate-50/50">
+                                            <td className="p-4 font-mono text-gray-600 text-xs">{dispute.id}</td>
                                             <td className="p-4">
-                                                <span className="font-bold block text-gray-800 capitalize">{dispute.reason.replace('_', ' ')}</span>
-                                                <span className="text-xs text-gray-500">{dispute.description}</span>
+                                                <span className="font-bold block text-slate-800 capitalize">{dispute.reason.replace('_', ' ')}</span>
+                                                <span className="text-xs text-slate-400 line-clamp-1">{dispute.description}</span>
                                             </td>
-                                            <td className="p-4 font-bold">${dispute.amountInvolved}</td>
+                                            <td className="p-4 font-black text-slate-900">${dispute.amountInvolved}</td>
                                             <td className="p-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${
-                                                    dispute.status === 'open' ? 'bg-yellow-100 text-yellow-800' : 
-                                                    dispute.status === 'escalated' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                                    dispute.status === 'open' ? 'bg-yellow-50 text-yellow-600 border-yellow-100' : 
+                                                    dispute.status === 'escalated' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
                                                 }`}>
                                                     {dispute.status}
                                                 </span>
                                             </td>
                                             <td className="p-4">
-                                                <button className="text-cyan-600 hover:underline mr-3">View Evidence</button>
-                                                <button className="text-gray-600 hover:text-gray-900">Message</button>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex gap-2">
+                                                        <button className="text-cyan-600 hover:bg-cyan-50 px-2 py-1 rounded text-xs font-bold transition-colors">View Evidence</button>
+                                                        <button className="text-slate-400 hover:text-slate-900 px-2 py-1 rounded text-xs font-bold">Message</button>
+                                                    </div>
+                                                    {dispute.status !== 'resolved' && (
+                                                        <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-50">
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setDisputes(prev => prev.map(d => d.id === dispute.id ? { ...d, status: 'resolved' } : d));
+                                                                    alert('Resolved in Favor of Host');
+                                                                }}
+                                                                className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded hover:bg-emerald-600 transition-all"
+                                                            >
+                                                                FAVOR HOST
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setDisputes(prev => prev.map(d => d.id === dispute.id ? { ...d, status: 'resolved' } : d));
+                                                                    alert('Resolved in Favor of Renter');
+                                                                }}
+                                                                className="px-2 py-1 bg-blue-500 text-white text-[10px] font-black rounded hover:bg-blue-600 transition-all"
+                                                            >
+                                                                FAVOR RENTER
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => alert('Information Requested')}
+                                                                className="px-2 py-1 bg-amber-400 text-white text-[10px] font-black rounded hover:bg-amber-500 transition-all"
+                                                            >
+                                                                REQUEST INFO
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -1380,40 +1487,58 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 );
             case 'users':
                 return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">Manage Users ({filteredUsers.length})</h2>
-                        <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                    <div className="animate-in fade-in duration-500">
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-6">User Management ({filteredUsers.length})</h2>
+                        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-slate-50 border-b border-slate-100 text-slate-400">
                                     <tr>
-                                        <th className="p-3">Name</th>
-                                        <th className="p-3">Email</th>
-                                        <th className="p-3">Role</th>
-                                        <th className="p-3">Status</th>
-                                        <th className="p-3 text-right">Actions</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Name</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Email</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Role</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Status</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredUsers.map(user => (
-                                        <tr key={user.id} className="border-b">
-                                            <td className="p-3 font-medium">
-                                                {user.name}
-                                                <div className="text-xs text-gray-400">Joined: {user.registeredDate}</div>
+                                        <tr key={user.id} className="border-b last:border-0 hover:bg-slate-50/50">
+                                            <td className="p-4 font-medium">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-800">{user.name}</span>
+                                                    <span className="text-[10px] text-slate-400 uppercase font-black">Joined: {user.registeredDate}</span>
+                                                </div>
                                             </td>
-                                            <td className="p-3 text-gray-600">{user.email}</td>
-                                            <td className="p-3"><span className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">{user.role || 'USER'}</span></td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${user.isIdVerified ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                            <td className="p-4 text-slate-600">{user.email}</td>
+                                            <td className="p-4">
+                                                <span className="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase tracking-widest">{user.role || 'USER'}</span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${user.isIdVerified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
                                                     {user.isIdVerified ? 'Verified' : 'Unverified'}
                                                 </span>
                                             </td>
-                                            <td className="p-3 text-right">
-                                                <button className="text-xs text-red-600 hover:underline mr-3 font-semibold" onClick={() => alert(`Simulated Ban for ${user.name}`)}>
-                                                    Suspend
-                                                </button>
-                                                <button className="text-xs text-gray-500 hover:text-gray-800 hover:underline" onClick={() => alert(`Reset password email sent to ${user.email}`)}>
-                                                    Reset Pass
-                                                </button>
+                                            <td className="p-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button 
+                                                        className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-black rounded-lg hover:bg-indigo-600 transition-all" 
+                                                        onClick={() => alert(`Promoted ${user.name}`)}
+                                                    >
+                                                        PROMOTE
+                                                    </button>
+                                                    <button 
+                                                        className="px-3 py-1 bg-red-100 text-red-600 text-[10px] font-black rounded-lg hover:bg-red-200 transition-all" 
+                                                        onClick={() => alert(`Simulated Ban for ${user.name}`)}
+                                                    >
+                                                        SUSPEND
+                                                    </button>
+                                                    <button 
+                                                        className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg hover:bg-slate-200 transition-all uppercase" 
+                                                        onClick={() => alert(`Reset password email sent to ${user.email}`)}
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -1424,52 +1549,75 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 );
             case 'listings':
                  return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">Manage Listings ({filteredListings.length})</h2>
-                         <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                    <div className="animate-in fade-in duration-500">
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-6">Inventory Control ({filteredListings.length})</h2>
+                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-slate-50 border-b border-slate-100 text-slate-400">
                                     <tr>
-                                        <th className="p-3">Title</th>
-                                        <th className="p-3">Category</th>
-                                        <th className="p-3">Owner</th>
-                                        <th className="p-3">Price</th>
-                                        <th className="p-3">Location</th>
-                                        <th className="p-3 text-right">Actions</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Title</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Category</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Owner</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Price</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Location</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredListings.map(listing => (
-                                        <tr key={listing.id} className="border-b">
-                                            <td className="p-3">{listing.title}</td>
-                                            <td className="p-3">{listing.category}</td>
-                                            <td className="p-3">{listing.owner.name}</td>
-                                            <td className="p-3">${listing.pricePerDay} <span className="text-gray-400 text-xs">{listing.currency}</span></td>
-                                            <td className="p-3 text-gray-600">
+                                        <tr key={listing.id} className="border-b last:border-0 hover:bg-slate-50/50">
+                                            <td className="p-4 font-bold text-slate-800">{listing.title}</td>
+                                            <td className="p-4">
+                                                <span className="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase tracking-widest">{listing.category}</span>
+                                            </td>
+                                            <td className="p-4 text-slate-600">{listing.owner.name}</td>
+                                            <td className="p-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-black text-slate-900">${listing.pricePerDay}</span>
+                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">{listing.currency} / DAY</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-slate-500 font-bold">
                                                 <div className="flex items-center gap-1">
-                                                    <MapPinIcon className="h-3 w-3" />
+                                                    <MapPinIcon className="h-3 w-3 text-slate-400" />
                                                     {listing.location.city}, {listing.location.country}
                                                 </div>
                                             </td>
-                                            <td className="p-3 text-right flex justify-end gap-2">
-                                                <button 
-                                                    onClick={() => onViewListing(listing.id)}
-                                                    className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors"
-                                                    title="View Listing Details"
-                                                >
-                                                    <EyeIcon className="h-5 w-5" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        if(confirm(`Are you sure you want to delete "${listing.title}"? This cannot be undone.`)) {
-                                                            onDeleteListing(listing.id);
-                                                        }
-                                                    }}
-                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                    title="Delete Listing"
-                                                >
-                                                    <TrashIcon className="h-5 w-5" />
-                                                </button>
+                                            <td className="p-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button 
+                                                        onClick={() => onToggleFeatured(listing.id)}
+                                                        className={`p-2 rounded transition-colors ${listing.isFeatured ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400 hover:bg-amber-50 hover:text-amber-500'}`}
+                                                        title={listing.isFeatured ? "Unfeature" : "Feature"}
+                                                    >
+                                                        <StarIcon className="h-4 w-4" fill={listing.isFeatured ? "currentColor" : "none"} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => onViewListing(listing.id)}
+                                                        className="p-2 bg-slate-100 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded transition-colors"
+                                                        title="View Details"
+                                                    >
+                                                        <EyeIcon className="h-4 w-4" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => alert(`Suspended ${listing.title}`)}
+                                                        className="p-2 bg-slate-100 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                                        title="Suspend Listing"
+                                                    >
+                                                        <LockIcon className="h-4 w-4" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            if(confirm(`Are you sure you want to delete "${listing.title}"? This cannot be undone.`)) {
+                                                                onDeleteListing(listing.id);
+                                                            }
+                                                        }}
+                                                        className="p-2 bg-slate-100 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                        title="Delete Listing"
+                                                    >
+                                                        <TrashIcon className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
