@@ -1158,6 +1158,14 @@ const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: s
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">
+                                                {/* Consistent Action for all bookings */}
+                                                <button 
+                                                    onClick={() => alert(`Showing details for booking ${b.id}`)}
+                                                    className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg hover:bg-slate-200 transition-all uppercase"
+                                                >
+                                                    View Details
+                                                </button>
+
                                                 {/* Status Specific Actions */}
                                                 {b.status === 'pending' && (
                                                     <>
@@ -1176,29 +1184,14 @@ const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: s
                                                     </>
                                                 )}
                                                 {b.status === 'active' && (
-                                                    <>
-                                                        <button 
-                                                            onClick={() => alert(`Details for booking ${b.id}`)}
-                                                            className="px-3 py-1 bg-blue-500 text-white text-[10px] font-black rounded-lg hover:bg-blue-600 transition-all"
-                                                        >
-                                                            DETAILS
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => alert(`Cancelled booking ${b.id}`)}
-                                                            className="px-3 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg hover:bg-red-600 transition-all"
-                                                        >
-                                                            CANCEL
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {b.status === 'completed' && (
                                                     <button 
-                                                        onClick={() => alert(`Archive for booking ${b.id}`)}
-                                                        className="px-3 py-1 bg-slate-400 text-white text-[10px] font-black rounded-lg hover:bg-slate-500 transition-all"
+                                                        onClick={() => alert(`Cancelled booking ${b.id}`)}
+                                                        className="px-3 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg hover:bg-red-600 transition-all"
                                                     >
-                                                        DETAILS
+                                                        CANCEL
                                                     </button>
                                                 )}
+                                                {b.status === 'completed' && null}
 
                                                 {/* Deposit Escrow Actions */}
                                                 {b.securityDeposit && (b.depositStatus === 'held' || b.depositStatus === 'disputed' || !b.depositStatus) && (
@@ -1448,11 +1441,11 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                         <button className="text-cyan-600 hover:bg-cyan-50 px-2 py-1 rounded text-xs font-bold transition-colors">View Evidence</button>
                                                         <button className="text-slate-400 hover:text-slate-900 px-2 py-1 rounded text-xs font-bold">Message</button>
                                                     </div>
-                                                    {dispute.status !== 'resolved' && (
+                                                    {!dispute.status.startsWith('Resolved') && dispute.status !== 'resolved' && (
                                                         <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-50">
                                                             <button 
                                                                 onClick={() => {
-                                                                    setDisputes(prev => prev.map(d => d.id === dispute.id ? { ...d, status: 'resolved' } : d));
+                                                                    setDisputes(prev => prev.map(d => d.id === dispute.id ? { ...d, status: 'Resolved-Host' } : d));
                                                                     alert('Resolved in Favor of Host');
                                                                 }}
                                                                 className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded hover:bg-emerald-600 transition-all"
@@ -1461,7 +1454,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                             </button>
                                                             <button 
                                                                 onClick={() => {
-                                                                    setDisputes(prev => prev.map(d => d.id === dispute.id ? { ...d, status: 'resolved' } : d));
+                                                                    setDisputes(prev => prev.map(d => d.id === dispute.id ? { ...d, status: 'Resolved-Renter' } : d));
                                                                     alert('Resolved in Favor of Renter');
                                                                 }}
                                                                 className="px-2 py-1 bg-blue-500 text-white text-[10px] font-black rounded hover:bg-blue-600 transition-all"
@@ -1470,7 +1463,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                             </button>
                                                             <button 
                                                                 onClick={() => alert('Information Requested')}
-                                                                className="px-2 py-1 bg-amber-400 text-white text-[10px] font-black rounded hover:bg-amber-500 transition-all"
+                                                                className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded hover:bg-slate-200 transition-all"
                                                             >
                                                                 REQUEST INFO
                                                             </button>

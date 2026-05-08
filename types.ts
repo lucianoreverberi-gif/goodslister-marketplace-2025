@@ -166,7 +166,7 @@ export interface Dispute {
     reporterId: string;
     reason: 'damage' | 'late_return' | 'not_as_described' | 'cancellation';
     description: string;
-    status: 'open' | 'resolved' | 'escalated';
+    status: 'open' | 'resolved' | 'escalated' | 'Resolved-Host' | 'Resolved-Renter';
     dateOpened: string;
     amountInvolved: number;
 }
