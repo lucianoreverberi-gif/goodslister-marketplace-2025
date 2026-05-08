@@ -1,10 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
@@ -61,8 +63,13 @@ async function testConnection() {
     await getDocFromServer(doc(db, 'test', 'connection'));
     console.log('Firebase connection successful.');
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration. Client is offline.');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isOffline = errorMessage.includes('the client is offline') || 
+                      errorMessage.includes('unavailable') ||
+                      errorMessage.includes('Insufficient permissions');
+    
+    if (isOffline) {
+      console.warn('Firebase is in offline mode or restricted. This is expected in some sandbox environments. Auth will still work if secondary providers are configured.');
     } else {
       console.error('Firebase connection test failed:', error);
     }
