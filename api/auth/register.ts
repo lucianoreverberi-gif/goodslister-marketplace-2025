@@ -34,7 +34,7 @@ export default async function handler(
     // (Ensure you have a users table, and if it fails, it will hit the catch block)
     await sql`
       INSERT INTO users (id, name, email, avatar_url, registered_date, favorites)
-      VALUES (${id}, ${name}, ${email}, ${avatarUrl}, ${registeredDate}, '{}'::jsonb)
+      VALUES (${id}, ${name}, ${email}, ${avatarUrl}, ${registeredDate}, ARRAY[]::text[])
       ON CONFLICT (email) DO NOTHING
     `;
 
