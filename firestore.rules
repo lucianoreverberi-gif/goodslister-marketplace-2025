@@ -41,6 +41,9 @@ service cloud.firestore {
     }
 
     // --- Collections ---
+    match /test/connection {
+      allow read: if true;
+    }
 
     match /users/{userId} {
       allow get: if isSignedIn();

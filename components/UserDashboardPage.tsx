@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Session, Listing, Booking, ListingCategory } from '../types.ts';
-import { getListingAdvice, ListingAdviceType } from '../services/geminiService.ts';
+import { Session, Listing, Booking, ListingCategory } from '../types';
+import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
 import { 
     PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, 
     ShieldIcon, MailIcon, PhoneIcon, CreditCardIcon, CheckCircleIcon, 
@@ -11,11 +11,11 @@ import {
     MapPinIcon, WandSparklesIcon, MegaphoneIcon, SparklesIcon, TrendUpIcon, 
     ArrowRightIcon, RefreshCwIcon, LightbulbIcon, ClockIcon, SlidersIcon,
     ShieldCheckIcon
-} from './icons.tsx';
-import ImageUploader from './ImageUploader.tsx';
+} from './icons';
+import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
-import ListingCard from './ListingCard.tsx';
-import RentalSessionWizard from './RentalSessionWizard.tsx';
+import ListingCard from './ListingCard';
+import RentalSessionWizard from './RentalSessionWizard';
 
 interface UserDashboardPageProps {
     user: Session;

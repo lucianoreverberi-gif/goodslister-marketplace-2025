@@ -352,17 +352,36 @@ const App: React.FC = () => {
             listings: updatedListings
         });
 
-        // Send Booking Confirmation Email via Resend
-        mockApi.sendEmail('booking_confirmation', session.email, {
-            name: session.name,
-            listingTitle: result.updatedListing.title,
+        // Send Booking Request Emails
+        const listing = result.updatedListing;
+        const host = listing.owner;
+        const renter = session;
+
+        // 1. Notify Host
+        mockApi.sendEmail('booking_request_host', host.email, {
+            hostName: host.name,
+            renterName: renter.name,
+            renterAvatar: renter.avatarUrl,
+            listingTitle: listing.title,
             startDate: format(startDate, 'MMM dd, yyyy'),
             endDate: format(endDate, 'MMM dd, yyyy'),
             totalPrice: totalPrice.toFixed(2),
-            paymentMethod: paymentMethod
+            bookingId: result.newBooking.id,
+            paymentMethod: paymentMethod === 'platform' ? 'Paid via Platform' : 'Direct Payment'
+        });
+
+        // 2. Notify Renter
+        mockApi.sendEmail('booking_request_renter', renter.email, {
+            renterName: renter.name,
+            listingTitle: listing.title,
+            hostName: host.name,
+            startDate: format(startDate, 'MMM dd, yyyy'),
+            endDate: format(endDate, 'MMM dd, yyyy'),
+            totalPrice: totalPrice.toFixed(2),
+            bookingId: result.newBooking.id
         }).then(success => {
             if (success) {
-                addNotification('success', 'Booking Confirmed', `Confirmation email sent to ${session.email}.`);
+                addNotification('success', 'Request Sent', `A notification email has been sent to your inbox.`);
             }
         });
 
@@ -371,6 +390,9 @@ const App: React.FC = () => {
 
     // NEW: Handle Booking Status Update (Real-Time Sync)
     const handleBookingStatusUpdate = async (bookingId: string, newStatus: string) => {
+        const booking = appData.bookings.find((b: Booking) => b.id === bookingId);
+        if (!booking) return;
+
         // 1. Optimistic Update Local State
         const updatedBookings = appData.bookings.map((b: Booking) => 
             b.id === bookingId ? { ...b, status: newStatus as any } : b
@@ -382,6 +404,50 @@ const App: React.FC = () => {
         await mockApi.updateBookingStatus(bookingId, newStatus);
         
         addNotification('success', 'Status Updated', `Booking marked as ${newStatus}.`);
+
+        // 3. Send Notifications
+        const listing = appData.listings.find((l: Listing) => l.id === booking.listingId);
+        const host = listing?.owner;
+        const renter = appData.users.find((u: User) => u.id === booking.renterId);
+
+        if (!listing || !host || !renter) return;
+
+        const emailData = {
+            listingTitle: listing.title,
+            startDate: format(new Date(booking.startDate), 'MMM dd, yyyy'),
+            endDate: format(new Date(booking.endDate), 'MMM dd, yyyy'),
+            totalPrice: booking.totalPrice.toFixed(2),
+            bookingId: booking.id,
+            hostName: host.name,
+            renterName: renter.name,
+        };
+
+        if (newStatus === 'confirmed') {
+            // To Renter
+            mockApi.sendEmail('booking_confirmed', renter.email, {
+                ...emailData,
+                hostPhone: host.email, // Using email as backup if phone not available
+                listingLocation: `${listing.location.city}, ${listing.location.state}`,
+                balanceDueOnSite: booking.paymentMethod === 'direct' ? booking.totalPrice.toFixed(2) : '0.00'
+            });
+            // To Host
+            mockApi.sendEmail('booking_confirmed_host', host.email, emailData);
+        } else if (newStatus === 'rejected') {
+            // To Renter
+            mockApi.sendEmail('booking_rejected', renter.email, {
+                ...emailData,
+                reason: 'Host unavailable for these dates.'
+            });
+        } else if (newStatus === 'cancelled') {
+            // To Both
+            const cancellationData = {
+                ...emailData,
+                cancelledBy: session?.id === host.id ? 'the host' : 'the renter',
+                refundAmount: booking.paymentMethod === 'platform' ? booking.totalPrice.toFixed(2) : null
+            };
+            mockApi.sendEmail('booking_cancelled', renter.email, { ...cancellationData, recipientName: renter.name });
+            mockApi.sendEmail('booking_cancelled', host.email, { ...cancellationData, recipientName: host.name });
+        }
     };
 
     // NEW: Handle Security Deposit Status Update
