@@ -716,6 +716,14 @@ export const SlidersIcon: React.FC<IconProps> = (props) => (
     </svg>
 );
 
+export const ThumbsUpIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M7 10v12"></path>
+        <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.53l-1.61 7A2 2 0 0 1 18.22 21H7"></path>
+        <path d="M32 14.12 30.11 3.44A2 2 0 0 0 28.14 2H23"></path>
+    </svg>
+);
+
 export const GoogleIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" {...props}>
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Listing, User, Booking, ListingCategory } from '../types';
+import { Listing, User, Booking, ListingCategory, Review } from '../types';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { LegalService } from '../services/legalService';
 // FIX: Added RefreshCwIcon and RocketIcon to the import list to resolve "Cannot find name" errors.
-import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, RefreshCwIcon, RocketIcon } from './icons';
+import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, RefreshCwIcon, RocketIcon, GlobeIcon, CalendarIcon, InfoIcon } from './icons';
 import ListingMap from './ListingMap';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
@@ -38,6 +38,7 @@ const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
 
 interface ListingDetailPageProps {
     listing: Listing;
+    reviews?: Review[];
     onBack: () => void;
     onStartConversation: (listing: Listing) => void;
     currentUser: User | null;
@@ -238,8 +239,9 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = (props) => (
     </Elements>
 );
 
-const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile }) => {
+const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, reviews = [], onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [range, setRange] = useState<DateRange | undefined>();
     const [hourlyDate, setHourlyDate] = useState<Date | undefined>(undefined);
     const [startTime, setStartTime] = useState<string>('09:00');
@@ -249,6 +251,39 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [insurancePlan, setInsurancePlan] = useState<'none' | 'standard' | 'premium'>('standard');
+
+    // JSON-LD Structured Data
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        const jsonLd = {
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": listing.title,
+            "image": listing.images,
+            "description": listing.description,
+            "brand": {
+                "@type": "Brand",
+                "name": "Goodslister"
+            },
+            "offers": {
+                "@type": "Offer",
+                "priceCurrency": listing.currency || "USD",
+                "price": listing.pricingType === 'hourly' ? listing.pricePerHour : listing.pricePerDay,
+                "availability": "https://schema.org/InStock"
+            },
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": listing.rating,
+                "reviewCount": listing.reviewsCount
+            }
+        };
+        script.innerHTML = JSON.stringify(jsonLd);
+        document.head.appendChild(script);
+        return () => {
+            document.head.removeChild(script);
+        };
+    }, [listing]);
 
     const isOwner = currentUser?.id === listing.owner.id;
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
@@ -387,7 +422,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                     <div className="grid grid-cols-1 lg:grid-cols-5">
                         <div className="lg:col-span-3">
                             <div className="relative">
-                                <img src={listing.images[activeImageIndex]} alt={listing.title} className="w-full h-[500px] object-cover" />
+                                <img 
+                                    src={listing.images[activeImageIndex]} 
+                                    alt={listing.title} 
+                                    className="w-full h-[500px] object-cover cursor-zoom-in" 
+                                    onClick={() => setLightboxImage(listing.images[activeImageIndex])}
+                                />
                                 <div className="absolute top-4 right-4 flex gap-2">
                                      <button className="p-3 bg-white/80 backdrop-blur-md rounded-full text-gray-700 hover:bg-white transition shadow-lg" onClick={() => onToggleFavorite(listing.id)}>
                                         <HeartIcon className={`h-5 w-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
@@ -459,9 +499,87 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mt-10 mb-4">Description</h2>
                                 <SimpleMarkdown text={listing.description} />
                             </div>
+
+                            {/* MEET THE HOST */}
+                            <div className="mt-12 pt-12 border-t border-slate-100">
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Meet the Host</h3>
+                                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <img src={listing.owner.avatarUrl} className="w-16 h-16 rounded-2xl object-cover shadow-sm" alt="host" />
+                                        <div>
+                                            <h4 className="font-black text-slate-900 text-lg">{listing.owner.name}</h4>
+                                            <div className="flex items-center gap-3 text-xs font-bold text-slate-500 mt-1">
+                                                <span className="flex items-center gap-1"><StarIcon className="h-3 w-3 text-amber-500 fill-amber-500" /> {listing.owner.averageRating || 'New'}</span>
+                                                <span>•</span>
+                                                <span>Joined {new Date(listing.owner.registeredDate).getFullYear()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed italic">{listing.owner.bio || "This host hasn't added a bio yet, but they're ready to share their gear!"}</p>
+                                    <div className="mt-6">
+                                        <button onClick={onViewOwnerProfile} className="text-xs font-black text-cyan-600 uppercase tracking-widest hover:text-cyan-700 transition-colors">View Host Profile →</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* LOCATION (Approximate) */}
+                            <div className="mt-12 pt-12 border-t border-slate-100">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Approximate Location</h3>
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+                                        <InfoIcon className="h-4 w-4" /> Exact address provided after booking
+                                    </div>
+                                </div>
+                                <div className="rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm h-[300px]">
+                                    <ListingMap center={{ lat: listing.location.latitude, lng: listing.location.longitude }} />
+                                </div>
+                            </div>
+
+                            {/* REVIEWS */}
+                            <div className="mt-12 pt-12 border-t border-slate-100">
+                                <div className="flex items-center gap-3 mb-8">
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Reviews</h3>
+                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-black rounded-full">{reviews.length}</span>
+                                </div>
+                                {reviews.length > 0 ? (
+                                    <div className="space-y-8">
+                                        {reviews.map(review => (
+                                            <div key={review.id} className="space-y-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex-shrink-0" /> {/* Avatar placeholder if needed */}
+                                                    <div>
+                                                        <div className="flex gap-1 mb-1">
+                                                            {[1, 2, 3, 4, 5].map(s => (
+                                                                <StarIcon key={s} className={`h-3 w-3 ${s <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{new Date(review.createdAt).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-slate-700 leading-relaxed">{review.comment}</p>
+                                                {review.response && (
+                                                    <div className="ml-6 pl-4 border-l-2 border-slate-100 py-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Host Response</p>
+                                                        <p className="text-xs text-slate-600 leading-relaxed italic">{review.response}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-12 bg-slate-50 rounded-3xl text-center border-2 border-dashed border-slate-200">
+                                        <StarIcon className="h-8 w-8 text-slate-300 mx-auto mb-3" />
+                                        <p className="text-sm font-bold text-slate-400">No reviews yet. Be the first to share your experience!</p>
+                                    </div>
+                                )}
+                            </div>
                            
-                            <div className="mt-auto pt-10">
+                            <div className="mt-auto pt-10 pb-24 lg:pb-0">
                                 <div className="bg-slate-50 rounded-[2rem] p-6 border border-slate-100 mb-6">
+                                    <div className="flex items-center justify-between mb-6 border-b border-slate-200 pb-4">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Select Availability</h3>
+                                        <CalendarIcon className="h-4 w-4 text-cyan-500" />
+                                    </div>
                                     {isHourly ? (
                                         <div className="space-y-4">
                                             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-center">Pick a Date</h3>
@@ -477,35 +595,55 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         <div className="flex justify-center"><DayPicker mode="range" selected={range} onSelect={setRange} disabled={disabledDays} modifiersStyles={modifiersStyles}/></div>
                                     )}
                                 </div>
-                                
-                                {priceDetails && (
+                                                                {priceDetails && (
                                     <div className="bg-slate-900 rounded-[2rem] p-8 text-white space-y-4 mb-6 shadow-2xl shadow-slate-200 animate-in fade-in duration-500">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 mb-2">Price Breakdown</h3>
                                         {requiresLicense && (
                                             <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 mb-2 flex items-center gap-2">
                                                 <AlertTriangleIcon className="h-4 w-4 text-amber-400" />
                                                 <span className="text-[10px] font-black uppercase tracking-widest text-amber-200">License will be verified at pick-up</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Rental Subtotal</span><span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span></div>
-                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Platform Fees</span><span className="font-black text-white">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span></div>
-                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Security Deposit (Held)</span><span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span></div>
+                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest">
+                                            <span>{isHourly ? `${listing.pricePerHour} x ${priceDetails.unitCount} hours` : `${listing.pricePerDay} x ${priceDetails.unitCount} days`}</span>
+                                            <span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Platform Service Fee</span><span className="font-black text-white">${priceDetails.serviceFee.toFixed(2)}</span></div>
+                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Protection Plan</span><span className="font-black text-white">${priceDetails.protectionFee.toFixed(2)}</span></div>
+                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest pt-2 border-t border-white/5">
+                                            <span>Security Deposit (HELD)</span>
+                                            <span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span>
+                                        </div>
                                         <div className="flex justify-between font-black text-3xl pt-4 border-t border-white/10 tracking-tight"><span>Total</span><span className="text-cyan-400">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</span></div>
                                         <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest text-center pt-2">Fees & Deposit collected now to secure request</p>
                                     </div>
                                 )}
 
-                                <button
-                                    onClick={handleBookClick}
-                                    disabled={!currentUser || isOwner || !priceDetails || isBooking}
-                                    className="w-full py-5 bg-cyan-600 hover:bg-cyan-700 text-white font-black rounded-[2rem] shadow-xl shadow-cyan-100 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale uppercase tracking-widest text-sm"
-                                >
-                                    {isOwner ? "This is your gear" : (listing.isInstantBook ? "Instant Book" : "Send Request")}
-                                </button>
+                                {/* FIXED BUTTON ON MOBILE */}
+                                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 z-40 lg:relative lg:p-0 lg:bg-transparent lg:border-0 lg:z-auto">
+                                    <button
+                                        onClick={handleBookClick}
+                                        disabled={!currentUser || isOwner || !priceDetails || isBooking}
+                                        className="w-full py-5 bg-cyan-600 hover:bg-cyan-700 text-white font-black rounded-[2rem] shadow-xl shadow-cyan-100 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale uppercase tracking-widest text-sm"
+                                    >
+                                        {isOwner ? "This is your gear" : (listing.isInstantBook ? "Instant Book" : (priceDetails ? "Send Request" : "Select dates to book"))}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* LIGHTBOX */}
+            {lightboxImage && (
+                <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setLightboxImage(null)}>
+                    <button className="absolute top-8 right-8 text-white p-2 hover:bg-white/10 rounded-full transition-colors" onClick={() => setLightboxImage(null)}>
+                        <XIcon className="h-8 w-8" />
+                    </button>
+                    <img src={lightboxImage} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" alt="lightbox" onClick={(e) => e.stopPropagation()} />
+                </div>
+            )}
         </div>
     );
 };

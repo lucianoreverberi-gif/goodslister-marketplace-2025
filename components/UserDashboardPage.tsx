@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Session, Listing, Booking, ListingCategory } from '../types';
+import { Session, Listing, Booking, ListingCategory, Review } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
 import { 
     PackageIcon, DollarSignIcon, BarChartIcon, BrainCircuitIcon, StarIcon, 
@@ -10,17 +10,20 @@ import {
     UserCheckIcon, TrashIcon, AlertTriangleIcon, RocketIcon, ZapIcon, LockIcon,
     MapPinIcon, WandSparklesIcon, MegaphoneIcon, SparklesIcon, TrendUpIcon, 
     ArrowRightIcon, RefreshCwIcon, LightbulbIcon, ClockIcon, SlidersIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon, MessageSquareIcon, ThumbsUpIcon, ChevronRightIcon, InfoIcon
 } from './icons';
 import ImageUploader from './ImageUploader';
-import { format } from 'date-fns';
+import { format, isAfter, isBefore } from 'date-fns';
 import ListingCard from './ListingCard';
 import RentalSessionWizard from './RentalSessionWizard';
+import ReviewModal from './ReviewModal';
+import { DayPicker } from 'react-day-picker';
 
 interface UserDashboardPageProps {
     user: Session;
     listings: Listing[];
     bookings: Booking[];
+    reviews?: Review[];
     onVerificationUpdate: (userId: string, verificationType: 'email' | 'phone' | 'id') => void;
     onUpdateAvatar: (userId: string, newAvatarUrl: string) => Promise<void>;
     onUpdateProfile: (name: string, bio: string, avatarUrl: string) => Promise<void>;
@@ -32,9 +35,11 @@ interface UserDashboardPageProps {
     onDeleteListing: (listingId: string) => Promise<void>;
     onBookingStatusUpdate: (bookingId: string, status: string) => Promise<void>;
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void;
+    onReviewSubmit: (review: Partial<Review>) => Promise<void>;
+    onReviewResponse: (reviewId: string, response: string) => Promise<void>;
 }
 
-type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant';
+type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant' | 'reviews';
 
 const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ listing, onClose }) => {
     const [selectedPlanId, setSelectedPlanId] = useState<string>('social');
@@ -195,16 +200,49 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
 
 const BookingsManager: React.FC<{ 
     bookings: Booking[], 
+    reviews: Review[],
     userId: string, 
     onStatusUpdate: (id: string, status: string) => Promise<void>,
-    onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void
-}> = ({ bookings, userId, onStatusUpdate, onUpdateDepositStatus }) => {
+    onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void,
+    onReviewSubmit: (review: Partial<Review>) => Promise<void>
+}> = ({ bookings, reviews, userId, onStatusUpdate, onUpdateDepositStatus, onReviewSubmit }) => {
     const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
+    const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
     const [processingId, setProcessingId] = useState<string | null>(null);
     
     const displayedBookings = mode === 'renting' ? bookings.filter(b => b.renterId === userId) : bookings.filter(b => b.listing.owner.id === userId);
+
+    const getTimeline = (b: Booking) => {
+        const now = new Date();
+        const start = new Date(b.startDate);
+        const end = new Date(b.endDate);
+        
+        let progress = 0;
+        if (b.status === 'completed') progress = 100;
+        else if (b.status === 'cancelled' || b.status === 'rejected') progress = 0;
+        else if (b.status === 'active') progress = 66;
+        else if (b.status === 'confirmed') progress = 33;
+        else progress = 15;
+
+        return (
+            <div className="w-full mt-4">
+                <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                    <span className={progress >= 15 ? 'text-cyan-600' : ''}>Requested</span>
+                    <span className={progress >= 33 ? 'text-cyan-600' : ''}>Confirmed</span>
+                    <span className={progress >= 66 ? 'text-cyan-600' : ''}>Active</span>
+                    <span className={progress >= 100 ? 'text-cyan-600' : ''}>Completed</span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                        className={`h-full transition-all duration-1000 ${b.status === 'cancelled' || b.status === 'rejected' ? 'bg-red-400' : 'bg-cyan-600'}`} 
+                        style={{ width: `${progress}%` }} 
+                    />
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="animate-in fade-in duration-500">
@@ -219,6 +257,26 @@ const BookingsManager: React.FC<{
                      />
                  </div>
              )}
+
+             {reviewingBooking && (
+                 <ReviewModal 
+                    booking={reviewingBooking} 
+                    onClose={() => setReviewingBooking(null)} 
+                    onSubmit={async (rating, comment) => {
+                        await onReviewSubmit({
+                            bookingId: reviewingBooking.id,
+                            authorId: userId,
+                            targetId: reviewingBooking.listingId,
+                            rating,
+                            comment,
+                            role: 'RENTER',
+                            status: 'PUBLISHED',
+                            createdAt: new Date().toISOString()
+                        });
+                    }}
+                 />
+             )}
+
              <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{mode === 'renting' ? 'My Trips' : 'Reservations'}</h2>
                 <div className="bg-white p-1 rounded-xl border border-slate-100 flex shadow-sm">
@@ -228,49 +286,89 @@ const BookingsManager: React.FC<{
             </div>
 
             <div className="space-y-4">
-                {displayedBookings.map(b => (
-                    <div key={b.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-900">
-                        <div className="flex items-center gap-4 w-full md:w-auto">
-                            <img src={b.listing.images[0]} className="w-16 h-16 rounded-2xl object-cover bg-slate-100" />
-                            <div>
-                                <h4 className="font-bold leading-tight text-gray-900">{b.listing.title}</h4>
-                                <p className="text-xs text-slate-500 mt-1">{format(new Date(b.startDate), 'MMM dd')} - {format(new Date(b.endDate), 'MMM dd, yyyy')}</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                        b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                                        b.status === 'active' ? 'bg-blue-100 text-blue-700' : 
-                                        b.status === 'completed' ? 'bg-slate-100 text-slate-600' :
-                                        'bg-slate-100 text-slate-500'
-                                    }`}>
-                                        {b.status}
-                                    </span>
-                                    {b.securityDeposit && b.securityDeposit > 0 && (
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
-                                            b.depositStatus === 'held' ? 'bg-cyan-600 text-white' :
-                                            b.depositStatus === 'released' ? 'bg-emerald-100 text-emerald-700' :
-                                            b.depositStatus === 'disputed' ? 'bg-red-100 text-red-700' :
-                                            'bg-slate-100 text-slate-600'
+                {displayedBookings.length > 0 ? displayedBookings.map(b => (
+                    <div key={b.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-4 text-slate-900">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div className="flex items-center gap-4">
+                                <img src={b.listing.images[0]} className="w-16 h-16 rounded-2xl object-cover bg-slate-100" alt="item" />
+                                <div>
+                                    <h4 className="font-black leading-tight text-slate-900 tracking-tight">{b.listing.title}</h4>
+                                    <p className="text-xs text-slate-500 mt-1 font-bold">{format(new Date(b.startDate), 'MMM dd')} - {format(new Date(b.endDate), 'MMM dd, yyyy')}</p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                            b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                                            b.status === 'active' ? 'bg-blue-100 text-blue-700' : 
+                                            b.status === 'completed' ? 'bg-slate-100 text-slate-600' :
+                                            b.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                            'bg-slate-100 text-slate-500'
                                         }`}>
-                                            <LockIcon className="h-2.5 w-2.5" /> Deposit: {b.depositStatus || 'held'}
+                                            {b.status}
                                         </span>
-                                    )}
+                                        {b.securityDeposit && b.securityDeposit > 0 && (
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
+                                                b.depositStatus === 'held' ? 'bg-cyan-600 text-white' :
+                                                b.depositStatus === 'released' ? 'bg-emerald-100 text-emerald-700' :
+                                                b.depositStatus === 'disputed' ? 'bg-red-100 text-red-700' :
+                                                'bg-slate-100 text-slate-600'
+                                            }`}>
+                                                <LockIcon className="h-2.5 w-2.5" /> Deposit: {b.depositStatus || 'held'}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+
+                            <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+                                {mode === 'renting' && b.status === 'active' && (
+                                    <button className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-black rounded-xl hover:bg-slate-200 transition-colors flex items-center gap-2">
+                                        <MessageSquareIcon className="h-4 w-4" /> CONTACT HOST
+                                    </button>
+                                )}
+                                
+                                {mode === 'hosting' && b.status === 'pending' && (
+                                    <div className="flex gap-2 w-full sm:w-auto">
+                                        <button 
+                                            onClick={() => { setProcessingId(b.id); onStatusUpdate(b.id, 'confirmed').finally(() => setProcessingId(null)); }}
+                                            disabled={processingId === b.id}
+                                            className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100"
+                                        >
+                                            APPROVE
+                                        </button>
+                                        <button 
+                                            onClick={() => { setProcessingId(b.id); onStatusUpdate(b.id, 'rejected').finally(() => setProcessingId(null)); }}
+                                            disabled={processingId === b.id}
+                                            className="flex-1 sm:flex-none px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-black rounded-xl hover:bg-red-50"
+                                        >
+                                            REJECT
+                                        </button>
+                                    </div>
+                                )}
+
+                                {b.status === 'confirmed' && (
+                                    <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-6 py-2.5 bg-cyan-600 text-white text-xs font-black rounded-xl hover:bg-cyan-700 shadow-lg shadow-cyan-100 flex items-center gap-2">
+                                        <RocketIcon className="h-4 w-4" /> START CHECK-IN
+                                    </button>
+                                )}
+                                {b.status === 'active' && (
+                                    <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-6 py-2.5 bg-orange-500 text-white text-xs font-black rounded-xl hover:bg-orange-600 shadow-lg shadow-orange-100 flex items-center gap-2">
+                                        <RefreshCwIcon className="h-4 w-4" /> START RETURN
+                                    </button>
+                                )}
+                                {mode === 'renting' && b.status === 'completed' && !reviews.find(r => r.bookingId === b.id) && (
+                                    <button onClick={() => setReviewingBooking(b)} className="px-6 py-2.5 bg-amber-500 text-white text-xs font-black rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-100 flex items-center gap-2">
+                                        <StarIcon className="h-4 w-4" /> LEAVE A REVIEW
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex gap-2 w-full md:w-auto justify-end">
-                            {b.status === 'confirmed' && (
-                                <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-6 py-2.5 bg-cyan-600 text-white text-xs font-black rounded-xl hover:bg-cyan-700 shadow-lg shadow-cyan-100 flex items-center gap-2">
-                                    <RocketIcon className="h-4 w-4" /> START CHECK-IN
-                                </button>
-                            )}
-                            {b.status === 'active' && (
-                                <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-6 py-2.5 bg-orange-500 text-white text-xs font-black rounded-xl hover:bg-orange-600 shadow-lg shadow-orange-100 flex items-center gap-2">
-                                    <RefreshCwIcon className="h-4 w-4" /> START RETURN
-                                </button>
-                            )}
-                        </div>
+                        {b.status !== 'cancelled' && b.status !== 'rejected' && getTimeline(b)}
                     </div>
-                ))}
+                )) : (
+                    <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <CalendarIcon className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                        <p className="text-slate-400 font-bold italic">No {mode === 'renting' ? 'trips' : 'reservations'} found.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -325,6 +423,94 @@ const SecurityTab: React.FC<{ user: Session, onVerify: (type: 'email' | 'phone' 
     );
 };
 
+const ReviewsTab: React.FC<{ reviews: Review[], listings: Listing[], onResponse: (reviewId: string, text: string) => Promise<void> }> = ({ reviews, listings, onResponse }) => {
+    const [respondingId, setRespondingId] = useState<string | null>(null);
+    const [responseText, setResponseText] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Filter reviews for user's listings
+    const userListingIds = listings.map(l => l.id);
+    const hostReviews = reviews.filter(r => userListingIds.includes(r.targetId));
+
+    const handleSubmitResponse = async (reviewId: string) => {
+        if (!responseText.trim()) return;
+        setIsSubmitting(true);
+        try {
+            await onResponse(reviewId, responseText);
+            setRespondingId(null);
+            setResponseText('');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-slate-800">Reviews & Feedback</h2>
+            <div className="space-y-4">
+                {hostReviews.length > 0 ? hostReviews.map(review => {
+                    const l = listings.find(item => item.id === review.targetId);
+                    return (
+                        <div key={review.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex-shrink-0" />
+                                    <div>
+                                        <div className="flex gap-1 mb-1">
+                                            {[1, 2, 3, 4, 5].map(s => (
+                                                <StarIcon key={s} className={`h-3 w-3 ${s <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{l?.title} • {new Date(review.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-sm text-slate-700 leading-relaxed font-bold italic">"{review.comment}"</p>
+                            
+                            {review.response ? (
+                                <div className="bg-cyan-50 p-4 rounded-2xl border border-cyan-100">
+                                    <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest mb-1 flex items-center gap-2">
+                                        <ThumbsUpIcon className="h-3 w-3" /> Your Response
+                                    </p>
+                                    <p className="text-xs text-cyan-800 leading-relaxed font-medium">{review.response}</p>
+                                </div>
+                            ) : (
+                                respondingId === review.id ? (
+                                    <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                        <textarea 
+                                            value={responseText}
+                                            onChange={(e) => setResponseText(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                                            placeholder="Write a professional thank you or address their feedback..."
+                                            rows={3}
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <button onClick={() => setRespondingId(null)} className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cancel</button>
+                                            <button 
+                                                onClick={() => handleSubmitResponse(review.id)}
+                                                disabled={isSubmitting || !responseText.trim()}
+                                                className="px-6 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all disabled:opacity-50"
+                                            >
+                                                {isSubmitting ? 'Sending...' : 'Post Response'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setRespondingId(review.id)} className="px-5 py-2 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors">Respond to Review</button>
+                                )
+                            )}
+                        </div>
+                    );
+                }) : (
+                    <div className="py-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-200">
+                        <MessageSquareIcon className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                        <p className="text-slate-400 font-bold italic">No reviews yet for your listings.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
     const [selectedId, setSelectedId] = useState(listings[0]?.id || '');
     const [type, setType] = useState<ListingAdviceType>('improvement');
@@ -374,12 +560,14 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
 
 const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
     const { 
-        user, listings, bookings, favoriteListings, onListingClick, onEditListing, 
+        user, listings, bookings, reviews = [], favoriteListings, onListingClick, onEditListing, 
         onDeleteListing, onToggleFavorite, onUpdateAvatar, onUpdateProfile, 
-        onVerificationUpdate, onBookingStatusUpdate, onUpdateDepositStatus, onViewPublicProfile 
+        onVerificationUpdate, onBookingStatusUpdate, onUpdateDepositStatus, onViewPublicProfile,
+        onReviewSubmit, onReviewResponse
     } = props;
     const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
     const [listingToBoost, setListingToBoost] = useState<Listing | null>(null);
+    const [listingCalendar, setListingCalendar] = useState<Listing | null>(null);
     
     // Account Security State
     const [newPassword, setNewPassword] = useState('');
@@ -422,6 +610,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
         { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon },
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
         { id: 'bookings', name: 'My Bookings', icon: CalendarIcon },
+        { id: 'reviews', name: 'Reviews', icon: MessageSquareIcon },
         { id: 'favorites', name: 'Saved Items', icon: HeartIcon },
         { id: 'security', name: 'Security & Trust', icon: ShieldIcon },
         { id: 'analytics', name: 'Performance', icon: BarChartIcon },
@@ -532,6 +721,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                             <td className="p-4"><span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase">Active</span></td>
                                             <td className="p-4 flex justify-end gap-2">
                                                 <button onClick={() => onListingClick?.(l.id)} className="p-2 text-slate-400 hover:text-cyan-600" title="View"><EyeIcon className="h-5 w-5"/></button>
+                                                <button onClick={() => setListingCalendar(l)} className="p-2 text-slate-400 hover:text-indigo-600" title="Calendar"><CalendarIcon className="h-5 w-5"/></button>
                                                 <button onClick={() => onEditListing?.(l.id)} className="p-2 text-slate-400 hover:text-cyan-600" title="Edit"><PencilIcon className="h-5 w-5"/></button>
                                                 <button onClick={() => setListingToBoost(l)} className="p-2 text-slate-400 hover:text-amber-500" title="Boost"><RocketIcon className="h-5 w-5"/></button>
                                                 <button onClick={() => onDeleteListing(l.id)} className="p-2 text-slate-400 hover:text-red-500" title="Delete"><TrashIcon className="h-5 w-5"/></button>
@@ -545,15 +735,24 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                     </div>
                 );
             case 'bookings':
-                return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
+                return <BookingsManager bookings={bookings} reviews={reviews} userId={user.id} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} onReviewSubmit={onReviewSubmit} />;
+            case 'reviews':
+                return <ReviewsTab reviews={reviews} listings={listings} onResponse={onReviewResponse} />;
             case 'security':
                 return <SecurityTab user={user} onVerify={(type) => onVerificationUpdate(user.id, type)} />;
             case 'aiAssistant':
                 return <AIListingCoach listings={listings} />;
             case 'analytics':
                 return (
-                    <div className="space-y-6">
-                        <h2 className="text-2xl font-bold text-slate-800">Hosting Performance</h2>
+                    <div className="space-y-8 animate-in fade-in duration-500">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-slate-800">Performance Dashboard</h2>
+                            <div className="px-4 py-2 bg-white rounded-xl border border-slate-100 flex items-center gap-2 text-xs font-bold text-slate-500 shadow-sm">
+                                <ClockIcon className="h-4 w-4" /> Data as of today
+                            </div>
+                        </div>
+
+                        {/* Top Line Stats */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Earnings</p>
@@ -567,14 +766,74 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                             </div>
                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reviews</p>
-                                <h4 className="text-3xl font-black mt-1">{user.totalReviews || 0}</h4>
-                                <div className="flex items-center gap-1 text-amber-500 text-[10px] font-bold mt-4"><StarIcon className="h-3 w-3" /> Community rating</div>
+                                <h4 className="text-3xl font-black mt-1">{reviews.filter(r => listings.map(l => l.id).includes(r.targetId)).length}</h4>
+                                <div className="flex items-center gap-1 text-amber-500 text-[10px] font-bold mt-4"><StarIcon className="h-3 w-3" /> Avg. 4.9 rating</div>
                             </div>
-                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
+                            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Response Rate</p>
                                 <h4 className="text-3xl font-black mt-1">98%</h4>
-                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold mt-4"><CheckCircleIcon className="h-3 w-3" /> Superhost status</div>
+                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold mt-4"><CheckCircleIcon className="h-3 w-3" /> Top Tier</div>
                             </div>
+                        </div>
+
+                        {/* Earnings Growth */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 opacity-80 mb-2">Monthly Revenue</p>
+                                <div className="flex items-end gap-3">
+                                    <h4 className="text-5xl font-black tracking-tight">$3,450.00</h4>
+                                    <span className="text-emerald-400 text-sm font-black mb-2 flex items-center gap-0.5">
+                                        <TrendUpIcon className="h-4 w-4" /> 24%
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-400 mt-6 font-medium">Your income grew by $670 compared to last month.</p>
+                            </div>
+                            <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Platform Impact</p>
+                                    <h4 className="text-4xl font-black text-slate-900 mt-2">1,240 <span className="text-slate-400 text-lg">views</span></h4>
+                                </div>
+                                <div className="flex gap-4 mt-6">
+                                    <div className="flex-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Conversion</p>
+                                        <p className="text-lg font-black text-slate-900">4.2%</p>
+                                    </div>
+                                    <div className="flex-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Efficiency</p>
+                                        <p className="text-lg font-black text-slate-900">92%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Individual Listing Stats */}
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Individual Asset Performance</h3>
+                            {listings.length > 0 ? listings.map(listing => (
+                                <div key={listing.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4">
+                                    <img src={listing.images[0]} className="w-14 h-14 rounded-2xl object-cover shadow-sm bg-slate-100" alt="item" />
+                                    <div className="flex-1 min-w-0">
+                                        <h5 className="font-black text-slate-900 text-sm leading-tight truncate">{listing.title}</h5>
+                                        <div className="flex items-center gap-4 mt-1">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                                <EyeIcon className="h-3.5 w-3.5 text-slate-300" /> {Math.floor(Math.random() * 500) + 100} views
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                                <CalendarIcon className="h-3.5 w-3.5 text-slate-300" /> {bookings.filter(b => b.listingId === listing.id).length} bookings
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gross Revenue</p>
+                                        <p className="font-black text-slate-900">$1,120</p>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                                    <p className="text-slate-400 font-bold italic">List your first item to see performance data.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
@@ -641,6 +900,45 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                 </div>
             </div>
             {listingToBoost && <PromotionModal listing={listingToBoost} onClose={() => setListingToBoost(null)} />}
+            
+            {listingCalendar && (
+                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[120] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 relative animate-in zoom-in duration-300">
+                        <button onClick={() => setListingCalendar(null)} className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition-colors">
+                            <XIcon className="h-6 w-6 text-slate-400" />
+                        </button>
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
+                                <CalendarIcon className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Availability Calendar</h3>
+                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{listingCalendar.title}</p>
+                            </div>
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex justify-center">
+                            <DayPicker 
+                                mode="multiple" 
+                                selected={listingCalendar.bookedDates?.map(d => new Date(d)) || []}
+                                disabled={{ before: new Date() }}
+                                modifiersStyles={{
+                                    selected: { 
+                                        backgroundColor: '#4f46e5', 
+                                        color: 'white',
+                                        borderRadius: '8px'
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className="mt-8 flex items-center gap-3 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                            <InfoIcon className="h-5 w-5 text-indigo-500 flex-shrink-0" />
+                            <p className="text-[10px] font-black text-indigo-900 uppercase tracking-widest leading-relaxed">
+                                Highlighted dates are currently booked. This is your calendar view for this listing.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">

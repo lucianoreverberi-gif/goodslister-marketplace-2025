@@ -2,7 +2,7 @@
 // services/mockApiService.ts
 import { 
     User, Listing, HeroSlide, Banner, Conversation, 
-    CategoryImagesMap, ListingCategory, Booking 
+    CategoryImagesMap, ListingCategory, Booking, Review 
 } from '../types';
 import { initialCategoryImages, mockUsers, mockListings, initialHeroSlides, initialBanners, mockBookings } from '../constants';
 import { format, eachDayOfInterval } from 'date-fns';
@@ -17,6 +17,7 @@ interface AppData {
     paymentApiKey: string;
     conversations: Conversation[];
     bookings: Booking[];
+    reviews: Review[];
 }
 
 export const fetchAllData = async (): Promise<AppData> => {
@@ -34,6 +35,7 @@ export const fetchAllData = async (): Promise<AppData> => {
             paymentApiKey: data.paymentApiKey || '',
             conversations: [],
             bookings: data.bookings || [],
+            reviews: data.reviews || [],
         };
     } catch (error) {
         return {
@@ -46,6 +48,7 @@ export const fetchAllData = async (): Promise<AppData> => {
             paymentApiKey: '',
             conversations: [],
             bookings: mockBookings,
+            reviews: [],
         };
     }
 };
@@ -169,3 +172,23 @@ export const updateCategoryImage = async (category: string, url: string) => fetc
 export const updateUserVerification = async (userId: string, type: string) => fetch('/api/admin-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateUserVerification', payload: { userId, type } })}).then(() => fetchAllData().then(d => d.users));
 export const updateUserAvatar = async (userId: string, url: string) => fetch('/api/admin-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateUserAvatar', payload: { userId, url } })}).then(() => fetchAllData().then(d => d.users));
 export const updateUserProfile = async (userId: string, name: string, bio: string, avatarUrl: string) => fetch('/api/admin-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateUserProfile', payload: { userId, name, bio, avatarUrl } })}).then(() => fetchAllData().then(d => d.users));
+
+export const submitReview = async (review: Partial<Review>): Promise<Review> => {
+    const response = await fetch('/api/admin-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submitReview', payload: review }),
+    });
+    const result = await response.json();
+    return result.review;
+};
+
+export const submitReviewResponse = async (reviewId: string, responseText: string): Promise<Review> => {
+    const response = await fetch('/api/admin-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submitReviewResponse', payload: { reviewId, responseText } }),
+    });
+    const result = await response.json();
+    return result.review;
+};
