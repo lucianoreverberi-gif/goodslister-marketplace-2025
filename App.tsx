@@ -20,7 +20,7 @@ import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
-import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session, Review } from './types';
+import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
 import { CheckCircleIcon, BellIcon, MailIcon, XIcon, MessageCircleIcon } from './components/icons';
@@ -597,60 +597,6 @@ const App: React.FC = () => {
         updateAppData({ listings: updatedListings });
     };
 
-    const handleReviewSubmit = async (reviewData: Partial<Review>) => {
-        const newReview = await mockApi.submitReview(reviewData);
-        updateAppData({ reviews: [...appData.reviews, newReview] });
-        addNotification('success', 'Review Published', 'Thank you for your feedback!');
-    };
-
-    const handleReviewResponseSubmit = async (reviewId: string, response: string) => {
-        const updatedReview = await mockApi.submitReviewResponse(reviewId, response);
-        updateAppData({ 
-            reviews: appData.reviews.map((r: Review) => r.id === reviewId ? updatedReview : r) 
-        });
-        addNotification('success', 'Response Saved', 'Your response has been published.');
-    };
-
-    // SEO & Metadata Management
-    useEffect(() => {
-        if (!appData) return;
-
-        let title = "Goodslister | Rent Premium Gear Locally";
-        let description = "Peer-to-peer rental marketplace for motorcycles, boats, RVs and more. Rent premium equipment directly from local owners.";
-        
-        if (page === 'listingDetail' && selectedListingId) {
-            const l = appData.listings.find((item: Listing) => item.id === selectedListingId);
-            if (l) {
-                title = `${l.title} | Rent in ${l.location.city} | Goodslister`;
-                description = `Rent ${l.title} in ${l.location.city}, ${l.location.state} for $${l.pricingType === 'hourly' ? l.pricePerHour + '/hr' : l.pricePerDay + '/day'}. ${l.description.substring(0, 100)}...`;
-            }
-        } else if (page === 'explore') {
-            title = "Explore Premium Rentals | Goodslister";
-        } else if (page === 'userDashboard') {
-            title = "My Dashboard | Goodslister";
-        } else if (page === 'inbox') {
-            title = "Messages | Goodslister";
-        }
-
-        document.title = title;
-        
-        // Update Meta Tags
-        let metaDesc = document.querySelector('meta[name="description"]');
-        if (!metaDesc) {
-            metaDesc = document.createElement('meta');
-            metaDesc.setAttribute('name', 'description');
-            document.head.appendChild(metaDesc);
-        }
-        metaDesc.setAttribute('content', description);
-
-        // Update OG Tags
-        const ogTitle = document.querySelector('meta[property="og:title"]');
-        if (ogTitle) ogTitle.setAttribute('content', title);
-        const ogDesc = document.querySelector('meta[property="og:description"]');
-        if (ogDesc) ogDesc.setAttribute('content', description);
-
-    }, [page, selectedListingId, appData?.listings]);
-
     if (!appData) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -672,7 +618,6 @@ const App: React.FC = () => {
         logoUrl,
         paymentApiKey,
         bookings,
-        reviews,
     } = appData;
 
     const renderPage = () => {
@@ -693,10 +638,8 @@ const App: React.FC = () => {
                        />;
             case 'listingDetail':
                 const listing = listings.find((l: Listing) => l.id === selectedListingId);
-                const listingReviews = reviews.filter((r: Review) => r.targetId === (listing?.id || ''));
                 return listing ? <ListingDetailPage 
                     listing={listing} 
-                    reviews={listingReviews}
                     onBack={() => handleNavigate('explore')} 
                     onStartConversation={handleStartConversation}
                     currentUser={session}
@@ -764,7 +707,6 @@ const App: React.FC = () => {
                     listings={listings.filter((l: Listing) => l.owner.id === session.id)} 
                     // Pass both bookings where user is the renter OR the owner
                     bookings={bookings.filter((b: Booking) => b.renterId === session.id || b.listing.owner.id === session.id)}
-                    reviews={reviews}
                     favoriteListings={listings.filter(l => session.favorites?.includes(l.id))}
                     onVerificationUpdate={handleVerificationUpdate}
                     onUpdateAvatar={handleUpdateAvatar}
@@ -776,8 +718,6 @@ const App: React.FC = () => {
                     onDeleteListing={handleDeleteListing} // NEW PROP
                     onBookingStatusUpdate={handleBookingStatusUpdate} // NEW PROP ADDED
                     onUpdateDepositStatus={handleUpdateDepositStatus} // NEW PROP
-                    onReviewSubmit={handleReviewSubmit}
-                    onReviewResponse={handleReviewResponseSubmit}
                 /> : <p>Please log in.</p>;
             case 'aboutUs':
                 return <AboutUsPage />;

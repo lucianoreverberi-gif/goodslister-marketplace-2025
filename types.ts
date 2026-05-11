@@ -152,7 +152,7 @@ export interface Booking {
         contractType: string;
     };
     paymentMethod?: 'platform' | 'direct';
-    status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled' | 'rejected';
+    status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
     securityDeposit?: number;
     depositStatus?: 'held' | 'released' | 'disputed' | 'claimed';
     inspectionResult?: 'clean' | 'damaged';
@@ -212,8 +212,6 @@ export interface Review {
     role: 'HOST' | 'RENTER';
     rating: number; 
     comment: string;
-    response?: string;
-    responseDate?: string;
     privateNote?: string;
     careRating?: number;
     cleanRating?: number;
