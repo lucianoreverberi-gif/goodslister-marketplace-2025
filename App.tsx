@@ -83,8 +83,8 @@ const App: React.FC = () => {
                     const parsed = JSON.parse(savedSession);
                     const freshUser = allData.users.find((u: User) => u.id === parsed.id);
                     if (freshUser) {
-                        // Re-verify admin status based on role or strictly assigned property
-                        const isAdmin = freshUser.role === 'SUPER_ADMIN' ? (parsed.isAdmin || false) : (freshUser.email.includes('admin'));
+                        // Re-verify admin status based on role, strictly assigned property, or owner email
+                        const isAdmin = (freshUser.role === 'SUPER_ADMIN' || freshUser.email === 'lucianoreverberi@gmail.com') ? (parsed.isAdmin || true) : (freshUser.email.includes('admin'));
                         setSession({ ...freshUser, isAdmin });
                     }
                 } catch (e) {}
@@ -285,7 +285,7 @@ const App: React.FC = () => {
                     }
                 }
 
-                const isAdmin = userToSession.role === 'SUPER_ADMIN';
+                const isAdmin = userToSession.role === 'SUPER_ADMIN' || userToSession.email === 'lucianoreverberi@gmail.com';
                 setSession({ ...userToSession, isAdmin });
                 setIsLoginModalOpen(false);
                 addNotification('success', 'Authenticated with Google', `Welcome, ${userToSession.name}!`);
