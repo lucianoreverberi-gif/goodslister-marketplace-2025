@@ -149,8 +149,12 @@ export const createBooking = async (
 };
 
 export const loginUser = async (email: string) => (await fetchAllData()).users.find(u => u.email === email) || null;
-export const registerUser = async (name: string, email: string) => {
-    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password: 'pw' })});
+export const registerUser = async (name: string, email: string, id?: string) => {
+    const res = await fetch('/api/auth/register', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ name, email, password: 'pw', id })
+    });
     return res.ok ? res.json() : null;
 };
 export const toggleFavorite = async (userId: string, listingId: string) => fetch('/api/user/toggle-favorite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, listingId })});

@@ -9,25 +9,25 @@ export default async function handler(
     return response.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, password } = request.body;
+  const { name, email, password, id: providedId } = request.body;
   
   try {
+    const id = providedId || `user-${Date.now()}`;
+    const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
+    const registeredDate = new Date().toISOString().split('T')[0];
+
     if (!process.env.POSTGRES_URL) {
       // Fallback for mock environments
       return response.status(200).json({
-        id: `user-${Date.now()}`,
+        id,
         name,
         email,
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+        avatarUrl,
         bio: '',
-        registeredDate: new Date().toISOString().split('T')[0],
+        registeredDate,
         favorites: []
       });
     }
-
-    const id = `user-${Date.now()}`;
-    const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
-    const registeredDate = new Date().toISOString().split('T')[0];
 
     // Insert user into Postgres
     // Uses the actual schema columns expected by app-data.ts

@@ -225,28 +225,53 @@ const App: React.FC = () => {
 
     const handleGoogleLogin = async (): Promise<boolean> => {
         try {
+            console.log("Starting Google Auth...");
             const firebaseUser = await signInWithGoogle();
+            console.log("Firebase Auth Result:", firebaseUser ? "Success" : "No user returned");
+            
             if (firebaseUser) {
-                // Check if user exists in our appData, otherwise "register" them
-                const existingUser = appData.users.find((u: User) => u.email === firebaseUser.email);
+                // Check if user exists in our appData
+                let existingUser = appData.users.find((u: User) => u.email === firebaseUser.email);
                 
                 let userToSession: User;
                 if (existingUser) {
+                    console.log("Existing user found:", existingUser.email);
                     userToSession = existingUser;
                 } else {
+                    console.log("New user detected, registering:", firebaseUser.email);
                     // Create basic user profile from Google data
-                    const newUser: User = {
-                        id: firebaseUser.uid,
-                        name: firebaseUser.displayName || 'Google User',
-                        email: firebaseUser.email || '',
-                        registeredDate: new Date().toISOString(),
-                        avatarUrl: firebaseUser.photoURL || `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
-                        favorites: [],
-                        isEmailVerified: firebaseUser.emailVerified
-                    };
-                    // Update locally for now
-                    updateAppData({ users: [...appData.users, newUser] });
-                    userToSession = newUser;
+                    // We call the backend to ensure persistence, passing the Firebase UID
+                    const registeredUser = await mockApi.registerUser(
+                        firebaseUser.displayName || 'Google User', 
+                        firebaseUser.email || '',
+                        firebaseUser.uid
+                    );
+
+                    if (registeredUser) {
+                        userToSession = {
+                            ...registeredUser,
+                            // Ensure we use the exact registered user details
+                        };
+                        // Ensure we use the Firebase values for some fields
+                        userToSession.avatarUrl = firebaseUser.photoURL || userToSession.avatarUrl;
+                        userToSession.isEmailVerified = firebaseUser.emailVerified;
+                        
+                        // Update local appData
+                        updateAppData({ users: [...appData.users, userToSession] });
+                    } else {
+                        // Fallback but with local persistence only (less ideal)
+                        userToSession = {
+                            id: firebaseUser.uid,
+                            name: firebaseUser.displayName || 'Google User',
+                            email: firebaseUser.email || '',
+                            registeredDate: new Date().toISOString(),
+                            avatarUrl: firebaseUser.photoURL || `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
+                            favorites: [],
+                            isEmailVerified: firebaseUser.emailVerified,
+                            role: 'USER'
+                        };
+                        updateAppData({ users: [...appData.users, userToSession] });
+                    }
                 }
 
                 const isAdmin = userToSession.role === 'SUPER_ADMIN';
@@ -256,8 +281,9 @@ const App: React.FC = () => {
                 return true;
             }
         } catch (error) {
-            console.error("Google Login Failed:", error);
-            addNotification('info', 'Login Failed', 'Could not authenticate with Google.');
+            console.error("Google Login Detailed Error:", error);
+            const errorMessage = error instanceof Error ? error.message : "Could not authenticate with Google.";
+            addNotification('info', 'Login Failed', errorMessage);
         }
         return false;
     };
