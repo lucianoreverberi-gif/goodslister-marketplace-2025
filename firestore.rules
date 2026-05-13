@@ -87,6 +87,7 @@ service cloud.firestore {
     match /conversations/{conversationId} {
       allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
       allow create: if isVerified() && request.auth.uid in incoming().participants;
+      allow update: if isSignedIn() && request.auth.uid in resource.data.participants;
       
       match /messages/{messageId} {
         allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;

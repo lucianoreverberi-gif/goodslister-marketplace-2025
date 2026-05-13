@@ -80,17 +80,25 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
 
     // Translation Logic
     useEffect(() => {
-        if (!activeConversation || !activeConversation.fullMessages) return;
+        if (!messages || messages.length === 0) return;
         const translateAllMessages = async () => {
             if (userLanguage === 'English') {
                  setTranslatedMessages({}); 
                  return;
             }
             setIsTranslating(true);
-            const translations: Record<string, string> = {};
-            const messagesToTranslate = activeConversation.fullMessages!.filter(
-                (msg: any) => msg.senderId !== currentUser.id && msg.text
+            const translations: Record<string, string> = { ...translatedMessages };
+            
+            // Only translate new messages not already translated
+            const messagesToTranslate = messages.filter(
+                (msg: any) => msg.senderId !== currentUser.id && msg.text && !translations[msg.id]
             );
+
+            if (messagesToTranslate.length === 0) {
+                setIsTranslating(false);
+                return;
+            }
+
             await Promise.all(messagesToTranslate.map(async (msg: any) => {
                 const translatedText = await translateText(msg.text, userLanguage, "English");
                 translations[msg.id] = translatedText;
@@ -99,7 +107,7 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
             setIsTranslating(false);
         };
         translateAllMessages();
-    }, [activeConversation, userLanguage, currentUser.id]);
+    }, [messages, userLanguage, currentUser.id]);
 
     const handleSend = async () => {
         if (!messageInput.trim()) return;

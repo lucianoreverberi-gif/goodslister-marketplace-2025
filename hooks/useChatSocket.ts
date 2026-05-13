@@ -1,199 +1,200 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Message, Conversation } from '../types/chat';
+import { 
+    db, 
+    collection, 
+    query, 
+    where, 
+    orderBy, 
+    onSnapshot, 
+    addDoc, 
+    serverTimestamp, 
+    doc, 
+    setDoc, 
+    updateDoc,
+    getDocs,
+    Timestamp 
+} from '../services/firebase';
 
 export const useChatSocket = (currentUserId: string | undefined, activeConversationId?: string | null) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const isPollingRef = useRef(false);
 
-  // 1. SYNC
-  const fetchConversations = useCallback(async () => {
-    if (!currentUserId || isPollingRef.current) return;
-    
-    isPollingRef.current = true;
+  // 1. Listen to Conversations
+  useEffect(() => {
+    if (!currentUserId) {
+        setConversations([]);
+        setLoading(false);
+        return;
+    }
 
-    try {
-      const response = await fetch(`/api/chat/sync?t=${Date.now()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId }),
-      });
+    const q = query(
+        collection(db, 'conversations'),
+        where('participants', 'array-contains', currentUserId),
+        orderBy('updatedAt', 'desc')
+    );
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        const mappedConvos: Conversation[] = data.conversations.map((c: any) => {
-            const allParticipantIds = Object.keys(c.participants);
-            const otherId = allParticipantIds.find(id => id !== currentUserId) || allParticipantIds[0];
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+        const convoPromises = snapshot.docs.map(async (convoDoc) => {
+            const data = convoDoc.data();
+            const otherId = data.participants.find((id: string) => id !== currentUserId) || data.participants[0];
             
-            const otherUser = c.participants[otherId] || {
-                id: otherId || 'unknown',
-                name: 'Unknown User',
-                avatarUrl: 'https://i.pravatar.cc/150?u=unknown'
-            };
+            // Try to fetch other user details for high-quality UI
+            // In a real app, we might cache this or store it in the conversation for efficiency
+            let otherUserName = 'User';
+            let otherUserAvatar = `https://i.pravatar.cc/150?u=${otherId}`;
             
-            const lastMsgObj = c.messages && c.messages.length > 0 
-                ? c.messages[c.messages.length - 1] 
-                : null;
+            try {
+                // For demo purposes, we fetch one-off. In production, consider Denormalization.
+                const userDoc = await getDoc(doc(db, 'users', otherId));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    otherUserName = userData.name || otherUserName;
+                    otherUserAvatar = userData.avatarUrl || otherUserAvatar;
+                }
+            } catch (e) {
+                console.warn("Could not fetch participant info", e);
+            }
 
-            const lastMessage: Message = lastMsgObj ? {
-                id: lastMsgObj.id,
-                senderId: lastMsgObj.senderId,
-                text: lastMsgObj.text,
-                originalText: lastMsgObj.text,
-                timestamp: new Date(lastMsgObj.timestamp),
+            const lastMsgDoc = data.lastMessage;
+            const lastMessage: Message = lastMsgDoc ? {
+                id: lastMsgDoc.id || 'last',
+                senderId: lastMsgDoc.senderId,
+                text: lastMsgDoc.text,
+                originalText: lastMsgDoc.text,
+                timestamp: lastMsgDoc.timestamp?.toDate() || new Date(),
                 status: 'read',
                 type: 'text'
             } : {
-                id: `sys-${c.id}`,
+                id: `sys-${convoDoc.id}`,
                 senderId: 'system',
                 text: 'New conversation',
                 originalText: '',
-                timestamp: new Date(c.updated_at || Date.now()),
+                timestamp: data.updatedAt?.toDate() || new Date(),
                 status: 'read',
                 type: 'system'
             };
 
-            const fullMessages = c.messages ? c.messages.map((m: any) => ({
-                id: m.id,
-                senderId: m.senderId === currentUserId ? 'me' : m.senderId,
-                text: m.text,
-                originalText: m.text,
-                timestamp: new Date(m.timestamp),
-                status: 'read',
-                type: 'text'
-            })) : [];
-
             return {
-                id: c.id,
+                id: convoDoc.id,
                 participant: {
-                    id: otherUser.id,
-                    name: otherUser.name || 'User',
-                    avatar: otherUser.avatarUrl,
-                    isOnline: false, 
+                    id: otherId,
+                    name: otherUserName,
+                    avatar: otherUserAvatar,
+                    isOnline: false,
                     locale: 'en-US'
                 },
                 lastMessage: lastMessage,
                 unreadCount: 0,
-                fullMessages: fullMessages,
-                listing: c.listing 
+                listing: data.listing ? { id: data.listing.id, title: data.listing.title } : null
             };
         });
 
-        setConversations(mappedConvos);
-      }
-    } catch (error) {
-      console.error("Chat sync error:", error);
-    } finally {
-      setLoading(false);
-      isPollingRef.current = false;
-    }
+        const results = await Promise.all(convoPromises);
+        setConversations(results);
+        setLoading(false);
+    }, (error) => {
+        console.error("Conversations listener error:", error);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [currentUserId]);
 
-  // 2. Polling
+  // 2. Listen to Messages for Active Conversation
   useEffect(() => {
-    if (!currentUserId) {
-        setLoading(false);
+    if (!activeConversationId || activeConversationId === 'NEW_DRAFT') {
+        setMessages([]);
         return;
     }
-    
-    fetchConversations();
-    // Aggressive polling to ensure liveness
-    const intervalId = setInterval(fetchConversations, 2000); 
-    
-    const handleFocus = () => fetchConversations();
-    window.addEventListener('focus', handleFocus);
 
-    return () => {
-        clearInterval(intervalId);
-        window.removeEventListener('focus', handleFocus);
-    };
-  }, [currentUserId, fetchConversations]);
+    const q = query(
+        collection(db, 'conversations', activeConversationId, 'messages'),
+        orderBy('timestamp', 'asc')
+    );
 
-  // 3. SEND
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const msgs = snapshot.docs.map(d => {
+            const data = d.data();
+            return {
+                id: d.id,
+                senderId: data.senderId,
+                text: data.text,
+                originalText: data.text,
+                timestamp: data.timestamp?.toDate() || new Date(),
+                status: 'read',
+                type: 'text'
+            } as Message;
+        });
+        setMessages(msgs);
+    });
+
+    return () => unsubscribe();
+  }, [activeConversationId]);
+
+  // 3. Send Message
   const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string): Promise<string | null> => {
     if (!currentUserId) return null;
 
-    const tempId = `temp-${Date.now()}`;
-    const targetConvoId = convId || activeConversationId;
+    let targetConvoId = convId || activeConversationId;
     
-    const tempMsg: Message = {
-        id: tempId,
-        senderId: 'me',
-        text: text,
-        originalText: text,
-        timestamp: new Date(),
-        status: 'sent',
-        type: 'text'
-    };
+    // NEW_DRAFT Logic
+    if (targetConvoId === 'NEW_DRAFT' || !targetConvoId) {
+        if (!recipientId) return null;
 
-    const localConvoId = targetConvoId || 'NEW_DRAFT';
-    setLocalMessages(prev => [...prev, { ...tempMsg, conversationId: localConvoId } as any]);
-
-    // Data Prep: Try to find missing IDs if not provided
-    let finalRecipientId = recipientId;
-    let finalListingId = listingId;
-
-    if (targetConvoId && targetConvoId !== 'NEW_DRAFT') {
-        const existingConvo = conversations.find(c => c.id === targetConvoId);
-        if (existingConvo) {
-            // CRITICAL: Always send recipient ID to enable backend self-healing
-            if (!finalRecipientId) finalRecipientId = existingConvo.participant.id;
-            if (!finalListingId && existingConvo.listing) finalListingId = existingConvo.listing.id;
+        try {
+            // Create conversation first
+            const convoRef = await addDoc(collection(db, 'conversations'), {
+                participants: [currentUserId, recipientId],
+                listing: listingId ? { id: listingId, title: 'Listing' } : null, // Title usually passed or fetched
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastMessage: {
+                    text: text,
+                    senderId: currentUserId,
+                    timestamp: new Date() // Temporary for sorting before server sync
+                }
+            });
+            targetConvoId = convoRef.id;
+        } catch (e) {
+            console.error("Convo creation failed:", e);
+            return null;
         }
     }
 
     try {
-        const payload = {
+        // Add message to subcollection
+        const msgData = {
             senderId: currentUserId,
             text,
-            conversationId: targetConvoId === 'NEW_DRAFT' ? undefined : targetConvoId,
-            listingId: finalListingId,
-            recipientId: finalRecipientId
+            timestamp: serverTimestamp()
         };
 
-        const res = await fetch('/api/chat/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        await addDoc(collection(db, 'conversations', targetConvoId, 'messages'), msgData);
+
+        // Update conversation metadata for inbox sorting
+        await updateDoc(doc(db, 'conversations', targetConvoId), {
+            updatedAt: serverTimestamp(),
+            lastMessage: {
+                ...msgData,
+                timestamp: new Date() // Use local date for immediate update in client if possible
+            }
         });
 
-        if (res.ok) {
-            const data = await res.json();
-            setTimeout(() => fetchConversations(), 300); // Quick sync
-            setLocalMessages(prev => prev.filter(m => m.id !== tempId));
-            return data.conversationId;
-        } else {
-            console.error("Send failed");
-            return null;
-        }
+        return targetConvoId;
     } catch (e) {
-        console.error("Send network error", e);
+        console.error("Send message failed:", e);
         return null;
     }
   };
 
-  const getActiveMessages = () => {
-      if (!activeConversationId) return [];
-      
-      const convo = conversations.find(c => c.id === activeConversationId);
-      const dbMessages = convo ? (convo.fullMessages || []) : [];
-      
-      const pendingMessages = localMessages.filter(m => 
-          (m as any).conversationId === activeConversationId || 
-          (activeConversationId === 'NEW_DRAFT' && (m as any).conversationId === 'NEW_DRAFT')
-      );
-      
-      return [...dbMessages, ...pendingMessages];
-  };
-
   return {
     conversations,
-    messages: getActiveMessages(),
+    messages,
     sendMessage,
-    refresh: fetchConversations,
+    refresh: () => {}, // Not needed for real-time
     isTyping: false,
     loading
   };
