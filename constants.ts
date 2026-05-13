@@ -40,6 +40,7 @@ export const mockUsers: User[] = [
         averageRating: 5.0,
         totalReviews: 2,
         favorites: [],
+        role: 'SUPER_ADMIN',
     },
 ];
 

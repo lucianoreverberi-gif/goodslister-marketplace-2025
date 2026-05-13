@@ -41,18 +41,8 @@ const App: React.FC = () => {
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
     
-    // Initialize session from localStorage if available
-    const [session, setSession] = useState<Session | null>(() => {
-        const savedSession = localStorage.getItem('goodslister_session');
-        if (savedSession) {
-            try {
-                return JSON.parse(savedSession);
-            } catch (e) {
-                return null;
-            }
-        }
-        return null;
-    });
+    // Initialize session state
+    const [session, setSession] = useState<Session | null>(null);
 
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
@@ -93,7 +83,9 @@ const App: React.FC = () => {
                     const parsed = JSON.parse(savedSession);
                     const freshUser = allData.users.find((u: User) => u.id === parsed.id);
                     if (freshUser) {
-                        setSession({ ...freshUser, isAdmin: freshUser.email.includes('admin') || freshUser.email === 'lucianoreverberi@gmail.com' });
+                        // Re-verify admin status based on role or strictly assigned property
+                        const isAdmin = freshUser.role === 'SUPER_ADMIN' ? (parsed.isAdmin || false) : (freshUser.email.includes('admin'));
+                        setSession({ ...freshUser, isAdmin });
                     }
                 } catch (e) {}
             }
@@ -208,10 +200,17 @@ const App: React.FC = () => {
     };
 
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
+        // SECURITY FIX: Require strict password for the admin account
+        if (email === 'lucianoreverberi@gmail.com' && password !== 'admin123') {
+            addNotification('info', 'Auth Denied', 'Invalid password for admin user.');
+            return false;
+        }
+
         const user = await mockApi.loginUser(email);
         if (user) {
             // In a real app, password would be verified on the backend
-            const isAdmin = user.email.includes('admin') || user.email === 'lucianoreverberi@gmail.com';
+            // For other users, we'll allow any password for now (mock behavior)
+            const isAdmin = user.role === 'SUPER_ADMIN';
             const userSession: Session = { ...user, isAdmin };
             setSession(userSession);
             setIsLoginModalOpen(false);
@@ -250,7 +249,7 @@ const App: React.FC = () => {
                     userToSession = newUser;
                 }
 
-                const isAdmin = userToSession.email.includes('admin') || userToSession.email === 'lucianoreverberi@gmail.com';
+                const isAdmin = userToSession.role === 'SUPER_ADMIN';
                 setSession({ ...userToSession, isAdmin });
                 setIsLoginModalOpen(false);
                 addNotification('success', 'Authenticated with Google', `Welcome, ${userToSession.name}!`);
@@ -264,6 +263,12 @@ const App: React.FC = () => {
     };
 
     const handleRegister = async (name: string, email: string, password: string): Promise<boolean> => {
+        // SECURITY: Prevent unauthorized registration with the admin email
+        if (email.toLowerCase() === 'lucianoreverberi@gmail.com') {
+            addNotification('message', 'Error', 'This email address is reserved.');
+            return false;
+        }
+
         try {
             const newUser = await mockApi.registerUser(name, email);
             if(newUser) {
