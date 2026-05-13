@@ -14,6 +14,7 @@ import {
     setDoc, 
     updateDoc,
     getDocs,
+    getDoc,
     Timestamp 
 } from '../services/firebase';
 
@@ -30,10 +31,10 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         return;
     }
 
+    // REMOVED orderBy to avoid mandatory composite index requirement
     const q = query(
         collection(db, 'conversations'),
-        where('participants', 'array-contains', currentUserId),
-        orderBy('updatedAt', 'desc')
+        where('participants', 'array-contains', currentUserId)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -42,7 +43,6 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
             const otherId = data.participants.find((id: string) => id !== currentUserId) || data.participants[0];
             
             // Try to fetch other user details for high-quality UI
-            // In a real app, we might cache this or store it in the conversation for efficiency
             let otherUserName = 'User';
             let otherUserAvatar = `https://i.pravatar.cc/150?u=${otherId}`;
             
@@ -88,11 +88,15 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 },
                 lastMessage: lastMessage,
                 unreadCount: 0,
+                updatedAt: data.updatedAt?.toDate() || new Date(), // Keep for client sorting
                 listing: data.listing ? { id: data.listing.id, title: data.listing.title } : null
             };
         });
 
         const results = await Promise.all(convoPromises);
+        // Sort client-side to avoid index requirement
+        results.sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0));
+
         setConversations(results);
         setLoading(false);
     }, (error) => {
@@ -110,9 +114,9 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         return;
     }
 
+    // REMOVED orderBy to avoid mandatory composite index requirement
     const q = query(
-        collection(db, 'conversations', activeConversationId, 'messages'),
-        orderBy('timestamp', 'asc')
+        collection(db, 'conversations', activeConversationId, 'messages')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -128,6 +132,10 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 type: 'text'
             } as Message;
         });
+
+        // Sort client-side
+        msgs.sort((a, b) => (a.timestamp?.getTime() || 0) - (b.timestamp?.getTime() || 0));
+
         setMessages(msgs);
     });
 

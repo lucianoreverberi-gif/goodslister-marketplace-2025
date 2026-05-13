@@ -3,7 +3,7 @@
 // session management, and data handling, resolving module resolution errors.
 // FIX: Corrected the import for React and its hooks to resolve multiple "Cannot find name" errors.
 import React, { useState, useCallback, useEffect } from 'react';
-import { auth, signInWithGoogle } from './services/firebase';
+import { auth, signInWithGoogle, db, setDoc, doc, serverTimestamp } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -199,6 +199,22 @@ const App: React.FC = () => {
         await mockApi.toggleFavorite(session.id, listingId);
     };
 
+    // NEW: Sync user to Firestore for chat UI discoverability
+    const syncUserToFirestore = async (user: User) => {
+        try {
+            await setDoc(doc(db, 'users', user.id), {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                avatarUrl: user.avatarUrl,
+                role: user.role || 'USER',
+                lastSeen: serverTimestamp()
+            }, { merge: true });
+        } catch (e) {
+            console.warn("Firestore user sync failed:", e);
+        }
+    };
+
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
         // SECURITY FIX: Require strict password for the admin account
         if (email === 'lucianoreverberi@gmail.com' && password !== 'admin123') {
@@ -213,6 +229,7 @@ const App: React.FC = () => {
             const isAdmin = user.role === 'SUPER_ADMIN';
             const userSession: Session = { ...user, isAdmin };
             setSession(userSession);
+            syncUserToFirestore(user); // Sync for chat
             setIsLoginModalOpen(false);
             addNotification('success', 'Welcome back!', `Logged in as ${user.name}`);
             if (isAdmin) {
@@ -287,6 +304,7 @@ const App: React.FC = () => {
 
                 const isAdmin = userToSession.role === 'SUPER_ADMIN' || userToSession.email === 'lucianoreverberi@gmail.com';
                 setSession({ ...userToSession, isAdmin });
+                syncUserToFirestore(userToSession); // Sync for chat
                 setIsLoginModalOpen(false);
                 addNotification('success', 'Authenticated with Google', `Welcome, ${userToSession.name}!`);
                 return true;
@@ -321,6 +339,7 @@ const App: React.FC = () => {
             if(newUser) {
                 updateAppData({ users: [...appData.users, newUser] });
                 setSession({ ...newUser, isAdmin: false });
+                syncUserToFirestore(newUser); // Sync for chat
                 setIsLoginModalOpen(false);
                 
                 // Send Welcome Email via Resend
