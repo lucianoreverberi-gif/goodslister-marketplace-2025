@@ -51,9 +51,10 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
             if (initialContext.conversationId) {
                 setActiveConversationId(initialContext.conversationId);
             } else if (initialContext.listing && initialContext.recipient) {
-                // Check if we already have a conversation for this listing to avoid duplicates
+                // Check if we already have a conversation for this listing and participant
                 const existing = conversations.find((c: any) => 
-                    c.listing?.id === initialContext.listing?.id
+                    c.listing?.id === initialContext.listing?.id &&
+                    c.participant?.id === initialContext.recipient?.id
                 );
                 if (existing) {
                     setActiveConversationId(existing.id);
@@ -117,7 +118,7 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
 
         if (activeConversationId === 'NEW_DRAFT' && draftListing && draftRecipient) {
             // FIX: Wait for the new ID and update state immediately
-            const newId = await sendMessage(text, undefined, draftListing.id, draftRecipient.id);
+            const newId = await sendMessage(text, undefined, draftListing.id, draftRecipient.id, draftListing.title);
             if (newId) {
                 // Switch context to the real conversation ID immediately
                 setActiveConversationId(newId);

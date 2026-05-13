@@ -83,9 +83,11 @@ const App: React.FC = () => {
                     const parsed = JSON.parse(savedSession);
                     const freshUser = allData.users.find((u: User) => u.id === parsed.id);
                     if (freshUser) {
-                        // Re-verify admin status based on role, strictly assigned property, or owner email
+                        // Re-verify admin status
                         const isAdmin = (freshUser.role === 'SUPER_ADMIN' || freshUser.email === 'lucianoreverberi@gmail.com') ? (parsed.isAdmin || true) : (freshUser.email.includes('admin'));
-                        setSession({ ...freshUser, isAdmin });
+                        const userSession = { ...freshUser, isAdmin };
+                        setSession(userSession);
+                        syncUserToFirestore(freshUser); // Sync on startup/restore
                     }
                 } catch (e) {}
             }

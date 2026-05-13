@@ -59,12 +59,26 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
             }
 
             const lastMsgDoc = data.lastMessage;
+            
+            // Robust timestamp extraction
+            const extractDate = (ts: any) => {
+                if (!ts) return new Date();
+                if (typeof ts.toDate === 'function') return ts.toDate();
+                if (ts instanceof Date) return ts;
+                if (typeof ts === 'number') return new Date(ts);
+                if (typeof ts === 'string') {
+                    const d = new Date(ts);
+                    return isNaN(d.getTime()) ? new Date() : d;
+                }
+                return new Date();
+            };
+
             const lastMessage: Message = lastMsgDoc ? {
                 id: lastMsgDoc.id || 'last',
                 senderId: lastMsgDoc.senderId,
                 text: lastMsgDoc.text,
                 originalText: lastMsgDoc.text,
-                timestamp: lastMsgDoc.timestamp?.toDate() || new Date(),
+                timestamp: extractDate(lastMsgDoc.timestamp),
                 status: 'read',
                 type: 'text'
             } : {
@@ -72,7 +86,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 senderId: 'system',
                 text: 'New conversation',
                 originalText: '',
-                timestamp: data.updatedAt?.toDate() || new Date(),
+                timestamp: extractDate(data.updatedAt),
                 status: 'read',
                 type: 'system'
             };
@@ -88,7 +102,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 },
                 lastMessage: lastMessage,
                 unreadCount: 0,
-                updatedAt: data.updatedAt?.toDate() || new Date(), // Keep for client sorting
+                updatedAt: extractDate(data.updatedAt), // Keep for client sorting
                 listing: data.listing ? { id: data.listing.id, title: data.listing.title } : null
             };
         });
@@ -120,6 +134,14 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+        // Robust timestamp extraction helper
+        const extractDate = (ts: any) => {
+            if (!ts) return new Date();
+            if (typeof ts.toDate === 'function') return ts.toDate();
+            if (ts instanceof Date) return ts;
+            return new Date();
+        };
+
         const msgs = snapshot.docs.map(d => {
             const data = d.data();
             return {
@@ -127,7 +149,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 senderId: data.senderId,
                 text: data.text,
                 originalText: data.text,
-                timestamp: data.timestamp?.toDate() || new Date(),
+                timestamp: extractDate(data.timestamp),
                 status: 'read',
                 type: 'text'
             } as Message;
@@ -143,7 +165,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
   }, [activeConversationId]);
 
   // 3. Send Message
-  const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string): Promise<string | null> => {
+  const sendMessage = async (text: string, convId?: string, listingId?: string, recipientId?: string, listingTitle?: string): Promise<string | null> => {
     if (!currentUserId) return null;
 
     let targetConvoId = convId || activeConversationId;
@@ -156,7 +178,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
             // Create conversation first
             const convoRef = await addDoc(collection(db, 'conversations'), {
                 participants: [currentUserId, recipientId],
-                listing: listingId ? { id: listingId, title: 'Listing' } : null, // Title usually passed or fetched
+                listing: listingId ? { id: listingId, title: listingTitle || 'Gear' } : null,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 lastMessage: {
