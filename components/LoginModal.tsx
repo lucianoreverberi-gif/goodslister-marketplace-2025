@@ -66,6 +66,21 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
         setShowConfirmPassword(false);
     };
 
+    const handleGoogleAuth = async () => {
+        setError('');
+        setIsLoading(true);
+        try {
+            const success = await onGoogleLogin();
+            if (!success) {
+                // Error should be handled by App notification system, but we can set local error if needed
+            }
+        } catch (e) {
+            setError('Google authentication failed.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative">
@@ -189,7 +204,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
                     <div className="mt-6 grid grid-cols-1 gap-3">
                         <button
                             type="button"
-                            onClick={onGoogleLogin}
+                            onClick={handleGoogleAuth}
                             disabled={isLoading}
                             className="w-full inline-flex justify-center py-3 px-4 rounded-lg shadow-sm bg-white text-sm font-black text-gray-700 border border-gray-300 hover:bg-gray-50 focus:outline-none transition-all active:scale-95"
                         >

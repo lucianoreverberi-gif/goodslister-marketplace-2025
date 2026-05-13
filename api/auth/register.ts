@@ -49,6 +49,7 @@ export default async function handler(
       isPhoneVerified: false,
       isIdVerified: false,
       licenseVerified: false,
+      role: 'USER',
       favorites: []
     });
   } catch (error) {

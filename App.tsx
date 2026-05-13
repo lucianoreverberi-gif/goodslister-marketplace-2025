@@ -224,6 +224,11 @@ const App: React.FC = () => {
     };
 
     const handleGoogleLogin = async (): Promise<boolean> => {
+        if (!appData) {
+            addNotification('info', 'System Loading', 'Please wait until the app initializes completely.');
+            return false;
+        }
+
         try {
             console.log("Starting Google Auth...");
             const firebaseUser = await signInWithGoogle();
@@ -231,12 +236,18 @@ const App: React.FC = () => {
             
             if (firebaseUser) {
                 // Check if user exists in our appData
-                let existingUser = appData.users.find((u: User) => u.email === firebaseUser.email);
+                let existingUser = appData.users?.find((u: User) => u.email === firebaseUser.email);
                 
                 let userToSession: User;
                 if (existingUser) {
                     console.log("Existing user found:", existingUser.email);
-                    userToSession = existingUser;
+                    // Update existing user with latest info from Google
+                    userToSession = {
+                        ...existingUser,
+                        avatarUrl: firebaseUser.photoURL || existingUser.avatarUrl,
+                        isEmailVerified: firebaseUser.emailVerified || existingUser.isEmailVerified
+                    };
+                    // Optional: sync back to DB if needed, but for now we update local state
                 } else {
                     console.log("New user detected, registering:", firebaseUser.email);
                     // Create basic user profile from Google data
@@ -257,7 +268,7 @@ const App: React.FC = () => {
                         userToSession.isEmailVerified = firebaseUser.emailVerified;
                         
                         // Update local appData
-                        updateAppData({ users: [...appData.users, userToSession] });
+                        updateAppData({ users: [...(appData.users || []), userToSession] });
                     } else {
                         // Fallback but with local persistence only (less ideal)
                         userToSession = {
@@ -270,7 +281,7 @@ const App: React.FC = () => {
                             isEmailVerified: firebaseUser.emailVerified,
                             role: 'USER'
                         };
-                        updateAppData({ users: [...appData.users, userToSession] });
+                        updateAppData({ users: [...(appData.users || []), userToSession] });
                     }
                 }
 
@@ -280,9 +291,19 @@ const App: React.FC = () => {
                 addNotification('success', 'Authenticated with Google', `Welcome, ${userToSession.name}!`);
                 return true;
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Google Login Detailed Error:", error);
-            const errorMessage = error instanceof Error ? error.message : "Could not authenticate with Google.";
+            
+            let errorMessage = "Could not authenticate with Google.";
+            
+            if (error.code === 'auth/popup-blocked') {
+                errorMessage = "Login popup was blocked by your browser. Please allow popups for this site.";
+            } else if (error.code === 'auth/unauthorized-domain') {
+                errorMessage = "This domain is not authorized for Google Login. Please check Firebase configuration.";
+            } else if (error.message) {
+                errorMessage = `${errorMessage} (${error.message})`;
+            }
+            
             addNotification('info', 'Login Failed', errorMessage);
         }
         return false;
