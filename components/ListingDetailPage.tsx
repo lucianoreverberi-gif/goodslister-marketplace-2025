@@ -378,134 +378,245 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             )}
 
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 mb-6 transition-all active:scale-95">
-                    <ChevronLeftIcon className="h-5 w-5" />
-                    Back to results
-                </button>
-
-                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                    <div className="grid grid-cols-1 lg:grid-cols-5">
-                        <div className="lg:col-span-3">
-                            <div className="relative">
-                                <img src={listing.images[activeImageIndex]} alt={listing.title} className="w-full h-[500px] object-cover" />
-                                <div className="absolute top-4 right-4 flex gap-2">
-                                     <button className="p-3 bg-white/80 backdrop-blur-md rounded-full text-gray-700 hover:bg-white transition shadow-lg" onClick={() => onToggleFavorite(listing.id)}>
-                                        <HeartIcon className={`h-5 w-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-                                    </button>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                    <div>
+                        <button onClick={onBack} className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-900 mb-4 transition-all uppercase tracking-widest">
+                            <ChevronLeftIcon className="h-4 w-4" />
+                            Back to explore
+                        </button>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                                <p className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em]">{listing.category}{listing.subcategory && ` • ${listing.subcategory}`}</p>
+                                {listing.isInstantBook && (
+                                    <span className="flex items-center gap-1.5 text-[8px] font-black text-emerald-700 uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                                        <ZapIcon className="h-2.5 w-2.5 fill-emerald-700" /> Instant Book
+                                    </span>
+                                )}
+                            </div>
+                            <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">{listing.title}</h1>
+                            <div className="flex items-center gap-6 mt-2">
+                                <div className="flex items-center text-sm text-slate-500 font-bold">
+                                    <MapPinIcon className="h-4 w-4 mr-1.5 text-cyan-500" />
+                                    <span>{listing.location.city}, {listing.location.state}</span>
+                                </div>
+                                <div className="flex items-center bg-slate-100 px-3 py-1 rounded-full">
+                                    <StarIcon className="h-3.5 w-3.5 text-amber-400 mr-1.5 fill-amber-400"/>
+                                    <span className="font-black text-slate-900 text-xs">{listing.rating}</span>
+                                    <span className="text-[10px] text-slate-400 ml-1 font-bold">({Math.floor(Math.random() * 50) + 10} reviews)</span>
                                 </div>
                             </div>
-                             {listing.images.length > 1 && (
-                                <div className="grid grid-cols-5 gap-2 p-4 bg-slate-50">
-                                    {listing.images.map((img, index) => (
-                                        <button key={index} onClick={() => setActiveImageIndex(index)} className={`rounded-xl overflow-hidden aspect-video transition-all ${index === activeImageIndex ? 'ring-4 ring-cyan-500 scale-95' : 'opacity-70 hover:opacity-100'}`}>
-                                            <img src={img} alt="thumbnail" className="w-full h-full object-cover"/>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
                         </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm">
+                            <ShareIcon className="h-4 w-4" /> Share
+                        </button>
+                        <button onClick={() => onToggleFavorite(listing.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50 transition-all shadow-sm ${isFavorite ? 'text-red-500 border-red-100 bg-red-50' : 'text-slate-600'}`}>
+                            <HeartIcon className={`h-4 w-4 ${isFavorite ? 'fill-red-500' : ''}`} /> {isFavorite ? 'Saved' : 'Save'}
+                        </button>
+                    </div>
+                </div>
 
-                        <div className="lg:col-span-2 p-6 sm:p-10 flex flex-col bg-white">
-                            <div>
-                                <div className="flex flex-col gap-2">
-                                    <p className="text-xs font-black text-cyan-600 uppercase tracking-[0.2em]">{listing.category}{listing.subcategory && ` • ${listing.subcategory}`}</p>
-                                    {listing.isInstantBook && (
-                                        <span className="flex items-center gap-1.5 text-[10px] font-black text-cyan-700 uppercase tracking-widest bg-cyan-100 w-fit px-3 py-1 rounded-full border border-cyan-200">
-                                            <ZapIcon className="h-3 w-3 fill-cyan-700" /> Instant Book
-                                        </span>
-                                    )}
+                {/* Media Gallery */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12 h-[400px] md:h-[550px] rounded-[2.5rem] overflow-hidden">
+                    <div className="md:col-span-2 h-full">
+                        <img src={listing.images[activeImageIndex]} alt={listing.title} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="hidden md:grid grid-cols-1 grid-rows-2 gap-4 col-span-1 h-full">
+                        <img src={listing.images[1] || listing.images[0]} className="w-full h-full object-cover" />
+                        <img src={listing.images[2] || listing.images[0]} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="hidden md:grid grid-cols-1 grid-rows-2 gap-4 col-span-1 h-full">
+                        <img src={listing.images[3] || listing.images[0]} className="w-full h-full object-cover" />
+                        <div className="relative w-full h-full">
+                            <img src={listing.images[4] || listing.images[0]} className="w-full h-full object-cover opacity-60" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white font-black text-lg cursor-pointer">
+                                +{listing.images.length} photos
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                    {/* Left Column: Details */}
+                    <div className="lg:col-span-7 space-y-12">
+                        <section className="flex items-center justify-between p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                            <div className="flex items-center gap-4 cursor-pointer" onClick={onViewOwnerProfile}>
+                                <div className="relative">
+                                    <img src={listing.owner.avatarUrl} alt={listing.owner.name} className="w-14 h-14 rounded-2xl object-cover shadow-sm border-2 border-white"/>
+                                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-1 border-2 border-white">
+                                        <CheckCircleIcon className="h-2.5 w-2.5 text-white" />
+                                    </div>
                                 </div>
-                                <h1 className="text-4xl font-black text-slate-900 mt-4 leading-tight tracking-tight">{listing.title}</h1>
-                                <div className="flex items-center text-sm text-slate-500 font-bold mt-4"><MapPinIcon className="h-4 w-4 mr-2 text-cyan-500" /><span>{listing.location.city}, {listing.location.state}</span></div>
-                                
-                                {requiresLicense && (
-                                    <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 animate-in slide-in-from-top-2">
-                                        <AlertTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-1" />
-                                        <div>
-                                            <p className="text-sm font-black text-amber-900">License / ID Required</p>
-                                            <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                                                {listing.category === ListingCategory.MOTORCYCLES && (listing.engineCC || 0) >= 50 
-                                                    ? `Based on local laws and engine size (${listing.engineCC}cc), a valid motorcycle license must be presented at pick-up.`
-                                                    : listing.category === ListingCategory.BOATS || (listing.category === ListingCategory.WATER_SPORTS && (listing.subcategory?.toLowerCase().includes('jet') || listing.subcategory?.toLowerCase().includes('pwc') || listing.subcategory?.toLowerCase().includes('waverunner')))
-                                                    ? "A valid Boating Safety ID or Operator license is required to operate this vessel."
-                                                    : listing.category === ListingCategory.WINTER_SPORTS && listing.subcategory?.toLowerCase().includes('snowmobile')
-                                                    ? "A valid Driver's License or Snowmobile Safety Certificate is required for this rental."
-                                                    : "A valid Government-issued Driver's License must be presented at pick-up."}
-                                            </p>
-                                        </div>
+                                <div>
+                                    <p className="text-lg font-black text-slate-900 leading-tight">Hosted by {listing.owner.name}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Top Rated • 128 rentals</p>
+                                </div>
+                            </div>
+                            {!isOwner && (
+                                <button onClick={() => onStartConversation(listing)} className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
+                                    <MessageSquareIcon className="h-4 w-4" /> Message Host
+                                </button>
+                            )}
+                        </section>
+
+                        <section>
+                            <h3 className="text-xl font-black text-slate-900 mb-4">Description</h3>
+                            <SimpleMarkdown text={listing.description} />
+                        </section>
+
+                        <section>
+                            <h3 className="text-xl font-black text-slate-900 mb-6 font-sans">Specifications & Features</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                                <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
+                                    <ClockIcon className="h-5 w-5 text-cyan-500 mb-2" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing Model</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{isHourly ? 'Hourly' : 'Daily'} Flexible</p>
+                                </div>
+                                <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
+                                    <ShieldCheckIcon className="h-5 w-5 text-emerald-500 mb-2" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protection</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Risk Fund Covered</p>
+                                </div>
+                                <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
+                                    <CheckCircleIcon className="h-5 w-5 text-indigo-500 mb-2" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Maintenance</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Certified Inspection</p>
+                                </div>
+                                {listing.engineCC && (
+                                    <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
+                                        <ZapIcon className="h-5 w-5 text-amber-500 mb-2" />
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Performance</p>
+                                        <p className="text-sm font-bold text-slate-800 mt-0.5">{listing.engineCC}cc Engine</p>
                                     </div>
                                 )}
-
-                                <div className="flex items-baseline mt-6 border-b border-slate-100 pb-6">
-                                     <span className="text-4xl font-black text-slate-900">${listing.pricingType === 'hourly' ? listing.pricePerHour : listing.pricePerDay}</span>
-                                     <span className="text-sm font-bold text-slate-400 ml-1 uppercase">{listing.pricingType === 'hourly' ? '/hour' : '/day'}</span>
-                                     <div className="flex items-center ml-auto bg-slate-50 px-3 py-1.5 rounded-full"><StarIcon className="h-4 w-4 text-amber-400 mr-1.5 fill-amber-400"/><span className="font-black text-slate-900 text-sm">{listing.rating}</span></div>
+                                <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
+                                    <UmbrellaIcon className="h-5 w-5 text-sky-500 mb-2" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cancellation</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Moderate Policy</p>
+                                </div>
+                                <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
+                                    <RocketIcon className="h-5 w-5 text-rose-500 mb-2" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Handover</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Digital Check-in</p>
                                 </div>
                             </div>
+                        </section>
 
-                             <div className="mt-8">
-                                <div className="flex items-center justify-between">
-                                      <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity" onClick={onViewOwnerProfile}>
-                                        <img src={listing.owner.avatarUrl} alt={listing.owner.name} className="w-12 h-12 rounded-2xl object-cover mr-4 shadow-sm border border-slate-100"/>
-                                        <div>
-                                            <p className="font-black text-slate-900 text-sm">{listing.owner.name}</p>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verified Host</p>
-                                        </div>
+                        <section>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-black text-slate-900">Location</h3>
+                                <p className="text-sm font-bold text-slate-500">{listing.location.city}, {listing.location.state}</p>
+                            </div>
+                            <div className="h-[300px] rounded-[2rem] overflow-hidden shadow-inner border border-slate-100">
+                                <ListingMap center={{ lat: listing.location.latitude, lng: listing.location.longitude }} />
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* Right Column: Sticky Booking Card */}
+                    <div className="lg:col-span-5">
+                        <div className="sticky top-12">
+                            <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden">
+                                <div className="p-8 border-b border-slate-100">
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-4xl font-black text-slate-900">${listing.pricingType === 'hourly' ? listing.pricePerHour : listing.pricePerDay}</span>
+                                        <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">{listing.pricingType === 'hourly' ? '/ hr' : '/ day'}</span>
                                     </div>
-                                    {!isOwner && (
-                                        <button onClick={() => onStartConversation(listing)} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl text-cyan-600 transition-colors shadow-sm"><MessageSquareIcon className="h-6 w-6" /></button>
-                                    )}
                                 </div>
-                                 <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mt-10 mb-4">Description</h2>
-                                <SimpleMarkdown text={listing.description} />
-                            </div>
-                           
-                            <div className="mt-auto pt-10">
-                                <div className="bg-slate-50 rounded-[2rem] p-6 border border-slate-100 mb-6">
-                                    {isHourly ? (
-                                        <div className="space-y-4">
-                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest text-center">Pick a Date</h3>
-                                            <div className="flex justify-center"><DayPicker mode="single" selected={hourlyDate} onSelect={setHourlyDate} disabled={disabledDays} modifiersStyles={modifiersStyles}/></div>
-                                            {hourlyDate && (
-                                                <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-bottom-2">
-                                                    <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-white border-slate-200 rounded-xl p-3 font-bold text-sm shadow-sm">{timeOptions.map(t => <option key={t} value={t}>{t}</option>)}</select>
-                                                    <select value={durationHours} onChange={(e) => setDurationHours(Number(e.target.value))} className="w-full bg-white border-slate-200 rounded-xl p-3 font-bold text-sm shadow-sm">{durationOptions.map(d => <option key={d} value={d}>{d} Hour{d > 1 ? 's' : ''}</option>)}</select>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="flex justify-center"><DayPicker mode="range" selected={range} onSelect={setRange} disabled={disabledDays} modifiersStyles={modifiersStyles}/></div>
-                                    )}
-                                </div>
-                                
-                                {priceDetails && (
-                                    <div className="bg-slate-900 rounded-[2rem] p-8 text-white space-y-4 mb-6 shadow-2xl shadow-slate-200 animate-in fade-in duration-500">
-                                        {requiresLicense && (
-                                            <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 mb-2 flex items-center gap-2">
-                                                <AlertTriangleIcon className="h-4 w-4 text-amber-400" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-200">License will be verified at pick-up</span>
+
+                                <div className="p-8 space-y-6">
+                                    <div className="bg-slate-50 rounded-3xl p-4 border border-slate-100">
+                                        {isHourly ? (
+                                            <div className="space-y-4">
+                                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center mb-2">Rental Timing</h3>
+                                                <div className="flex justify-center bg-white rounded-2xl py-2 my-picker-custom"><DayPicker mode="single" selected={hourlyDate} onSelect={setHourlyDate} disabled={disabledDays} modifiersStyles={modifiersStyles}/></div>
+                                                {hourlyDate && (
+                                                    <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-bottom-2">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-black text-slate-400 ml-1">START TIME</label>
+                                                            <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-white border-slate-200 rounded-xl p-3 font-bold text-xs shadow-sm focus:ring-2 focus:ring-cyan-500 outline-none">{timeOptions.map(t => <option key={t} value={t}>{t}</option>)}</select>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-black text-slate-400 ml-1">DURATION</label>
+                                                            <select value={durationHours} onChange={(e) => setDurationHours(Number(e.target.value))} className="w-full bg-white border-slate-200 rounded-xl p-3 font-bold text-xs shadow-sm focus:ring-2 focus:ring-cyan-500 outline-none">{durationOptions.map(d => <option key={d} value={d}>{d} Hour{d > 1 ? 's' : ''}</option>)}</select>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center mb-2">Select Duration</h3>
+                                                 <div className="flex justify-center bg-white rounded-2xl py-2 my-picker-custom"><DayPicker mode="range" selected={range} onSelect={setRange} disabled={disabledDays} modifiersStyles={modifiersStyles}/></div>
                                             </div>
                                         )}
-                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Rental Subtotal</span><span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span></div>
-                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Platform Fees</span><span className="font-black text-white">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span></div>
-                                        <div className="flex justify-between text-xs font-bold opacity-60 uppercase tracking-widest"><span>Security Deposit (Held)</span><span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span></div>
-                                        <div className="flex justify-between font-black text-3xl pt-4 border-t border-white/10 tracking-tight"><span>Total</span><span className="text-cyan-400">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</span></div>
-                                        <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest text-center pt-2">Fees & Deposit collected now to secure request</p>
                                     </div>
-                                )}
 
-                                <button
-                                    onClick={handleBookClick}
-                                    disabled={!currentUser || isOwner || !priceDetails || isBooking}
-                                    className="w-full py-5 bg-cyan-600 hover:bg-cyan-700 text-white font-black rounded-[2rem] shadow-xl shadow-cyan-100 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale uppercase tracking-widest text-sm"
-                                >
-                                    {isOwner ? "This is your gear" : (listing.isInstantBook ? "Instant Book" : "Send Request")}
-                                </button>
+                                    {priceDetails ? (
+                                        <div className="bg-slate-900 rounded-[2rem] p-6 text-white space-y-4 shadow-xl animate-in zoom-in-95 duration-300">
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                                                    <span>Rental Cost</span>
+                                                    <span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                                                    <span className="flex items-center gap-1">Protocol & Service Fees <ShieldIcon className="h-3 w-3" /></span>
+                                                    <span className="font-black text-white">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                                                    <span className="flex items-center gap-1">Security Deposit <LockIcon className="h-3 w-3" /></span>
+                                                    <span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="pt-4 border-t border-white/10">
+                                                <div className="flex justify-between items-end">
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Total to Pay</p>
+                                                        <p className="text-3xl font-black tracking-tight text-white">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={handleBookClick}
+                                                        className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-black rounded-2xl shadow-xl shadow-cyan-900/20 transition-all active:scale-95 text-xs uppercase"
+                                                    >
+                                                        Reserve Now
+                                                    </button>
+                                                </div>
+                                                <p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.15em] text-center mt-6">Secure checkout powered by Stripe</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border-2 border-dashed border-slate-100 rounded-3xl text-center">
+                                            <ClockIcon className="h-8 w-8 text-slate-300 mb-3" />
+                                            <p className="text-xs font-bold text-slate-500">Pick your dates to see total pricing and availability.</p>
+                                        </div>
+                                    )}
+
+                                    {!priceDetails && (
+                                        <button
+                                            disabled
+                                            className="w-full py-5 bg-slate-100 text-slate-400 font-black rounded-3xl uppercase tracking-widest text-xs cursor-not-allowed"
+                                        >
+                                            Select Dates
+                                        </button>
+                                    )}
+
+                                    {requiresLicense && (
+                                        <div className="flex items-center gap-2 justify-center py-2">
+                                            <AlertTriangleIcon className="h-3.5 w-3.5 text-amber-500" />
+                                            <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Vetting Process applies to this gear</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex items-center justify-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <ShieldCheckIcon className="h-4 w-4 text-emerald-500" /> Professional Grade Host Protection
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
     );
 };
