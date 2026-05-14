@@ -204,10 +204,10 @@ export const initialCategoryImages: CategoryImagesMap = {
 };
 
 export const subcategories: { [key in ListingCategory]: string[] } = {
-    [ListingCategory.MOTORCYCLES]: ["Adventure", "Cruiser", "Sport", "Touring", "Dual-Sport"],
+    [ListingCategory.MOTORCYCLES]: ["Adventure", "Cruiser", "Sport", "Touring", "Dual-Sport", "e-moto", "Scooters & Mopeds", "Three-Wheelers & Slingshots", "Dirt bikes"],
     [ListingCategory.BIKES]: ["Mountain", "Road", "Hybrid", "BMX", "E-Bike"],
     [ListingCategory.BOATS]: ["Speedboat", "Fishing Boat", "Sailboat", "Pontoon", "Yacht"],
-    [ListingCategory.CAMPING]: ["Tent", "Backpack", "Sleeping Bag", "Cooler", "Stove"],
+    [ListingCategory.CAMPING]: ["Roof Top Tents", "Overlanding Trailers", "Off-Grid Power Kits", "Family Glamping Kits", "Portable AC/Heaters", "Winter Expedition Gear"],
     [ListingCategory.WINTER_SPORTS]: ["Skis", "Snowboard", "Snowshoes", "Sled", "Ice Skates"],
     [ListingCategory.WATER_SPORTS]: ["Kayak", "Surfboard", "Paddleboard", "Wakeboard", "Jet Ski", "Wingfoil", "Kitesurf"],
     [ListingCategory.RVS]: ["Class A", "Class C", "Campervan", "Travel Trailer", "Fifth Wheel"],
