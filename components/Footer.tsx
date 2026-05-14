@@ -45,25 +45,35 @@ const Footer: React.FC<FooterProps> = ({ logoUrl, onNavigate }) => {
                         <div>
                             <h3 className="text-sm font-semibold text-gray-500 tracking-wider uppercase">Legal & Compliance</h3>
                             <ul className="mt-4 space-y-4">
-                                <li><a href="/terms" onClick={(e) => handleLinkClick(e, 'terms')} className="text-base text-gray-600 hover:text-gray-900">Terms &amp; Conditions</a></li>
+                                <li><a href="/terms" onClick={(e) => handleLinkClick(e, 'terms')} className="text-base text-gray-600 hover:text-gray-900">Terms of Service</a></li>
                                 <li><a href="/privacy" onClick={(e) => handleLinkClick(e, 'privacyPolicy')} className="text-base text-gray-600 hover:text-gray-900">Privacy Policy</a></li>
+                                <li><a href="/cookies" onClick={(e) => handleLinkClick(e, 'cookiePolicy')} className="text-base text-gray-600 hover:text-gray-900">Cookie Policy</a></li>
+                                <li><a href="/do-not-sell" onClick={(e) => handleLinkClick(e, 'doNotSell')} className="text-base text-gray-600 hover:text-gray-900">Do Not Sell My Info (CA)</a></li>
+                                <li>
+                                    <button 
+                                        onClick={() => window.dispatchEvent(new CustomEvent('openCookiePreferences'))}
+                                        className="text-base text-gray-600 hover:text-gray-900 bg-transparent border-none p-0 cursor-pointer text-left"
+                                    >
+                                        Cookie Preferences
+                                    </button>
+                                </li>
                                 <li><a href="/florida-compliance" onClick={(e) => handleLinkClick(e, 'floridaCompliance')} className="text-base text-cyan-600 hover:text-cyan-800 font-semibold">Florida Boating Guide</a></li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 <div className="mt-12 border-t border-gray-200 pt-8 flex flex-col sm:flex-row items-center justify-between">
-                    <p className="text-base text-gray-500 order-2 sm:order-1 mt-4 sm:mt-0">&copy; 2025 Goodslister Inc. All rights reserved.</p>
+                    <p className="text-base text-gray-500 order-2 sm:order-1 mt-4 sm:mt-0">&copy; 2026 Goodslister Inc. All rights reserved.</p>
                     <div className="flex space-x-6 order-1 sm:order-2">
-                        <a href="#" className="text-gray-400 hover:text-gray-500">
+                        <a href="https://x.com/goodslister" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
                             <span className="sr-only">X (formerly Twitter)</span>
                             <XBrandIcon className="h-5 w-5" />
                         </a>
-                        <a href="#" className="text-gray-400 hover:text-gray-500">
+                        <a href="https://facebook.com/goodslister" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
                             <span className="sr-only">Facebook</span>
                             <FacebookIcon className="h-6 w-6" />
                         </a>
-                        <a href="#" className="text-gray-400 hover:text-gray-500">
+                        <a href="https://instagram.com/goodslister" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
                             <span className="sr-only">Instagram</span>
                             <InstagramIcon className="h-6 w-6" />
                         </a>

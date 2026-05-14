@@ -22,7 +22,7 @@ export type UserRole = 'SUPER_ADMIN' | 'REGION_MANAGER' | 'SUPPORT_AGENT' | 'USE
 export type ListingType = 'rental' | 'experience';
 export type PriceUnit = 'item' | 'person' | 'group';
 
-export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks' | 'floridaCompliance' | 'inbox' | 'userProfile';
+export type Page = 'home' | 'listingDetail' | 'createListing' | 'editListing' | 'aiAssistant' | 'admin' | 'userDashboard' | 'aboutUs' | 'careers' | 'press' | 'helpCenter' | 'contactUs' | 'terms' | 'privacyPolicy' | 'explore' | 'howItWorks' | 'floridaCompliance' | 'inbox' | 'userProfile' | 'cookiePolicy' | 'doNotSell';
 
 export interface User {
     id: string;

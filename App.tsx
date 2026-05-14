@@ -17,9 +17,10 @@ import LoginModal from './components/LoginModal';
 import ChatLayout from './components/chat/ChatLayout';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
-import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage } from './components/StaticPages';
+import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage, CookiePolicyPage, DoNotSellPage } from './components/StaticPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -806,6 +807,10 @@ const App: React.FC = () => {
                 return <TermsPage />;
             case 'privacyPolicy':
                 return <PrivacyPolicyPage />;
+            case 'cookiePolicy':
+                return <CookiePolicyPage />;
+            case 'doNotSell':
+                return <DoNotSellPage />;
             case 'howItWorks':
                 return <HowItWorksPage />;
             case 'floridaCompliance':
@@ -876,6 +881,8 @@ const App: React.FC = () => {
                 {renderPage()}
             </main>
             <Footer logoUrl={logoUrl} onNavigate={handleNavigate} />
+
+            <CookieConsentBanner />
             
             {isLoginModalOpen && (
                 <LoginModal 

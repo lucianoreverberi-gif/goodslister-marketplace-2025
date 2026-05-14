@@ -546,38 +546,154 @@ export const ContactUsPage: React.FC = () => (
 );
 
 export const TermsPage: React.FC = () => (
-    <LegalLayout title="Terms & Conditions" lastUpdated="July 20, 2024">
-        <h3>1. Accounts</h3>
-        <p>When you create an account with us, you must provide us with information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.</p>
+    <LegalLayout title="Terms of Service" lastUpdated="May 14, 2026">
+        <p className="lead">Please read these Terms of Service ("Terms") carefully before using the Goodslister marketplace. By accessing or using our platform, you agree to be bound by these Terms.</p>
 
-        <h3>2. User Content</h3>
-        <p>Our Service allows you to post, link, store, share and otherwise make available certain information, text, graphics, videos, or other material ("Content"). You are responsible for the Content that you post on or through the Service, including its legality, reliability, and appropriateness.</p>
-        
-        <h3>3. Rentals</h3>
-        <p>Goodslister is a marketplace that allows users to offer, search, and book rentals of recreational goods. We act as an intermediary and are not a party to any rental agreement. We are not responsible for the condition of the items rented or the actions of our users.</p>
+        <h3>1. Account Registration & Identity Verification</h3>
+        <p>To access certain features, you must register for an account. You agree to provide accurate, current, and complete information. Goodslister uses <strong>Stripe Identity</strong> for identity verification of hosts and renters. You authorize us to share your information with Stripe to confirm your identity and prevent fraud.</p>
 
-        <p><strong>Disclaimer:</strong> This is a sample document. Consult with a legal professional to create the Terms and Conditions for your business.</p>
+        <h3>2. Marketplace Services</h3>
+        <p>Goodslister provides a platform that connects Owners ("Hosts") with Renters. We are not a party to any rental agreement between users. We do not own, create, sell, or manage any Listings. Hosts are solely responsible for their Listings and the quality, safety, and legality of the items they offer.</p>
+
+        <h3>3. Payment Processing</h3>
+        <p>Payment services for users on Goodslister are provided by <strong>Stripe</strong> and are subject to the Stripe Connected Account Agreement. By using Goodslister, you agree to be bound by the Stripe Terms. We collect a platform fee for each successful booking, which is clearly disclosed during the checkout process.</p>
+
+        <h3>4. Cancellation & Refund Policy</h3>
+        <p>Cancellations are subject to the specific policy selected by the Host at the time of listing (e.g., Flexible, Moderate, or Strict). In cases of equipment failure or significant misrepresentation, Goodslister reserves the right to issue refunds at our sole discretion.</p>
+
+        <h3>5. Dispute Resolution</h3>
+        <p>Users are encouraged to resolve disputes directly. If a resolution cannot be reached, Goodslister may provide mediation services. All users agree that any legal claim arising out of these Terms will be settled by binding arbitration in <strong>Miami-Dade County, Florida</strong>.</p>
+
+        <h3>6. Limitation of Liability</h3>
+        <p>To the maximum extent permitted by law, Goodslister shall not be liable for any indirect, incidental, special, or consequential damages resulting from your use of the marketplace, including but not limited to property damage, personal injury, or loss of profits.</p>
+
+        <h3>7. Governing Law</h3>
+        <p>These Terms shall be governed by and construed in accordance with the laws of the <strong>State of Florida, United States</strong>, without regard to its conflict of law provisions.</p>
     </LegalLayout>
 );
 
 export const PrivacyPolicyPage: React.FC = () => (
-    <LegalLayout title="Privacy Policy" lastUpdated="July 20, 2024">
-        <h3>1. Information Collection and Use</h3>
-        <p>We collect several different types of information for various purposes to provide and improve our Service to you. Types of Data collected may include, but are not limited to: Email address, First name and last name, Phone number, Address, Usage Data.</p>
+    <LegalLayout title="Privacy Policy" lastUpdated="May 14, 2026">
+        <p className="lead">At Goodslister, your privacy is our priority. This policy explains how we collect, use, and protect your personal information.</p>
 
-        <h3>2. Use of Data</h3>
-        <p>Goodslister Inc. uses the collected data for various purposes:</p>
+        <h3>1. Information We Collect</h3>
+        <p>We collect information you provide directly to us (registration, listing creation, messages) and information collected automatically (IP address, location, cookies). This includes:</p>
         <ul>
-            <li>To provide and maintain our Service</li>
-            <li>To notify you about changes to our Service</li>
-            <li>To allow you to participate in interactive features of our Service when you choose to do so</li>
-            <li>To provide customer support</li>
-            <li>To gather analysis or valuable information so that we can improve our Service</li>
+            <li><strong>Identity Data:</strong> Name, government-issued ID (via Stripe Identity), and date of birth.</li>
+            <li><strong>Financial Data:</strong> Bank account info for payouts and card info for payments (processed by Stripe).</li>
+            <li><strong>Location Data:</strong> GPS coordinates for listings and search accuracy (via Google Maps).</li>
+            <li><strong>Communication Data:</strong> Chat history and email interactions.</li>
         </ul>
-        
-        <h3>3. Security of Data</h3>
-        <p>The security of your data is important to us, but remember that no method of transmission over the Internet or method of electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security.</p>
 
-        <p><strong>Disclaimer:</strong> This is a sample document. Consult with a legal professional to create a Privacy Policy for your business.</p>
+        <h3>2. Data Processors & Third Parties</h3>
+        <p>We share information with trusted service providers to run our platform:</p>
+        <ul>
+            <li><strong>Firebase (Google Cloud):</strong> Authentication, real-time database (Firestore), and hosting.</li>
+            <li><strong>Stripe:</strong> Payment processing and identity verification.</li>
+            <li><strong>Twilio:</strong> SMS notifications and phone number verification.</li>
+            <li><strong>Resend:</strong> Transactional email delivery.</li>
+            <li><strong>Google Gemini:</strong> AI-powered listing optimization and assistant services.</li>
+            <li><strong>Vercel:</strong> Website performance monitoring and analytics.</li>
+        </ul>
+
+        <h3>3. Your Rights (GDPR & CCPA)</h3>
+        <p>Depending on your location, you have rights regarding your data:</p>
+        <ul>
+            <li><strong>Access & Portability:</strong> Request a copy of your data in a machine-readable format.</li>
+            <li><strong>Rectification:</strong> Correct inaccurate information.</li>
+            <li><strong>Erasure:</strong> Request permanent deletion of your account and data.</li>
+            <li><strong>Right to Know & Opt-Out (CCPA):</strong> California residents can request disclosure of categories of data collected and opt-out of the "sale" of data (which we do not do).</li>
+        </ul>
+
+        <h3>4. Data Retention</h3>
+        <p>We retain data for as long as your account is active or as needed to provide services. We also retain and use data to comply with legal obligations, resolve disputes, and enforce agreements.</p>
+
+        <h3>5. Children's Privacy</h3>
+        <p>Goodslister is strictly for users aged 18 and older. We do not knowingly collect data from minors.</p>
+
+        <h3>6. Contact Us</h3>
+        <p>For privacy-related inquiries, please email <a href="mailto:privacy@goodslister.com">privacy@goodslister.com</a>.</p>
+    </LegalLayout>
+);
+
+export const CookiePolicyPage: React.FC = () => {
+    const handleOpenPreferences = () => {
+        window.dispatchEvent(new CustomEvent('openCookiePreferences'));
+    };
+
+    return (
+        <LegalLayout title="Cookie Policy" lastUpdated="May 14, 2026">
+            <p className="lead">We use cookies to improve your experience, analyze our traffic, and for security purposes.</p>
+
+            <h3>What are cookies?</h3>
+            <p>Cookies are small text files placed on your device by websites you visit. They are widely used to make websites work, or work more efficiently, as well as to provide information to the owners of the site.</p>
+
+            <h3>Cookies We Use</h3>
+            <div className="overflow-x-auto my-8">
+                <table className="min-w-full divide-y divide-gray-200 border border-gray-100 rounded-xl overflow-hidden text-sm">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-3 text-left font-bold text-gray-900 border-b border-gray-200">Category</th>
+                            <th className="px-4 py-3 text-left font-bold text-gray-900 border-b border-gray-200">Purpose</th>
+                            <th className="px-4 py-3 text-left font-bold text-gray-900 border-b border-gray-200">Provider</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        <tr>
+                            <td className="px-4 py-4 font-bold text-gray-900">Essential</td>
+                            <td className="px-4 py-4">Auth session, CSRF protection, and security.</td>
+                            <td className="px-4 py-4">Firebase, Stripe</td>
+                        </tr>
+                        <tr>
+                            <td className="px-4 py-4 font-bold text-gray-900">Analytics</td>
+                            <td className="px-4 py-4">Traffic analysis and performance monitoring.</td>
+                            <td className="px-4 py-4">Vercel, Goodslister</td>
+                        </tr>
+                        <tr>
+                            <td className="px-4 py-4 font-bold text-gray-900">Functional</td>
+                            <td className="px-4 py-4">UI preferences, theme settings, and language.</td>
+                            <td className="px-4 py-4">Goodslister</td>
+                        </tr>
+                        <tr>
+                            <td className="px-4 py-4 font-bold text-gray-900">Marketing</td>
+                            <td className="px-4 py-4">Ad conversion tracking and geolocated maps.</td>
+                            <td className="px-4 py-4">Google Maps, Stripe</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Managing Your Cookies</h3>
+            <p>Most web browsers allow some control of most cookies through the browser settings. You can also update your preferences on our platform at any time.</p>
+            
+            <div className="mt-8 p-6 bg-cyan-50 rounded-2xl border border-cyan-100 text-center">
+                <button 
+                    onClick={handleOpenPreferences}
+                    className="px-8 py-3 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 transition-all shadow-lg"
+                >
+                    Manage Cookie Preferences
+                </button>
+            </div>
+        </LegalLayout>
+    );
+};
+
+export const DoNotSellPage: React.FC = () => (
+    <LegalLayout title="Do Not Sell My Info" lastUpdated="May 14, 2026">
+        <p className="lead">Goodslister does not "sell" your personal information in the traditional sense for monetary compensation.</p>
+
+        <h3>California Residents</h3>
+        <p>Under the California Consumer Privacy Act (CCPA), residents have the right to opt-out of the "sale" of their personal information. While we do not sell your data to third parties for money, we share some data with service providers (like analytics and marketing tools) that might fall under the broad definition of a "sale" in California law.</p>
+
+        <h3>Opt-Out Request</h3>
+        <p>If you wish to opt-out of sharing your data for non-essential purposes (like analytics and marketing), you can do so by adjusting your cookie preferences.</p>
+
+        <div className="mt-12 bg-gray-50 p-8 rounded-3xl border border-gray-100">
+            <h4 className="font-bold text-gray-900 mb-4">Request Data Deletion</h4>
+            <p className="text-sm text-gray-600 mb-6">If you would like to request a complete deletion of your data from our systems, please click the button below. This action will permanently close your account.</p>
+            <button className="px-6 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors">
+                Request Account & Data Deletion
+            </button>
+        </div>
     </LegalLayout>
 );
