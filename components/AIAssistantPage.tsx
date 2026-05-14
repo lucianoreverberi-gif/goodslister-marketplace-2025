@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ListingCategory } from '../types';
 import { getAIAdvice } from '../services/geminiService';
-import { BrainCircuitIcon, MapPinIcon, SparklesIcon, LightbulbIcon, ShieldCheckIcon } from './icons';
+import { BrainCircuitIcon, MapPinIcon, SparklesIcon, LightbulbIcon, ShieldCheckIcon, MailIcon } from './icons';
 
 // API Key for Google Maps (Consistent with other components)
 const MAPS_API_KEY = 'AIzaSyCvFj8kvMmCc_AtqEAJ1b5feMTpj8EsZS4';
@@ -228,6 +228,78 @@ const AIAssistantPage: React.FC = () => {
                         )}
                     </div>
 
+                </div>
+
+                {/* Bottom Section: AI Agent Marketplace Expansion */}
+                <div className="mt-20 border-t border-gray-200 pt-16">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-black text-gray-900">Premium AI Agent Marketplace</h2>
+                        <p className="text-gray-500 mt-3 max-w-xl mx-auto">Take your hosting to the next level with specialized agents trained for specific challenges.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+                             <span className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full">FREE</span>
+                             <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <BrainCircuitIcon className="h-6 w-6" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Success Coach</h3>
+                            <p className="text-gray-500 mt-2 text-xs leading-relaxed">
+                                Optimized your <span className="font-bold text-gray-900">listing, photos & pricing</span> for maximum visibility.
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between">
+                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider">Standard</span>
+                                <span className="text-lg font-black text-gray-900">FREE</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+                             <span className="absolute top-4 right-4 bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-0.5 rounded-full">PREMIUM</span>
+                             <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <ShieldCheckIcon className="h-6 w-6" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Legal Shield AI</h3>
+                            <p className="text-gray-500 mt-2 text-xs leading-relaxed">
+                                Expert in <span className="font-bold text-gray-900">Rental Law & Protection</span>. Helps you draft custom rental clauses.
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between">
+                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider">Available</span>
+                                <span className="text-lg font-black text-gray-900">$4.99<span className="text-xs text-gray-400 font-medium">/mo</span></span>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+                             <span className="absolute top-4 right-4 bg-slate-100 text-slate-700 text-[8px] font-black px-2 py-0.5 rounded-full">UPCOMING</span>
+                             <div className="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <MailIcon className="h-6 w-6" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Auto-Reply</h3>
+                            <p className="text-gray-500 mt-2 text-xs leading-relaxed">
+                                Automates the heavy lifting. Vets guests and answers FAQs <span className="font-bold text-gray-900">automatically</span>.
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between">
+                                <span className="text-xs font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded-full uppercase tracking-wider">Premium</span>
+                                <span className="text-lg font-black text-gray-900">$9.99<span className="text-xs text-gray-400 font-medium">/mo</span></span>
+                            </div>
+                        </div>
+
+                        <div className="bg-indigo-900 p-8 rounded-3xl border border-indigo-800 shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <SparklesIcon className="h-20 w-20 text-white" />
+                            </div>
+                             <div className="w-12 h-12 bg-indigo-500/20 text-indigo-300 rounded-2xl flex items-center justify-center mb-6">
+                                <BrainCircuitIcon className="h-6 w-6" />
+                            </div>
+                            <h3 className="text-lg font-bold text-white">Custom Training</h3>
+                            <p className="text-indigo-200 mt-2 text-xs leading-relaxed">
+                                Train a custom AI Agent on your specific rental rules and fleet maintenance schedule.
+                            </p>
+                            <div className="mt-6 pt-6 border-t border-indigo-800 flex items-center justify-between">
+                                <span className="text-xs font-bold text-indigo-300 bg-indigo-500/20 px-2 py-1 rounded-full uppercase tracking-wider">Enterprise</span>
+                                <button className="text-xs font-black text-white hover:underline uppercase tracking-widest leading-none">Contact</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -31,28 +31,35 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         return;
     }
 
-    // REMOVED orderBy to avoid mandatory composite index requirement
     const q = query(
         collection(db, 'conversations'),
         where('participants', 'array-contains', currentUserId)
     );
+
+    // Simple cache to avoid re-fetching the same user multiple times
+    const userCache: Record<string, any> = {};
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
         const convoPromises = snapshot.docs.map(async (convoDoc) => {
             const data = convoDoc.data();
             const otherId = data.participants.find((id: string) => id !== currentUserId) || data.participants[0];
             
-            // Try to fetch other user details for high-quality UI
             let otherUserName = 'User';
             let otherUserAvatar = `https://i.pravatar.cc/150?u=${otherId}`;
             
             try {
-                // For demo purposes, we fetch one-off. In production, consider Denormalization.
-                const userDoc = await getDoc(doc(db, 'users', otherId));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    otherUserName = userData.name || otherUserName;
-                    otherUserAvatar = userData.avatarUrl || otherUserAvatar;
+                // Use cache if available to speed up loading
+                if (userCache[otherId]) {
+                    otherUserName = userCache[otherId].name;
+                    otherUserAvatar = userCache[otherId].avatarUrl;
+                } else {
+                    const userDoc = await getDoc(doc(db, 'users', otherId));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        otherUserName = userData.name || otherUserName;
+                        otherUserAvatar = userData.avatarUrl || otherUserAvatar;
+                        userCache[otherId] = { name: otherUserName, avatarUrl: otherUserAvatar };
+                    }
                 }
             } catch (e) {
                 console.warn("Could not fetch participant info", e);
@@ -60,7 +67,6 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
 
             const lastMsgDoc = data.lastMessage;
             
-            // Robust timestamp extraction
             const extractDate = (ts: any) => {
                 if (!ts) return new Date();
                 if (typeof ts.toDate === 'function') return ts.toDate();
@@ -102,13 +108,12 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
                 },
                 lastMessage: lastMessage,
                 unreadCount: 0,
-                updatedAt: extractDate(data.updatedAt), // Keep for client sorting
+                updatedAt: extractDate(data.updatedAt),
                 listing: data.listing ? { id: data.listing.id, title: data.listing.title } : null
             };
         });
 
         const results = await Promise.all(convoPromises);
-        // Sort client-side to avoid index requirement
         results.sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0));
 
         setConversations(results);
@@ -128,13 +133,11 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
         return;
     }
 
-    // REMOVED orderBy to avoid mandatory composite index requirement
     const q = query(
         collection(db, 'conversations', activeConversationId, 'messages')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        // Robust timestamp extraction helper
         const extractDate = (ts: any) => {
             if (!ts) return new Date();
             if (typeof ts.toDate === 'function') return ts.toDate();
@@ -155,9 +158,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
             } as Message;
         });
 
-        // Sort client-side
         msgs.sort((a, b) => (a.timestamp?.getTime() || 0) - (b.timestamp?.getTime() || 0));
-
         setMessages(msgs);
     });
 
@@ -170,27 +171,50 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
 
     let targetConvoId = convId || activeConversationId;
     
-    // NEW_DRAFT Logic
+    // NEW_DRAFT Logic - Check for duplicates before creating
     if (targetConvoId === 'NEW_DRAFT' || !targetConvoId) {
         if (!recipientId) return null;
 
         try {
-            // Create conversation first
-            const convoRef = await addDoc(collection(db, 'conversations'), {
-                participants: [currentUserId, recipientId],
-                listing: listingId ? { id: listingId, title: listingTitle || 'Gear' } : null,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                lastMessage: {
-                    text: text,
-                    senderId: currentUserId,
-                    timestamp: new Date() // Temporary for sorting before server sync
-                }
-            });
-            targetConvoId = convoRef.id;
+            // DETERMINISTIC ID: Use a consistent ID to prevent duplicates at the DB level
+            // Formula: convo_[user1]_[user2]_[listingId] (sorted IDs to ensure same ID regardless of who starts)
+            const sortedParticipants = [currentUserId, recipientId].sort();
+            targetConvoId = listingId 
+                ? `convo_${sortedParticipants[0]}_${sortedParticipants[1]}_${listingId}`
+                : `convo_${sortedParticipants[0]}_${sortedParticipants[1]}`;
+
+            // Check if convo exists first
+            const convoDoc = await getDoc(doc(db, 'conversations', targetConvoId));
+            
+            if (!convoDoc.exists()) {
+                // Create conversation with deterministic ID
+                await setDoc(doc(db, 'conversations', targetConvoId), {
+                    participants: [currentUserId, recipientId],
+                    listing: listingId ? { id: listingId, title: listingTitle || 'Gear' } : null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastMessage: {
+                        text: text,
+                        senderId: currentUserId,
+                        timestamp: new Date()
+                    }
+                });
+            }
         } catch (e) {
-            console.error("Convo creation failed:", e);
-            return null;
+            console.error("Convo creation/check failed:", e);
+            // Fallback to auto-generated ID if deterministic fails (e.g. ID too long)
+            try {
+                const convoRef = await addDoc(collection(db, 'conversations'), {
+                    participants: [currentUserId, recipientId],
+                    listing: listingId ? { id: listingId, title: listingTitle || 'Gear' } : null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastMessage: { text, senderId: currentUserId, timestamp: new Date() }
+                });
+                targetConvoId = convoRef.id;
+            } catch (innerE) {
+                return null;
+            }
         }
     }
 

@@ -51,6 +51,10 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
             if (initialContext.conversationId) {
                 setActiveConversationId(initialContext.conversationId);
             } else if (initialContext.listing && initialContext.recipient) {
+                // IMPORTANT: Wait for conversations to load before deciding if it's a NEW_DRAFT
+                // This prevents duplicate threads if the user opens the modal quickly
+                if (loading && conversations.length === 0) return;
+
                 // Check if we already have a conversation for this listing and participant
                 const existing = conversations.find((c: any) => 
                     c.listing?.id === initialContext.listing?.id &&
@@ -63,7 +67,7 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
                 }
             }
         }
-    }, [isOpen, initialContext, conversations.length]); // Check conversations length to see if sync finished
+    }, [isOpen, initialContext, conversations, loading]); // Added conversations and loading to deps
 
     const activeConversation = activeConversationId !== 'NEW_DRAFT' 
         ? conversations.find(c => c.id === activeConversationId)

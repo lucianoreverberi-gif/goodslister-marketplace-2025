@@ -222,8 +222,8 @@ const BookingsManager: React.FC<{
              <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{mode === 'renting' ? 'My Trips' : 'Reservations'}</h2>
                 <div className="bg-white p-1 rounded-xl border border-slate-100 flex shadow-sm">
-                    <button onClick={() => setMode('renting')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'renting' ? 'bg-cyan-100 text-cyan-700 shadow-inner' : 'text-slate-500'}`}>I'm Renting</button>
-                    <button onClick={() => setMode('hosting')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'hosting' ? 'bg-cyan-100 text-cyan-700 shadow-inner' : 'text-slate-500'}`}>I'm Hosting</button>
+                    <button onClick={() => setMode('renting')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${mode === 'renting' ? 'bg-cyan-100 text-cyan-700 shadow-inner' : 'text-slate-500 hover:bg-slate-50'}`}>I'm Renting</button>
+                    <button onClick={() => setMode('hosting')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${mode === 'hosting' ? 'bg-cyan-100 text-cyan-700 shadow-inner' : 'text-slate-500 hover:bg-slate-50'}`}>I'm Hosting</button>
                 </div>
             </div>
 
@@ -259,13 +259,13 @@ const BookingsManager: React.FC<{
                         </div>
                         <div className="flex gap-2 w-full md:w-auto justify-end">
                             {b.status === 'confirmed' && (
-                                <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-6 py-2.5 bg-cyan-600 text-white text-xs font-black rounded-xl hover:bg-cyan-700 shadow-lg shadow-cyan-100 flex items-center gap-2">
-                                    <RocketIcon className="h-4 w-4" /> START CHECK-IN
+                                <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-5 py-2 bg-cyan-600 text-white text-[10px] font-bold rounded-lg hover:bg-cyan-700 shadow shadow-cyan-100 transition-all flex items-center gap-2">
+                                    <RocketIcon className="h-3.5 w-3.5" /> CHECK-IN
                                 </button>
                             )}
                             {b.status === 'active' && (
-                                <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-6 py-2.5 bg-orange-500 text-white text-xs font-black rounded-xl hover:bg-orange-600 shadow-lg shadow-orange-100 flex items-center gap-2">
-                                    <RefreshCwIcon className="h-4 w-4" /> START RETURN
+                                <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-5 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-black shadow shadow-slate-200 transition-all flex items-center gap-2">
+                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN
                                 </button>
                             )}
                         </div>
@@ -300,8 +300,8 @@ const SecurityTab: React.FC<{ user: Session, onVerify: (type: 'email' | 'phone' 
                             <text x="50" y="58" fontSize="24" textAnchor="middle" fill="#0f172a" className="font-black">{score}%</text>
                         </svg>
                     </div>
-                    <h3 className="text-xl font-black mt-6">Trust Score</h3>
-                    <p className="text-sm text-slate-500 mt-2 font-medium">Verify your profile to unlock more bookings.</p>
+                    <h3 className="text-lg font-bold mt-6 text-slate-800">Trust Score</h3>
+                    <p className="text-[10px] text-slate-500 mt-2 font-medium">Verify your profile to unlock more bookings.</p>
                 </div>
                 <div className="lg:col-span-2 space-y-4">
                     {[
@@ -311,11 +311,11 @@ const SecurityTab: React.FC<{ user: Session, onVerify: (type: 'email' | 'phone' 
                     ].map(item => (
                         <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                             <div className="flex items-center gap-3">
-                                <item.icon className={`h-5 w-5 ${item.done ? 'text-emerald-500' : 'text-slate-400'}`} />
-                                <span className="font-bold text-slate-700">{item.name}</span>
+                                <item.icon className={`h-4 w-4 ${item.done ? 'text-emerald-500' : 'text-slate-400'}`} />
+                                <span className="text-sm font-semibold text-slate-700">{item.name}</span>
                             </div>
-                            {item.done ? <span className="text-emerald-600 font-black text-[10px] uppercase flex items-center gap-1.5"><CheckCircleIcon className="h-4 w-4" /> VERIFIED</span> : 
-                                <button onClick={() => onVerify(item.id as any)} className="px-4 py-1.5 bg-cyan-600 text-white text-xs font-black rounded-lg">VERIFY</button>
+                            {item.done ? <span className="text-emerald-600 font-bold text-[10px] uppercase flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 rounded-full"><CheckCircleIcon className="h-3.5 w-3.5" /> VERIFIED</span> : 
+                                <button onClick={() => onVerify(item.id as any)} className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white text-[10px] font-bold rounded-lg transition-colors">VERIFY</button>
                             }
                         </div>
                     ))}
@@ -330,8 +330,19 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
     const [type, setType] = useState<ListingAdviceType>('improvement');
     const [advice, setAdvice] = useState('');
     const [loading, setLoading] = useState(false);
+    const [selectedAgent, setSelectedAgent] = useState<'coach' | 'legal' | 'chat'>('coach');
+
+    const agents = [
+        { id: 'coach', name: 'Success Coach', icon: BrainCircuitIcon, color: 'bg-indigo-600', description: 'Listing & Pricing optimization', price: 'FREE' },
+        { id: 'legal', name: 'Legal Shield', icon: ShieldCheckIcon, color: 'bg-emerald-600', description: 'Rental Agreement & Custom Clauses', premium: true, price: '$4.99' },
+        { id: 'chat', name: 'Auto-Reply', icon: MailIcon, color: 'bg-cyan-600', description: 'Automated guest vetting', premium: true, price: '$9.99' },
+    ];
 
     const getAdvice = async () => {
+        if (selectedAgent !== 'coach') {
+            setAdvice(`### 🛡️ ${selectedAgent === 'legal' ? 'Legal Shield' : 'Auto-Reply'} Activation\n\nYou are clicking on a premium AI Agent. This agent is trained specifically for ${selectedAgent === 'legal' ? 'rental law and custom agreement drafting' : 'automated customer service and guest vetting'}.\n\n**To activate this agent for your listings, please upgrade to the Pro Host plan.**`);
+            return;
+        }
         const item = listings.find(l => l.id === selectedId);
         if (!item) return;
         setLoading(true);
@@ -345,27 +356,78 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-indigo-900 p-8 rounded-[2rem] text-white">
-                <h2 className="text-2xl font-black flex items-center gap-3"><BrainCircuitIcon className="h-8 w-8 text-blue-300" /> Rental Success Coach</h2>
-                <p className="text-indigo-200 mt-2 font-medium">Get tailored AI strategies to improve your earnings.</p>
+            <div className="bg-slate-900 p-8 rounded-[2rem] text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <SparklesIcon className="h-24 w-24" />
+                </div>
+                <h2 className="text-2xl font-black flex items-center gap-3"><BrainCircuitIcon className="h-8 w-8 text-cyan-400" /> AI Agent Marketplace</h2>
+                <p className="text-slate-400 mt-2 font-medium">Power up your listing with specialized intelligence.</p>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {agents.map(agent => (
+                    <button 
+                        key={agent.id}
+                        onClick={() => setSelectedAgent(agent.id as any)}
+                        className={`p-5 rounded-3xl border-2 transition-all text-left relative group ${selectedAgent === agent.id ? 'bg-white border-cyan-500 shadow-xl' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                    >
+                        {agent.premium ? (
+                            <span className="absolute top-4 right-4 bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-0.5 rounded-full">PREMIUM</span>
+                        ) : (
+                            <span className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full">FREE</span>
+                        )}
+                        <div className={`w-10 h-10 rounded-xl ${agent.color} text-white flex items-center justify-center mb-4`}>
+                            <agent.icon className="h-6 w-6" />
+                        </div>
+                        <h4 className="font-bold text-slate-900">{agent.name}</h4>
+                        <p className="text-[10px] text-slate-500 font-medium leading-tight mt-1">{agent.description}</p>
+                        <p className={`text-[10px] font-bold mt-3 ${agent.premium ? 'text-cyan-600' : 'text-emerald-600'}`}>
+                            {agent.price}{agent.premium ? '/mo' : ''}
+                        </p>
+                    </button>
+                ))}
+            </div>
+
             {listings.length > 0 ? (
                 <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-900">
-                        <select value={selectedId} onChange={e => setSelectedId(e.target.value)} className="w-full bg-slate-50 border-slate-200 rounded-xl p-3 font-bold">
-                            {listings.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-                        </select>
-                        <select value={type} onChange={e => setType(e.target.value as any)} className="w-full bg-slate-50 border-slate-200 rounded-xl p-3 font-bold">
-                            <option value="improvement">Improve Listing</option>
-                            <option value="pricing">Optimize Pricing</option>
-                            <option value="promotion">Social Promotion</option>
-                        </select>
-                    </div>
-                    <button onClick={getAdvice} disabled={loading} className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl flex items-center justify-center gap-2">
-                        {loading ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : <WandSparklesIcon className="h-5 w-5" />}
-                        {loading ? 'Consulting AI...' : 'Generate AI Strategy'}
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        {agents.find(a => a.id === selectedAgent)?.name} Configuration
+                    </h3>
+                    
+                    {selectedAgent === 'coach' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-900">
+                            <select value={selectedId} onChange={e => setSelectedId(e.target.value)} className="w-full bg-slate-50 border-slate-200 rounded-xl p-3 font-bold">
+                                {listings.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                            </select>
+                            <select value={type} onChange={e => setType(e.target.value as any)} className="w-full bg-slate-50 border-slate-200 rounded-xl p-3 font-bold">
+                                <option value="improvement">Improve Listing</option>
+                                <option value="pricing">Optimize Pricing</option>
+                                <option value="promotion">Social Promotion</option>
+                            </select>
+                        </div>
+                    ) : (
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                            <p className="text-xs text-slate-500 font-medium">Select a listing to apply this agent's expertise.</p>
+                            <select value={selectedId} onChange={e => setSelectedId(e.target.value)} className="mt-3 bg-white border-slate-200 rounded-lg p-2 text-xs font-bold mx-auto block">
+                                {listings.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                            </select>
+                        </div>
+                    )}
+
+                    <button onClick={getAdvice} disabled={loading} className={`w-full py-3 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all ${selectedAgent === 'coach' ? 'bg-slate-900 hover:bg-black' : 'bg-cyan-600 hover:bg-cyan-700'}`}>
+                        {loading ? <RefreshCwIcon className="h-4 w-4 animate-spin" /> : <WandSparklesIcon className="h-4 w-4" />}
+                        {loading ? 'Consulting AI...' : selectedAgent === 'coach' ? 'Generate AI Strategy' : `Activate ${agents.find(a => a.id === selectedAgent)?.name}`}
                     </button>
-                    {advice && <div className="p-6 bg-blue-50 rounded-2xl text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{advice}</div>}
+                    {advice && (
+                        <div 
+                            className="p-6 bg-blue-50 rounded-2xl text-slate-800 font-medium leading-relaxed whitespace-pre-wrap text-sm"
+                            dangerouslySetInnerHTML={{ 
+                                __html: advice
+                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                    .replace(/### (.*?)\n/g, '<h4 class="text-lg font-bold text-slate-900 mt-4 mb-2">$1</h4>')
+                            }}
+                        />
+                    )}
                 </div>
             ) : <p className="text-center p-20 text-slate-400 italic font-bold">List an item to unlock AI Success Coach.</p>}
         </div>
@@ -390,6 +452,10 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
     // Account Closure State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    
+    // Profile Edit State
+    const [profileName, setProfileName] = useState(user.name);
+    const [profileBio, setProfileBio] = useState(user.bio || '');
 
     const handleUpdatePassword = () => {
         if (!newPassword || newPassword !== confirmPassword) {
@@ -440,26 +506,41 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                             </div>
                             <div className="flex-1 space-y-6">
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Public Name</label>
-                                    <input type="text" defaultValue={user.name} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none" />
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Public Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={profileName} 
+                                        onChange={(e) => setProfileName(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-cyan-500/20" 
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Bio</label>
-                                    <textarea defaultValue={user.bio} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-medium text-slate-600 min-h-[120px]" rows={4} />
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Bio</label>
+                                    <textarea 
+                                        value={profileBio} 
+                                        onChange={(e) => setProfileBio(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-medium text-slate-600 min-h-[120px] focus:ring-2 focus:ring-cyan-500/20 outline-none" 
+                                        rows={4} 
+                                    />
                                 </div>
                                 <div className="pt-4 flex justify-end">
-                                    <button onClick={() => onUpdateProfile(user.name, user.bio || '', user.avatarUrl)} className="px-8 py-3 bg-cyan-600 text-white font-black rounded-xl hover:bg-cyan-700 transition-colors">Save Changes</button>
+                                    <button 
+                                        onClick={() => onUpdateProfile(profileName, profileBio, user.avatarUrl)} 
+                                        className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition-colors"
+                                    >
+                                        Save Changes
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
                         <div className="pt-8 border-t border-slate-100">
-                            <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
-                                <LockIcon className="h-5 w-5 text-indigo-500" /> Account Security
+                            <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                <LockIcon className="h-4 w-4 text-slate-400" /> Account Security
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">New Password</label>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">New Password</label>
                                     <input 
                                         type="password" 
                                         value={newPassword}
@@ -469,7 +550,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Confirm New Password</label>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Confirm New Password</label>
                                     <input 
                                         type="password" 
                                         value={confirmPassword}
@@ -489,28 +570,28 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                 <button 
                                     onClick={handleUpdatePassword}
                                     disabled={isUpdatingPassword}
-                                    className="px-8 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-2"
+                                    className="px-4 py-1.5 bg-slate-800 text-white text-xs font-semibold rounded-md hover:bg-slate-950 transition-colors disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    {isUpdatingPassword ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : 'Update Password'}
+                                    {isUpdatingPassword ? <RefreshCwIcon className="h-3.5 w-3.5 animate-spin" /> : 'Update Password'}
                                 </button>
                             </div>
                         </div>
 
                         <div className="pt-8 border-t border-slate-100">
-                            <h3 className="text-xl font-black text-red-600 mb-2 flex items-center gap-2">
-                                <FileWarningIcon className="h-5 w-5" /> Danger Zone
+                            <h3 className="text-sm font-bold text-red-500 mb-2 flex items-center gap-2">
+                                <FileWarningIcon className="h-4 w-4" /> Danger Zone
                             </h3>
-                            <p className="text-sm text-slate-500 font-medium mb-6">Once you delete your account, there is no going back. Please be certain.</p>
-                            <div className="p-6 bg-red-50 rounded-3xl border border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <p className="text-xs text-slate-400 font-medium mb-6">Once you delete your account, there is no going back. Please be certain.</p>
+                            <div className="p-6 bg-red-50/50 rounded-3xl border border-red-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
                                 <div>
-                                    <h4 className="font-black text-red-900">Close Account</h4>
-                                    <p className="text-xs text-red-700 font-medium mt-1">Permanently delete your profile, listings, and history.</p>
+                                    <h4 className="font-bold text-red-900 text-sm">Close Account</h4>
+                                    <p className="text-[10px] text-red-700/70 font-medium mt-0.5">Permanently delete your profile, listings, and history.</p>
                                 </div>
                                 <button 
                                     onClick={() => setIsDeleteModalOpen(true)}
-                                    className="px-8 py-3 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2"
+                                    className="px-4 py-2 bg-white text-red-600 border border-red-100 text-[10px] font-bold rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
                                 >
-                                    <TrashIcon className="h-4 w-4" /> Delete My Account
+                                    <TrashIcon className="h-3.5 w-3.5" /> Delete My Account
                                 </button>
                             </div>
                         </div>
@@ -551,34 +632,43 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             case 'aiAssistant':
                 return <AIListingCoach listings={listings} />;
             case 'analytics':
+                const earnings = bookings
+                    .filter(b => b.listing.owner.id === user.id && (b.status === 'confirmed' || b.status === 'completed'))
+                    .reduce((sum, b) => sum + b.totalPrice, 0);
+                
+                const activeRentals = bookings.filter(b => b.status === 'active').length;
+                const pendingRequests = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === user.id).length;
+
                 return (
                     <div className="space-y-6">
                         <h2 className="text-2xl font-bold text-slate-800">Hosting Performance</h2>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Earnings</p>
-                                <h4 className="text-3xl font-black mt-1">$1,240</h4>
-                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold mt-4"><TrendUpIcon className="h-3 w-3" /> +12% this month</div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Earnings</p>
+                                <h4 className="text-2xl font-bold mt-1 text-slate-800">${earnings.toLocaleString()}</h4>
+                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-medium mt-4"><TrendUpIcon className="h-3 w-3" /> Realized revenue</div>
                             </div>
                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Trips</p>
-                                <h4 className="text-3xl font-black mt-1">{bookings.filter(b => b.status === 'active').length}</h4>
-                                <div className="flex items-center gap-1 text-blue-500 text-[10px] font-bold mt-4"><ArrowRightIcon className="h-3 w-3" /> Rentals in progress</div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Trips</p>
+                                <h4 className="text-2xl font-bold mt-1 text-slate-800">{activeRentals}</h4>
+                                <div className="flex items-center gap-1 text-blue-500 text-[10px] font-medium mt-4"><ArrowRightIcon className="h-3 w-3" /> Rentals in progress</div>
                             </div>
                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reviews</p>
-                                <h4 className="text-3xl font-black mt-1">{user.totalReviews || 0}</h4>
-                                <div className="flex items-center gap-1 text-amber-500 text-[10px] font-bold mt-4"><StarIcon className="h-3 w-3" /> Community rating</div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Req</p>
+                                <h4 className="text-2xl font-bold mt-1 text-slate-800">{pendingRequests}</h4>
+                                <div className="flex items-center gap-1 text-amber-500 text-[10px] font-medium mt-4"><CalendarIcon className="h-3 w-3" /> Needs your attention</div>
                             </div>
                              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-gray-900">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Response Rate</p>
-                                <h4 className="text-3xl font-black mt-1">98%</h4>
-                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold mt-4"><CheckCircleIcon className="h-3 w-3" /> Superhost status</div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trust Score</p>
+                                <h4 className="text-2xl font-bold mt-1 text-slate-800">{user.isIdVerified ? '98%' : '65%'}</h4>
+                                <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-medium mt-4"><CheckCircleIcon className="h-3 w-3" /> Based on verification</div>
                             </div>
                         </div>
                     </div>
                 );
             case 'billing':
+                const myEarnings = bookings.filter(b => b.listing.owner.id === user.id && b.status !== 'cancelled');
+                
                 return (
                     <div className="space-y-6">
                         <h2 className="text-2xl font-bold text-slate-800">Financial Ledger</h2>
@@ -588,9 +678,21 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                     <tr><th className="p-4 font-bold">Transaction</th><th className="p-4 font-bold">Status</th><th className="p-4 font-bold text-right">Amount</th></tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 text-gray-700">
-                                    <tr className="hover:bg-slate-50"><td className="p-4 font-medium">Rental Payout - Jet Ski #002</td><td className="p-4"><span className="text-emerald-600 font-bold">CLEARED</span></td><td className="p-4 font-black text-right text-emerald-500">+$240.00</td></tr>
-                                    <tr className="hover:bg-slate-50"><td className="p-4 font-medium">Service Fee - Booking #491</td><td className="p-4"><span className="text-slate-400 font-bold">PENDING</span></td><td className="p-4 font-black text-right text-red-500">-$10.00</td></tr>
-                                    <tr className="hover:bg-slate-50"><td className="p-4 font-medium">Promotion Boost - Weekly</td><td className="p-4"><span className="text-emerald-600 font-bold">CLEARED</span></td><td className="p-4 font-black text-right text-red-500">-$14.99</td></tr>
+                                    {myEarnings.length === 0 ? (
+                                        <tr><td rowSpan={3} className="p-10 text-center text-slate-400 italic">No transactions found.</td></tr>
+                                    ) : (
+                                        myEarnings.map(b => (
+                                            <tr key={b.id} className="hover:bg-slate-50">
+                                                <td className="p-4 font-medium">Rental Payout - {b.listing.title}</td>
+                                                <td className="p-4">
+                                                    <span className={`font-bold uppercase text-[10px] ${b.status === 'completed' ? 'text-emerald-600' : 'text-amber-500'}`}>
+                                                        {b.status === 'completed' ? 'CLEARED' : 'PENDING'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 font-black text-right text-emerald-500">+${b.totalPrice.toFixed(2)}</td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>

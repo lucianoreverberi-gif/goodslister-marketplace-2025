@@ -119,35 +119,35 @@ const FinancialsTab: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Financial Performance</h2>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Financial Performance</h2>
             
             {/* KPI Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Revenue (IN)</p>
-                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">${stats.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h4>
-                    <div className="flex items-center gap-1.5 text-emerald-500 text-xs font-bold mt-4">
+                <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Revenue (IN)</p>
+                    <h4 className="text-3xl font-bold text-slate-900 tracking-tight">${stats.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h4>
+                    <div className="flex items-center gap-1.5 text-emerald-500 text-xs font-semibold mt-4">
                         <TrendUpIcon className="h-4 w-4" /> Incoming Flow
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Payouts (OUT)</p>
-                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">-${Math.abs(stats.payouts).toLocaleString('en-US', { minimumFractionDigits: 2 })}</h4>
-                    <div className="flex items-center gap-1.5 text-slate-400 text-xs font-bold mt-4">
+                <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Payouts (OUT)</p>
+                    <h4 className="text-3xl font-bold text-slate-900 tracking-tight">-${Math.abs(stats.payouts).toLocaleString('en-US', { minimumFractionDigits: 2 })}</h4>
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs font-semibold mt-4">
                         <ArrowRightIcon className="h-4 w-4 rotate-45" /> Host transfers & claims
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-[2rem] border-2 border-purple-500 shadow-lg relative overflow-hidden">
+                <div className="bg-white p-6 rounded-[1.5rem] border border-purple-500 shadow-lg relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-2 opacity-10">
                         <UmbrellaIcon className="h-20 w-20 text-purple-900" />
                     </div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Risk Fund Impact</p>
-                    <h4 className={`text-4xl font-black mt-1 tracking-tighter ${stats.riskFundImpact >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Risk Fund Impact</p>
+                    <h4 className={`text-3xl font-bold mt-1 tracking-tight ${stats.riskFundImpact >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {stats.riskFundImpact < 0 ? '-' : ''}${Math.abs(stats.riskFundImpact).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </h4>
-                    <p className="text-slate-400 text-[10px] font-bold mt-4">Collected Premiums vs Claims paid</p>
+                    <p className="text-slate-400 text-[10px] font-semibold mt-4">Collected Premiums vs Claims paid</p>
                 </div>
             </div>
 
