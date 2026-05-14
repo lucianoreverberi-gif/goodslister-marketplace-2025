@@ -33,18 +33,20 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, isFavorite,
                     </button>
                 )}
 
-                <div className="absolute top-2 left-2 flex flex-col gap-2">
-                    <div className="bg-white/90 text-gray-800 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                <div className="absolute top-2 left-2 flex flex-col gap-2 z-10">
+                    <div className="bg-white/95 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-xl backdrop-blur-md border border-white/20">
                         {listing.pricingType === 'hourly' 
                             ? `$${listing.pricePerHour}/hr` 
                             : `$${listing.pricePerDay}/day`}
                     </div>
-                    {listing.isInstantBook && (
-                        <div className="bg-cyan-600 text-white p-1.5 rounded-full shadow-md flex items-center justify-center w-fit animate-in zoom-in duration-300" title="Instant Book">
-                            <ZapIcon className="h-3 w-3 fill-white" />
-                        </div>
-                    )}
                 </div>
+
+                {listing.isInstantBook && (
+                    <div className="absolute bottom-3 left-3 bg-cyan-500 text-white px-2 py-1 rounded-lg shadow-xl flex items-center gap-1.5 animate-in slide-in-from-left-4 duration-500 z-10" title="Instant Book Available">
+                        <ZapIcon className="h-3 w-3 fill-white" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Instant</span>
+                    </div>
+                )}
             </div>
             <div className="p-4 flex flex-col flex-grow">
                 <h3 className="text-lg font-bold text-gray-800 truncate">{listing.title}</h3>
