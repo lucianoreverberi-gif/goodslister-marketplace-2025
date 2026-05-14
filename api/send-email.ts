@@ -44,7 +44,7 @@ const getBaseTemplate = (content: string, ctaText?: string, ctaUrl?: string) => 
       ${ctaText && ctaUrl ? `<div style="text-align: center; margin-top: 32px;"><a href="${ctaUrl}" class="button">${ctaText}</a></div>` : ''}
     </div>
     <div class="footer">
-      <p>&copy; ${new Date().getFullYear()} Goodslister. All rights reserved.</p>
+      <p>&copy; ${new Date().getFullYear()} GOODSLISTER LLC. All rights reserved.</p>
       <p>123 Adventure Way, Florida, USA</p>
       <div style="margin-top: 16px;">
         <a href="https://goodslister.com/terms" style="color: #64748b; margin: 0 8px;">Terms</a>

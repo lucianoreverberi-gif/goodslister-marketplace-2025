@@ -547,7 +547,7 @@ export const ContactUsPage: React.FC = () => (
 
 export const TermsPage: React.FC = () => (
     <LegalLayout title="Terms of Service" lastUpdated="May 14, 2026">
-        <p className="lead">Please read these Terms of Service ("Terms") carefully before using the Goodslister marketplace. By accessing or using our platform, you agree to be bound by these Terms.</p>
+        <p className="lead">Please read these Terms of Service ("Terms") carefully before using the GOODSLISTER LLC. ("Goodslister") marketplace. By accessing or using our platform, you agree to be bound by these Terms.</p>
 
         <h3>1. Account Registration & Identity Verification</h3>
         <p>To access certain features, you must register for an account. You agree to provide accurate, current, and complete information. Goodslister uses <strong>Stripe Identity</strong> for identity verification of hosts and renters. You authorize us to share your information with Stripe to confirm your identity and prevent fraud.</p>
@@ -574,7 +574,7 @@ export const TermsPage: React.FC = () => (
 
 export const PrivacyPolicyPage: React.FC = () => (
     <LegalLayout title="Privacy Policy" lastUpdated="May 14, 2026">
-        <p className="lead">At Goodslister, your privacy is our priority. This policy explains how we collect, use, and protect your personal information.</p>
+        <p className="lead">At GOODSLISTER LLC. ("Goodslister"), your privacy is our priority. This policy explains how we collect, use, and protect your personal information.</p>
 
         <h3>1. Information We Collect</h3>
         <p>We collect information you provide directly to us (registration, listing creation, messages) and information collected automatically (IP address, location, cookies). This includes:</p>
@@ -680,7 +680,7 @@ export const CookiePolicyPage: React.FC = () => {
 
 export const DoNotSellPage: React.FC = () => (
     <LegalLayout title="Do Not Sell My Info" lastUpdated="May 14, 2026">
-        <p className="lead">Goodslister does not "sell" your personal information in the traditional sense for monetary compensation.</p>
+        <p className="lead">GOODSLISTER LLC. ("Goodslister") does not "sell" your personal information in the traditional sense for monetary compensation.</p>
 
         <h3>California Residents</h3>
         <p>Under the California Consumer Privacy Act (CCPA), residents have the right to opt-out of the "sale" of their personal information. While we do not sell your data to third parties for money, we share some data with service providers (like analytics and marketing tools) that might fall under the broad definition of a "sale" in California law.</p>

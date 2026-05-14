@@ -63,7 +63,7 @@ const Footer: React.FC<FooterProps> = ({ logoUrl, onNavigate }) => {
                     </div>
                 </div>
                 <div className="mt-12 border-t border-gray-200 pt-8 flex flex-col sm:flex-row items-center justify-between">
-                    <p className="text-base text-gray-500 order-2 sm:order-1 mt-4 sm:mt-0">&copy; 2026 Goodslister Inc. All rights reserved.</p>
+                    <p className="text-base text-gray-500 order-2 sm:order-1 mt-4 sm:mt-0">&copy; 2026 GOODSLISTER LLC. All rights reserved.</p>
                     <div className="flex space-x-6 order-1 sm:order-2">
                         <a href="https://x.com/goodslister" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
                             <span className="sr-only">X (formerly Twitter)</span>
