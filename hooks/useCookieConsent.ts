@@ -30,6 +30,12 @@ export function useCookieConsent() {
             }
         }
         setIsLoaded(true);
+
+        const handleTypeChange = (e: any) => {
+            setConsent(e.detail);
+        };
+        window.addEventListener('cookieConsentChanged', handleTypeChange);
+        return () => window.removeEventListener('cookieConsentChanged', handleTypeChange);
     }, []);
 
     const saveConsent = (newConsent: Omit<CookieConsent, 'timestamp' | 'version'>) => {

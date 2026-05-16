@@ -21,6 +21,8 @@ import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, Ter
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import { useCookieConsent } from './hooks/useCookieConsent';
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText } from './services/geminiService';
@@ -41,6 +43,7 @@ const App: React.FC = () => {
     });
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
+    const { consent } = useCookieConsent();
     
     // Initialize session state
     const [session, setSession] = useState<Session | null>(null);
@@ -883,6 +886,7 @@ const App: React.FC = () => {
             <Footer logoUrl={logoUrl} onNavigate={handleNavigate} />
 
             <CookieConsentBanner />
+            {consent?.analytics && <SpeedInsights />}
             
             {isLoginModalOpen && (
                 <LoginModal 

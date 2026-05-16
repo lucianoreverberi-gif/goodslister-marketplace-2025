@@ -17,6 +17,7 @@
     "@vercel/blob": "^2.0.0",
     "@vercel/node": "^5.5.20",
     "@vercel/postgres": "^0.10.0",
+    "@vercel/speed-insights": "^2.0.0",
     "date-fns": "^3.6.0",
     "firebase": "^12.12.1",
     "lucide-react": "^0.344.0",
