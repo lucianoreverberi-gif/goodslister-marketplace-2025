@@ -324,7 +324,7 @@ const AIAssistantPage: React.FC = () => {
                                         <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Basic listing analytics
                                     </li>
                                     <li className="flex items-center gap-3 text-sm text-gray-600">
-                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Email support
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> AI Help Center (24/7)
                                     </li>
                                 </ul>
                                 <button onClick={handleComingSoon} className="mt-8 w-full py-4 bg-gray-100 text-gray-600 font-black rounded-2xl hover:bg-gray-200 transition-all">

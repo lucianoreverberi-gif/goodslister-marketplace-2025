@@ -518,6 +518,7 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
                         </div>
                         <ul className="mt-4 space-y-2">
                             <li className="flex items-center gap-2 text-[10px] text-slate-600"><CheckCircleIcon className="h-3 w-3 text-slate-400" /> 5 strategies / mo</li>
+                            <li className="flex items-center gap-2 text-[10px] text-slate-600"><CheckCircleIcon className="h-3 w-3 text-slate-400" /> AI Help Center (24/7)</li>
                         </ul>
                     </div>
                     {/* Pro Host (Featured for Dashboard) */}
