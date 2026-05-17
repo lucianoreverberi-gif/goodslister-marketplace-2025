@@ -395,7 +395,13 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
             </div>
 
             {/* AI Impact metrics card */}
-            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 relative">
+                <div 
+                    className="absolute top-4 right-4 bg-gray-200 text-gray-600 text-[11px] font-black px-2 py-0.5 rounded-full cursor-help"
+                    title="Illustrative metrics for demo purposes. Real performance data will appear once you publish listings."
+                >
+                    SAMPLE DATA
+                </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
                     <TrendUpIcon className="h-5 w-5 text-emerald-500" /> Your AI Impact (Last 30 Days)
                 </h3>
@@ -550,6 +556,12 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
 
             {showBetaModal && <BetaModal />}
             {showComingSoon && <ComingSoonToast />}
+
+            <div className="mt-12 text-center">
+                <p className="text-[12px] text-slate-400 italic">
+                    Demo account — figures shown are illustrative only and do not reflect real account activity.
+                </p>
+            </div>
         </div>
     );
 };

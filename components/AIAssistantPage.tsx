@@ -424,18 +424,6 @@ const AIAssistantPage: React.FC = () => {
 
                         </div>
 
-                        {/* Trusted By Bar */}
-                        <div className="mt-20 py-10 border-t border-gray-100 text-center">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8">Featured & Trusted By</p>
-                            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-30 grayscale font-black text-lg text-gray-600">
-                                <span>TechCrunch</span>
-                                <span>FORBES</span>
-                                <span>Inc.</span>
-                                <span>Wired</span>
-                                <span>Business Insider</span>
-                            </div>
-                        </div>
-
                         {/* FAQ Section */}
                         <div className="mt-24 max-w-3xl mx-auto">
                             <h2 className="text-3xl font-black text-gray-900 text-center mb-12">Common Questions</h2>
