@@ -331,16 +331,22 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
     const [advice, setAdvice] = useState('');
     const [loading, setLoading] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<'coach' | 'legal' | 'chat'>('coach');
+    const [showBetaModal, setShowBetaModal] = useState(false);
+    const [showComingSoon, setShowComingSoon] = useState(false);
 
     const agents = [
         { id: 'coach', name: 'Success Coach', icon: BrainCircuitIcon, color: 'bg-indigo-600', description: 'Listing & Pricing optimization', price: 'FREE' },
-        { id: 'legal', name: 'Legal Shield', icon: ShieldCheckIcon, color: 'bg-emerald-600', description: 'Rental Agreement & Custom Clauses', premium: true, price: '$4.99' },
-        { id: 'chat', name: 'Auto-Reply', icon: MailIcon, color: 'bg-cyan-600', description: 'Automated guest vetting', premium: true, price: '$9.99' },
+        { id: 'legal', name: 'Legal Shield', icon: ShieldCheckIcon, color: 'bg-emerald-600', description: 'Compliance pathways & templates', premium: true, price: '$4.99' },
+        { id: 'chat', name: 'Auto-Reply', icon: MailIcon, color: 'bg-cyan-600', description: 'Automated guest vetting (BETA)', premium: true, price: '$9.99' },
     ];
 
     const getAdvice = async () => {
-        if (selectedAgent !== 'coach') {
-            setAdvice(`### 🛡️ ${selectedAgent === 'legal' ? 'Legal Shield' : 'Auto-Reply'} Activation\n\nYou are clicking on a premium AI Agent. This agent is trained specifically for ${selectedAgent === 'legal' ? 'rental law and custom agreement drafting' : 'automated customer service and guest vetting'}.\n\n**To activate this agent for your listings, please upgrade to the Pro Host plan.**`);
+        if (selectedAgent === 'chat') {
+            setShowBetaModal(true);
+            return;
+        }
+        if (selectedAgent === 'legal') {
+            setAdvice(`### 🛡️ Legal Shield Activation\n\nYou are clicking on a premium AI Assistant module. This feature is trained specifically for compliance pathways and custom agreement drafting.\n\n**To activate this module for your listings, please upgrade to the Pro Host plan.**`);
             return;
         }
         const item = listings.find(l => l.id === selectedId);
@@ -354,14 +360,73 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
         }
     };
 
+    const ComingSoonToast = () => (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl z-[150] animate-in slide-in-from-bottom-4 duration-300 flex items-center gap-3">
+            <ClockIcon className="h-5 w-5 text-cyan-400" />
+            <span className="text-sm font-bold">Coming soon — checkout integration in progress</span>
+        </div>
+    );
+
+    const BetaModal = () => (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl animate-in zoom-in duration-300">
+                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
+                    <MailIcon className="h-8 w-8" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900">Auto-Reply (BETA)</h3>
+                <p className="mt-4 text-slate-600 font-medium leading-relaxed">
+                    Auto-Reply is in early access. We'll notify you when it goes live for your account. In the meantime, all other Pro features are active.
+                </p>
+                <button onClick={() => setShowBetaModal(false)} className="mt-8 w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all">
+                    Got it
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="space-y-6">
             <div className="bg-slate-900 p-8 rounded-[2rem] text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                     <SparklesIcon className="h-24 w-24" />
                 </div>
-                <h2 className="text-2xl font-black flex items-center gap-3"><BrainCircuitIcon className="h-8 w-8 text-cyan-400" /> AI Agent Marketplace</h2>
-                <p className="text-slate-400 mt-2 font-medium">Power up your listing with specialized intelligence.</p>
+                <h2 className="text-2xl font-black flex items-center gap-3"><BrainCircuitIcon className="h-8 w-8 text-cyan-400" /> Goodslister AI Assistant</h2>
+                <p className="text-slate-400 mt-2 font-medium">One intelligent assistant. Built to grow your rental business.</p>
+            </div>
+
+            {/* AI Impact metrics card */}
+            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <TrendUpIcon className="h-5 w-5 text-emerald-500" /> Your AI Impact (Last 30 Days)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Listing Views</p>
+                        <div className="flex items-baseline gap-2 mt-1">
+                            <span className="text-2xl font-black text-slate-900">+42%</span>
+                            <span className="text-[10px] font-bold text-emerald-600">vs prev 30d</span>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Booking Conv.</p>
+                        <div className="flex items-baseline gap-2 mt-1">
+                            <span className="text-2xl font-black text-slate-900">+18%</span>
+                            <span className="text-[10px] font-bold text-emerald-600">vs prev 30d</span>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimated Lift</p>
+                        <div className="flex items-baseline gap-2 mt-1">
+                            <span className="text-2xl font-black text-emerald-600">+$1,240</span>
+                            <span className="text-[10px] font-bold text-slate-400">added value</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-6 flex justify-center">
+                    <button className="text-xs font-black text-cyan-600 hover:text-cyan-700 flex items-center gap-2 group">
+                        Unlock unlimited AI strategies <ArrowRightIcon className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -371,19 +436,18 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
                         onClick={() => setSelectedAgent(agent.id as any)}
                         className={`p-5 rounded-3xl border-2 transition-all text-left relative group ${selectedAgent === agent.id ? 'bg-white border-cyan-500 shadow-xl' : 'bg-white border-slate-100 hover:border-slate-200'}`}
                     >
-                        {agent.premium ? (
-                            <span className="absolute top-4 right-4 bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-0.5 rounded-full">PREMIUM</span>
+                        {agent.id === 'chat' ? (
+                            <span className="absolute top-4 right-4 bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-0.5 rounded-full">BETA</span>
+                        ) : agent.premium ? (
+                            <span className="absolute top-4 right-4 bg-cyan-100 text-cyan-700 text-[8px] font-black px-2 py-0.5 rounded-full">PRO</span>
                         ) : (
-                            <span className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full">FREE</span>
+                            <span className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full">INCLUDED</span>
                         )}
                         <div className={`w-10 h-10 rounded-xl ${agent.color} text-white flex items-center justify-center mb-4`}>
                             <agent.icon className="h-6 w-6" />
                         </div>
                         <h4 className="font-bold text-slate-900">{agent.name}</h4>
                         <p className="text-[10px] text-slate-500 font-medium leading-tight mt-1">{agent.description}</p>
-                        <p className={`text-[10px] font-bold mt-3 ${agent.premium ? 'text-cyan-600' : 'text-emerald-600'}`}>
-                            {agent.price}{agent.premium ? '/mo' : ''}
-                        </p>
                     </button>
                 ))}
             </div>
@@ -419,17 +483,72 @@ const AIListingCoach: React.FC<{ listings: Listing[] }> = ({ listings }) => {
                         {loading ? 'Consulting AI...' : selectedAgent === 'coach' ? 'Generate AI Strategy' : `Activate ${agents.find(a => a.id === selectedAgent)?.name}`}
                     </button>
                     {advice && (
-                        <div 
-                            className="p-6 bg-blue-50 rounded-2xl text-slate-800 font-medium leading-relaxed whitespace-pre-wrap text-sm"
-                            dangerouslySetInnerHTML={{ 
-                                __html: advice
-                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    .replace(/### (.*?)\n/g, '<h4 class="text-lg font-bold text-slate-900 mt-4 mb-2">$1</h4>')
-                            }}
-                        />
+                        <div className="space-y-4">
+                            <div 
+                                className="p-6 bg-blue-50 rounded-2xl text-slate-800 font-medium leading-relaxed whitespace-pre-wrap text-sm"
+                                dangerouslySetInnerHTML={{ 
+                                    __html: advice
+                                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                        .replace(/### (.*?)\n/g, '<h4 class="text-lg font-bold text-slate-900 mt-4 mb-2">$1</h4>')
+                                }}
+                            />
+                            <p className="text-[10px] text-slate-400 italic leading-tight text-center">
+                                AI suggestions are informational only and do not constitute legal advice. Always consult a licensed attorney before signing rental contracts or operating regulated assets.
+                            </p>
+                        </div>
                     )}
                 </div>
             ) : <p className="text-center p-20 text-slate-400 italic font-bold">List an item to unlock AI Success Coach.</p>}
+
+            {/* Pricing Section for Upsell */}
+            <div className="mt-16 pt-16 border-t border-slate-200">
+                <div className="text-center mb-10">
+                    <h3 className="text-xl font-black text-slate-900">Upgrade Your Assistant</h3>
+                    <p className="text-slate-500 text-sm mt-2">Unlock unlimited strategies, legal shields, and auto-replies.</p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    {/* Starter (Simplified for Dashboard) */}
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm opacity-60">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h4 className="font-bold text-slate-900">Starter</h4>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Current Plan</p>
+                            </div>
+                            <span className="text-xl font-black text-slate-900">$0</span>
+                        </div>
+                        <ul className="mt-4 space-y-2">
+                            <li className="flex items-center gap-2 text-[10px] text-slate-600"><CheckCircleIcon className="h-3 w-3 text-slate-400" /> 5 strategies / mo</li>
+                        </ul>
+                    </div>
+                    {/* Pro Host (Featured for Dashboard) */}
+                    <div className="bg-white p-6 rounded-3xl border-2 border-cyan-500 shadow-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 bg-cyan-500 text-white text-[8px] font-black px-3 py-1 rounded-bl-xl">RECOMMENDED</div>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h4 className="font-bold text-slate-900">Pro Host</h4>
+                                <p className="text-[10px] text-cyan-600 font-bold uppercase tracking-widest">Upgrade to Scale</p>
+                            </div>
+                            <span className="text-xl font-black text-slate-900">$29<span className="text-xs text-slate-400">/mo</span></span>
+                        </div>
+                        <ul className="mt-4 space-y-2">
+                            <li className="flex items-center gap-2 text-[10px] text-slate-600"><ZapIcon className="h-3 w-3 text-cyan-500" /> Unlimited AI strategies</li>
+                            <li className="flex items-center gap-2 text-[10px] text-slate-600"><ZapIcon className="h-3 w-3 text-cyan-500" /> Auto-Reply (BETA)</li>
+                        </ul>
+                        <button 
+                            onClick={() => {
+                                setShowComingSoon(true);
+                                setTimeout(() => setShowComingSoon(false), 3000);
+                            }}
+                            className="mt-6 w-full py-3 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 transition-all text-xs"
+                        >
+                            Start 14-day Free Trial
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {showBetaModal && <BetaModal />}
+            {showComingSoon && <ComingSoonToast />}
         </div>
     );
 };

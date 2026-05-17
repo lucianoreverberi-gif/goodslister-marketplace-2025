@@ -14,9 +14,15 @@ const AIAssistantPage: React.FC = () => {
     const [location, setLocation] = useState('');
     const [userQuestion, setUserQuestion] = useState('');
     
-    // Response State
+    // Advice State
     const [isLoading, setIsLoading] = useState(false);
     const [advice, setAdvice] = useState('');
+    const [showComingSoon, setShowComingSoon] = useState(false);
+
+    const handleComingSoon = () => {
+        setShowComingSoon(true);
+        setTimeout(() => setShowComingSoon(false), 3000);
+    };
 
     // Google Maps Autocomplete
     const locationInputRef = useRef<HTMLInputElement>(null);
@@ -85,7 +91,7 @@ const AIAssistantPage: React.FC = () => {
                         Rental Success Coach
                     </h1>
                     <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-                        Don't let legal worries stop you from earning. Our AI Strategist finds <span className="text-cyan-600 font-bold">smart, compliant solutions</span> for your specific assets.
+                        Don't let legal worries stop you from earning. Our AI Strategist finds <span className="text-cyan-600 font-bold">smart, compliant structure</span> for your specific assets.
                     </p>
                 </div>
             </div>
@@ -206,6 +212,9 @@ const AIAssistantPage: React.FC = () => {
                                                 .replace(/\n/g, '<br />') 
                                         }} 
                                     />
+                                    <p className="mt-8 text-[10px] text-gray-400 italic leading-tight border-t border-gray-100 pt-4">
+                                        AI suggestions are informational only and do not constitute legal advice. Always consult a licensed attorney before signing rental contracts or operating regulated assets.
+                                    </p>
                                 </div>
                                 <div className="bg-gray-50 p-6 text-center border-t border-gray-100">
                                     <p className="text-sm text-gray-500 mb-4">Ready to put this plan into action?</p>
@@ -222,7 +231,10 @@ const AIAssistantPage: React.FC = () => {
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-400">Waiting for your input...</h3>
                                 <p className="text-gray-500 mt-2 max-w-sm">
-                                    Fill out the form to receive a tailored rental strategy, legal workarounds, and safety tips for your specific asset.
+                                    Fill out the form to receive a tailored rental strategy, compliance pathways, and safety tips for your specific asset.
+                                </p>
+                                <p className="mt-6 text-[10px] text-gray-400 italic max-w-xs">
+                                    AI suggestions are informational only and do not constitute legal advice. Always consult a licensed attorney before signing rental contracts or operating regulated assets.
                                 </p>
                             </div>
                         )}
@@ -230,78 +242,226 @@ const AIAssistantPage: React.FC = () => {
 
                 </div>
 
-                {/* Bottom Section: AI Agent Marketplace Expansion */}
+                {/* Bottom Section: AI Assistant Modules */}
                 <div className="mt-20 border-t border-gray-200 pt-16">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-black text-gray-900">Premium AI Agent Marketplace</h2>
-                        <p className="text-gray-500 mt-3 max-w-xl mx-auto">Take your hosting to the next level with specialized agents trained for specific challenges.</p>
+                        <h2 className="text-3xl font-black text-gray-900">Goodslister AI Assistant</h2>
+                        <p className="text-gray-500 mt-3 max-w-xl mx-auto">One intelligent assistant. Built to grow your rental business.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-                             <span className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full">FREE</span>
-                             <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <BrainCircuitIcon className="h-6 w-6" />
+                    <div className="mb-8">
+                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest text-center mb-10">What it can do for you</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+                                <span className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] font-black px-2 py-0.5 rounded-full">INCLUDED</span>
+                                <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <BrainCircuitIcon className="h-6 w-6" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-900">Success Coach</h3>
+                                <p className="text-gray-500 mt-2 text-xs leading-relaxed">
+                                    Optimized your <span className="font-bold text-gray-900">listing, photos & pricing</span> for maximum visibility.
+                                </p>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900">Success Coach</h3>
-                            <p className="text-gray-500 mt-2 text-xs leading-relaxed">
-                                Optimized your <span className="font-bold text-gray-900">listing, photos & pricing</span> for maximum visibility.
-                            </p>
-                            <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between">
-                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider">Standard</span>
-                                <span className="text-lg font-black text-gray-900">FREE</span>
+
+                            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+                                <span className="absolute top-4 right-4 bg-cyan-100 text-cyan-700 text-[8px] font-black px-2 py-0.5 rounded-full">PRO</span>
+                                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <ShieldCheckIcon className="h-6 w-6" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-900">Legal Shield</h3>
+                                <p className="text-gray-500 mt-2 text-xs leading-relaxed">
+                                    Expert in <span className="font-bold text-gray-900">Rental Law & Protection</span>. Helps you draft compliance pathways.
+                                </p>
+                            </div>
+
+                            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+                                <span className="absolute top-4 right-4 bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-0.5 rounded-full">BETA</span>
+                                <div className="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <MailIcon className="h-6 w-6" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-900">Auto-Reply</h3>
+                                <p className="text-gray-500 mt-2 text-xs leading-relaxed">
+                                    Automates the heavy lifting. Vets guests and answers FAQs <span className="font-bold text-gray-900">automatically</span>.
+                                </p>
+                            </div>
+
+                            <div className="bg-indigo-900 p-8 rounded-3xl border border-indigo-800 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <SparklesIcon className="h-20 w-20 text-white" />
+                                </div>
+                                <div className="w-12 h-12 bg-indigo-500/20 text-indigo-300 rounded-2xl flex items-center justify-center mb-6">
+                                    <BrainCircuitIcon className="h-6 w-6" />
+                                </div>
+                                <h3 className="text-lg font-bold text-white">Custom Training</h3>
+                                <p className="text-indigo-200 mt-2 text-xs leading-relaxed">
+                                    Train your assistant on your specific rental rules, unique fleet features, and maintenance schedule.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Pricing Plans Section */}
+                    <div className="mt-24">
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl font-black text-gray-900">Simple, Transparent Pricing</h2>
+                            <p className="text-gray-500 mt-3">Choose the plan that fits your hosting goals.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                            {/* Plan 1: Starter */}
+                            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm flex flex-col">
+                                <h3 className="text-xl font-bold text-gray-900">Starter</h3>
+                                <div className="mt-4 flex items-baseline gap-1">
+                                    <span className="text-4xl font-black text-gray-900">$0</span>
+                                    <span className="text-gray-500 font-medium">/mo</span>
+                                </div>
+                                <p className="mt-2 text-sm text-gray-500 font-medium italic">"Get started, see the lift."</p>
+                                <ul className="mt-8 space-y-4 flex-1">
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Success Coach (5 AI strategies / month)
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Basic listing analytics
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Email support
+                                    </li>
+                                </ul>
+                                <button onClick={handleComingSoon} className="mt-8 w-full py-4 bg-gray-100 text-gray-600 font-black rounded-2xl hover:bg-gray-200 transition-all">
+                                    Start Free
+                                </button>
+                            </div>
+
+                            {/* Plan 2: Pro Host */}
+                            <div className="bg-white rounded-[2rem] p-8 border-2 border-cyan-500 shadow-2xl relative flex flex-col scale-[1.05] z-10">
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-400 to-cyan-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+                                    MOST POPULAR
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900">Pro Host</h3>
+                                <div className="mt-4 flex items-baseline gap-1">
+                                    <span className="text-4xl font-black text-gray-900">$29</span>
+                                    <span className="text-gray-500 font-medium">/mo</span>
+                                </div>
+                                <p className="mt-2 text-sm text-gray-500 font-medium italic">"For active hosts who want to scale."</p>
+                                <ul className="mt-8 space-y-4 flex-1">
+                                    <li className="flex items-center gap-3 text-sm text-gray-600 font-bold">
+                                        <SparklesIcon className="h-4 w-4 text-orange-400" /> Unlimited AI strategies
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600 font-bold">
+                                        <SparklesIcon className="h-4 w-4 text-orange-400" /> Auto-Reply (BETA)
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Pre-approved templates by state
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Priority search placement
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> "Verified Pro Host" badge
+                                    </li>
+                                </ul>
+                                <button onClick={handleComingSoon} className="mt-8 w-full py-4 bg-cyan-600 text-white font-black rounded-2xl hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-200">
+                                    Start 14-day trial
+                                </button>
+                                <p className="mt-3 text-[10px] text-center text-gray-400 font-medium">No charge for 14 days. Cancel anytime.</p>
+                            </div>
+
+                            {/* Plan 3: Concierge */}
+                            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm flex flex-col">
+                                <h3 className="text-xl font-bold text-gray-900">Concierge</h3>
+                                <div className="mt-4 flex items-baseline gap-1">
+                                    <span className="text-4xl font-black text-gray-900">$149</span>
+                                    <span className="text-gray-500 font-medium">/mo</span>
+                                </div>
+                                <p className="mt-2 text-sm text-gray-500 font-medium italic">"For fleet owners (5+ items)."</p>
+                                <ul className="mt-8 space-y-4 flex-1">
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Everything in Pro Host
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> AI trained on your fleet
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> WhatsApp & SMS automation
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> 1:1 onboarding (30 min call)
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-600">
+                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-600" /> Monthly performance report
+                                    </li>
+                                </ul>
+                                <button onClick={handleComingSoon} className="mt-8 w-full py-4 bg-gray-900 text-white font-black rounded-2xl hover:bg-black transition-all">
+                                    Talk to Sales
+                                </button>
+                            </div>
+
+                            {/* Plan 4: Enterprise */}
+                            <div className="bg-gray-900 rounded-[2rem] p-8 shadow-xl flex flex-col text-white">
+                                <h3 className="text-xl font-bold">Enterprise</h3>
+                                <div className="mt-4 flex items-baseline gap-1">
+                                    <span className="text-4xl font-black text-white">Custom</span>
+                                </div>
+                                <p className="mt-2 text-sm text-gray-400 font-medium italic">"For brands & fleets of 20+."</p>
+                                <ul className="mt-8 space-y-4 flex-1">
+                                    <li className="flex items-center gap-3 text-sm text-gray-300">
+                                        <ShieldCheckIcon className="h-4 w-4 text-indigo-400" /> Custom AI training
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-300">
+                                        <ShieldCheckIcon className="h-4 w-4 text-indigo-400" /> Dedicated account manager
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-300">
+                                        <ShieldCheckIcon className="h-4 w-4 text-indigo-400" /> SLA & uptime guarantee
+                                    </li>
+                                    <li className="flex items-center gap-3 text-sm text-gray-300">
+                                        <ShieldCheckIcon className="h-4 w-4 text-indigo-400" /> White-label option
+                                    </li>
+                                </ul>
+                                <button onClick={handleComingSoon} className="mt-8 w-full py-4 bg-white text-gray-900 font-black rounded-2xl hover:bg-gray-100 transition-all">
+                                    Contact Us
+                                </button>
+                            </div>
+
+                        </div>
+
+                        {/* Trusted By Bar */}
+                        <div className="mt-20 py-10 border-t border-gray-100 text-center">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8">Featured & Trusted By</p>
+                            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-30 grayscale font-black text-lg text-gray-600">
+                                <span>TechCrunch</span>
+                                <span>FORBES</span>
+                                <span>Inc.</span>
+                                <span>Wired</span>
+                                <span>Business Insider</span>
                             </div>
                         </div>
 
-                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-                             <span className="absolute top-4 right-4 bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-0.5 rounded-full">PREMIUM</span>
-                             <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <ShieldCheckIcon className="h-6 w-6" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Legal Shield AI</h3>
-                            <p className="text-gray-500 mt-2 text-xs leading-relaxed">
-                                Expert in <span className="font-bold text-gray-900">Rental Law & Protection</span>. Helps you draft custom rental clauses.
-                            </p>
-                            <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between">
-                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider">Available</span>
-                                <span className="text-lg font-black text-gray-900">$4.99<span className="text-xs text-gray-400 font-medium">/mo</span></span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-                             <span className="absolute top-4 right-4 bg-slate-100 text-slate-700 text-[8px] font-black px-2 py-0.5 rounded-full">UPCOMING</span>
-                             <div className="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <MailIcon className="h-6 w-6" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Auto-Reply</h3>
-                            <p className="text-gray-500 mt-2 text-xs leading-relaxed">
-                                Automates the heavy lifting. Vets guests and answers FAQs <span className="font-bold text-gray-900">automatically</span>.
-                            </p>
-                            <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between">
-                                <span className="text-xs font-bold text-cyan-600 bg-cyan-50 px-2 py-1 rounded-full uppercase tracking-wider">Premium</span>
-                                <span className="text-lg font-black text-gray-900">$9.99<span className="text-xs text-gray-400 font-medium">/mo</span></span>
-                            </div>
-                        </div>
-
-                        <div className="bg-indigo-900 p-8 rounded-3xl border border-indigo-800 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <SparklesIcon className="h-20 w-20 text-white" />
-                            </div>
-                             <div className="w-12 h-12 bg-indigo-500/20 text-indigo-300 rounded-2xl flex items-center justify-center mb-6">
-                                <BrainCircuitIcon className="h-6 w-6" />
-                            </div>
-                            <h3 className="text-lg font-bold text-white">Custom Training</h3>
-                            <p className="text-indigo-200 mt-2 text-xs leading-relaxed">
-                                Train a custom AI Agent on your specific rental rules and fleet maintenance schedule.
-                            </p>
-                            <div className="mt-6 pt-6 border-t border-indigo-800 flex items-center justify-between">
-                                <span className="text-xs font-bold text-indigo-300 bg-indigo-500/20 px-2 py-1 rounded-full uppercase tracking-wider">Enterprise</span>
-                                <button className="text-xs font-black text-white hover:underline uppercase tracking-widest leading-none">Contact</button>
+                        {/* FAQ Section */}
+                        <div className="mt-24 max-w-3xl mx-auto">
+                            <h2 className="text-3xl font-black text-gray-900 text-center mb-12">Common Questions</h2>
+                            <div className="space-y-6">
+                                {[
+                                    { q: "Can I cancel anytime?", a: "Yes. No long-term contracts. Cancel from your billing dashboard anytime." },
+                                    { q: "What happens after my free trial?", a: "We'll only charge you if you decide to continue. We'll send a reminder 3 days before the trial ends." },
+                                    { q: "Is my data private?", a: "Yes. Your listing data, messages, and AI interactions are encrypted and never sold or shared. See our Privacy Policy." },
+                                    { q: "Do you offer refunds?", a: "Yes. 30-day money-back guarantee on all paid plans. No questions asked." }
+                                ].map((item, i) => (
+                                    <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                        <h4 className="font-bold text-gray-900">{item.q}</h4>
+                                        <p className="mt-2 text-sm text-gray-500 leading-relaxed font-medium">{item.a}</p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {showComingSoon && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl z-[150] animate-in slide-in-from-bottom-4 duration-300 flex items-center gap-3">
+                    <BrainCircuitIcon className="h-5 w-5 text-cyan-400" />
+                    <span className="text-sm font-bold">Coming soon — checkout integration in progress</span>
+                </div>
+            )}
         </div>
     );
 };
