@@ -34,12 +34,16 @@ interface UserDashboardPageProps {
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void;
 }
 
-type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant';
+type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant' | 'boosts';
 
-const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ listing, onClose }) => {
-    const [selectedPlanId, setSelectedPlanId] = useState<string>('social');
+const STRIPE_ENABLED = process.env.STRIPE_ENABLED === 'true' || (typeof window !== 'undefined' && (window as any).NEXT_PUBLIC_STRIPE_ENABLED === 'true');
+
+const PromotionModal: React.FC<{ listing: Listing, onClose: () => void, user: Session }> = ({ listing, onClose, user }) => {
+    const [selectedPlanId, setSelectedPlanId] = useState<string>('spotlight');
     const [isSuccess, setIsSuccess] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showWaitlist, setShowWaitlist] = useState(false);
+    const [waitlistEmail, setWaitlistEmail] = useState(user.email || '');
 
     const plans = [
         {
@@ -88,12 +92,57 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
 
     const selectedPlan = plans.find(p => p.id === selectedPlanId) || plans[1];
 
-    const handlePromote = () => {
+    const handlePromote = async () => {
+        if (!STRIPE_ENABLED) {
+            setShowWaitlist(true);
+            return;
+        }
+
         setIsProcessing(true);
-        setTimeout(() => {
+        try {
+            const res = await fetch('/api/boost/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    listing_id: listing.id,
+                    tier: selectedPlanId,
+                    user_id: user.id
+                })
+            });
+            const data = await res.json();
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            } else {
+                throw new Error(data.error || 'Failed to start checkout');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Payment failed to initialize. Please try again.');
+        } finally {
             setIsProcessing(false);
+        }
+    };
+
+    const handleJoinWaitlist = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsProcessing(true);
+        try {
+            await fetch('/api/boost/waitlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: waitlistEmail,
+                    listing_id: listing.id,
+                    desired_tier: selectedPlanId,
+                    user_id: user.id
+                })
+            });
             setIsSuccess(true);
-        }, 1500);
+        } catch (e) {
+            alert('Failed to join waitlist. Please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     if (isSuccess) {
@@ -103,13 +152,50 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
                     <div className="bg-emerald-100 text-emerald-600 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-100">
                         <CheckCircleIcon className="h-12 w-12" />
                     </div>
-                    <h2 className="text-3xl font-black tracking-tight text-gray-900">Boost Active!</h2>
+                    <h2 className="text-3xl font-black tracking-tight text-gray-900">{STRIPE_ENABLED ? 'Boost Active!' : 'You\'re on the list!'}</h2>
                     <p className="text-slate-500 mt-4 font-medium leading-relaxed">
-                        Your item <strong>"{listing.title}"</strong> is now receiving premium exposure.
+                        {STRIPE_ENABLED 
+                            ? `Your item "${listing.title}" is now receiving premium exposure.`
+                            : `We'll notify you as soon as boosts launch. Your interest in a ${selectedPlanId} boost is noted!`}
                     </p>
                     <button onClick={onClose} className="mt-10 w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all">
                         Back to Dashboard
                     </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (showWaitlist) {
+        return (
+            <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-10 text-center animate-in zoom-in duration-300">
+                    <div className="bg-cyan-100 text-cyan-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                        <ClockIcon className="h-10 w-10" />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Boosts Launching Soon</h2>
+                    <p className="text-slate-500 text-sm mt-4 font-medium leading-relaxed">
+                        We are finalizing our secure payment integration. Want us to email you as soon as this listing's boost goes live?
+                    </p>
+                    <form onSubmit={handleJoinWaitlist} className="mt-8 space-y-4">
+                        <input 
+                            type="email" 
+                            required
+                            value={waitlistEmail}
+                            onChange={e => setWaitlistEmail(e.target.value)}
+                            placeholder="Your email address"
+                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                        />
+                        <button 
+                            disabled={isProcessing}
+                            className="w-full py-4 bg-cyan-600 text-white font-black rounded-2xl hover:bg-cyan-700 transition-all flex items-center justify-center gap-2"
+                        >
+                            {isProcessing ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : 'Notify Me at Launch'}
+                        </button>
+                        <button type="button" onClick={() => setShowWaitlist(false)} className="text-xs text-slate-400 font-bold hover:text-slate-600">
+                            Go back to tiers
+                        </button>
+                    </form>
                 </div>
             </div>
         );
@@ -197,6 +283,141 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
                     </button>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const MyBoostsManager: React.FC<{ user: Session, onBoostListing: () => void }> = ({ user, onBoostListing }) => {
+    const [boosts, setBoosts] = React.useState<any[]>([]);
+    const [stats, setStats] = React.useState<any>(null);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchBoosts = async () => {
+            try {
+                const res = await fetch(`/api/boost/my-boosts?user_id=${user.id}`);
+                const data = await res.json();
+                setBoosts(data.boosts || []);
+                setStats(data.stats || null);
+            } catch (e) {
+                console.error('Failed to fetch boosts');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchBoosts();
+    }, [user.id]);
+
+    const activeBoosts = boosts.filter(b => b.status === 'active');
+    const pastBoosts = boosts.filter(b => b.status !== 'active');
+
+    if (loading) return <div className="p-20 text-center"><RefreshCwIcon className="h-8 w-8 animate-spin mx-auto text-slate-300" /></div>;
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500">
+            {!STRIPE_ENABLED && (
+                <div className="bg-cyan-600 text-white p-4 rounded-2xl flex items-center gap-3 shadow-lg shadow-cyan-100">
+                    <ClockIcon className="h-5 w-5" />
+                    <p className="text-sm font-bold">Boosts launching soon. You'll be notified when ready.</p>
+                </div>
+            )}
+            
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Promote your listings</h2>
+                    <p className="text-slate-500 text-sm font-medium">Track your exposure and maximize your earnings.</p>
+                </div>
+                {boosts.length > 0 && (
+                    <button onClick={onBoostListing} className="px-5 py-2.5 bg-slate-900 text-white text-xs font-black rounded-xl hover:bg-black flex items-center gap-2">
+                        <RocketIcon className="h-4 w-4" /> BOOST A LISTING
+                    </button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Boosts</p>
+                    <h4 className="text-2xl font-black mt-1 text-slate-900">{activeBoosts.length}</h4>
+                </div>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Spent</p>
+                    <h4 className="text-2xl font-black mt-1 text-slate-900">${Number(stats?.total_spent || 0).toFixed(2)}</h4>
+                </div>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Views Gen.</p>
+                    <h4 className="text-2xl font-black mt-1 text-emerald-600">+{Number(stats?.total_views || 0).toLocaleString()}</h4>
+                </div>
+            </div>
+
+            {boosts.length === 0 ? (
+                <div className="p-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <RocketIcon className="h-8 w-8 text-slate-300" />
+                    </div>
+                    <p className="text-slate-400 font-bold italic">No active boosts found.</p>
+                    <p className="text-slate-500 text-sm mt-2">Boost your first listing to appear at the top of search results in your area.</p>
+                    <button onClick={onBoostListing} className="mt-6 px-8 py-3 bg-cyan-600 text-white font-black rounded-xl hover:bg-cyan-700 shadow-lg shadow-cyan-100 transition-all">
+                        Go to My Listings
+                    </button>
+                </div>
+            ) : (
+                <div className="space-y-8">
+                    {activeBoosts.length > 0 && (
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                <ZapIcon className="h-4 w-4 text-cyan-500" /> Active Now
+                            </h3>
+                            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden">
+                                {activeBoosts.map(b => (
+                                    <div key={b.id} className="p-5 flex items-center gap-5 hover:bg-slate-50/50 transition-colors border-b last:border-0 border-slate-50">
+                                        <img src={JSON.parse(b.listing_images)[0]} className="w-14 h-14 rounded-xl object-cover" />
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-slate-900 text-sm">{b.listing_title}</h4>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <span className="text-[10px] font-black text-cyan-600 uppercase tracking-widest">{b.tier}</span>
+                                                <span className="text-[10px] font-medium text-slate-400">Ends {format(new Date(b.expires_at), 'MMM dd')}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-8 text-right pr-4">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Views</p>
+                                                <p className="text-sm font-black text-emerald-600">+{b.views_count}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inquiries</p>
+                                                <p className="text-sm font-black text-blue-600">+{b.inquiries_count}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {pastBoosts.length > 0 && (
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Past Exposure</h3>
+                            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden opacity-80">
+                                {pastBoosts.map(b => (
+                                    <div key={b.id} className="p-4 flex items-center gap-4 border-b last:border-0 border-slate-50 text-slate-700">
+                                        <img src={JSON.parse(b.listing_images)[0]} className="w-10 h-10 rounded-lg object-cover grayscale" />
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-xs">{b.listing_title}</h4>
+                                            <p className="text-[10px] font-medium text-slate-400">{format(new Date(b.starts_at), 'MMM dd')} - {format(new Date(b.expires_at), 'MMM dd')}</p>
+                                        </div>
+                                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${b.status === 'expired' ? 'bg-slate-100 text-slate-500' : 'bg-red-50 text-red-600'}`}>
+                                            {b.status.toUpperCase()}
+                                        </span>
+                                        <div className="text-right w-16">
+                                            <p className="text-[11px] font-black italic">+{b.views_count} views</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -624,9 +845,10 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
         }, 2000);
     };
 
-    const tabs: { id: DashboardTab; name: string; icon: React.ElementType }[] = [
+    const tabs: { id: DashboardTab | 'boosts'; name: string; icon: React.ElementType }[] = [
         { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon },
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
+        { id: 'boosts', name: 'My Boosts', icon: RocketIcon },
         { id: 'bookings', name: 'My Bookings', icon: CalendarIcon },
         { id: 'favorites', name: 'Saved Items', icon: HeartIcon },
         { id: 'security', name: 'Security & Trust', icon: ShieldIcon },
@@ -749,7 +971,16 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                 <tbody className="divide-y divide-slate-50">
                                     {listings.map(l => (
                                         <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="p-4 font-bold text-slate-800">{l.title}</td>
+                                            <td className="p-4 font-bold text-slate-800">
+                                                <div className="flex items-center gap-2">
+                                                    {l.title}
+                                                    {l.boostTier && (
+                                                        <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 text-[8px] font-black rounded-md flex items-center gap-1">
+                                                            <ZapIcon className="h-2 w-2" /> BOOSTED
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="p-4"><span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase">Active</span></td>
                                             <td className="p-4 flex justify-end gap-2">
                                                 <button onClick={() => onListingClick?.(l.id)} className="p-2 text-slate-400 hover:text-cyan-600" title="View"><EyeIcon className="h-5 w-5"/></button>
@@ -765,6 +996,8 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                         </div>
                     </div>
                 );
+            case 'boosts':
+                return <MyBoostsManager user={user} onBoostListing={() => setActiveTab('listings')} />;
             case 'bookings':
                 return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'security':
@@ -882,7 +1115,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                     </main>
                 </div>
             </div>
-            {listingToBoost && <PromotionModal listing={listingToBoost} onClose={() => setListingToBoost(null)} />}
+            {listingToBoost && <PromotionModal listing={listingToBoost} onClose={() => setListingToBoost(null)} user={user} />}
             
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">

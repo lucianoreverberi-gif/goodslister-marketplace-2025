@@ -4,7 +4,7 @@ import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, Credit
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'bookings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'bookings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings' | 'boosts';
 
 interface AdminPageProps {
     users: User[];
@@ -1279,6 +1279,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         { id: 'risk_fund', name: 'Risk & Insurance', icon: UmbrellaIcon },
         { id: 'disputes', name: 'Disputes', icon: GavelIcon },
         { id: 'marketing', name: 'Marketing', icon: TicketIcon },
+        { id: 'boosts', name: 'Marketplace Boosts', icon: RocketIcon },
         { id: 'users', name: 'Users', icon: UsersIcon },
         { id: 'listings', name: 'All Listings', icon: PackageIcon },
         { id: 'content', name: 'Content', icon: PaletteIcon },
@@ -1400,6 +1401,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 return <MarketingTab />;
             case 'settings':
                 return <GlobalSettingsTab />;
+            case 'boosts':
+                return <div className="p-10 text-center"><button onClick={() => window.location.hash = 'adminBoosts'} className="px-8 py-4 bg-cyan-600 text-white font-black rounded-2xl shadow-xl hover:bg-cyan-700 transition-all flex items-center gap-2 mx-auto"><RocketIcon className="h-5 w-5" /> Open Boost Control Center</button></div>;
             case 'disputes':
                 return (
                     <div className="animate-in fade-in duration-500">

@@ -12,6 +12,7 @@ import ListingDetailPage from './components/ListingDetailPage';
 import CreateListingPage from './components/CreateListingPage';
 import AIAssistantPage from './components/AIAssistantPage';
 import AdminPage from './components/AdminPage';
+import AdminBoostsPage from './components/AdminBoostsPage';
 import UserDashboardPage from './components/UserDashboardPage';
 import LoginModal from './components/LoginModal';
 import ChatLayout from './components/chat/ChatLayout';
@@ -812,6 +813,8 @@ const App: React.FC = () => {
                     onDeleteListing={handleDeleteListing}
                     onUpdateDepositStatus={handleUpdateDepositStatus}
                 /> : <p>Access Denied.</p>;
+            case 'adminBoosts':
+                return session?.isAdmin ? <AdminBoostsPage user={session} /> : <p>Access Denied.</p>;
              case 'userDashboard':
                 return session ? <UserDashboardPage 
                     user={session} 

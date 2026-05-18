@@ -60,6 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         images: row.images || [],
         videoUrl: row.video_url,
         isFeatured: row.is_featured,
+        boostTier: row.boost_tier_active,
+        boostExpires: row.boost_active_until ? new Date(row.boost_active_until).toISOString() : undefined,
         rating: Number(row.rating),
         reviewsCount: row.reviews_count,
         bookedDates: row.booked_dates || [],
