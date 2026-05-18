@@ -73,6 +73,38 @@ const App: React.FC = () => {
 
     const [appData, setAppData] = useState<any | null>(null);
     const [initialExploreFilters, setInitialExploreFilters] = useState<FilterCriteria | null>(null);
+    const [userLocation, setUserLocation] = useState<{ city: string, state: string, lat: number, lng: number }>({
+        city: 'Miami',
+        state: 'FL',
+        lat: 25.7617,
+        lng: -80.1918
+    });
+    
+    // Detect Location
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    // Reverse geocode to get city/state (Mocked for now but could use an API)
+                    // For the sake of the demo, we'll keep Miami as default unless user specifically changes it
+                    // or we could use a public ip-api
+                    const res = await fetch(`https://ipapi.co/json/`);
+                    const data = await res.json();
+                    if (data.city && data.region_code) {
+                        setUserLocation({
+                            city: data.city,
+                            state: data.region_code,
+                            lat: data.latitude,
+                            lng: data.longitude
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Location detection failed, using default.");
+                }
+            });
+        }
+    }, []);
     
     // Fetch initial data on mount
     useEffect(() => {
@@ -707,6 +739,8 @@ const App: React.FC = () => {
                     onClearInitialFilters={() => setInitialExploreFilters(null)}
                     favorites={session?.favorites || []}
                     onToggleFavorite={handleToggleFavorite}
+                    userLocation={userLocation}
+                    onUpdateLocation={setUserLocation}
                 />;
             case 'inbox':
                 return <ChatLayout 
@@ -831,6 +865,8 @@ const App: React.FC = () => {
                     categoryImages={categoryImages}
                     favorites={session?.favorites || []}
                     onToggleFavorite={handleToggleFavorite}
+                    userLocation={userLocation}
+                    onUpdateLocation={setUserLocation}
                 />;
         }
     };

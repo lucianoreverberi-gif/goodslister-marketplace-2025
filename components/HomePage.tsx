@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Listing, HeroSlide, Banner, ListingCategory, CategoryImagesMap, Page } from '../types';
 import ListingCard from './ListingCard';
 import CategoryCard from './CategoryCard';
@@ -26,6 +26,8 @@ interface HomePageProps {
     categoryImages: CategoryImagesMap;
     favorites: string[];
     onToggleFavorite: (id: string) => void;
+    userLocation: { city: string, state: string, lat: number, lng: number };
+    onUpdateLocation: (location: { city: string, state: string, lat: number, lng: number }) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({ 
@@ -38,14 +40,28 @@ const HomePage: React.FC<HomePageProps> = ({
     banners, 
     categoryImages,
     favorites, 
-    onToggleFavorite 
+    onToggleFavorite,
+    userLocation,
+    onUpdateLocation
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isListening, setIsListening] = useState(false);
     const [howItWorksTab, setHowItWorksTab] = useState<'renter' | 'owner'>('renter');
+    const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+    const [newCity, setNewCity] = useState('');
     const recognitionRef = useRef<any>(null);
+
+    const handleLocationChange = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newCity.trim()) {
+            // Simplified: just update city, keep same lat/lng for demo or logic
+            onUpdateLocation({ ...userLocation, city: newCity.split(',')[0].trim(), state: newCity.split(',')[1]?.trim() || userLocation.state });
+            setIsLocationModalOpen(false);
+            setNewCity('');
+        }
+    };
     
     const performSearch = async (query: string) => {
         setIsSearching(true);
@@ -128,7 +144,34 @@ const HomePage: React.FC<HomePageProps> = ({
     const nextSlide = () => setCurrentSlide(prev => (prev + 1) % heroSlides.length);
     const prevSlide = () => setCurrentSlide(prev => (prev - 1 + heroSlides.length) % heroSlides.length);
 
-    const featuredListings = listings.filter(l => l.isFeatured);
+    const featuredListings = useMemo(() => {
+        // Implementation of geo-aware featured/boosted logic
+        /*
+        1. Tier 1 (Local Boost): same city
+        2. Tier 2 (Spotlight): same state
+        3. Tier 3 (Regional Hero): within region (for demo, same state + slightly higher priority)
+        */
+        const boosted = listings.filter(l => l.boostTier);
+        const regularFeatured = listings.filter(l => l.isFeatured && !l.boostTier);
+
+        // Sort boosted by tier and location proximity
+        const sortedBoosted = [...boosted].sort((a, b) => {
+            const aInCity = a.location.city.toLowerCase() === userLocation.city.toLowerCase();
+            const bInCity = b.location.city.toLowerCase() === userLocation.city.toLowerCase();
+            const aInState = a.location.state.toLowerCase() === userLocation.state.toLowerCase();
+            const bInState = b.location.state.toLowerCase() === userLocation.state.toLowerCase();
+
+            // Priority: Regional (Tier 3) > Spotlight (Tier 2) > Local (Tier 1)
+            const tierScore = { 'regional': 3, 'spotlight': 2, 'local': 1 };
+            const scoreA = (tierScore[a.boostTier!] || 0) + (aInCity ? 5 : aInState ? 2 : 0);
+            const scoreB = (tierScore[b.boostTier!] || 0) + (bInCity ? 5 : bInState ? 2 : 0);
+            
+            return scoreB - scoreA;
+        });
+
+        // Combine and limit to 6 for the homepage
+        return [...sortedBoosted, ...regularFeatured].slice(0, 6);
+    }, [listings, userLocation]);
 
     const handleBannerClick = (e: React.MouseEvent, banner: Banner) => {
         // Allow default for external links or if modifier keys are pressed
@@ -375,25 +418,81 @@ const HomePage: React.FC<HomePageProps> = ({
                     </div>
                 </div>
 
-                {/* Featured Listings */}
-                {featuredListings.length > 0 && (
-                     <div className="bg-gray-50 py-16 sm:py-24">
-                        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl text-center mb-12">Featured Goods</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {featuredListings.map(listing => (
-                                    <ListingCard 
-                                        key={listing.id} 
-                                        listing={listing} 
-                                        onClick={onListingClick}
-                                        isFavorite={favorites.includes(listing.id)}
-                                        onToggleFavorite={onToggleFavorite}
-                                    />
-                                ))}
-                            </div>
+            {/* Featured Listings */}
+             <div className="bg-gray-50 py-16 sm:py-24">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col items-center mb-12">
+                        <div className="flex items-center gap-2 mb-4 bg-white/50 px-4 py-2 rounded-full border border-slate-100 shadow-sm">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Showing results near</span>
+                            <button 
+                                onClick={() => setIsLocationModalOpen(true)}
+                                className="text-[10px] font-black text-cyan-600 hover:text-cyan-700 underline underline-offset-4 decoration-cyan-200"
+                            >
+                                {userLocation.city}, {userLocation.state}
+                            </button>
                         </div>
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl text-center">Featured Goods</h2>
                     </div>
-                )}
+                    {featuredListings.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {featuredListings.map(listing => (
+                                <ListingCard 
+                                    key={listing.id} 
+                                    listing={listing} 
+                                    onClick={onListingClick}
+                                    isFavorite={favorites.includes(listing.id)}
+                                    onToggleFavorite={onToggleFavorite}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-100">
+                             <p className="text-slate-400 font-bold italic">No listings found near your current location.</p>
+                             <button 
+                                onClick={() => setIsLocationModalOpen(true)}
+                                className="mt-4 text-cyan-600 font-black text-sm hover:underline"
+                             >
+                                Try searching another city
+                             </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Location Change Modal */}
+            {isLocationModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in duration-300">
+                        <h3 className="text-2xl font-black text-slate-900">Change Location</h3>
+                        <p className="mt-2 text-slate-500 text-sm font-medium">Boosted listings are shown to you based on your city.</p>
+                        <form onSubmit={handleLocationChange} className="mt-6 space-y-4">
+                            <input 
+                                type="text" 
+                                autoFocus
+                                value={newCity}
+                                onChange={(e) => setNewCity(e.target.value)}
+                                placeholder="e.g. Los Angeles, CA"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-900 focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                            />
+                            <div className="flex gap-3">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsLocationModalOpen(false)}
+                                    className="flex-1 py-3 bg-slate-100 text-slate-600 font-black rounded-xl hover:bg-slate-200 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit"
+                                    className="flex-1 py-3 bg-cyan-600 text-white font-black rounded-xl hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-200"
+                                >
+                                    Update
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
                 {/* Categories Section */}
                 <div className="bg-white py-16 sm:py-24">

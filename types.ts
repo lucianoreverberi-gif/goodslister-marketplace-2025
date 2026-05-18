@@ -77,6 +77,8 @@ export interface Listing {
     videoUrl?: string;
     isFeatured?: boolean;
     isInstantBook?: boolean; // NEW: Support for instant bookings
+    boostTier?: 'local' | 'spotlight' | 'regional';
+    boostExpires?: string;
     rating: number;
     reviewsCount: number;
     bookedDates?: string[];

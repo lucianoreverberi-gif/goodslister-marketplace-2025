@@ -50,22 +50,24 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
             icon: MapPinIcon,
             features: [
                 'Top of search in your city',
-                'Highlighted map pin',
-                '~200 Est. Reach'
+                'Highlighted map pin on city view',
+                '"Boosted" badge on listing card',
+                'Reach: ~200 nearby renters'
             ]
         },
         {
-            id: 'social',
-            name: 'Social Spotlight',
+            id: 'spotlight',
+            name: 'Spotlight',
             price: '14.99',
             duration: '7 DAYS',
-            icon: MegaphoneIcon,
+            icon: WandSparklesIcon,
             popular: true,
             features: [
-                'Included "Local Boost"',
-                'Post on our Instagram/FB Stories',
-                'Featured in weekly newsletter',
-                '~1,500 Est. Reach'
+                'Everything in Local Boost',
+                'Top of search across your state',
+                'Featured in your category browse page',
+                'Priority placement in your region',
+                'Reach: ~1,500 in-state renters'
             ]
         },
         {
@@ -75,10 +77,11 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
             duration: '14 DAYS',
             icon: StarIcon,
             features: [
-                'Homepage "Hero" Slider Feature',
-                'Dedicated Social Media Post',
+                'Everything in Spotlight',
+                'Homepage "Hero" Slider rotation',
                 'Top placement in 3 nearby cities',
-                '~5,000+ Est. Reach'
+                '"Featured" badge with premium styling',
+                'Reach: ~5,000 regional renters'
             ]
         }
     ];
@@ -123,6 +126,7 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
                         <div>
                             <h2 className="text-2xl font-black tracking-tight">Boost Exposure</h2>
                             <p className="text-slate-400 text-sm font-medium">Promote <span className="text-white font-bold">{listing.title}</span> to get more bookings faster.</p>
+                            <p className="text-slate-500 text-[10px] mt-1 font-medium italic">Boosted listings are shown to renters near your asset's location — just like Turo and GetMyBoat.</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
@@ -142,7 +146,7 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
                                         : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-xl'}`}
                             >
                                 {plan.popular && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-fuchsia-500 to-indigo-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg z-20 whitespace-nowrap">
+                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-400 to-cyan-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg z-20 whitespace-nowrap uppercase tracking-widest">
                                         MOST POPULAR
                                     </div>
                                 )}
@@ -173,6 +177,10 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void }> = ({ l
                             </div>
                         ))}
                     </div>
+                    
+                    <p className="mt-10 text-center text-[10px] text-slate-400 font-medium max-w-2xl mx-auto italic">
+                        Potential reach figures are estimates based on average platform traffic. Actual reach varies by category, season, listing quality, and geographic demand.
+                    </p>
                 </div>
 
                 <div className="p-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-6 bg-white">

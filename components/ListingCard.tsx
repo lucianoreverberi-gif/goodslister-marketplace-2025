@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Listing } from '../types';
-import { MapPinIcon, StarIcon, HeartIcon, ZapIcon } from './icons';
+import { MapPinIcon, StarIcon, HeartIcon, ZapIcon, SparklesIcon } from './icons';
 
 interface ListingCardProps {
     listing: Listing;
@@ -45,6 +45,17 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, isFavorite,
                     <div className="absolute bottom-3 left-3 bg-cyan-500 text-white px-2 py-1 rounded-lg shadow-xl flex items-center gap-1.5 animate-in slide-in-from-left-4 duration-500 z-10" title="Instant Book Available">
                         <ZapIcon className="h-3 w-3 fill-white" />
                         <span className="text-[9px] font-black uppercase tracking-widest">Instant</span>
+                    </div>
+                )}
+
+                {listing.boostTier && (
+                    <div className={`absolute bottom-3 right-3 px-2 py-1 rounded-lg shadow-xl flex items-center gap-1.5 z-10 animate-in fade-in zoom-in-50 duration-500 ${
+                        listing.boostTier === 'regional' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-900 border border-slate-100'
+                    }`}>
+                        <SparklesIcon className="h-3 w-3 fill-current" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">
+                            {listing.boostTier === 'regional' ? 'Featured' : 'Boosted'}
+                        </span>
                     </div>
                 )}
             </div>

@@ -17,6 +17,8 @@ interface ExplorePageProps {
     onClearInitialFilters: () => void;
     favorites: string[];
     onToggleFavorite: (id: string) => void;
+    userLocation: { city: string, state: string, lat: number, lng: number };
+    onUpdateLocation: (location: { city: string, state: string, lat: number, lng: number }) => void;
 }
 
 type SortOption = 'price_desc' | 'price_asc' | 'rating_desc';
@@ -35,7 +37,16 @@ const defaultCenter = {
   lng: -63.6167
 };
 
-const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, initialFilters, onClearInitialFilters, favorites, onToggleFavorite }) => {
+const ExplorePage: React.FC<ExplorePageProps> = ({ 
+    listings, 
+    onListingClick, 
+    initialFilters, 
+    onClearInitialFilters, 
+    favorites, 
+    onToggleFavorite,
+    userLocation,
+    onUpdateLocation
+}) => {
     // Filter and sort state
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
@@ -215,20 +226,43 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
             return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation;
         });
 
-        switch (sortBy) {
-            case 'price_desc':
-                filtered.sort((a, b) => (b.pricePerDay || 0) - (a.pricePerDay || 0));
-                break;
-            case 'price_asc':
-                filtered.sort((a, b) => (a.pricePerDay || 0) - (b.pricePerDay || 0));
-                break;
-            case 'rating_desc':
-                filtered.sort((a, b) => b.rating - a.rating);
-                break;
-        }
+        // GEO-AWARE & BOOST-PRIORITY SORTING
+        // We always prioritize boosted listings matching the user's location,
+        // then follow the user's selected sort criteria for the rest.
+        filtered.sort((a, b) => {
+            const getBoostScore = (l: Listing) => {
+                if (!l.boostTier) return 0;
+                const inCity = l.location.city.toLowerCase() === userLocation.city.toLowerCase();
+                const inState = l.location.state.toLowerCase() === userLocation.state.toLowerCase();
+                
+                const tierScore = { 'regional': 30, 'spotlight': 20, 'local': 10 };
+                let score = tierScore[l.boostTier] || 0;
+                
+                if (inCity) score += 50;
+                else if (inState) score += 20;
+                
+                return score;
+            };
+
+            const scoreA = getBoostScore(a);
+            const scoreB = getBoostScore(b);
+
+            if (scoreA !== scoreB) return scoreB - scoreA;
+
+            // Tie-break with original sort logic
+            switch (sortBy) {
+                case 'price_desc':
+                    return (b.pricePerDay || 0) - (a.pricePerDay || 0);
+                case 'price_asc':
+                    return (a.pricePerDay || 0) - (b.pricePerDay || 0);
+                case 'rating_desc':
+                default:
+                    return b.rating - a.rating;
+            }
+        });
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter]);
+    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter, userLocation]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -315,6 +349,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ listings, onListingClick, ini
                 <div className="p-4 border-b flex-shrink-0">
                     {/* Filters */}
                     <div className="space-y-4">
+                        {/* Geo-Aware Breadcrumb */}
+                        <div className="flex items-center gap-2 mb-4 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Searching near</span>
+                            <span className="text-[10px] font-black text-cyan-600">
+                                {userLocation.city}, {userLocation.state}
+                            </span>
+                        </div>
                         {/* Location Filter with Autocomplete */}
                         <div>
                             <label htmlFor="location" className="block text-sm font-bold text-gray-800">Location</label>
