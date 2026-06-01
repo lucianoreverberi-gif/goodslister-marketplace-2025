@@ -29,12 +29,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // In Vercel Postgres, we expect jsonb for arrays usually
     const listingQuery = await sql`SELECT booked_dates FROM listings WHERE id = ${listingId}`;
     let bookedDates = listingQuery.rows[0]?.booked_dates || [];
-    if (typeof bookedDates === 'string') bookedDates = JSON.parse(bookedDates);
+    if (typeof bookedDates === 'string') {
+      try {
+        bookedDates = JSON.parse(bookedDates);
+      } catch (e) {
+        bookedDates = [];
+      }
+    }
+    if (!Array.isArray(bookedDates)) {
+      bookedDates = [];
+    }
     
     // Simple push for now
     bookedDates.push(startDate);
 
-    await sql`UPDATE listings SET booked_dates = ${JSON.stringify(bookedDates)} WHERE id = ${listingId}`;
+    await sql`UPDATE listings SET booked_dates = ${bookedDates} WHERE id = ${listingId}`;
 
     return res.status(200).json({ success: true, booking: { id, listingId, renterId, startDate, endDate, totalPrice, status: 'pending' } });
   } catch (error: any) {

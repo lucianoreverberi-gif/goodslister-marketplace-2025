@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ${listing.pricingType}, ${listing.location.city}, ${listing.location.state}, 
         ${listing.location.country}, ${listing.location.latitude}, ${listing.location.longitude}, 
         ${listing.owner.id}, ${listing.images || []}, ${listing.isFeatured}, 
-        ${listing.rating}, ${listing.reviewsCount}, ${JSON.stringify(listing.bookedDates)},
+        ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates || []},
         ${listing.listingType}, ${listing.operatorLicenseId}, ${listing.fuelPolicy},
         ${listing.skillLevel}, ${listing.whatsIncluded}, ${listing.itinerary},
         ${listing.priceUnit}
