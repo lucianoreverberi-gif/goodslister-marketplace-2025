@@ -101,7 +101,7 @@ export default async function handler(
 
       case 'updateListingImage':
         // Assuming images are stored as array of strings
-        await sql`UPDATE listings SET images = ${JSON.stringify([payload.newImageUrl])} WHERE id = ${payload.listingId}`;
+        await sql`UPDATE listings SET images = ${[payload.newImageUrl] as any} WHERE id = ${payload.listingId}`;
         break;
       
       case 'updateDepositStatus':

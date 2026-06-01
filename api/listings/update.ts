@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         location_country = ${listing.location.country}, 
         location_lat = ${listing.location.latitude}, 
         location_lng = ${listing.location.longitude}, 
-        images = ${JSON.stringify(listing.images)}, 
+        images = ${listing.images || []}, 
         listing_type = ${listing.listingType}, 
         operator_license_id = ${listing.operatorLicenseId}, 
         fuel_policy = ${listing.fuelPolicy}, 
