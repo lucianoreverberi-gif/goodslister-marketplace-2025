@@ -4,7 +4,7 @@ import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, Credit
 import ImageUploader from './ImageUploader';
 import { initialCategoryImages } from '../constants';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'bookings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings' | 'boosts';
+type AdminTab = 'dashboard' | 'users' | 'listings' | 'bookings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings' | 'boosts' | 'ai_ops';
 
 interface AdminPageProps {
     users: User[];
@@ -1279,6 +1279,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         { id: 'risk_fund', name: 'Risk & Insurance', icon: UmbrellaIcon },
         { id: 'disputes', name: 'Disputes', icon: GavelIcon },
         { id: 'marketing', name: 'Marketing', icon: TicketIcon },
+        { id: 'ai_ops', name: 'AI Admin Agents', icon: SparklesIcon },
         { id: 'boosts', name: 'Marketplace Boosts', icon: RocketIcon },
         { id: 'users', name: 'Users', icon: UsersIcon },
         { id: 'listings', name: 'All Listings', icon: PackageIcon },
@@ -1399,6 +1400,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 return <RiskFundTab />;
             case 'marketing':
                 return <MarketingTab />;
+            case 'ai_ops':
+                return <AiOpsTab listings={listings} />;
             case 'settings':
                 return <GlobalSettingsTab />;
             case 'boosts':
@@ -1814,6 +1817,809 @@ const AdminPage: React.FC<AdminPageProps> = ({
                     </main>
                 </div>
             </div>
+        </div>
+    );
+};
+
+interface AiOpsTabProps {
+    listings: Listing[];
+}
+
+const AiOpsTab: React.FC<AiOpsTabProps> = ({ listings }) => {
+    const [subTab, setSubTab] = useState<'auditor' | 'guard' | 'mediator' | 'marketing'>('marketing');
+
+    // --- Tab 1: Listing Scam Audit State ---
+    const [scamListingId, setScamListingId] = useState<string>('');
+    const [scamTitle, setScamTitle] = useState<string>('');
+    const [scamCategory, setScamCategory] = useState<string>('');
+    const [scamPrice, setScamPrice] = useState<string>('');
+    const [scamDescription, setScamDescription] = useState<string>('');
+    const [scamLoading, setScamLoading] = useState<boolean>(false);
+    const [scamResult, setScamResult] = useState<any>(null);
+
+    // --- Tab 2: Chat Safety Compliance Guard State ---
+    const [chatText, setChatText] = useState<string>('Host: hey, let’s settle the payment outside so we avoid both of us paying the platform transaction fee! Send me $350 directly to my Zelle account at safehost@email.com and I’ll secure your dates.');
+    const [chatLoading, setChatLoading] = useState<boolean>(false);
+    const [chatResult, setChatResult] = useState<any>(null);
+
+    // --- Tab 3: Smart Dispute Mediator State ---
+    const [dispTitle, setDispTitle] = useState<string>('Scratched Jet Ski Hull Dispute');
+    const [dispDetails, setDispDetails] = useState<string>('Renter returned the Jet Ski with deep scratches along the starboard side hull. Renter claims they didn’t hit anything and those scratches were already there. They demand their full security deposit refund of $500.');
+    const [hostStatement, setHostStatement] = useState<string>('Digital Inspector app check-in photos from 9:02 AM show an immaculate hull. Checkout photos from 5:15 PM show a fresh 12-inch scrape with matching GPS timestamp matching coordinates of the public boat launch ramp.');
+    const [renterStatement, setRenterStatement] = useState<string>('I just rode it in open water. I think the trailer had those scratches already or maybe it was there before. I shouldn’t be charged!');
+    const [dispDeposit, setDispDeposit] = useState<number>(500);
+    const [dispLoading, setDispLoading] = useState<boolean>(false);
+    const [dispResult, setDispResult] = useState<any>(null);
+
+    // --- Tab 4: Marketing Generator State ---
+    const [mktListingId, setMktListingId] = useState<string>('');
+    const [mktTitle, setMktTitle] = useState<string>('');
+    const [mktCategory, setMktCategory] = useState<string>('');
+    const [mktPrice, setMktPrice] = useState<string>('');
+    const [mktDescription, setMktDescription] = useState<string>('');
+    const [mktFocusKeyword, setMktFocusKeyword] = useState<string>('Bareboat Demise Charter & No Captain License');
+    const [mktLoading, setMktLoading] = useState<boolean>(false);
+    const [mktResult, setMktResult] = useState<any>(null);
+
+    // Sync listing dropdown with scam auditor fields
+    useEffect(() => {
+        if (scamListingId) {
+            const list = listings.find(l => l.id === scamListingId);
+            if (list) {
+                setScamTitle(list.title || '');
+                setScamCategory(list.category || '');
+                setScamPrice(list.pricePerDay?.toString() || list.pricePerHour?.toString() || '0');
+                setScamDescription(list.description || '');
+            }
+        }
+    }, [scamListingId, listings]);
+
+    // Sync listing dropdown with marketing copy fields
+    useEffect(() => {
+        if (mktListingId) {
+            const list = listings.find(l => l.id === mktListingId);
+            if (list) {
+                setMktTitle(list.title || '');
+                setMktCategory(list.category || '');
+                setMktPrice(list.pricePerDay?.toString() || list.pricePerHour?.toString() || '0');
+                setMktDescription(list.description || '');
+            }
+        }
+    }, [mktListingId, listings]);
+
+    // Fast load templates for chat
+    const loadChatTemplate = (type: 'bypass' | 'safefun') => {
+        if (type === 'bypass') {
+            setChatText('Renter: Hi! Is there any way to rent this boat without the deposit hold? Can we exchange numbers? My cell is 305-555-0199.\nHost: Sure, hit me up on WhatsApp 305-555-0199. You can just bring cash for the deposit and we can bypass platform fees!');
+        } else {
+            setChatText('Renter: Sounds great! Excited to rent the RV. I’ve signed the Liability Waiver checklist.\nHost: Excellent. Please complete the Digital Inspector photos on check-in so we both have verified timestamped proof for protection!');
+        }
+        setChatResult(null);
+    };
+
+    // Fast load templates for dispute
+    const loadDisputeTemplate = (type: 'jetski' | 'rv_late') => {
+        if (type === 'jetski') {
+            setDispTitle('Deep Scrapes on Jet Ski Hull');
+            setDispDetails('Host reports renter scraped the bottom hull on rocks. Renter claims hull was worn previously.');
+            setHostStatement('Check-in photos on Digital Inspector show an immaculate fiberglass hull. Checkout photos show 3 fresh, deep parallel rock gouges. GPS timestamp is identical to renter’s checkout location.');
+            setRenterStatement('We didn’t hit any rocks! Maybe someone else did it while it was docked at the beach diner.');
+            setDispDeposit(500);
+        } else {
+            setDispTitle('5-Hour Late RV Return');
+            setDispDetails('Renter returned the RV 5 hours after scheduled drop-off time. Host wants a $200 late fee claimed from the deposit.');
+            setHostStatement('Agreement drop-off was 11:00 AM. Digital Inspector checkout photos completed at 4:12 PM. Renter did not communicate delay beforehand.');
+            setRenterStatement('We got stuck in extremely bad highway construction traffic. It wasn’t our fault!');
+            setDispDeposit(300);
+        }
+        setDispResult(null);
+    };
+
+    // Generic API CALL handler
+    const runAiAgent = async (action: string, payload: any, setLoading: (l: boolean) => void, setResult: (r: any) => void) => {
+        setLoading(true);
+        setResult(null);
+        try {
+            const res = await fetch('/api/admin/ai-agents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    admin_email: 'lucianoreverberi@gmail.com', // Authenticates as administrator
+                    action,
+                    data: payload
+                })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `Error ${res.status}`);
+            }
+            const data = await res.json();
+            setResult(data.result);
+        } catch (error: any) {
+            console.error(error);
+            alert(`AI Operational Agent Error: ${error.message || 'Server timeout'}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const runScamCheck = () => {
+        runAiAgent('scam_check', {
+            title: scamTitle,
+            category: scamCategory,
+            price: Number(scamPrice) || 0,
+            description: scamDescription
+        }, setScamLoading, setScamResult);
+    };
+
+    const runChatAudit = () => {
+        runAiAgent('chat_audit', { conversation: chatText }, setChatLoading, setChatResult);
+    };
+
+    const runDisputeMediate = () => {
+        runAiAgent('dispute_mediate', {
+            disputeTitle: dispTitle,
+            disputeDetails: dispDetails,
+            renterClaim: renterStatement,
+            hostClaim: hostStatement,
+            depositAmount: dispDeposit
+        }, setDispLoading, setDispResult);
+    };
+
+    const runMarketingGen = () => {
+        runAiAgent('generate_marketing', {
+            title: mktTitle,
+            description: mktDescription,
+            price: Number(mktPrice) || 0,
+            category: mktCategory,
+            focusKeyword: mktFocusKeyword
+        }, setMktLoading, setMktResult);
+    };
+
+    return (
+        <div className="animate-in fade-in duration-500 space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-6">
+                <div>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <SparklesIcon className="h-8 w-8 text-cyan-500" />
+                        AI Operational Control Center
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1 font-medium">Empower hosts, simplify conflict management, secure chats, and generate promo materials automatically.</p>
+                </div>
+
+                {/* Sub-Tabs Switcher */}
+                <div className="bg-slate-100 p-1 rounded-2xl flex flex-wrap gap-1 shadow-inner max-w-full">
+                    <button
+                        onClick={() => setSubTab('marketing')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${subTab === 'marketing' ? 'bg-white shadow-md text-cyan-600' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                        <MegaphoneIcon className="h-3.5 w-3.5 inline mr-1.5" />
+                        Marketing Creator
+                    </button>
+                    <button
+                        onClick={() => setSubTab('auditor')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${subTab === 'auditor' ? 'bg-white shadow-md text-cyan-600' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                        <ShieldIcon className="h-3.5 w-3.5 inline mr-1.5" />
+                        Scam Scanner
+                    </button>
+                    <button
+                        onClick={() => setSubTab('guard')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${subTab === 'guard' ? 'bg-white shadow-md text-cyan-600' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                        <SlidersIcon className="h-3.5 w-3.5 inline mr-1.5" />
+                        Chat Compliance
+                    </button>
+                    <button
+                        onClick={() => setSubTab('mediator')}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${subTab === 'mediator' ? 'bg-white shadow-md text-cyan-600' : 'text-slate-500 hover:text-slate-900'}`}
+                    >
+                        <GavelIcon className="h-3.5 w-3.5 inline mr-1.5" />
+                        Smart disputes
+                    </button>
+                </div>
+            </div>
+
+            {/* --- CORE SUB-TABS INTERFACES --- */}
+
+            {/* --- SUB-TAB: MARKETING GENERATOR --- */}
+            {subTab === 'marketing' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-5 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+                        <div className="pb-4 border-b border-slate-50">
+                            <h3 className="text-xl font-black text-slate-900 leading-tight">Admin Marketing Engine</h3>
+                            <p className="text-xs font-bold text-slate-400 uppercase mt-1">Convert asset potentials into social ads & email copiers</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Load Existing Listing</label>
+                                <select
+                                    value={mktListingId}
+                                    onChange={e => setMktListingId(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                >
+                                    <option value="">-- Or enter custom assets manually --</option>
+                                    {listings.map(l => (
+                                        <option key={l.id} value={l.id}>{l.title} (${l.pricePerDay || l.pricePerHour}/day)</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Item Title</label>
+                                <input
+                                    type="text"
+                                    value={mktTitle}
+                                    onChange={e => setMktTitle(e.target.value)}
+                                    placeholder="e.g. 21ft Yamaha Jet Boat"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Price / Day ($)</label>
+                                    <input
+                                        type="number"
+                                        value={mktPrice}
+                                        onChange={e => setMktPrice(e.target.value)}
+                                        placeholder="350"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Category</label>
+                                    <input
+                                        type="text"
+                                        value={mktCategory}
+                                        onChange={e => setMktCategory(e.target.value)}
+                                        placeholder="Boats"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Description (Prompt Details)</label>
+                                <textarea
+                                    value={mktDescription}
+                                    onChange={e => setMktDescription(e.target.value)}
+                                    placeholder="Enter listing features or owner description..."
+                                    rows={4}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Campaign Focus Concept</label>
+                                <select
+                                    value={mktFocusKeyword}
+                                    onChange={e => setMktFocusKeyword(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                >
+                                    <option value="Bareboat Demise Charter & No Captain License">Bareboat Charter (No License Required Solution)</option>
+                                    <option value="Deposit & Waiver Security Protection">Smart Safety (Liability Waivers & Holds Highlight)</option>
+                                    <option value="Sunset Weekend Cruises">Weekend Vacation Vibes</option>
+                                    <option value="Premium Host Passive Income Generation">Host Support Passive Income Pitch</option>
+                                </select>
+                            </div>
+
+                            <button
+                                onClick={runMarketingGen}
+                                disabled={mktLoading}
+                                className="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold tracking-tight text-white rounded-2xl py-3 px-4 hover:from-cyan-600 hover:to-indigo-700 transition duration-300 flex items-center justify-center gap-2"
+                            >
+                                {mktLoading ? (
+                                    <>
+                                        <RefreshCwIcon className="h-5 w-5 animate-spin" />
+                                        <span>Summoning Creative AI...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <SparklesIcon className="h-5 w-5" />
+                                        <span>Generate High-Converting Copies</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-12 xl:col-span-7 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col justify-start">
+                        {mktResult ? (
+                            <div className="space-y-6">
+                                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black tracking-widest px-3 py-1 rounded-full uppercase self-start">Copies Generated Successfully</span>
+
+                                {/* Instagram Card */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                    <div className="flex justify-between items-center bg-slate-50 px-3 py-1.5 rounded-lg">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Instagram & Facebook Copy</span>
+                                        <button onClick={() => { navigator.clipboard.writeText(`${mktResult.instagram?.hook}\n\n${mktResult.instagram?.caption}`); alert('Copied!'); }} className="text-xs text-cyan-600 hover:underline font-bold">Copy Ad</button>
+                                    </div>
+                                    <p className="text-sm font-black text-slate-900 border-l-2 border-cyan-500 pl-3">{mktResult.instagram?.hook}</p>
+                                    <p className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{mktResult.instagram?.caption}</p>
+                                </div>
+
+                                {/* Newsletter Card */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                    <div className="flex justify-between items-center bg-slate-50 px-3 py-1.5 rounded-lg">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Community Newsletter Spotlight</span>
+                                        <button onClick={() => { navigator.clipboard.writeText(`Subject: ${mktResult.newsletter?.subjectLine}\n\n${mktResult.newsletter?.bodyCopy}`); alert('Copied!'); }} className="text-xs text-cyan-600 hover:underline font-bold">Copy Email</button>
+                                    </div>
+                                    <div className="text-xs text-slate-700">
+                                        <p className="font-black mb-1 text-slate-950">Subject: <span className="font-bold text-slate-800">{mktResult.newsletter?.subjectLine}</span></p>
+                                        <div className="whitespace-pre-wrap leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-100 mt-2 font-medium">{mktResult.newsletter?.bodyCopy}</div>
+                                    </div>
+                                </div>
+
+                                {/* Google Ads Card */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                    <div className="flex justify-between items-center bg-slate-50 px-3 py-1.5 rounded-lg">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Google Ad Headline & Description Pairings</span>
+                                        <button onClick={() => { navigator.clipboard.writeText(`Headlines:\n${mktResult.googleAds?.headlines?.join('\n')}\n\nDescriptions:\n${mktResult.googleAds?.descriptions?.join('\n')}`); alert('Copied!'); }} className="text-xs text-cyan-600 hover:underline font-bold">Copy All</button>
+                                    </div>
+                                    <div className="space-y-3 text-xs text-slate-600 font-medium">
+                                        <div>
+                                            <p className="font-black uppercase text-[10px] tracking-wider text-slate-400 mb-1">Recommended Headlines (Max 30 Chars)</p>
+                                            <ul className="list-disc leading-loose pl-5 text-slate-900 font-bold">
+                                                {mktResult.googleAds?.headlines?.map((h: string, idx: number) => (
+                                                    <li key={idx} className="hover:text-cyan-600">{h}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-black uppercase text-[10px] tracking-wider text-slate-400 mb-1">Recommended Descriptions (Max 90 Chars)</p>
+                                            <ul className="list-disc pl-5 text-slate-700 leading-relaxed font-semibold">
+                                                {mktResult.googleAds?.descriptions?.map((d: string, idx: number) => (
+                                                    <li key={idx} className="mt-1">{d}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="my-auto text-center py-10 space-y-3 max-w-md mx-auto">
+                                <MegaphoneIcon className="h-12 w-12 text-slate-300 mx-auto" />
+                                <h4 className="text-base font-bold text-slate-700">Awaiting Ad Generation Request</h4>
+                                <p className="text-xs text-slate-400 font-medium">Select a live asset on the left or type manual inputs, select your focus angle, and click "Generate". Our conversion writing bot will deliver polished ad copies for multiple platform distributions.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* --- SUB-TAB: SCAM AUDITOR --- */}
+            {subTab === 'auditor' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-5 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+                        <div className="pb-4 border-b border-slate-50">
+                            <h3 className="text-xl font-black text-slate-900 leading-tight">Fraud & Scam Scanner</h3>
+                            <p className="text-xs font-bold text-slate-400 uppercase mt-1">Audit listing features, prices, and copy syntax for protection</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Load Active Listing</label>
+                                <select
+                                    value={scamListingId}
+                                    onChange={e => setScamListingId(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                >
+                                    <option value="">-- Manual/Test post inspect --</option>
+                                    {listings.map(l => (
+                                        <option key={l.id} value={l.id}>{l.title} (${l.pricePerDay || l.pricePerHour}/day)</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Post Title</label>
+                                <input
+                                    type="text"
+                                    value={scamTitle}
+                                    onChange={e => setScamTitle(e.target.value)}
+                                    placeholder="e.g. BRAND NEW ATV FOR FREE"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Day Price ($)</label>
+                                    <input
+                                        type="number"
+                                        value={scamPrice}
+                                        onChange={e => setScamPrice(e.target.value)}
+                                        placeholder="200"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Category</label>
+                                    <input
+                                        type="text"
+                                        value={scamCategory}
+                                        onChange={e => setScamCategory(e.target.value)}
+                                        placeholder="ATVs & UTVs"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Post Copy / Description</label>
+                                <textarea
+                                    value={scamDescription}
+                                    onChange={e => setScamDescription(e.target.value)}
+                                    placeholder="Enter listing features, suspicious sentences (e.g. Zelle deposit required first, cash only), etc."
+                                    rows={5}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <button
+                                onClick={runScamCheck}
+                                disabled={scamLoading}
+                                className="w-full bg-rose-600 font-bold tracking-tight text-white rounded-2xl py-3 px-4 hover:bg-rose-700 transition duration-300 flex items-center justify-center gap-2"
+                            >
+                                {scamLoading ? (
+                                    <>
+                                        <RefreshCwIcon className="h-5 w-5 animate-spin" />
+                                        <span>Auditing Listing Deeply...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShieldIcon className="h-5 w-5" />
+                                        <span>Perform Multi-Vector Fraud Audit</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-7 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col justify-start">
+                        {scamResult ? (
+                            <div className="space-y-6">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <span className="bg-cyan-100 text-cyan-800 text-[10px] font-black tracking-widest px-3 py-1 rounded-full uppercase">Audit Analysis Completed</span>
+                                    <span className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${
+                                        scamResult.recommendedAction === 'Approve' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                                        scamResult.recommendedAction === 'Block' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-yellow-50 text-yellow-600 border-yellow-105'
+                                    }`}>
+                                        Action recommendation: {scamResult.recommendedAction}
+                                    </span>
+                                </div>
+
+                                {/* Risk rating Gauge */}
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-black text-slate-800">Scam Probability Index</span>
+                                        <span className={`text-2xl font-black ${scamResult.riskScore > 60 ? 'text-rose-600' : scamResult.riskScore > 30 ? 'text-yellow-600' : 'text-emerald-600'}`}>
+                                            {scamResult.riskScore}%
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full rounded-full transition-all duration-1000 ${
+                                                scamResult.riskScore > 60 ? 'bg-rose-500' : scamResult.riskScore > 30 ? 'bg-yellow-500' : 'bg-emerald-505 bg-emerald-500'
+                                            }`}
+                                            style={{ width: `${scamResult.riskScore}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Verdict detail */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        Verdict summary
+                                    </h4>
+                                    <p className="text-sm font-medium text-slate-700 leading-relaxed italic">{scamResult.verdict}</p>
+                                </div>
+
+                                {/* List of Reasons */}
+                                {scamResult.reasons && scamResult.reasons.length > 0 && (
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Identified Red Flags / Anomaly Vectors</h4>
+                                        <ul className="space-y-2">
+                                            {scamResult.reasons.map((r: string, idx: number) => (
+                                                <li key={idx} className="flex gap-2.5 items-start text-xs font-bold text-slate-700">
+                                                    <span className="p-1 bg-rose-50 text-rose-600 rounded-lg mt-0.5"><AlertTriangleIcon className="h-3.5 w-3.5" /></span>
+                                                    <span>{r}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="my-auto text-center py-10 space-y-3 max-w-md mx-auto">
+                                <ShieldIcon className="h-12 w-12 text-slate-300 mx-auto" />
+                                <h4 className="text-base font-bold text-slate-700">Awaiting Listing Audit Request</h4>
+                                <p className="text-xs text-slate-400 font-medium">Select a live asset to inspect or manually input details on the left, then click check. Our safety audit model will run sentiment analysis, check listing parameters, and deliver security verdicts.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* --- SUB-TAB: COMPLIANCE SAFEGUARD (CHAT) --- */}
+            {subTab === 'guard' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-5 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+                        <div className="pb-4 border-b border-slate-50 flex justify-between items-start">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 leading-tight">Chat Rule Safeguard</h3>
+                                <p className="text-xs font-bold text-slate-400 uppercase mt-1">Identify off-platform bypasses or phishing patterns</p>
+                            </div>
+                        </div>
+
+                        {/* Presets switcher */}
+                        <div className="space-y-2">
+                            <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Select Simulated Conversation Template</span>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => loadChatTemplate('bypass')} className="p-2.5 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-800 text-left rounded-xl transition duration-300 block">
+                                    <p className="text-xs font-black">Scam Suggestion</p>
+                                    <p className="text-[10px] opacity-75 mt-0.5 line-clamp-1">Cash discount, Whatsapp swap</p>
+                                </button>
+                                <button onClick={() => loadChatTemplate('safefun')} className="p-2.5 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 text-emerald-800 text-left rounded-xl transition duration-300 block">
+                                    <p className="text-xs font-black">Safe Compliance</p>
+                                    <p className="text-[10px] opacity-75 mt-0.5 line-clamp-1">Photos, waivers check</p>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Conversation / Chat Box Transcript</label>
+                                <textarea
+                                    value={chatText}
+                                    onChange={e => setChatText(e.target.value)}
+                                    placeholder="Type conversation lines here..."
+                                    rows={8}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <button
+                                onClick={runChatAudit}
+                                disabled={chatLoading}
+                                className="w-full bg-cyan-600 font-bold tracking-tight text-white rounded-2xl py-3 px-4 hover:bg-cyan-700 transition duration-300 flex items-center justify-center gap-2"
+                            >
+                                {chatLoading ? (
+                                    <>
+                                        <RefreshCwIcon className="h-5 w-5 animate-spin" />
+                                        <span>Auditing Chat Patterns...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <SlidersIcon className="h-5 w-5" />
+                                        <span>Analyze Conversation Compliance</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-7 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col justify-start">
+                        {chatResult ? (
+                            <div className="space-y-6">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <span className="bg-cyan-100 text-cyan-800 text-[10px] font-black tracking-widest px-3 py-1 rounded-full uppercase">Chat Compliance Audit Completed</span>
+                                    <span className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${
+                                        chatResult.violatesRules ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    }`}>
+                                        {chatResult.violatesRules ? 'Violates Platform Rules' : 'Platform Compliant'}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Analyzer Confidence</p>
+                                        <p className="text-sm font-bold text-slate-900">{chatResult.confidence} Confidence</p>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Detected Bypass Patterns</p>
+                                        <p className="text-sm font-bold text-slate-900">{chatResult.detectedPatterns?.length || 0} Patterns Identified</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Analysis Breakdown</h4>
+                                    <p className="text-sm font-medium text-slate-800 leading-relaxed">{chatResult.explain}</p>
+                                </div>
+
+                                {chatResult.detectedPatterns && chatResult.detectedPatterns.length > 0 && (
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Specific Violation Indicators</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {chatResult.detectedPatterns.map((p: string, idx: number) => (
+                                                <span key={idx} className="bg-rose-50 text-rose-700 text-xs font-bold px-3 py-1 rounded-xl border border-rose-100 text-slate-800">{p}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        Suggested Automated Advice & Prompt Warn Message (Coaching Tone)
+                                    </h4>
+                                    <div className="bg-slate-50 border-l-4 border-cyan-500 p-4 rounded-r-xl">
+                                        <p className="text-xs text-slate-600 italic font-medium whitespace-pre-wrap">{chatResult.mediationSuggestion}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="my-auto text-center py-10 space-y-3 max-w-md mx-auto">
+                                <SlidersIcon className="h-12 w-12 text-slate-300 mx-auto" />
+                                <h4 className="text-base font-bold text-slate-700">Awaiting Safety Verification</h4>
+                                <p className="text-xs text-slate-400 font-medium">Select a preset template or enter simulated chat dialogues on the Left. Our rules guard engine will spot payment bypass leaks and suggest supportive coaching actions.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* --- SUB-TAB: SMART DISPUTE MEDIATOR --- */}
+            {subTab === 'mediator' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-5 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+                        <div className="pb-4 border-b border-slate-50">
+                            <h3 className="text-xl font-black text-slate-900 leading-tight">Smart Disputes Mediator</h3>
+                            <p className="text-xs font-bold text-slate-400 uppercase mt-1">Resolve claims easily using Liability Waiver & Digital Inspector photos</p>
+                        </div>
+
+                        {/* Presets */}
+                        <div className="space-y-2">
+                            <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Load Typical Conflict Scenario</span>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => loadDisputeTemplate('jetski')} className="p-2.5 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 text-indigo-800 text-left rounded-xl transition duration-300 block">
+                                    <p className="text-xs font-black">Jet Ski Damage</p>
+                                    <p className="text-[10px] opacity-75 mt-0.5 line-clamp-1">Scratch dispute hull checks</p>
+                                </button>
+                                <button onClick={() => loadDisputeTemplate('rv_late')} className="p-2.5 bg-yellow-50 border border-yellow-105 hover:bg-yellow-100 text-yellow-800 text-left rounded-xl transition duration-300 block">
+                                    <p className="text-xs font-black">Late Return Fee</p>
+                                    <p className="text-[10px] opacity-75 mt-0.5 line-clamp-1">RV return Delay check</p>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Conflict Matter / Title</label>
+                                <input
+                                    type="text"
+                                    value={dispTitle}
+                                    onChange={e => setDispTitle(e.target.value)}
+                                    placeholder="Scratched jet ski engine cover"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Deposit In Play ($)</label>
+                                    <input
+                                        type="number"
+                                        value={dispDeposit}
+                                        onChange={e => setDispDeposit(Number(e.target.value) || 0)}
+                                        placeholder="500"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                    />
+                                </div>
+                                <div className="flex flex-col justify-end">
+                                    <p className="text-[9px] text-slate-400 italic leading-relaxed">Deposit held successfully on renter credit card via gateway.</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">General Host Description of Incident</label>
+                                <textarea
+                                    value={dispDetails}
+                                    onChange={e => setDispDetails(e.target.value)}
+                                    placeholder="Drop-off detail, damages..."
+                                    rows={3}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1.5">Verified Host Photographic Proof (Digital Inspector)</label>
+                                <textarea
+                                    value={hostStatement}
+                                    onChange={e => setHostStatement(e.target.value)}
+                                    placeholder="Explain Digital Inspector photos on check-in vs checkout..."
+                                    rows={3}
+                                    className="w-full bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-2 text-xs font-medium text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Renter Claim statement</label>
+                                <textarea
+                                    value={renterStatement}
+                                    onChange={e => setRenterStatement(e.target.value)}
+                                    placeholder="Renter's comments..."
+                                    rows={3}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                />
+                            </div>
+
+                            <button
+                                onClick={runDisputeMediate}
+                                disabled={dispLoading}
+                                className="w-full bg-indigo-600 font-bold tracking-tight text-white rounded-2xl py-3 px-4 hover:bg-indigo-700 transition duration-300 flex items-center justify-center gap-2"
+                            >
+                                {dispLoading ? (
+                                    <>
+                                        <RefreshCwIcon className="h-5 w-5 animate-spin" />
+                                        <span>Analyzing Digital Photos/GPS Proofs...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <GavelIcon className="h-5 w-5" />
+                                        <span>Propose Smart AI Resolution</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-12 xl:col-span-7 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col justify-start">
+                        {dispResult ? (
+                            <div className="space-y-6">
+                                <span className="bg-cyan-100 text-cyan-800 text-[10px] font-black tracking-widest px-3 py-1 rounded-full uppercase self-start">Smart Mediation Projections Made</span>
+
+                                {/* Distribution result */}
+                                <div className="grid grid-cols-2 gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                    <div className="text-center p-3 bg-red-50 text-red-700 rounded-xl">
+                                        <p className="text-[10px] font-black uppercase tracking-wider">Host Gets (Payout)</p>
+                                        <p className="text-3xl font-black mt-2">${dispResult.proposedDistribution?.host_gets ?? 0}</p>
+                                    </div>
+                                    <div className="text-center p-3 bg-cyan-50 text-cyan-700 rounded-xl">
+                                        <p className="text-[10px] font-black uppercase tracking-wider">Renter gets (Refunded)</p>
+                                        <p className="text-3xl font-black mt-2">${dispResult.proposedDistribution?.renter_refund ?? 0}</p>
+                                    </div>
+                                </div>
+
+                                {/* Justification */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Waiver & Evidence Justification</h4>
+                                    <p className="text-sm font-medium text-slate-800 leading-relaxed font-sans">{dispResult.justification}</p>
+                                </div>
+
+                                {/* Payout Coaching support email */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                    <div className="flex justify-between items-center bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                                        <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">Host Coach Notification (Empowering Tone)</span>
+                                        <button onClick={() => { navigator.clipboard.writeText(dispResult.coachingEmailHost); alert('Copied!'); }} className="text-xs text-emerald-700 hover:underline font-bold">Copy Email</button>
+                                    </div>
+                                    <div className="text-xs text-slate-700 leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-100 whitespace-pre-wrap font-medium">
+                                        {dispResult.coachingEmailHost}
+                                    </div>
+                                </div>
+
+                                {/* Renter dispute verdict */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                    <div className="flex justify-between items-center bg-slate-100 px-3 py-1.5 rounded-lg">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Renter Notification Letter (Objective Proof Evidence)</span>
+                                        <button onClick={() => { navigator.clipboard.writeText(dispResult.coachingEmailRenter); alert('Copied!'); }} className="text-xs text-slate-600 hover:underline font-bold">Copy Letter</button>
+                                    </div>
+                                    <div className="text-xs text-slate-700 leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-100 whitespace-pre-wrap font-medium">
+                                        {dispResult.coachingEmailRenter}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="my-auto text-center py-10 space-y-3 max-w-md mx-auto">
+                                <GavelIcon className="h-12 w-12 text-slate-300 mx-auto" />
+                                <h4 className="text-base font-bold text-slate-700">Awaiting Evidence Verification</h4>
+                                <p className="text-xs text-slate-400 font-medium">Select a preset dispute conflict on the Left, or manually input claims and GPS timestamp data of checkout photos. Our expert mediator agent automatically parses the evidence to distribute holds fairly.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

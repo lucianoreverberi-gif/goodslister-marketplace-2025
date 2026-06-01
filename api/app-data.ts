@@ -16,6 +16,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   try {
+    if (process.env.POSTGRES_URL) {
+      try {
+        await sql`UPDATE users SET email = 'carlos.demo@goodslister.com' WHERE id = 'user-1' AND email = 'carlos.gomez@example.com'`;
+        await sql`UPDATE users SET email = 'ana.demo@goodslister.com' WHERE id = 'user-2' AND email = 'ana.rodriguez@example.com'`;
+      } catch (dbErr) {
+        console.warn("User email database migration skipped/failed:", dbErr);
+      }
+    }
     const logoQuery = await sql`SELECT value FROM site_config WHERE key = 'logo_url'`;
     const slidesQuery = await sql`SELECT * FROM hero_slides`;
     const bannersQuery = await sql`SELECT * FROM banners`;

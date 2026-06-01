@@ -10,11 +10,11 @@ interface FAQItem {
 const renterFAQs: FAQItem[] = [
     {
         q: "Why is the payment split into two parts?",
-        a: "To give you the lowest fees and instant booking. You pay the Goodslister Service Fee online to secure the reservation and legal contracts. The actual Rental Rate is paid directly to the Host upon arrival (via Zelle, Cash, or Venmo)."
+        a: "How you pay depends on the item category. For low-risk items, you pay the full amount through our platform via Stripe. For medium and high-value items, you pay a refundable deposit upfront through our platform, and the remainder directly to the host at handover via the payment method they prefer."
     },
     {
         q: "How does the Insurance/Protection work?",
-        a: "For low-risk items (Surf/Bike), we offer damage waivers. For Boats & Jet Skis, we generate industry-standard legal contracts (Bareboat Charters & Liability Waivers) that you sign digitally at checkout to protect both parties."
+        a: "Protection varies by item category. For low-risk items (surfboards, kayaks, camping gear, drones, cameras), Goodslister provides a built-in damage waiver included in your booking. For medium-risk items (premium bikes, ATVs, jet skis, motorcycles, RVs), you'll be prompted to purchase a per-rental insurance policy from our partner at checkout. For high-value items (boats over $50K, yachts, Class A RVs), you'll digitally sign a Bareboat Charter Agreement and a Liability Waiver before the booking is confirmed; the owner's commercial insurance covers hull damage."
     },
     {
         q: "Is my Security Deposit charged immediately?",
@@ -25,11 +25,11 @@ const renterFAQs: FAQItem[] = [
 const hostFAQs: FAQItem[] = [
     {
         q: "When do I get paid?",
-        a: "Instantly! You collect 100% of your rental price directly from the renter when you hand over the keys. No waiting for weekly payouts."
+        a: "Payment timing depends on the item category. For low-risk items, you receive payout via Stripe within 2-5 business days after the renter checks the item back in. For higher-value items, you collect the rental amount directly from the renter at handover; Goodslister disburses any platform-held deposit to you after return inspection."
     },
     {
         q: "Do I need commercial insurance to list?",
-        a: "While recommended, it's not mandatory for all categories. If you don't have it, our platform automatically provides the necessary Legal Contracts (Waivers/Charters) and strict Security Deposits to mitigate your risk."
+        a: "Yes, commercial insurance is required for vehicles, boats, jet skis, RVs, and high-value items (over $2,000 USD). When you list these items, you must upload a valid commercial insurance certificate showing active coverage for the rental period. For low-risk items like surfboards, kayaks, camping gear, or cameras, Goodslister provides platform-level damage protection."
     },
     {
         q: "What prevents 'Catfishing' or fake listings?",

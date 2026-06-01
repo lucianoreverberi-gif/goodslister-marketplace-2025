@@ -48,7 +48,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
         setError('');
         setIsLoading(true);
         // Using a mock user credential
-        const success = await onLogin('carlos.gomez@example.com', 'password');
+        const success = await onLogin('carlos.demo@goodslister.com', 'carlosDemo123!');
         if (!success) {
              setError('Demo login failed.');
         }
@@ -213,20 +213,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
                         </button>
                     </div>
                     
-                    {!isRegistering && (
-                        <div className="mt-4">
-                            <button 
-                                type="button" 
-                                onClick={handleDemoLogin}
-                                disabled={isLoading}
-                                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none disabled:opacity-50"
-                            >
-                                <UserCheckIcon className="h-4 w-4 text-cyan-600" />
-                                Demo Login (Carlos)
-                            </button>
-                        </div>
-                    )}
-
                     <div className="mt-6 text-center">
                         <button onClick={toggleMode} className="text-sm text-cyan-600 hover:text-cyan-800 font-medium">
                             {isRegistering ? 'Already have an account? Log in' : 'Don\'t have an account? Sign up'}

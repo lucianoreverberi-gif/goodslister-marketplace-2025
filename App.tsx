@@ -261,6 +261,22 @@ const App: React.FC = () => {
             return false;
         }
 
+        // HIDE & SECURE DEMO USERS: Block old public emails, enforce custom secure passwords for the new demo emails
+        if (email === 'carlos.gomez@example.com' || email === 'ana.rodriguez@example.com') {
+            addNotification('info', 'Auth Denied', 'This public demo login is deactivated. Please locate the secure administrator demo credentials.');
+            return false;
+        }
+
+        if (email === 'carlos.demo@goodslister.com' && password !== 'carlosDemo123!') {
+            addNotification('info', 'Auth Denied', 'Invalid password for the administrator demo user.');
+            return false;
+        }
+
+        if (email === 'ana.demo@goodslister.com' && password !== 'anaDemo123!') {
+            addNotification('info', 'Auth Denied', 'Invalid password for the administrator demo user.');
+            return false;
+        }
+
         const user = await mockApi.loginUser(email);
         if (user) {
             // In a real app, password would be verified on the backend
