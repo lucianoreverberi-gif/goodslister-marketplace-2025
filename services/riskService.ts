@@ -1,5 +1,5 @@
 
-import { Listing, ListingCategory, RiskTier } from '../types';
+import { Listing, ListingCategory, RiskTier } from '../types.js';
 
 // --- Configuration Constants ---
 const WAIVER_PERCENTAGE = 0.15; // 15% for Soft Goods (Goes to Risk Fund)

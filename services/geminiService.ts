@@ -1,4 +1,4 @@
-import { Listing, ListingCategory } from '../types';
+import { Listing, ListingCategory } from '../types.js';
 
 export interface FilterCriteria {
     category?: ListingCategory;

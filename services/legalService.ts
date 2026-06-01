@@ -1,5 +1,5 @@
 
-import { Listing, ListingCategory, User } from '../types';
+import { Listing, ListingCategory, User } from '../types.js';
 import { format } from 'date-fns';
 
 export enum ContractType {

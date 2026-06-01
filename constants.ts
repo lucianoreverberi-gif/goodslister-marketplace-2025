@@ -1,5 +1,5 @@
 
-import { Listing, User, HeroSlide, Banner, ListingCategory, Conversation, CategoryImagesMap, Booking } from './types';
+import { Listing, User, HeroSlide, Banner, ListingCategory, Conversation, CategoryImagesMap, Booking } from './types.js';
 
 export const mockUsers: User[] = [
     {

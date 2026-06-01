@@ -3,8 +3,8 @@
 import { 
     User, Listing, HeroSlide, Banner, Conversation, 
     CategoryImagesMap, ListingCategory, Booking 
-} from '../types';
-import { initialCategoryImages, mockUsers, mockListings, initialHeroSlides, initialBanners, mockBookings } from '../constants';
+} from '../types.js';
+import { initialCategoryImages, mockUsers, mockListings, initialHeroSlides, initialBanners, mockBookings } from '../constants.js';
 import { format, eachDayOfInterval } from 'date-fns';
 
 interface AppData {
