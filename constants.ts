@@ -63,6 +63,10 @@ export const mockListings: Listing[] = [
         // SIMULATION: Added unavailable dates in Nov 2025 to demonstrate the disabled style.
         bookedDates: ['2025-11-10', '2025-11-11', '2025-11-12', '2025-11-20', '2025-11-21', '2025-11-22', '2025-11-23'],
         ownerRules: "1. Must be returned clean, otherwise a $20 cleaning fee will apply.\n2. Renter is responsible for any damage to the kayak or equipment.\n3. For use in freshwater lakes and rivers only. Not for ocean use.",
+        operation_mode: 1,
+        item_value: 500,
+        security_deposit: 100,
+        securityDeposit: 100,
     },
     {
         id: 'listing-2',
@@ -78,6 +82,10 @@ export const mockListings: Listing[] = [
         isFeatured: true,
         rating: 4.9,
         reviewsCount: 18,
+        operation_mode: 1,
+        item_value: 1200,
+        security_deposit: 150,
+        securityDeposit: 150,
     },
     {
         id: 'listing-3',
@@ -95,6 +103,10 @@ export const mockListings: Listing[] = [
         reviewsCount: 31,
         bookedDates: ['2024-09-05', '2024-09-06', '2024-09-07'],
         ownerRules: "Only for use on designated ski resort trails. Renter assumes all risk of injury. Any damage to the board will be charged at repair cost.",
+        operation_mode: 1,
+        item_value: 600,
+        security_deposit: 100,
+        securityDeposit: 100,
     },
     {
         id: 'listing-4',
@@ -110,6 +122,10 @@ export const mockListings: Listing[] = [
         isFeatured: false,
         rating: 4.7,
         reviewsCount: 22,
+        operation_mode: 2,
+        item_value: 45000,
+        security_deposit: 1000,
+        securityDeposit: 1000,
     },
      {
         id: 'listing-5',
@@ -125,6 +141,10 @@ export const mockListings: Listing[] = [
         isFeatured: true,
         rating: 4.8,
         reviewsCount: 15,
+        operation_mode: 1,
+        item_value: 1000,
+        security_deposit: 200,
+        securityDeposit: 200,
     },
     {
         id: 'listing-6',
@@ -140,6 +160,10 @@ export const mockListings: Listing[] = [
         isFeatured: true,
         rating: 4.9,
         reviewsCount: 35,
+        operation_mode: 2,
+        item_value: 15000,
+        security_deposit: 500,
+        securityDeposit: 500,
     },
     {
         id: 'listing-7',
@@ -155,6 +179,10 @@ export const mockListings: Listing[] = [
         isFeatured: false,
         rating: 5.0,
         reviewsCount: 12,
+        operation_mode: 3,
+        item_value: 150000,
+        security_deposit: 3500,
+        securityDeposit: 3500,
     },
     {
         id: 'listing-8',
@@ -170,6 +198,10 @@ export const mockListings: Listing[] = [
         isFeatured: false,
         rating: 4.7,
         reviewsCount: 19,
+        operation_mode: 1,
+        item_value: 400,
+        security_deposit: 50,
+        securityDeposit: 50,
     },
 ];
 

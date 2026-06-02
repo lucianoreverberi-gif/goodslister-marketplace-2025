@@ -473,11 +473,52 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pricing Model</p>
                                     <p className="text-sm font-bold text-slate-800 mt-0.5">{isHourly ? 'Hourly' : 'Daily'} Flexible</p>
                                 </div>
-                                <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
-                                    <ShieldCheckIcon className="h-5 w-5 text-emerald-500 mb-2" />
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protection</p>
-                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Risk Fund Covered</p>
-                                </div>
+                                {(() => {
+                                    const mode = listing.operation_mode || 1;
+                                    const depositValue = listing.security_deposit || listing.securityDeposit || 0;
+                                    const formattedDeposit = depositValue > 0 ? `$${depositValue.toLocaleString()}` : '';
+                                    
+                                    if (mode === 1) {
+                                        return (
+                                            <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm col-span-2 sm:col-span-1 flex flex-col justify-between">
+                                                <div>
+                                                    <ShieldCheckIcon className="h-5 w-5 text-emerald-500 mb-2" />
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PROTECTION</p>
+                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Goodslister Peer Waiver</p>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                                                    Hosts and renters agree to a peer damage waiver. Damage handled via security deposit and dispute resolution.
+                                                </p>
+                                            </div>
+                                        );
+                                    } else if (mode === 2) {
+                                        return (
+                                            <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm col-span-2 sm:col-span-1 flex flex-col justify-between">
+                                                <div>
+                                                    <ShieldCheckIcon className="h-5 w-5 text-blue-500 mb-2" />
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PROTECTION</p>
+                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Peer-to-Peer Insurance</p>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                                                    This rental is covered by our insurance partner. Security deposit held during rental: {formattedDeposit}.
+                                                </p>
+                                            </div>
+                                        );
+                                    } else {
+                                        return (
+                                            <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm col-span-2 sm:col-span-1 flex flex-col justify-between">
+                                                <div>
+                                                    <ShieldCheckIcon className="h-5 w-5 text-orange-500 mb-2" />
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">CHARTER & INSURANCE</p>
+                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">Bareboat Demise Charter</p>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                                                    Renter takes operational responsibility and legal control of the vessel/vehicle during the rental. Host provides primary commercial insurance (certificate verified by Goodslister). Optional Renter's Protection available at checkout. Security deposit: {formattedDeposit}.
+                                                </p>
+                                            </div>
+                                        );
+                                    }
+                                })()}
                                 <div className="p-4 bg-white rounded-2xl border border-slate-50 shadow-sm">
                                     <CheckCircleIcon className="h-5 w-5 text-indigo-500 mb-2" />
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Maintenance</p>
@@ -523,6 +564,11 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         <span className="text-4xl font-black text-slate-900">${listing.pricingType === 'hourly' ? listing.pricePerHour : listing.pricePerDay}</span>
                                         <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">{listing.pricingType === 'hourly' ? '/ hr' : '/ day'}</span>
                                     </div>
+                                    {((listing.security_deposit || listing.securityDeposit) && (listing.security_deposit || listing.securityDeposit || 0) > 0) ? (
+                                        <div className="mt-2 text-xs font-semibold text-slate-500">
+                                            Security deposit: <span className="font-bold text-slate-800">${(listing.security_deposit || listing.securityDeposit)?.toLocaleString()}</span> (held during rental)
+                                        </div>
+                                    ) : null}
                                 </div>
 
                                 <div className="p-8 space-y-6">

@@ -87,6 +87,9 @@ export interface Listing {
     hasGpsTracker?: boolean;
     hasCommercialInsurance?: boolean;
     securityDeposit?: number;
+    security_deposit?: number;
+    operation_mode?: 1 | 2 | 3;
+    item_value?: number;
     listingType?: ListingType;
     operatorLicenseId?: string;
     engineCC?: number;

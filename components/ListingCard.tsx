@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { Listing } from '../types';
+import { Listing } from '../types.js';
 import { MapPinIcon, StarIcon, HeartIcon, ZapIcon, SparklesIcon } from './icons';
+import { OperationModeBadge } from './OperationModeBadge';
 
 interface ListingCardProps {
     listing: Listing;
@@ -33,12 +34,17 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, isFavorite,
                     </button>
                 )}
 
-                <div className="absolute top-2 left-2 flex flex-col gap-2 z-10">
+                <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 items-start">
                     <div className="bg-white/95 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-xl backdrop-blur-md border border-white/20">
                         {listing.pricingType === 'hourly' 
                             ? `$${listing.pricePerHour}/hr` 
                             : `$${listing.pricePerDay}/day`}
                     </div>
+                    {listing.operation_mode && (
+                        <div className="shadow-md rounded-full overflow-hidden">
+                            <OperationModeBadge mode={listing.operation_mode} size="sm" />
+                        </div>
+                    )}
                 </div>
 
                 {listing.isInstantBook && (

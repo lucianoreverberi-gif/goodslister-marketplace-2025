@@ -55,6 +55,14 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
     const [priceRange, setPriceRange] = useState<number>(maxPrice);
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
     const [locationFilter, setLocationFilter] = useState('');
+    const [selectedModes, setSelectedModes] = useState<(1 | 2 | 3)[]>([]);
+
+    const handleModeToggle = (mode: 1 | 2 | 3) => {
+        setUserManuallySearched(false);
+        setSelectedModes(prev => 
+            prev.includes(mode) ? prev.filter(m => m !== mode) : [...prev, mode]
+        );
+    };
 
     // Map specific state
     const [map, setMap] = useState<any>(null); // Use state for map instance to solve race condition
@@ -193,6 +201,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         setPriceRange(maxPrice);
         setSortBy('rating_desc');
         setLocationFilter('');
+        setSelectedModes([]);
         setMapZoom(4);
         setMapCenter(defaultCenter);
         setUserManuallySearched(false);
@@ -222,8 +231,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
             const price = listing.pricingType === 'daily' ? listing.pricePerDay : listing.pricePerHour;
             const matchesPrice = price ? price <= priceRange : true;
 
+            const matchesMode = selectedModes.length > 0 ?
+                selectedModes.includes((listing.operation_mode || 1) as any) : true;
 
-            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation;
+            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation && matchesMode;
         });
 
         // GEO-AWARE & BOOST-PRIORITY SORTING
@@ -262,7 +273,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         });
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter, userLocation]);
+    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter, userLocation, selectedModes]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -455,6 +466,40 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                                     placeholder="Search for keywords..."
                                     className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 pl-10"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Protection Type Filter */}
+                        <div>
+                            <label className="block text-sm font-bold text-gray-800">Protection Type</label>
+                            <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap gap-x-4 gap-y-2">
+                                <label className="inline-flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedModes.includes(1)}
+                                        onChange={() => handleModeToggle(1)}
+                                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 h-4 w-4 mr-2 text-xs"
+                                    />
+                                    Peer Waiver (Mode 1)
+                                </label>
+                                <label className="inline-flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedModes.includes(2)}
+                                        onChange={() => handleModeToggle(2)}
+                                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 h-4 w-4 mr-2 text-xs"
+                                    />
+                                    Insured (Mode 2)
+                                </label>
+                                <label className="inline-flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedModes.includes(3)}
+                                        onChange={() => handleModeToggle(3)}
+                                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 h-4 w-4 mr-2 text-xs"
+                                    />
+                                    Charter (Mode 3)
+                                </label>
                             </div>
                         </div>
                     </div>
