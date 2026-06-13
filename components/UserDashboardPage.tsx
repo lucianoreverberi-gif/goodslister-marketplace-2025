@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Session, Listing, Booking, ListingCategory } from '../types';
 import { getListingAdvice, ListingAdviceType } from '../services/geminiService';
 import { 
@@ -10,12 +10,13 @@ import {
     UserCheckIcon, TrashIcon, AlertTriangleIcon, RocketIcon, ZapIcon, LockIcon,
     MapPinIcon, WandSparklesIcon, MegaphoneIcon, SparklesIcon, TrendUpIcon, 
     ArrowRightIcon, RefreshCwIcon, LightbulbIcon, ClockIcon, SlidersIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon, InfoIcon, ExternalLinkIcon
 } from './icons';
 import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import ListingCard from './ListingCard';
 import RentalSessionWizard from './RentalSessionWizard';
+import ConnectStripeModal from './ConnectStripeModal';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -803,6 +804,73 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
     } = props;
     const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
     const [listingToBoost, setListingToBoost] = useState<Listing | null>(null);
+
+    // Stripe Connect Integration States
+    const [stripeStatus, setStripeStatus] = useState<'loading' | 'not_connected' | 'pending' | 'active'>('loading');
+    const [stripeDetails, setStripeDetails] = useState<any>(null);
+    const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+    const [loginLinkLoading, setLoginLinkLoading] = useState(false);
+
+    const fetchStripeStatus = async (showLoading = true) => {
+        if (showLoading) setStripeStatus('loading');
+        try {
+            const res = await fetch(`/api/stripe/connect/check-status?userId=${user.id}`);
+            const data = await res.json();
+            if (res.ok) {
+                setStripeDetails(data);
+                if (data.charges_enabled) {
+                    setStripeStatus('active');
+                } else if (data.status === 'not_connected') {
+                    setStripeStatus('not_connected');
+                } else {
+                    setStripeStatus('pending');
+                }
+            } else {
+                setStripeStatus('not_connected');
+            }
+        } catch (e) {
+            console.error("Error checking Stripe status:", e);
+            setStripeStatus('not_connected');
+        }
+    };
+
+    const handleViewStripeDashboard = async () => {
+        setLoginLinkLoading(true);
+        try {
+            const res = await fetch('/api/stripe/connect/create-login-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id })
+            });
+            const data = await res.json();
+            if (res.ok && data.url) {
+                window.open(data.url, '_blank', 'noopener,noreferrer');
+            } else {
+                alert(data.message || 'Error al generar el enlace de acceso a Stripe Express.');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error al conectar con Stripe.');
+        } finally {
+            setLoginLinkLoading(false);
+        }
+    };
+
+    // Keep Stripe status synced when entering the billing tab or when user changes
+    useEffect(() => {
+        if (activeTab === 'billing') {
+            fetchStripeStatus();
+        }
+    }, [activeTab, user.id]);
+
+    // Handle hash check for onboarding redirect/reload
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window.location.hash.includes('stripeOnboardingComplete') || window.location.hash.includes('stripeOnboardingRefresh'))) {
+            setActiveTab('billing');
+            // Remove the hash so it doesn't trigger on future refreshes
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    }, []);
     
     // Account Security State
     const [newPassword, setNewPassword] = useState('');
@@ -1043,31 +1111,121 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                 const myEarnings = bookings.filter(b => b.listing.owner.id === user.id && b.status !== 'cancelled');
                 
                 return (
-                    <div className="space-y-6">
-                        <h2 className="text-2xl font-bold text-slate-800">Financial Ledger</h2>
-                        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50 border-b border-slate-100 text-gray-900">
-                                    <tr><th className="p-4 font-bold">Transaction</th><th className="p-4 font-bold">Status</th><th className="p-4 font-bold text-right">Amount</th></tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50 text-gray-700">
-                                    {myEarnings.length === 0 ? (
-                                        <tr><td rowSpan={3} className="p-10 text-center text-slate-400 italic">No transactions found.</td></tr>
-                                    ) : (
-                                        myEarnings.map(b => (
-                                            <tr key={b.id} className="hover:bg-slate-50">
-                                                <td className="p-4 font-medium">Rental Payout - {b.listing.title}</td>
-                                                <td className="p-4">
-                                                    <span className={`font-bold uppercase text-[10px] ${b.status === 'completed' ? 'text-emerald-600' : 'text-amber-500'}`}>
-                                                        {b.status === 'completed' ? 'CLEARED' : 'PENDING'}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 font-black text-right text-emerald-500">+${b.totalPrice.toFixed(2)}</td>
-                                            </tr>
-                                        ))
+                    <div className="space-y-6 animate-in fade-in">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div>
+                                <h2 className="text-2xl font-black text-slate-905 tracking-tight">Finanzas y Cobros</h2>
+                                <p className="text-xs text-slate-500 font-bold">Administra tus configuraciones de cobro seguro de Stripe y consulta tu historial de pagos.</p>
+                            </div>
+                            <button 
+                                onClick={() => fetchStripeStatus(true)}
+                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-black text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-sm active:scale-95 shrink-0"
+                            >
+                                <RefreshCwIcon className={`h-3.5 w-3.5 text-slate-500 ${stripeStatus === 'loading' ? 'animate-spin text-cyan-600' : ''}`} />
+                                Refrescar Cuenta
+                            </button>
+                        </div>
+
+                        {/* Stripe Connect Express Status Card */}
+                        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 text-gray-900">
+                            <div className="flex flex-col lg:flex-row gap-8 justify-between items-start lg:items-center">
+                                <div className="space-y-2 max-w-xl">
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-cyan-100 p-2 rounded-xl text-cyan-600 shrink-0">
+                                            <CreditCardIcon className="h-5 w-5" />
+                                        </div>
+                                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Pagos / Cobrar con Stripe</h3>
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        Vincular tu cuenta con Stripe Connect habilita pagos express automáticos e inmediatos. También activa nuestro <strong>Smart Legal Shield</strong> que protege tus pertenencias configurando depósitos de garantía súper altos de forma automática al reservar.
+                                    </p>
+                                </div>
+                                <div className="w-full lg:w-auto shrink-0 flex flex-col md:flex-row lg:flex-col items-stretch lg:items-end gap-3 justify-center">
+                                    {stripeStatus === 'loading' && (
+                                        <div className="flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold text-slate-500 bg-slate-50 rounded-2xl border border-slate-100 min-w-[240px]">
+                                            <RefreshCwIcon className="h-4 w-4 animate-spin text-cyan-600" />
+                                            <span>Consultando a Stripe...</span>
+                                        </div>
                                     )}
-                                </tbody>
-                            </table>
+
+                                    {stripeStatus === 'not_connected' && (
+                                        <button
+                                            onClick={() => setIsConnectModalOpen(true)}
+                                            className="px-6 py-3.5 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-black rounded-2xl shadow-xl shadow-cyan-100 transition-all flex items-center justify-center gap-2 min-w-[240px]"
+                                        >
+                                            <LandmarkIcon className="h-4 w-4" />
+                                            Conectar cuenta de pagos
+                                        </button>
+                                    )}
+
+                                    {stripeStatus === 'pending' && (
+                                        <div className="flex flex-col gap-2 min-w-[240px] items-stretch sm:items-start lg:items-end">
+                                            <span className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-black rounded-full uppercase border border-amber-100 self-stretch sm:self-auto">
+                                                <InfoIcon className="h-4 w-4 text-amber-600" /> Configuración Pendiente
+                                            </span>
+                                            <p className="text-[11px] text-slate-500 max-w-[250px] leading-relaxed text-center sm:text-left lg:text-right">
+                                                Completá tu registro en Stripe para poder recibir el dinero de tus listas.
+                                            </p>
+                                            <button
+                                                onClick={() => setIsConnectModalOpen(true)}
+                                                className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-2xl shadow-xl shadow-amber-100 transition-all flex items-center justify-center gap-2 mt-1"
+                                            >
+                                                <RefreshCwIcon className="h-4 w-4" />
+                                                Completar registro
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {stripeStatus === 'active' && (
+                                        <div className="flex flex-col gap-2 min-w-[240px] items-stretch sm:items-start lg:items-end">
+                                            <span className="flex items-center justify-center gap-1.5 px-4 b py-1.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-full uppercase border border-emerald-100 self-stretch sm:self-auto">
+                                                <CheckCircleIcon className="h-4 w-4 text-emerald-600" /> Listo para recibir pagos
+                                            </span>
+                                            <button
+                                                onClick={handleViewStripeDashboard}
+                                                disabled={loginLinkLoading}
+                                                className="px-6 py-3.5 bg-slate-900 hover:bg-black text-white text-sm font-black rounded-2xl transition-all flex items-center justify-center gap-2 mt-1 shadow-sm active:scale-95 disabled:bg-slate-400"
+                                            >
+                                                {loginLinkLoading ? (
+                                                    <RefreshCwIcon className="h-4 w-4 animate-spin text-white" />
+                                                ) : (
+                                                    <ExternalLinkIcon className="h-4 w-4" />
+                                                )}
+                                                Ver mi panel de Stripe
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Financial Ledger Section */}
+                        <div className="space-y-3">
+                            <h3 className="text-lg font-black text-slate-900 tracking-tight">Ledger Financiero</h3>
+                            <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden text-gray-900">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-100 text-gray-900">
+                                        <tr><th className="p-4 font-bold">Transaction</th><th className="p-4 font-bold">Status</th><th className="p-4 font-bold text-right">Amount</th></tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 text-gray-700">
+                                        {myEarnings.length === 0 ? (
+                                            <tr><td colSpan={3} className="p-10 text-center text-slate-400 italic">No transactions found.</td></tr>
+                                        ) : (
+                                            myEarnings.map(b => (
+                                                <tr key={b.id} className="hover:bg-slate-50">
+                                                    <td className="p-4 font-medium">Rental Payout - {b.listing.title}</td>
+                                                    <td className="p-4">
+                                                        <span className={`font-bold uppercase text-[10px] ${b.status === 'completed' ? 'text-emerald-600' : 'text-amber-500'}`}>
+                                                            {b.status === 'completed' ? 'CLEARED' : 'PENDING'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 font-black text-right text-emerald-500">+${b.totalPrice.toFixed(2)}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 );
@@ -1116,6 +1274,16 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                 </div>
             </div>
             {listingToBoost && <PromotionModal listing={listingToBoost} onClose={() => setListingToBoost(null)} user={user} />}
+            
+            {isConnectModalOpen && (
+                <ConnectStripeModal 
+                    user={user} 
+                    onClose={() => {
+                        setIsConnectModalOpen(false);
+                        fetchStripeStatus(false);
+                    }} 
+                />
+            )}
             
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">

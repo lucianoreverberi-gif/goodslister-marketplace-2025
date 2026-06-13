@@ -5,6 +5,7 @@ import { subcategories } from '../constants';
 import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon, ZapIcon, ShieldCheckIcon, FileTextIcon, FileCheckIcon } from './icons';
 import SmartAdvisory from './SmartAdvisory';
 import AICoverGeneratorStep from './AICoverGeneratorStep';
+import ConnectStripeModal from './ConnectStripeModal';
 
 // TODO: In a real app, use process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY or similar
 const MAPS_API_KEY = 'AIzaSyCvFj8kvMmCc_AtqEAJ1b5feMTpj8EsZS4';
@@ -18,6 +19,36 @@ interface CreateListingPageProps {
 
 const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUser, initialData, onSubmit }) => {
     const isEditing = !!initialData;
+    
+    // Stripe Connect States
+    const [chargesEnabled, setChargesEnabled] = useState<boolean | null>(null);
+    const [isCheckingStripe, setIsCheckingStripe] = useState(false);
+    const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+
+    const checkStripeStatus = async () => {
+        if (!currentUser) return;
+        setIsCheckingStripe(true);
+        try {
+            const res = await fetch(`/api/stripe/connect/check-status?userId=${currentUser.id}`);
+            const data = await res.json();
+            if (res.ok) {
+                setChargesEnabled(!!data.charges_enabled);
+            } else {
+                setChargesEnabled(false);
+            }
+        } catch (e) {
+            console.error('Error checking Stripe status:', e);
+            setChargesEnabled(false);
+        } finally {
+            setIsCheckingStripe(false);
+        }
+    };
+
+    useEffect(() => {
+        if (currentUser) {
+            checkStripeStatus();
+        }
+    }, [currentUser]);
     
     // Core Fields
     const [listingType, setListingType] = useState<ListingType>(initialData?.listingType || 'rental');
@@ -231,6 +262,25 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         }
         setIsSubmitting(true);
         setSubmitMessage('');
+
+        // Confirm Stripe Connect status for secure payouts
+        try {
+            const checkRes = await fetch(`/api/stripe/connect/check-status?userId=${currentUser.id}`);
+            const checkData = await checkRes.json();
+            if (!checkRes.ok || !checkData.charges_enabled) {
+                setChargesEnabled(false);
+                setSubmitMessage('No puedes publicar anuncios hasta configurar tu cuenta de Stripe Connect.');
+                setIsSubmitting(false);
+                return;
+            } else {
+                setChargesEnabled(true);
+            }
+        } catch (e) {
+            console.error('Error validation stripe onboarding:', e);
+            setSubmitMessage('Error al validar cuenta de cobros.');
+            setIsSubmitting(false);
+            return;
+        }
 
         if (!title || !category || !price || !location || !description || imageUrls.length === 0) {
             setSubmitMessage('Please fill in all required fields.');
@@ -718,9 +768,35 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             <input type="number" value={securityDeposit} onChange={e => setSecurityDeposit(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md" placeholder="0" />
                         </div>
 
+                        {chargesEnabled === false && (
+                            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-left">
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-extrabold text-amber-950 uppercase tracking-widest flex items-center gap-1.5">
+                                        <InfoIcon className="h-4 w-4 text-amber-500" /> Configuración de cobros requerida
+                                    </h4>
+                                    <p className="text-xs text-slate-700 leading-relaxed max-w-xl">
+                                        ¡Hola! Como tu Coach de Éxito en Alquileres, queremos asegurarnos de que cobres tu dinero de forma segura. Antes de poder publicar o editar un anuncio, necesitas conectar una cuenta de cobros mediante Stripe Connect. ¡Solo te tomará un minuto!
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsConnectModalOpen(true);
+                                    }}
+                                    className="px-5 py-2.5 bg-amber-550 hover:bg-amber-600 text-white text-xs font-black rounded-xl shadow-md transition-all shrink-0 active:scale-95 whitespace-nowrap"
+                                >
+                                    Vincular Stripe Connect
+                                </button>
+                            </div>
+                        )}
+
                         <div className="pt-6 border-t flex justify-end gap-4">
                             <button type="button" onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
-                            <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-md hover:bg-cyan-700 disabled:opacity-50">
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting || chargesEnabled === false} 
+                                className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-md hover:bg-cyan-700 disabled:opacity-50"
+                            >
                                 {isSubmitting ? 'Saving...' : isEditing ? 'Update Listing' : 'Publish Listing'}
                             </button>
                         </div>
@@ -728,6 +804,16 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                     </form>
                 </div>
             </div>
+            
+            {isConnectModalOpen && currentUser && (
+                <ConnectStripeModal 
+                    user={currentUser} 
+                    onClose={() => {
+                        setIsConnectModalOpen(false);
+                        checkStripeStatus();
+                    }} 
+                />
+            )}
         </div>
     );
 };
