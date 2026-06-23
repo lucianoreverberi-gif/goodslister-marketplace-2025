@@ -1114,7 +1114,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                     <div className="space-y-6 animate-in fade-in">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-2xl font-black text-slate-905 tracking-tight">Finanzas y Cobros</h2>
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Finanzas y Cobros</h2>
                                 <p className="text-xs text-slate-500 font-bold">Administra tus configuraciones de cobro seguro de Stripe y consulta tu historial de pagos.</p>
                             </div>
                             <button 

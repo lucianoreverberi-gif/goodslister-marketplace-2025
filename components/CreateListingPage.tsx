@@ -783,7 +783,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     onClick={() => {
                                         setIsConnectModalOpen(true);
                                     }}
-                                    className="px-5 py-2.5 bg-amber-550 hover:bg-amber-600 text-white text-xs font-black rounded-xl shadow-md transition-all shrink-0 active:scale-95 whitespace-nowrap"
+                                    className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl shadow-md transition-all shrink-0 active:scale-95 whitespace-nowrap"
                                 >
                                     Vincular Stripe Connect
                                 </button>

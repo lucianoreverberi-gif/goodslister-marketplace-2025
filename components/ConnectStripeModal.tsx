@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { XIcon, CreditCardIcon, LandmarkIcon, CheckCircleIcon, RocketIcon, InfoIcon, RefreshCwIcon } from './icons.js';
-import { Session, User } from '../types.js';
+import { XIcon, CreditCardIcon, LandmarkIcon, CheckCircleIcon, RocketIcon, InfoIcon, RefreshCwIcon } from './icons';
+import { Session, User } from '../types';
 
 interface ConnectStripeModalProps {
     user: User | Session;
@@ -114,7 +114,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                     </div>
 
                     {error && (
-                        <div className="mt-5 p-3.5 bg-red-55 border border-red-100 rounded-xl text-xs text-red-600 font-medium">
+                        <div className="mt-5 p-3.5 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-medium">
                             {error}
                         </div>
                     )}
@@ -122,7 +122,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                     <div className="mt-8 flex flex-col sm:flex-row gap-3">
                         <button
                             onClick={onClose}
-                            className="w-full sm:w-1/3 py-3.5 bg-slate-50 text-slate-705 text-sm font-bold rounded-2xl hover:bg-slate-100 transition-colors"
+                            className="w-full sm:w-1/3 py-3.5 bg-slate-50 text-slate-700 text-sm font-bold rounded-2xl hover:bg-slate-100 transition-colors"
                         >
                             En otro momento
                         </button>

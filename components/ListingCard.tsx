@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Listing } from '../types.js';
+import { Listing } from '../types';
 import { MapPinIcon, StarIcon, HeartIcon, ZapIcon, SparklesIcon } from './icons';
 import { OperationModeBadge } from './OperationModeBadge';
 
