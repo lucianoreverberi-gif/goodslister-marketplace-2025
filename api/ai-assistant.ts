@@ -84,7 +84,7 @@ export default async function handler(
     return response.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     return response.status(503).json({ error: 'AI service not configured' });
   }
