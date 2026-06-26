@@ -36,7 +36,7 @@ async function callGemini(
   prompt: string,
   expectJson: boolean,
 ): Promise<{ ok: true; json?: any; text?: string; status?: undefined } | { ok: false; status: number }> {
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const generationConfig: Record<string, unknown> = {
