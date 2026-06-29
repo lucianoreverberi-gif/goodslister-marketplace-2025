@@ -3,8 +3,18 @@
 // session management, and data handling, resolving module resolution errors.
 // FIX: Corrected the import for React and its hooks to resolve multiple "Cannot find name" errors.
 import React, { useState, useCallback, useEffect } from 'react';
-import { auth, signInWithGoogle, db, setDoc, doc, serverTimestamp } from './services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { 
+  auth, 
+  signInWithGoogle, 
+  db, 
+  setDoc, 
+  doc, 
+  serverTimestamp,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signOut
+} from './services/firebase';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
@@ -256,7 +266,7 @@ const App: React.FC = () => {
 
     const handleLogin = async (email: string, password: string): Promise<boolean> => {
         // SECURITY FIX: Require strict password for the admin account
-        if (email === 'lucianoreverberi@gmail.com' && password !== 'admin123') {
+        if (email.toLowerCase() === 'lucianoreverberi@gmail.com' && password !== 'admin123') {
             addNotification('info', 'Auth Denied', 'Invalid password for admin user.');
             return false;
         }
@@ -277,22 +287,71 @@ const App: React.FC = () => {
             return false;
         }
 
-        const user = await mockApi.loginUser(email);
-        if (user) {
-            // In a real app, password would be verified on the backend
-            // For other users, we'll allow any password for now (mock behavior)
-            const isAdmin = user.role === 'SUPER_ADMIN';
-            const userSession: Session = { ...user, isAdmin };
-            setSession(userSession);
-            syncUserToFirestore(user); // Sync for chat
+        try {
+            // Attempt to sign in via Firebase Authentication
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            const firebaseUser = result.user;
+
+            // Retrieve or build the app profile
+            let existingUser = appData?.users?.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
+            let userToSession: User;
+
+            if (existingUser) {
+                userToSession = {
+                    ...existingUser,
+                    id: firebaseUser.uid // align local DB profile with Firebase UID
+                };
+            } else {
+                // Register details in mockApi backend with Firebase UID
+                const registeredUser = await mockApi.registerUser(
+                    firebaseUser.displayName || email.split('@')[0],
+                    firebaseUser.email || email,
+                    firebaseUser.uid
+                );
+                if (registeredUser) {
+                    userToSession = registeredUser;
+                    updateAppData({ users: [...(appData.users || []), userToSession] });
+                } else {
+                    userToSession = {
+                        id: firebaseUser.uid,
+                        name: firebaseUser.displayName || email.split('@')[0],
+                        email: firebaseUser.email || email,
+                        registeredDate: new Date().toISOString(),
+                        avatarUrl: `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
+                        favorites: [],
+                        isEmailVerified: firebaseUser.emailVerified,
+                        role: 'USER'
+                    };
+                    updateAppData({ users: [...(appData.users || []), userToSession] });
+                }
+            }
+
+            const isAdmin = userToSession.role === 'SUPER_ADMIN' || userToSession.email === 'lucianoreverberi@gmail.com';
+            setSession({ ...userToSession, isAdmin });
+            syncUserToFirestore(userToSession);
             setIsLoginModalOpen(false);
-            addNotification('success', 'Welcome back!', `Logged in as ${user.name}`);
+            addNotification('success', 'Welcome back!', `Logged in as ${userToSession.name}`);
             if (isAdmin) {
                 handleNavigate('admin');
             }
             return true;
+
+        } catch (error: any) {
+            console.log("Firebase Auth Login Error:", error?.code);
+            if (
+                error.code === 'auth/user-not-found' ||
+                error.code === 'auth/invalid-credential' ||
+                error.code === 'auth/invalid-login-credentials' ||
+                error.code === 'auth/wrong-password'
+            ) {
+                addNotification('info', 'Login Failed', 'Incorrect email or password. If you had an account before our security upgrade, please use "Forgot Password" to set a new one.');
+            } else if (error.code === 'auth/too-many-requests') {
+                addNotification('info', 'Login Failed', 'Too many attempts. Please try again later.');
+            } else {
+                addNotification('info', 'Login Failed', 'Could not sign in. Please try again.');
+            }
+            return false;
         }
-        return false;
     };
 
     const handleGoogleLogin = async (): Promise<boolean> => {
@@ -390,8 +449,16 @@ const App: React.FC = () => {
         }
 
         try {
-            const newUser = await mockApi.registerUser(name, email);
-            if(newUser) {
+            // Register user in Firebase Authentication
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            const firebaseUser = result.user;
+
+            // Set the display name in Firebase Auth
+            await updateProfile(firebaseUser, { displayName: name });
+
+            // Create record in application database
+            const newUser = await mockApi.registerUser(name, email, firebaseUser.uid);
+            if (newUser) {
                 updateAppData({ users: [...appData.users, newUser] });
                 setSession({ ...newUser, isAdmin: false });
                 syncUserToFirestore(newUser); // Sync for chat
@@ -405,17 +472,48 @@ const App: React.FC = () => {
                         addNotification('success', 'Welcome!', 'Account created successfully.');
                     }
                 });
-                
+                return true;
+            } else {
+                // Sibling fallback profile
+                const fallbackUser: User = {
+                    id: firebaseUser.uid,
+                    name: name,
+                    email: email,
+                    registeredDate: new Date().toISOString(),
+                    avatarUrl: `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
+                    favorites: [],
+                    isEmailVerified: firebaseUser.emailVerified,
+                    role: 'USER'
+                };
+                updateAppData({ users: [...appData.users, fallbackUser] });
+                setSession({ ...fallbackUser, isAdmin: false });
+                syncUserToFirestore(fallbackUser);
+                setIsLoginModalOpen(false);
                 return true;
             }
-            return false;
-        } catch(error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error("Firebase Registration Error:", error);
+            let errorMessage = "Registration failed.";
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = "This email is already registered.";
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = "The email address is invalid.";
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = "The password is too weak.";
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            addNotification('info', 'Registration Failed', errorMessage);
             return false;
         }
     };
     
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.warn("Firebase sign out issue:", error);
+        }
         setSession(null);
         handleNavigate('home');
         addNotification('info', 'Logged Out', 'See you next time!');
