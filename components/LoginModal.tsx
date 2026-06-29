@@ -19,11 +19,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
+    const [statusMessage, setStatusMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setStatusMessage('');
         setIsLoading(true);
         let success = false;
         if (isRegistering) {
@@ -45,8 +47,27 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
         setIsLoading(false);
     };
 
+    const handleForgotPasswordClick = async () => {
+        setError('');
+        setStatusMessage('');
+        if (!email || !email.includes('@')) {
+            setError('Please enter your email address first, then click "Forgot Password".');
+            return;
+        }
+        setIsLoading(true);
+        try {
+            await onForgotPassword(email);
+            setStatusMessage('Reset link sent! Please check your inbox AND your SPAM / Junk folder.');
+        } catch (err: any) {
+            setError('Could not send password reset email. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleDemoLogin = async () => {
         setError('');
+        setStatusMessage('');
         setIsLoading(true);
         // Using a mock user credential
         const success = await onLogin('carlos.demo@goodslister.com', 'carlosDemo123!');
@@ -59,6 +80,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
     const toggleMode = () => {
         setIsRegistering(!isRegistering);
         setError('');
+        setStatusMessage('');
         setName('');
         setEmail('');
         setPassword('');
@@ -151,11 +173,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
                                     {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                                 </button>
                             </div>
-                            {!isRegistering && (
+                             {!isRegistering && (
                                 <div className="text-right mt-1">
                                     <button
                                         type="button"
-                                        onClick={() => onForgotPassword(email)}
+                                        onClick={handleForgotPasswordClick}
                                         className="text-sm text-blue-600 hover:text-blue-500 hover:underline"
                                     >
                                         Forgot Password?
@@ -191,6 +213,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
                             </div>
                         )}
                         
+                        {statusMessage && (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <p className="text-xs text-green-700 text-center font-semibold leading-relaxed">
+                                    {statusMessage}
+                                </p>
+                            </div>
+                        )}
+
                         {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
                         <div>

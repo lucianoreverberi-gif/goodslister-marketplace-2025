@@ -362,11 +362,11 @@ const App: React.FC = () => {
         }
         try {
             await sendPasswordResetEmail(auth, email);
-            addNotification('success', 'Check Your Email', `If an account exists for ${email}, a password reset link has been sent.`);
+            addNotification('success', '📧 Check Inbox & SPAM!', `A password reset link was sent to ${email}. Please check your Inbox and SPAM / Junk folder!`);
         } catch (error: any) {
             console.log("Password reset error:", error?.code);
             // Do not disclose if user exists for security
-            addNotification('success', 'Check Your Email', `If an account exists for ${email}, a password reset link has been sent.`);
+            addNotification('success', '📧 Check Inbox & SPAM!', `If an account exists for ${email}, a password reset link has been sent. Please check your Inbox and SPAM / Junk folder!`);
         }
     };
 
