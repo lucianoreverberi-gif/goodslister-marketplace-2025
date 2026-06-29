@@ -6,10 +6,11 @@ interface LoginModalProps {
     onLogin: (email: string, password: string) => Promise<boolean>;
     onRegister: (name: string, email: string, password: string) => Promise<boolean>;
     onGoogleLogin: () => Promise<boolean>;
+    onForgotPassword: (email: string) => Promise<void>;
     onClose: () => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLogin, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLogin, onForgotPassword, onClose }) => {
     const [isRegistering, setIsRegistering] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -150,6 +151,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onRegister, onGoogleLo
                                     {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                                 </button>
                             </div>
+                            {!isRegistering && (
+                                <div className="text-right mt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => onForgotPassword(email)}
+                                        className="text-sm text-blue-600 hover:text-blue-500 hover:underline"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {isRegistering && (

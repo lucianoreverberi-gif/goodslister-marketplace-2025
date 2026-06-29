@@ -13,7 +13,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
-  signOut
+  signOut,
+  sendPasswordResetEmail
 } from './services/firebase';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -351,6 +352,21 @@ const App: React.FC = () => {
                 addNotification('info', 'Login Failed', 'Could not sign in. Please try again.');
             }
             return false;
+        }
+    };
+
+    const handleForgotPassword = async (email: string): Promise<void> => {
+        if (!email || !email.includes('@')) {
+            addNotification('info', 'Email Required', 'Please enter your email address first, then click "Forgot Password".');
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            addNotification('success', 'Check Your Email', `If an account exists for ${email}, a password reset link has been sent.`);
+        } catch (error: any) {
+            console.log("Password reset error:", error?.code);
+            // Do not disclose if user exists for security
+            addNotification('success', 'Check Your Email', `If an account exists for ${email}, a password reset link has been sent.`);
         }
     };
 
@@ -1046,6 +1062,7 @@ const App: React.FC = () => {
                     onLogin={handleLogin}
                     onRegister={handleRegister}
                     onGoogleLogin={handleGoogleLogin}
+                    onForgotPassword={handleForgotPassword}
                     onClose={() => setIsLoginModalOpen(false)} 
                 />
             )}
