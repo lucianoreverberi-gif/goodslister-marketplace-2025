@@ -43,6 +43,19 @@ export interface User {
     // NEW: Architecture fields
     role?: UserRole; // Replaces simple 'isAdmin' boolean logic internally
     homeRegion?: string; // e.g., 'US', 'AR'
+
+    // Host classification
+    host_type?: 'individual' | 'business';
+    business_name?: string;
+    business_ein?: string;
+    business_license_url?: string;
+    
+    // Stripe Connect (aligned with DB)
+    stripe_account_id?: string;
+    stripe_charges_enabled?: boolean;
+    stripe_payouts_enabled?: boolean;
+    stripe_onboarding_completed?: boolean;
+    stripe_details_submitted?: boolean;
 }
 
 export interface Session extends User {
@@ -102,6 +115,11 @@ export interface Listing {
     // NEW: Contract Management
     contractPreference?: 'standard' | 'custom';
     customContractUrl?: string;
+
+    // Insurance declaration by owner
+    owner_insurance_declared?: boolean;
+    owner_insurance_proof_url?: string;
+    owner_insurance_declared_at?: string;  // ISO timestamp
 }
 
 export interface HeroSlide {
