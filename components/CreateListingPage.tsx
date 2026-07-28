@@ -25,6 +25,18 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const [isCheckingStripe, setIsCheckingStripe] = useState(false);
     const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
+    const [hostType, setHostType] = useState<'individual' | 'business'>(
+      currentUser?.host_type || 'individual'
+    );
+    const [businessName, setBusinessName] = useState(currentUser?.business_name || '');
+    const [businessEin, setBusinessEin] = useState(currentUser?.business_ein || '');
+    const [businessLicenseUrl, setBusinessLicenseUrl] = useState(
+      currentUser?.business_license_url || ''
+    );
+
+    const [insuranceDeclared, setInsuranceDeclared] = useState(false);
+    const [insuranceProofUrl, setInsuranceProofUrl] = useState('');
+
     const checkStripeStatus = async () => {
         if (!currentUser) return;
         setIsCheckingStripe(true);
@@ -142,6 +154,15 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
     const isCharterStyle = () => {
         return category === ListingCategory.BOATS || category === ListingCategory.ATVS_UTVS || (category === ListingCategory.WATER_SPORTS && subcategory.toLowerCase().includes('jet ski'));
+    };
+
+    const isMotorized = () => {
+        return category === ListingCategory.MOTORCYCLES ||
+               category === ListingCategory.BOATS ||
+               category === ListingCategory.RVS ||
+               category === ListingCategory.ATVS_UTVS ||
+               (category === ListingCategory.WATER_SPORTS && 
+                subcategory.toLowerCase().includes('jet ski'));
     };
 
     const isGuideStyle = () => {
@@ -267,6 +288,18 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             return;
         }
         
+        if (isMotorized() && !insuranceDeclared) {
+            setSubmitMessage("You must declare insurance for motorized items.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        if (hostType === 'business' && (!businessName || !businessEin)) {
+            setSubmitMessage("Business name and EIN are required for business hosts.");
+            setIsSubmitting(false);
+            return;
+        }
+
         const locationParts = location.split(',');
         
         const listingData: Listing = {
@@ -282,6 +315,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             contractPreference: 'standard',
             customContractUrl: undefined,
             item_value: parseFloat(itemValue) || 0,
+            owner_insurance_declared: isMotorized() ? insuranceDeclared : false,
             pricePerDay: pricingType === 'daily' ? parseFloat(price) : 0,
             pricePerHour: pricingType === 'hourly' ? parseFloat(price) : 0,
             location: {
@@ -358,6 +392,70 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
                         
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800 mb-2">
+                                    Listing as
+                                </label>
+                                <div className="flex gap-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setHostType('individual')} 
+                                        className={`flex-1 py-2 px-3 rounded text-sm font-medium border transition-colors ${
+                                            hostType === 'individual' 
+                                                ? 'bg-cyan-600 text-white border-cyan-600' 
+                                                : 'bg-white text-gray-700 border-gray-300'
+                                        }`}
+                                    >
+                                        Individual
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setHostType('business')} 
+                                        className={`flex-1 py-2 px-3 rounded text-sm font-medium border transition-colors ${
+                                            hostType === 'business' 
+                                                ? 'bg-purple-600 text-white border-purple-600' 
+                                                : 'bg-white text-gray-700 border-gray-300'
+                                        }`}
+                                    >
+                                        Business (Rental Shop / Tour Operator)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {hostType === 'business' && (
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-800">
+                                            Business Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            value={businessName} 
+                                            onChange={e => setBusinessName(e.target.value)}
+                                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                            placeholder="Your registered business name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-800">
+                                            EIN (Employer Identification Number) <span className="text-red-500">*</span>
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            value={businessEin} 
+                                            onChange={e => setBusinessEin(e.target.value)}
+                                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                            placeholder="XX-XXXXXXX"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                        Business hosts may qualify for reduced commission in future updates.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-bold text-gray-800">Title</label>
@@ -731,6 +829,28 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     listing and calculate insurance requirements.
                                 </p>
                             </div>
+
+                            {isMotorized() && (
+                              <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={insuranceDeclared}
+                                    onChange={e => setInsuranceDeclared(e.target.checked)}
+                                    required
+                                    className="mt-1 h-5 w-5 text-amber-600 border-amber-300 rounded focus:ring-amber-500"
+                                  />
+                                  <div>
+                                    <span className="block font-bold text-amber-900">
+                                      I have appropriate insurance for rental use <span className="text-red-500">*</span>
+                                    </span>
+                                    <p className="text-xs text-amber-800 mt-1">
+                                      For motorized items, you confirm you carry insurance appropriate for peer-to-peer rental. Goodslister does not provide insurance and you remain responsible for damages and liabilities. Falsely declaring insurance may result in listing removal.
+                                    </p>
+                                  </div>
+                                </label>
+                              </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-800">Security Deposit ($)</label>
