@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { generateListingDescription, improveDescription, shortenDescription, expandDescription } from '../services/geminiService';
 import { ListingCategory, User, Listing, ListingType, PriceUnit } from '../types';
 import { subcategories } from '../constants';
-import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon, ZapIcon, ShieldCheckIcon, FileTextIcon, FileCheckIcon } from './icons';
+import { ChevronLeftIcon, WandSparklesIcon, UploadCloudIcon, MapPinIcon, XIcon, InfoIcon, SparklesIcon, ShrinkIcon, ExpandIcon, ZapIcon, ShieldCheckIcon, FileTextIcon, FileCheckIcon, ShieldAlertIcon, FileSignatureIcon } from './icons';
 import SmartAdvisory from './SmartAdvisory';
 import AICoverGeneratorStep from './AICoverGeneratorStep';
 import ConnectStripeModal from './ConnectStripeModal';
@@ -163,6 +163,23 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                category === ListingCategory.ATVS_UTVS ||
                (category === ListingCategory.WATER_SPORTS && 
                 subcategory.toLowerCase().includes('jet ski'));
+    };
+
+    const getPreviewMode = (): 1 | 2 | 3 | null => {
+      if (!category || !itemValue) return null;
+      const value = parseFloat(itemValue);
+      if (isNaN(value) || value <= 0) return null;
+      
+      const isMotor = category === ListingCategory.MOTORCYCLES ||
+                      category === ListingCategory.BOATS ||
+                      category === ListingCategory.RVS ||
+                      category === ListingCategory.ATVS_UTVS ||
+                      (category === ListingCategory.WATER_SPORTS && 
+                       subcategory.toLowerCase().includes('jet ski'));
+      
+      if (!isMotor && value < 5000) return 1;
+      if (isMotor && value < 50000) return 2;
+      return 3;
     };
 
     const isGuideStyle = () => {
@@ -829,6 +846,38 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     listing and calculate insurance requirements.
                                 </p>
                             </div>
+
+                            {getPreviewMode() && (
+                              <div className={`p-4 rounded-xl border ${
+                                getPreviewMode() === 1 ? 'bg-green-50 border-green-200' :
+                                getPreviewMode() === 2 ? 'bg-blue-50 border-blue-200' :
+                                'bg-orange-50 border-orange-200'
+                              }`}>
+                                <div className="flex items-start gap-3">
+                                  <div className={`p-2 rounded-lg ${
+                                    getPreviewMode() === 1 ? 'bg-green-100 text-green-700' :
+                                    getPreviewMode() === 2 ? 'bg-blue-100 text-blue-700' :
+                                    'bg-orange-100 text-orange-700'
+                                  }`}>
+                                    {getPreviewMode() === 1 && <ShieldCheckIcon className="h-5 w-5" />}
+                                    {getPreviewMode() === 2 && <ShieldAlertIcon className="h-5 w-5" />}
+                                    {getPreviewMode() === 3 && <FileSignatureIcon className="h-5 w-5" />}
+                                  </div>
+                                  <div className="flex-1">
+                                    <span className="block font-bold text-sm">
+                                      {getPreviewMode() === 1 && 'Your listing will use Peer Waiver protection (Mode 1)'}
+                                      {getPreviewMode() === 2 && 'Your listing will use P2P Insurance protection (Mode 2)'}
+                                      {getPreviewMode() === 3 && 'Your listing will use Bareboat Charter protection (Mode 3)'}
+                                    </span>
+                                    <p className="text-xs mt-1 opacity-80">
+                                      {getPreviewMode() === 1 && 'Low-risk non-motorized gear. Simple click-wrap agreement. Security deposit protects owners.'}
+                                      {getPreviewMode() === 2 && 'Motorized items require insurance declaration. Renter accepts P2P coverage at checkout.'}
+                                      {getPreviewMode() === 3 && 'High-value assets use Bareboat Demise Charter framework. Renter takes full operational responsibility.'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
                             {isMotorized() && (
                               <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
