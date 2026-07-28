@@ -79,6 +79,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     // Pricing
     const [pricingType, setPricingType] = useState<'daily' | 'hourly'>(initialData?.pricingType || 'daily');
     const [price, setPrice] = useState(initialData ? (initialData.pricingType === 'daily' ? initialData.pricePerDay?.toString() : initialData.pricePerHour?.toString()) || '' : '');
+    const [itemValue, setItemValue] = useState(initialData?.item_value?.toString() || '');
     const [securityDeposit, setSecurityDeposit] = useState(initialData?.securityDeposit?.toString() || '');
     const [priceUnit, setPriceUnit] = useState<PriceUnit>(initialData?.priceUnit || 'item');
 
@@ -182,28 +183,6 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         setIsUploading(false);
     };
 
-    const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        if (file.type !== 'application/pdf') {
-            alert('Please upload a PDF file.');
-            return;
-        }
-
-        setIsUploading(true);
-        try {
-            const response = await fetch(`/api/upload-image?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
-            if (!response.ok) throw new Error('Upload failed');
-            const { url } = await response.json();
-            setCustomContractUrl(url);
-        } catch (error) {
-            alert('Error uploading your custom contract.');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
     const handleRemoveImage = (index: number) => setImageUrls(prev => prev.filter((_, i) => i !== index));
 
     const handleGenerateDescription = async () => {
@@ -282,8 +261,8 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             return;
         }
 
-        if (!title || !category || !price || !location || !description || imageUrls.length === 0) {
-            setSubmitMessage('Please fill in all required fields.');
+        if (!title || !category || !price || !location || !description || imageUrls.length === 0 || !itemValue || parseFloat(itemValue) <= 0) {
+            setSubmitMessage('Please fill in all required fields, including estimated item value (> 0).');
             setIsSubmitting(false);
             return;
         }
@@ -300,8 +279,9 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             pricingType,
             priceUnit,
             isInstantBook,
-            contractPreference,
-            customContractUrl: contractPreference === 'custom' ? customContractUrl : undefined,
+            contractPreference: 'standard',
+            customContractUrl: undefined,
+            item_value: parseFloat(itemValue) || 0,
             pricePerDay: pricingType === 'daily' ? parseFloat(price) : 0,
             pricePerHour: pricingType === 'hourly' ? parseFloat(price) : 0,
             location: {
@@ -651,57 +631,25 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             />
                         </div>
 
-                        {/* Contract Management Section */}
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-6">
-                            <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Contract Management</h3>
-                            <p className="text-sm text-gray-500">Select how you want to handle the legal agreement with your renters.</p>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setContractPreference('standard')}
-                                    className={`flex flex-col items-center p-6 rounded-xl border-2 transition-all gap-3 ${contractPreference === 'standard' ? 'border-cyan-500 bg-cyan-50 shadow-md' : 'border-gray-100 bg-white hover:border-gray-200'}`}
-                                >
-                                    <ShieldCheckIcon className={`h-8 w-8 ${contractPreference === 'standard' ? 'text-cyan-600' : 'text-gray-400'}`} />
-                                    <div className="text-center">
-                                        <span className="block font-bold text-gray-900">Standard Contract</span>
-                                        <span className="text-xs text-gray-500">Recommended by Goodslister</span>
-                                    </div>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setContractPreference('custom')}
-                                    className={`flex flex-col items-center p-6 rounded-xl border-2 transition-all gap-3 ${contractPreference === 'custom' ? 'border-cyan-500 bg-cyan-50 shadow-md' : 'border-gray-100 bg-white hover:border-gray-200'}`}
-                                >
-                                    <FileTextIcon className={`h-8 w-8 ${contractPreference === 'custom' ? 'text-cyan-600' : 'text-gray-400'}`} />
-                                    <div className="text-center">
-                                        <span className="block font-bold text-gray-900">Custom Contract</span>
-                                        <span className="text-xs text-gray-500">Upload your own PDF file</span>
-                                    </div>
-                                </button>
-                            </div>
-
-                            {contractPreference === 'custom' && (
-                                <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Upload Contract (PDF)</label>
-                                    <div className="flex items-center gap-4">
-                                        <label className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-cyan-500 transition-colors">
-                                            <UploadCloudIcon className="h-5 w-5 text-gray-400" />
-                                            <span className="text-sm font-medium text-gray-600">
-                                                {customContractUrl ? 'File uploaded successfully' : 'Click to upload your PDF'}
-                                            </span>
-                                            <input type="file" className="hidden" accept="application/pdf" onChange={handlePdfUpload} />
-                                        </label>
-                                        {customContractUrl && (
-                                            <div className="flex items-center gap-2 text-green-600">
-                                                <FileCheckIcon className="h-6 w-6" />
-                                                <button type="button" onClick={() => setCustomContractUrl('')} className="text-red-500 hover:text-red-700"><XIcon className="h-5 w-5" /></button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <p className="mt-2 text-[10px] text-gray-500 italic">* This contract will be the one the renter signs when finalizing the booking.</p>
+                        {/* Contract Agreement Section */}
+                        <div className="bg-white p-6 rounded-xl border border-gray-200">
+                            <h3 className="text-lg font-bold text-gray-900 border-b pb-2">
+                                Contract Agreement
+                            </h3>
+                            <div className="mt-4 flex items-start gap-3">
+                                <ShieldCheckIcon className="h-8 w-8 text-cyan-600 flex-shrink-0" />
+                                <div>
+                                    <span className="block font-bold text-gray-900">
+                                        Goodslister Standard Agreement
+                                    </span>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        All rentals on Goodslister use our Standard Rental Agreement, 
+                                        which the renter accepts at checkout. This protects both you 
+                                        and the renter under our platform terms. Custom contracts are 
+                                        currently not supported.
+                                    </p>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
@@ -761,11 +709,33 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     </label>
                                 </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-bold text-gray-800">Security Deposit ($)</label>
-                            <input type="number" value={securityDeposit} onChange={e => setSecurityDeposit(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md" placeholder="0" />
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800">
+                                    Estimated Item Value (USD) <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative mt-2">
+                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">$</span>
+                                    <input 
+                                        type="number" 
+                                        value={itemValue} 
+                                        onChange={e => setItemValue(e.target.value)} 
+                                        className="block w-full border-gray-300 rounded-md shadow-sm pl-7" 
+                                        placeholder="0"
+                                        required
+                                        min="0"
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Approximate market value of your item. Used to classify your 
+                                    listing and calculate insurance requirements.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-800">Security Deposit ($)</label>
+                                <input type="number" value={securityDeposit} onChange={e => setSecurityDeposit(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md shadow-sm" placeholder="0" />
+                            </div>
                         </div>
 
                         {chargesEnabled === false && (
