@@ -37,7 +37,7 @@ const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
 };
 
 interface ListingDetailPageProps {
-    listing: Listing;
+    listing: listing, balanceDueOnSite: paymentMethod === 'platform' ? 0 : priceDetails.rentalTotal }
     onBack: () => void;
     onStartConversation: (listing: Listing) => void;
     currentUser: User | null;
