@@ -70,11 +70,11 @@ const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void
             <div className="mt-6 text-left bg-gray-50 p-4 rounded-lg border">
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-gray-400 uppercase">Paid Now (Fees)</span>
-                    <span className="font-bold text-green-600">${(booking.totalPrice - booking.balanceDueOnSite).toFixed(2)}</span>
+                    <span className="font-bold text-green-600">${(booking.totalPrice - (booking.balanceDueOnSite ?? 0)).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-2">
                     <span className="text-xs font-bold text-gray-400 uppercase">Due at Pickup (Rental)</span>
-                    <span className="font-black text-gray-900">${booking.balanceDueOnSite.toFixed(2)}</span>
+                    <span className="font-black text-gray-900">${(booking.balanceDueOnSite ?? 0).toFixed(2)}</span>
                 </div>
             </div>
             <button onClick={onClose} className="mt-6 w-full py-3 px-4 text-white font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors">
