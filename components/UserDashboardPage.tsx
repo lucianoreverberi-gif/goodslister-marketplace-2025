@@ -458,7 +458,7 @@ const BookingsManager: React.FC<{
             </div>
 
             <div className="space-y-4">
-                {displayedBookings.map(b => (
+                {displayedBookings.length === 0 && (<div className="bg-white p-12 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center gap-4"><div className="bg-cyan-50 p-4 rounded-2xl"><CalendarIcon className="h-10 w-10 text-cyan-600" /></div><h3 className="text-xl font-bold text-slate-800">{mode === 'renting' ? 'No trips yet' : 'No reservations yet'}</h3><p className="text-sm text-slate-500 max-w-md leading-relaxed">{mode === 'renting' ? "You haven't booked any adventures yet. Explore listings to find your first rental!" : "You don't have any reservations yet. Publish listings to start receiving bookings!"}</p></div>)} {displayedBookings.map(b => (
                     <div key={b.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-900">
                         <div className="flex items-center gap-4 w-full md:w-auto">
                             <img src={b.listing.images[0]} className="w-16 h-16 rounded-2xl object-cover bg-slate-100" />
