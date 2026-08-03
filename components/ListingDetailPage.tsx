@@ -341,7 +341,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                 priceDetails.protectionFee,
                 priceDetails.securityDeposit
             );
-            setSuccessfulBooking(newBooking);
+            setSuccessfulBooking({ ...newBooking, listing: listing });
             setRange(undefined); 
             setHourlyDate(undefined);
             setShowPaymentModal(false);
