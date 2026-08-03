@@ -624,7 +624,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                         onClick={handleBookClick}
                                                         className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-black rounded-2xl shadow-xl shadow-cyan-900/20 transition-all active:scale-95 text-xs uppercase"
                                                     >
-                                                        Reserve Now
+                                                        {isOwner ? 'This is your listing' : 'Reserve Now'}
                                                     </button>
                                                 </div>
                                                 <p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.15em] text-center mt-6">Secure checkout powered by Stripe</p>
