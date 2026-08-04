@@ -11,7 +11,7 @@ const COLORS = {
   text: '#334155',
 };
 
-const LOGO_URL = 'https://storage.googleapis.com/aistudio-marketplace-bucket/tool-project-logos/goodslister-logo.png';
+const LOGO_URL = 'https://vmne9ccmbthkpv5j.public.blob.vercel-storage.com/logo-small--1--MnlsGxlWIgTb1QEODk0NpwnrxnrX29.jpg';
 
 const getBaseTemplate = (content: string, ctaText?: string, ctaUrl?: string) => `
 <!DOCTYPE html>
