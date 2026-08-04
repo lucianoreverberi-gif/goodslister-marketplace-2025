@@ -90,12 +90,12 @@ interface PaymentSelectionModalProps {
     serviceFee: number;
     protectionFee: number;
     securityDeposit: number;
-    onConfirm: (method: 'platform' | 'direct') => void;
+    listing: Listing;    currentUser: User | null;    onConfirm: (method: 'platform' | 'direct') => void;
     onClose: () => void;
     isProcessing: boolean;
 }
 
-const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, onConfirm, onClose, isProcessing }) => {
+const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, listing, currentUser, onConfirm, onClose, isProcessing }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [error, setError] = useState<string | null>(null);
@@ -130,7 +130,7 @@ const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, 
             const res = await fetch('/api/create-payment-intent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: totalFees, paymentMethodId: paymentMethod.id })
+                body: JSON.stringify({ amount: totalFees, paymentMethodId: paymentMethod.id, listingId: listing.id, renterId: currentUser?.id })
             });
 
             if (!res.ok) {
@@ -366,7 +366,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                     rentalCost={priceDetails.rentalTotal}
                     serviceFee={priceDetails.serviceFee}
                     protectionFee={priceDetails.protectionFee}
-                    securityDeposit={priceDetails.securityDeposit}
+                    securityDeposit={priceDetails.securityDeposit}                    listing={listing}                    currentUser={currentUser}
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
