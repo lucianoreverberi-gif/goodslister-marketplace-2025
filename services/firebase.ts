@@ -106,25 +106,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log('Firebase connection successful.');
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const isOffline = errorMessage.includes('the client is offline') || 
-                      errorMessage.includes('unavailable') ||
-                      errorMessage.includes('Insufficient permissions');
-    
-    if (isOffline) {
-      console.warn('Firebase is in offline mode or restricted. This is expected in some sandbox environments. Auth will still work if secondary providers are configured.');
-    } else {
-      console.error('Firebase connection test failed:', error);
-    }
-  }
-}
-
-testConnection();
 
 export const signInWithGoogle = async () => {
   try {
