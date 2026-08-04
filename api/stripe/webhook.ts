@@ -71,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         break;
       }
 
-      case 'charge.refunded': {
+      case 'payment_intent.succeeded': { const intent = event.data.object as Stripe.PaymentIntent; const md = intent.metadata || {}; if (md.purpose === 'rental_booking' && md.host_email) { const grossAmount = (intent.amount || 0) / 100; const platformFee = (intent.application_fee_amount || 0) / 100; const netPayout = grossAmount - platformFee; const h = req.headers.host || 'www.goodslister.com'; const proto = h.includes('localhost') ? 'http' : 'https'; try { const er = await fetch(`${proto}://${h}/api/send-email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'payment_received', to: md.host_email, data: { netPayout: netPayout.toFixed(2), listingTitle: md.listing_title || 'Your listing', grossAmount: grossAmount.toFixed(2), platformFee: platformFee.toFixed(2), payoutDate: 'Within 2 business days' } }) }); if (!er.ok) console.warn('Failed payment_received email:', er.status); } catch (e) { console.error('payment_received email error:', e); } } break; } case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
         const paymentIntentId = charge.payment_intent as string;
 
