@@ -188,7 +188,7 @@ export default async function handler(
         `, 'View Payouts', 'https://goodslister.com/userDashboard');
         break;
 
-      case 'rental_reminder':
+      case 'chat_message_new': { subject = `New message from ${data.senderName}`; html = getBaseTemplate(`<h1>New Message</h1><p><strong>${data.senderName}</strong> sent you a message about <strong>${data.listingTitle || 'a listing'}</strong>:</p><div class="card" style="border-left: 4px solid #06b6d4; padding-left: 16px;"><p style="font-style: italic; margin: 0;">${data.messagePreview}</p></div><p>Reply directly on Goodslister to keep the conversation going.</p>`, 'Reply Now', 'https://goodslister.com/#inbox'); break; }      case 'rental_reminder':
         subject = `Reminder: Your rental starts tomorrow!`;
         html = getBaseTemplate(`
           <h1>Ready for your adventure?</h1>
