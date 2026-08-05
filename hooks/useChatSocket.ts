@@ -237,7 +237,7 @@ export const useChatSocket = (currentUserId: string | undefined, activeConversat
             }
         });
 
-        return targetConvoId;
+        try { let rId = recipientId; let lt = listingTitle; if (!rId) { const conv = conversations.find(function(c) { return c.id === targetConvoId; }); if (conv) { rId = conv.participants && conv.participants.find(function(p) { return p !== currentUserId; }); lt = (conv.listing && conv.listing.title) || lt; } } if (rId) { fetch('/api/chat/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ senderId: currentUserId, recipientId: rId, messagePreview: text, listingTitle: lt }) }).catch(function(e) { console.warn('Chat notification failed:', e); }); } } catch (nErr) { console.warn('Notification prep failed:', nErr); }        return targetConvoId;
     } catch (e) {
         console.error("Send message failed:", e);
         return null;
