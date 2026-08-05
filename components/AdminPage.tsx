@@ -610,7 +610,7 @@ const GlobalSettingsTab: React.FC = () => {
     const handleSave = () => {
         setIsSaving(true);
         // Simulate API call
-        let adminEmail = ''; try { adminEmail = JSON.parse(localStorage.getItem('goodsListerSession') || '{}').email || ''; } catch(e) {} fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceThreshold: feeThreshold, lowValueFee: lowTierFee, highValueFee: highTierFee, transactionFeePercent: ownerFee, adminEmail: adminEmail }) }).then(function(r) { if (!r.ok) console.error('Save settings failed:', r.status); }).catch(function(e) { console.error('Save settings error:', e); }).finally(function() { setIsSaving(false); });
+        let adminEmail = ''; try { adminEmail = JSON.parse(localStorage.getItem('goodslister_session') || '{}').email || ''; } catch(e) {} fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceThreshold: feeThreshold, lowValueFee: lowTierFee, highValueFee: highTierFee, transactionFeePercent: ownerFee, adminEmail: adminEmail }) }).then(function(r) { if (!r.ok) console.error('Save settings failed:', r.status); }).catch(function(e) { console.error('Save settings error:', e); }).finally(function() { setIsSaving(false); });
     };
 
     return (
