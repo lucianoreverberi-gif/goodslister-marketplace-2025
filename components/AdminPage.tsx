@@ -604,13 +604,13 @@ const GlobalSettingsTab: React.FC = () => {
     const [feeThreshold, setFeeThreshold] = useState(100);
     const [lowTierFee, setLowTierFee] = useState(10);
     const [highTierFee, setHighTierFee] = useState(25);
-    const [ownerFee, setOwnerFee] = useState(3);
+    const [ownerFee, setOwnerFee] = useState(3);    React.useEffect(function() { fetch('/api/settings').then(function(r) { return r.json(); }).then(function(s) { if (s && !s.error) { setFeeThreshold(parseFloat(s.price_threshold)); setLowTierFee(parseFloat(s.low_value_fee)); setHighTierFee(parseFloat(s.high_value_fee)); setOwnerFee(parseFloat(s.transaction_fee_percent)); } }).catch(function(e) { console.warn('Load settings failed:', e); }); }, []);    React.useEffect(function() { fetch('/api/settings').then(function(r) { return r.json(); }).then(function(s) { if (s && !s.error) { setFeeThreshold(parseFloat(s.price_threshold)); setLowTierFee(parseFloat(s.low_value_fee)); setHighTierFee(parseFloat(s.high_value_fee)); setOwnerFee(parseFloat(s.transaction_fee_percent)); } }).catch(function(e) { console.warn('Load settings failed:', e); }); }, []);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = () => {
         setIsSaving(true);
         // Simulate API call
-        setTimeout(() => setIsSaving(false), 1000);
+        let adminEmail = ''; try { adminEmail = JSON.parse(localStorage.getItem('goodsListerSession') || '{}').email || ''; } catch(e) {} fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceThreshold: feeThreshold, lowValueFee: lowTierFee, highValueFee: highTierFee, transactionFeePercent: ownerFee, adminEmail: adminEmail }) }).then(function(r) { if (!r.ok) console.error('Save settings failed:', r.status); }).catch(function(e) { console.error('Save settings error:', e); }).finally(function() { setIsSaving(false); });
     };
 
     return (
