@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { sql } from '@vercel/postgres';
 
 // Business model constants (mirror admin panel defaults â TODO: read from platform_settings table)
-const TRANSACTION_FEE_PERCENT = 3;
+const DEFAULT_TRANSACTION_FEE_PERCENT = 3; async function getTransactionFeePercent(): Promise<number> { try { const { rows } = await sql`SELECT transaction_fee_percent FROM platform_settings WHERE id = 1`; if (rows[0]?.transaction_fee_percent != null) return parseFloat(rows[0].transaction_fee_percent); } catch (e) { console.warn("getTransactionFeePercent fallback:", e); } return DEFAULT_TRANSACTION_FEE_PERCENT; }
 
 let stripeClient: Stripe | null = null;
 function getStripe(): Stripe {
@@ -73,7 +73,7 @@ export default async function handler(
 
     // Calculate application fee (platform commission)
     const amountInCents = Math.round(amount * 100);
-    const applicationFeeInCents = Math.round(amountInCents * TRANSACTION_FEE_PERCENT / 100);
+    const transactionFeePercent = await getTransactionFeePercent(); const applicationFeeInCents = Math.round(amountInCents * transactionFeePercent / 100);
 
     const stripe = getStripe();
 
@@ -96,7 +96,7 @@ export default async function handler(
         host_id: String(listing.host_id),
         host_email: String(listing.host_email || ''),
         renter_id: String(renterId || ''),
-        transaction_fee_percent: String(TRANSACTION_FEE_PERCENT),
+        transaction_fee_percent: String(transactionFeePercent),
         purpose: 'rental_booking',
       },
     });
