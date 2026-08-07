@@ -135,7 +135,7 @@ const App: React.FC = () => {
                         const isAdmin = (freshUser.role === 'SUPER_ADMIN' || freshUser.email === 'lucianoreverberi@gmail.com') ? (parsed.isAdmin || true) : (freshUser.email.includes('admin'));
                         let identityVerified = false; try { const statusRes = await fetch('/api/identity/status?userId=' + encodeURIComponent(freshUser.id)); if (statusRes.ok) { const statusData = await statusRes.json(); identityVerified = !!statusData.verified; } } catch (e) { console.warn('Load identity status failed:', e); } const userSession = { ...freshUser, isAdmin, identity_verified: identityVerified };
                         setSession(userSession);
-                        syncUserToFirestore(freshUser); // Sync on startup/restore                        // Handle Stripe Identity redirect return                        if (typeof window !== 'undefined' && window.location.hash === '#identityVerified') { window.history.replaceState(null, '', window.location.pathname + window.location.search); addNotification('success', 'Identity Verified', 'Your ID has been processed and verified successfully.'); }
+                        syncUserToFirestore(freshUser); if (typeof window !== 'undefined' && window.location.hash === '#identityVerified') { window.history.replaceState(null, '', window.location.pathname + window.location.search); addNotification('success', 'Identity Verified', 'Your ID has been processed and verified successfully.'); }
                     }
                 } catch (e) {}
             }
