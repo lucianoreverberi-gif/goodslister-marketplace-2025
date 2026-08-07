@@ -6,7 +6,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { LegalService } from '../services/legalService';
 // FIX: Added RefreshCwIcon and RocketIcon to the import list to resolve "Cannot find name" errors.
 import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSquareIcon, CheckCircleIcon, XIcon, ShieldCheckIcon, UmbrellaIcon, WalletIcon, CreditCardIcon, AlertTriangleIcon, FileTextIcon, UploadCloudIcon, FileSignatureIcon, PenToolIcon, ShieldIcon, ClockIcon, ZapIcon, LockIcon, RefreshCwIcon, RocketIcon } from './icons';
-import ListingMap from './ListingMap';import IdentityVerificationModal from './IdentityVerificationModal';import IdentityVerificationModal from './IdentityVerificationModal';import IdentityVerificationModal from './IdentityVerificationModal';import IdentityVerificationModal from './IdentityVerificationModal';import IdentityVerificationModal from './IdentityVerificationModal';
+import ListingMap from './ListingMap';import IdentityVerificationModal from './IdentityVerificationModal';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
 
@@ -373,7 +373,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                 />
             )}
 
-            {showIdentityModal && currentUser && (                <IdentityVerificationModal userId={currentUser.id} onClose={() => setShowIdentityModal(false)} />            )}            {showIdentityModal && currentUser && (                <IdentityVerificationModal userId={currentUser.id} onClose={() => setShowIdentityModal(false)} />            )}            {successfulBooking && (
+            {showIdentityModal && currentUser && (                <IdentityVerificationModal userId={currentUser.id} onClose={() => setShowIdentityModal(false)} />            )}            {successfulBooking && (
                 <BookingConfirmationModal booking={successfulBooking} onClose={() => setSuccessfulBooking(null)} />
             )}
 
