@@ -7,6 +7,8 @@ interface Props {
   onGoExplore?: () => void;
 }
 
+const LOGO_URL = 'https://vmne9ccmbthkpv5j.public.blob.vercel-storage.com/logo-small--1--MnlsGxlWIgTb1QEODk0NpwnrxnrX29.jpg';
+
 const IdentityPendingPage: React.FC<Props> = ({ status = 'processing', userEmail, onRetry, onGoExplore }) => {
   const isProcessing = status === 'processing';
   const needsRetry = status === 'requires_input';
@@ -15,8 +17,8 @@ const IdentityPendingPage: React.FC<Props> = ({ status = 'processing', userEmail
     <div className="min-h-[70vh] flex items-center justify-center p-4">
       <div className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-6">
-          <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isProcessing ? 'bg-cyan-100' : 'bg-amber-100'}`}>
-            <span className="text-4xl">{isProcessing ? 'â³' : 'â ï¸'}</span>
+          <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-4 overflow-hidden ${isProcessing ? 'bg-cyan-50 ring-4 ring-cyan-100' : 'bg-amber-50 ring-4 ring-amber-100'}`}>
+            <img src={LOGO_URL} alt="Goodslister" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-2xl font-bold mb-2">
             {isProcessing ? 'Verification in Progress' : 'Verification Needs Attention'}
@@ -29,34 +31,28 @@ const IdentityPendingPage: React.FC<Props> = ({ status = 'processing', userEmail
         </div>
 
         {isProcessing && (
-          <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start mb-2">
-              <span className="mr-2">â±ï¸</span>
-              <div>
-                <p className="font-semibold text-sm">Estimated time: Under 24 hours</p>
-                <p className="text-xs text-gray-600">Usually completed in under 5 minutes</p>
-              </div>
+          <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4 mb-6 space-y-3">
+            <div>
+              <p className="font-semibold text-sm text-cyan-900">Estimated time</p>
+              <p className="text-sm text-gray-700">Under 24 hours, usually completed in less than 5 minutes.</p>
             </div>
-            <div className="flex items-start">
-              <span className="mr-2">ð§</span>
-              <div>
-                <p className="font-semibold text-sm">Email confirmation</p>
-                <p className="text-xs text-gray-600">
-                  We'll email you at <strong>{userEmail || 'your registered email'}</strong> as soon as it's complete.
-                </p>
-              </div>
+            <div className="border-t border-cyan-100 pt-3">
+              <p className="font-semibold text-sm text-cyan-900">Email confirmation</p>
+              <p className="text-sm text-gray-700">
+                We'll email you at <strong>{userEmail || 'your registered email'}</strong> as soon as your verification is complete.
+              </p>
             </div>
           </div>
         )}
 
         {needsRetry && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <p className="font-semibold text-sm mb-2">Most common reasons for rejection:</p>
-            <ul className="text-sm text-gray-700 space-y-1">
-              <li>â¢ Blurry photo of the document</li>
-              <li>â¢ Poor lighting in the selfie</li>
-              <li>â¢ Expired ID document</li>
-              <li>â¢ Document type not accepted</li>
+            <p className="font-semibold text-sm mb-2 text-amber-900">Most common reasons for rejection:</p>
+            <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+              <li>Blurry photo of the document</li>
+              <li>Poor lighting in the selfie</li>
+              <li>Expired ID document</li>
+              <li>Document type not accepted</li>
             </ul>
           </div>
         )}
