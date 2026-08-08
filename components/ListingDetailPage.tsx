@@ -303,12 +303,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
 
     const priceDetails = getPriceDetails();
 
-    const handleBookClick = () => {
+    const handleBookClick = async () => {
         if (!currentUser) {
             alert("Please log in to book.");
             return;
         }
-        if (isOwner || !priceDetails) return; if (!(currentUser as any).identity_verified) { setShowIdentityModal(true); return; }
+        if (isOwner || !priceDetails) return; if (!(currentUser as any).identity_verified) { try { const statusRes = await fetch('/api/identity/status?userId=' + encodeURIComponent(currentUser.id)); if (statusRes.ok) { const statusData = await statusRes.json(); if (statusData.latestStatus === 'processing' || statusData.latestStatus === 'requires_input') { (window as any).__identityPendingStatus = statusData.latestStatus; window.location.hash = 'identityPending'; return; } } } catch(e) { console.warn('Identity status check failed:', e); } setShowIdentityModal(true); return; }
         setShowPaymentModal(true);
     };
 
