@@ -16,7 +16,7 @@ import {
   signOut,
   sendPasswordResetEmail
 } from './services/firebase';
-import Header from './components/Header';
+import Header from './components/Header';import IdentityPendingPage from './components/IdentityPendingPage';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
 import ListingDetailPage from './components/ListingDetailPage';
@@ -135,7 +135,7 @@ const App: React.FC = () => {
                         const isAdmin = (freshUser.role === 'SUPER_ADMIN' || freshUser.email === 'lucianoreverberi@gmail.com') ? (parsed.isAdmin || true) : (freshUser.email.includes('admin'));
                         let identityVerified = false; try { const statusRes = await fetch('/api/identity/status?userId=' + encodeURIComponent(freshUser.id)); if (statusRes.ok) { const statusData = await statusRes.json(); identityVerified = !!statusData.verified; } } catch (e) { console.warn('Load identity status failed:', e); } const userSession = { ...freshUser, isAdmin, identity_verified: identityVerified };
                         setSession(userSession);
-                        syncUserToFirestore(freshUser); if (typeof window !== 'undefined' && window.location.hash === '#identityVerified') { window.history.replaceState(null, '', window.location.pathname + window.location.search); addNotification('success', 'Identity Verified', 'Your ID has been processed and verified successfully.'); }
+                        syncUserToFirestore(freshUser); if (typeof window !== 'undefined' && window.location.hash === '#identityVerified') { try { const s = await fetch('/api/identity/status?userId=' + encodeURIComponent(freshUser.id)); if (s.ok) { const d = await s.json(); if (d.verified) { window.history.replaceState(null, '', window.location.pathname + window.location.search); addNotification('success', 'Identity Verified', 'Your ID has been processed and verified successfully.'); } else { (window as any).__identityPendingStatus = d.latestStatus || 'processing'; window.location.hash = 'identityPending'; } } else { window.location.hash = 'identityPending'; } } catch(e) { window.location.hash = 'identityPending'; } }
                     }
                 } catch (e) {}
             }
@@ -985,7 +985,7 @@ const App: React.FC = () => {
                 return <HowItWorksPage />;
             case 'floridaCompliance':
                 return <FloridaCompliancePage />;
-            case 'home':
+            case 'identityPending': return <IdentityPendingPage status={(typeof window !== 'undefined' && (window as any).__identityPendingStatus) || 'processing'} userEmail={session?.email} onGoExplore={() => handleNavigate('explore')} onRetry={async () => { if (!session?.id) return; try { const res = await fetch('/api/identity/create-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: session.id }) }); const data = await res.json(); if (data.url) window.location.href = data.url; } catch(e) {} }} />; case 'home':
             default:
                 return <HomePage 
                     onListingClick={handleListingClick} 
