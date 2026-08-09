@@ -41,7 +41,7 @@ export default async function handler(
       SELECT 
         l.id AS listing_id,
         l.title AS listing_title,
-        l.owner_id AS host_id,
+        l.owner_id AS host_id, l.deposit_amount AS listing_deposit,
         u.name AS host_name,
         u.email AS host_email,
         u.stripe_account_id,
@@ -101,13 +101,13 @@ export default async function handler(
       },
     });
 
-    return response.status(200).json({ 
+    let depositPaymentIntent: any = null; const depositAmount = parseFloat(listing.listing_deposit) || 0; if (depositAmount > 0) { const depositAmountInCents = Math.round(depositAmount * 100); try { depositPaymentIntent = await stripe.paymentIntents.create({ amount: depositAmountInCents, currency: 'usd', payment_method: paymentMethodId, confirm: true, capture_method: 'manual', automatic_payment_methods: { enabled: true, allow_redirects: 'never' }, metadata: { listing_id: String(listing.listing_id), host_id: String(listing.host_id), renter_id: String(renterId || ''), related_payment_intent: paymentIntent.id, purpose: 'security_deposit_hold' } }); } catch (depositError) { console.error('Failed to create deposit hold:', depositError); } } return response.status(200).json({ 
       success: true, 
       paymentIntent: {
         id: paymentIntent.id,
         status: paymentIntent.status,
         amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
+        currency: paymentIntent.currency, deposit: depositPaymentIntent ? { id: depositPaymentIntent.id, amount: depositPaymentIntent.amount, status: depositPaymentIntent.status } : null,
       }
     });
   } catch (error) {
