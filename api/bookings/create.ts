@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { 
     listingId, renterId, startDate, endDate, totalPrice, 
     amountPaidOnline, balanceDueOnSite, paymentMethod, 
-    protectionType, protectionFee, securityDeposit 
+    protectionType, protectionFee, securityDeposit, stripePaymentIntentId, stripeDepositPaymentIntentId 
   } = req.body || {};
 
   try {
@@ -17,11 +17,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       INSERT INTO bookings (
         id, listing_id, renter_id, start_date, end_date, total_price, 
         amount_paid_online, balance_due_on_site, payment_method, 
-        protection_type, protection_fee, security_deposit, status, deposit_status
+        protection_type, protection_fee, security_deposit, deposit_amount, stripe_payment_intent_id, stripe_deposit_payment_intent_id, status, deposit_status
       ) VALUES (
         ${id}, ${listingId}, ${renterId}, ${startDate}, ${endDate}, ${totalPrice}, 
         ${amountPaidOnline}, ${balanceDueOnSite}, ${paymentMethod}, 
-        ${protectionType}, ${protectionFee}, ${securityDeposit || 0}, 'pending', 'held'
+        ${protectionType}, ${protectionFee}, ${securityDeposit || 0}, ${securityDeposit || 0}, ${stripePaymentIntentId || null}, ${stripeDepositPaymentIntentId || null}, 'pending', ${stripeDepositPaymentIntentId ? 'held' : 'none'}
       )
     `;
 
