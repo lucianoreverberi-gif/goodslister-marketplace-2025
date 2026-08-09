@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         pricing_type, location_city, location_state, location_country, location_lat, 
         location_lng, owner_id, images, is_featured, rating, reviews_count, booked_dates,
         listing_type, operator_license_id, fuel_policy, skill_level, whats_included, itinerary,
-        price_unit
+        price_unit, deposit_amount, item_value
       ) VALUES (
         ${listing.id}, ${listing.title}, ${listing.description}, ${listing.category}, 
         ${listing.subcategory}, ${listing.pricePerDay}, ${listing.pricePerHour}, 
@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ${listing.rating}, ${listing.reviewsCount}, ${listing.bookedDates || []},
         ${listing.listingType}, ${listing.operatorLicenseId}, ${listing.fuelPolicy},
         ${listing.skillLevel}, ${listing.whatsIncluded}, ${listing.itinerary},
-        ${listing.priceUnit}
+        ${listing.priceUnit}, ${listing.securityDeposit || 0}, ${listing.item_value || 0}
       )
     `;
     
