@@ -228,7 +228,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     };
 
     const handleHandoverComplete = (photos: InspectionPhoto[]) => {
-        setHandoverPhotos(photos);
+        setHandoverPhotos(photos); if (photos.length >= 4) { fetch('/api/handoff/upsert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: booking.id, type: 'checkin', photoUrls: photos.map(p => p.url).slice(0, 10), conditionRating: 5, conditionNotes: null }) }).catch(err => console.warn('Handoff checkin persist failed:', err)); }
         onStatusChange('active');
         setPhase('ACTIVE');
         setStep('RENTAL_DASHBOARD');
@@ -241,7 +241,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     };
 
     const handleFinalize = async () => {
-        onStatusChange('completed');
+        if (returnPhotos && returnPhotos.length >= 4) { fetch('/api/handoff/upsert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: booking.id, type: 'checkout', photoUrls: returnPhotos.map(p => p.url).slice(0, 10), conditionRating: damageVerdict === 'clean' ? 5 : 2, conditionNotes: damageVerdict === 'damage' ? 'Damage reported at return' : null }) }).catch(err => console.warn('Handoff checkout persist failed:', err)); } onStatusChange('completed');
         
         // Cleanup verification photos if the trip ended successfully
         if (verificationPhotos) {
