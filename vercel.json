@@ -12,7 +12,19 @@
   "crons": [
     {
       "path": "/api/cron/expire-boosts",
-      "schedule": "0 2 * * *"    },    {      "path": "/api/cron/rental-reminders",      "schedule": "0 14 * * *"    },    {      "path": "/api/cron/review-requests",      "schedule": "0 16 * * *"
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/rental-reminders",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/review-requests",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/auto-resolve-damages",
+      "schedule": "0 18 * * *"
     }
   ]
 }
