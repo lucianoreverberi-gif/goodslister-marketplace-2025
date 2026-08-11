@@ -53,7 +53,7 @@ const App: React.FC = () => {
         const hash = window.location.hash.replace('#', '') as Page;
         return hash || 'home';
     });
-    const [selectedListingId, setSelectedListingId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);
+    const [selectedListingId, setSelectedListingId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
     const { consent } = useCookieConsent();
     
@@ -159,7 +159,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '') as Page;
-            if (hash) setPage(hash);
+            if ((hash as string).startsWith('damage/')) { const reportId = (hash as string).substring(7); if (reportId) { setSelectedDamageReportId(reportId); setPage('damageDetail' as any); } } else if (hash) setPage(hash);
         };
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
@@ -860,7 +860,7 @@ const App: React.FC = () => {
         bookings,
     } = appData;
 
-    const renderPage = () => {
+    const renderPage = () => { if ((page as any) === 'damageDetail') { return session?.id && selectedDamageReportId ? (<DamageDetailPage reportId={selectedDamageReportId} currentUserId={session.id} onBack={() => { window.location.hash = ''; setPage('userDashboard'); }} />) : <p className="p-8 text-center text-gray-500">Please log in to view damage reports.</p>; }
         switch (page) {
             case 'explore':
                 return <ExplorePage 
