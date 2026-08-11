@@ -24,7 +24,7 @@ import CreateListingPage from './components/CreateListingPage';
 import AIAssistantPage from './components/AIAssistantPage';
 import AdminPage from './components/AdminPage';
 import AdminBoostsPage from './components/AdminBoostsPage';
-import UserDashboardPage from './components/UserDashboardPage';
+import UserDashboardPage from './components/UserDashboardPage';import DamageDetailPage from './components/DamageDetailPage';
 import LoginModal from './components/LoginModal';
 import ChatLayout from './components/chat/ChatLayout';
 import ChatInboxModal from './components/ChatModal';
@@ -53,7 +53,7 @@ const App: React.FC = () => {
         const hash = window.location.hash.replace('#', '') as Page;
         return hash || 'home';
     });
-    const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+    const [selectedListingId, setSelectedListingId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);
     const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
     const { consent } = useCookieConsent();
     
