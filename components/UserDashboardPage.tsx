@@ -16,7 +16,7 @@ import ImageUploader from './ImageUploader';
 import { format } from 'date-fns';
 import ListingCard from './ListingCard';
 import RentalSessionWizard from './RentalSessionWizard';
-import ConnectStripeModal from './ConnectStripeModal';
+import ConnectStripeModal from './ConnectStripeModal';import DamageReportModal from './DamageReportModal';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -432,7 +432,7 @@ const BookingsManager: React.FC<{
     const [mode, setMode] = useState<'renting' | 'hosting'>('renting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
-    const [processingId, setProcessingId] = useState<string | null>(null);
+    const [processingId, setProcessingId] = useState<string | null>(null);    const [damageReportBooking, setDamageReportBooking] = useState<Booking | null>(null);
     
     const displayedBookings = mode === 'renting' ? bookings.filter(b => b.renterId === userId) : bookings.filter(b => b.listing.owner.id === userId);
 
@@ -449,7 +449,7 @@ const BookingsManager: React.FC<{
                      />
                  </div>
              )}
-             <div className="flex justify-between items-center mb-6">
+             {damageReportBooking && (                 <DamageReportModal                    bookingId={damageReportBooking.id}                    reporterId={userId}                    reporterRole={mode === 'renting' ? 'renter' : 'host'}                    depositAmount={damageReportBooking.securityDeposit || 0}                    onClose={() => setDamageReportBooking(null)}                    onSuccess={() => setDamageReportBooking(null)}                 />             )}             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{mode === 'renting' ? 'My Trips' : 'Reservations'}</h2>
                 <div className="bg-white p-1 rounded-xl border border-slate-100 flex shadow-sm">
                     <button onClick={() => setMode('renting')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${mode === 'renting' ? 'bg-cyan-100 text-cyan-700 shadow-inner' : 'text-slate-500 hover:bg-slate-50'}`}>I'm Renting</button>
