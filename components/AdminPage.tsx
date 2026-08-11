@@ -1406,7 +1406,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 return <GlobalSettingsTab />;
             case 'boosts':
                 return <div className="p-10 text-center"><button onClick={() => window.location.hash = 'adminBoosts'} className="px-8 py-4 bg-cyan-600 text-white font-black rounded-2xl shadow-xl hover:bg-cyan-700 transition-all flex items-center gap-2 mx-auto"><RocketIcon className="h-5 w-5" /> Open Boost Control Center</button></div>;
-            case 'disputes':
+            case 'disputes':                return <AdminDamageDisputes adminUserId={JSON.parse(localStorage.getItem('goodslister_session') || '{}').id || ''} />;            case ('disputes_legacy' as any):
                 return (
                     <div className="animate-in fade-in duration-500">
                         <div className="flex justify-between items-center mb-6">
