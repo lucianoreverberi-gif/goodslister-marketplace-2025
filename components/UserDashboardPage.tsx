@@ -495,7 +495,7 @@ const BookingsManager: React.FC<{
                             )}
                             {b.status === 'active' && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-5 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-black shadow shadow-slate-200 transition-all flex items-center gap-2">
-                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN
+                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN___MARK______MARK___
                                 </button>
                             )}
                         </div>
