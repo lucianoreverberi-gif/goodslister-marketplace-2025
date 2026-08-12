@@ -279,7 +279,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
     return (
         <main>
-            {/* Hero section - Modern */}            <HeroSectionModern                userLocation={userLocation}                onSearch={performSearch}                onCategoryClick={(cat) => onSearch({category: cat} as any)}                onChangeLocation={() => setIsLocationModalOpen(true)}                isSearching={isSearching}                totalListings={listings.length}                totalCities={new Set(listings.map(l => l.location?.city).filter(Boolean)).size}            />            {false && (            <>            {/* Hero section legacy */}
+            {/* Hero section */}
             <div className="relative bg-gray-800 h-[95vh] text-white flex items-center justify-center overflow-hidden">
                  <div className="absolute inset-0">
                     {heroSlides.map((slide, index) => (
@@ -327,7 +327,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
 
             <>
-                {/* END LEGACY HERO WRAPPER */}</></>)}<>{/* How it Works Section */}
+                {/* How it Works Section */}
                 <div id="how-it-works" className="bg-white py-16 sm:py-24">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">How does Goodslister work?</h2>
