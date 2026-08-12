@@ -279,7 +279,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
     return (
         <main>
-            {/* Hero section - Modern */}            <HeroSectionModern                userLocation={userLocation}                onSearch={handleModernSearchSubmit}                onCategoryClick={handleCategoryPill}                onChangeLocation={() => setIsLocationModalOpen(true)}                isSearching={isSearching}                totalListings={listings.length}                totalCities={new Set(listings.map(l => l.location?.city).filter(Boolean)).size}            />            {false && (            <>            {/* Hero section legacy */}
+            {/* Hero section - Modern */}            <HeroSectionModern                userLocation={userLocation}                onSearch={performSearch}                onCategoryClick={(cat) => onSearch({category: cat} as any)}                onChangeLocation={() => setIsLocationModalOpen(true)}                isSearching={isSearching}                totalListings={listings.length}                totalCities={new Set(listings.map(l => l.location?.city).filter(Boolean)).size}            />            {false && (            <>            {/* Hero section legacy */}
             <div className="relative bg-gray-800 h-[95vh] text-white flex items-center justify-center overflow-hidden">
                  <div className="absolute inset-0">
                     {heroSlides.map((slide, index) => (
