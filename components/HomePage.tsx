@@ -5,7 +5,7 @@ import ListingCard from './ListingCard';
 import CategoryCard from './CategoryCard';
 import { processSearchQuery, FilterCriteria } from '../services/geminiService';
 import { SearchIcon, ChevronLeftIcon, ChevronRightIcon, ShieldCheckIcon, SmileIcon, UserCheckIcon, WalletIcon, MessageCircleIcon, FileSignatureIcon, MicrophoneIcon, ScanIcon, BrainIcon, ZapIcon, GlobeIcon, UploadCloudIcon, MessageSquareIcon } from './icons';
-import FAQSection from './FAQSection';
+import FAQSection from './FAQSection';import HeroSectionModern from './HeroSectionModern';import HeroSectionModern from './HeroSectionModern';
 
 // Extend the global Window interface for SpeechRecognition APIs
 declare global {
@@ -279,7 +279,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
     return (
         <main>
-            {/* Hero section */}
+            {/* Hero section - Modern */}            <HeroSectionModern                userLocation={userLocation}                onSearch={handleModernSearchSubmit}                onCategoryClick={handleCategoryPill}                onChangeLocation={() => setIsLocationModalOpen(true)}                isSearching={isSearching}                totalListings={listings.length}                totalCities={new Set(listings.map(l => l.location?.city).filter(Boolean)).size}            />            {false && (            <>            {/* Hero section legacy */}
             <div className="relative bg-gray-800 h-[95vh] text-white flex items-center justify-center overflow-hidden">
                  <div className="absolute inset-0">
                     {heroSlides.map((slide, index) => (
