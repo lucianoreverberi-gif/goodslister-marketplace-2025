@@ -419,7 +419,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 </div>
 
             {/* Featured Listings */}
-             <div className="bg-gray-50 py-16 sm:py-24">
+             <div className="bg-gray-50 py-16 sm:py-24 order-first">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col items-center mb-12">
                         <div className="flex items-center gap-2 mb-4 bg-white/50 px-4 py-2 rounded-full border border-slate-100 shadow-sm">
@@ -515,7 +515,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 </div>
 
                 {/* AI Features Section */}
-                <div className="bg-gray-50 py-16 sm:py-24">
+                <div className="bg-gray-50 py-16 sm:py-24 order-first">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Intelligence, Integrated.</h2>
                         <p className="mt-4 text-lg leading-8 text-gray-600 max-w-3xl mx-auto">We've designed a platform where AI works for you, making everything simpler, faster, and safer.</p>
