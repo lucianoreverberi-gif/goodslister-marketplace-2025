@@ -327,7 +327,7 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
 
             <>
-                {/* How it Works Section */}
+                {/* END LEGACY HERO WRAPPER */}</>)}<>{/* How it Works Section */}
                 <div id="how-it-works" className="bg-white py-16 sm:py-24">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">How does Goodslister work?</h2>
