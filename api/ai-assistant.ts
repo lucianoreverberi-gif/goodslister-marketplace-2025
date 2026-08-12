@@ -117,7 +117,7 @@ export default async function handler(
         const prompt = `You are a search assistant for an adventure gear rental marketplace called Goodslister.
 Parse this natural language search query and return ONLY a JSON object with optional filter criteria.
 Query: "${payload.query}"
-Correct spelling errors and typos silently before extracting. Return JSON only with these optional fields: { "category": string, "location": string, "text": string }
+Correct spelling errors and typos silently. Extract category (from valid categories list) and location (as proper-cased city name) when mentioned. You MUST always return at least one field populated. Examples: input "boats miami" outputs {"category":"boats","location":"Miami"}. Input "jetsky" outputs {"category":"jetskis"}. Input "kayak in cayak fort lauderdale" outputs {"category":"kayaks","location":"Fort Lauderdale"}. Input "tent for 4 people" outputs {"category":"camping","text":"tent for 4 people"}. Return JSON: { "category": string, "location": string, "text": string }
 Valid categories: boats, kayaks, jetskis, atv, camping, fishing, watersports, snow, bikes, motorcycles, rvs`;
         const r = await callGemini(apiKey, prompt, true);
         if (!r.ok) return response.status(r.status).json({ error: 'AI service error' });
