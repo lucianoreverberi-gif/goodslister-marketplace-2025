@@ -70,7 +70,7 @@ const HomePage: React.FC<HomePageProps> = ({
             setIsSearching(false);
             return;
         }
-        const criteria = await processSearchQuery(query);
+        const CATS: any = {boats:'Boats',boat:'Boats',yacht:'Boats',yachts:'Boats',kayaks:'Water Sports',kayak:'Water Sports',canoe:'Water Sports',jetskis:'Water Sports',jetski:'Water Sports',jetsky:'Water Sports',atv:'ATVs & UTVs',quad:'ATVs & UTVs',camping:'Camping',tent:'Camping',fishing:'Fishing',watersports:'Water Sports',paddleboard:'Water Sports',sup:'Water Sports',kitesurf:'Water Sports',surf:'Water Sports',snow:'Winter Sports',ski:'Winter Sports',snowboard:'Winter Sports',bikes:'Bikes',bike:'Bikes',bicycle:'Bikes',motorcycles:'Motorcycles',motorcycle:'Motorcycles',rvs:'RVs',rv:'RVs'};const CITIES = ['Miami Beach','Fort Lauderdale','Pembroke Pines','West Palm Beach','Key West','Boca Raton','Miami','Tampa','Orlando','Naples','Sarasota','Jacksonville'];const lq_hero = query.toLowerCase();let cat_hero, loc_hero;for (const c of CITIES) if (lq_hero.includes(c.toLowerCase())) { loc_hero = c; break; }const words_hero = query.split(/\s+/);for (const w of words_hero) if (CATS[w.toLowerCase()]) { cat_hero = CATS[w.toLowerCase()]; break; }const rem_hero = words_hero.filter((w: string) => { const lw = w.toLowerCase(); return !CATS[lw] && (!loc_hero || !loc_hero.toLowerCase().split(/\s+/).includes(lw)); }).join(' ').trim();const criteria = {category: cat_hero, location: loc_hero, text: rem_hero || undefined} as any;
         onSearch(criteria);
         setIsSearching(false);
     };
