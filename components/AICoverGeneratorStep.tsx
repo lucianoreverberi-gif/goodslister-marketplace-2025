@@ -44,7 +44,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
     const [error, setError] = useState<string | null>(null);
 
     // TRUST GATE: Strict enforcement
-    if (realPhotoCount < 3) {
+    if (realPhotoCount < 3) return null; if (false) {
         return (
             <div className="relative my-8 rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50">
                 {/* Blurred Background to suggest value */}
