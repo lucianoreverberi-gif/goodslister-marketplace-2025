@@ -470,7 +470,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                         Business hosts may qualify for reduced commission in future updates.
                                     </p>
                                 </div>
-                            )}                        </div>
+                            )}
                         </div>
 
                         <div className="space-y-6">
@@ -520,7 +520,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                 <button type="button" onClick={handleAddFeature} className="mt-2 text-sm font-medium text-cyan-600 hover:text-cyan-800">
                                     + Add feature
                                 </button>
-                            )}                        </div>
+                            )}
                         </div>
 
                         {listingType === 'experience' && category && (
@@ -547,7 +547,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                             </select>
                                         </div>
                                     </div>
-                                )}                        </div>
+                                )}
 
                                 {(category === ListingCategory.MOTORCYCLES || category === ListingCategory.ATVS_UTVS) && (
                                     <div className="space-y-4">
@@ -567,7 +567,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                             </p>
                                         </div>
                                     </div>
-                                )}                        </div>
+                                )}
 
                                 {isGuideStyle() && (
                                     <div className="space-y-4">
@@ -590,13 +590,13 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                             <textarea value={itinerary} onChange={e => setItinerary(e.target.value)} rows={3} className="mt-1 block w-full border-purple-200 rounded-md" placeholder="E.g., Meet at 7 AM, 2-hour session, optional lunch..." />
                                         </div>
                                     </div>
-                                )}                        </div>
+                                )}
                             </div>
-                        )}                        </div>
+                        )}
 
                         {listingType === 'rental' && (
                             <SmartAdvisory category={category} subcategory={subcategory} location={location} isEnabled={advisoryEnabled} onEnable={setAdvisoryEnabled} />
-                        )}                        </div>
+                        )}
 
                         <div className="space-y-4">
                             <label className="block text-sm font-bold text-gray-800">Images</label><div className="flex flex-col-reverse gap-4">
@@ -623,7 +623,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                         </div>
                                     ))}
                                 </div>
-                            )}                        </div>
+                            )}
                         </div>
 
                         <div>
@@ -711,7 +711,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                             <div className="h-1.5 w-1.5 rounded-full bg-cyan-600" />
                                             {aiAction === 'generate' ? 'Writing...' : 'Refining...'}
                                         </div>
-                                    )}                        </div>
+                                    )}
                                 </div>
                             </div>
                             {sources.length > 0 && (
@@ -731,7 +731,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                         ))}
                                     </ul>
                                 </div>
-                            )}                        </div>
+                            )}
                         </div>
 
                         <div>
@@ -793,7 +793,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                                 Hourly
                                             </button>
                                         </div>
-                                    )}                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-800 mb-2">Price ($)</label>
@@ -877,7 +877,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                   </div>
                                 </div>
                               </div>
-                            )}                        </div>
+                            )}
 
                             {isMotorized() && (
                               <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
@@ -899,7 +899,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                   </div>
                                 </label>
                               </div>
-                            )}                        </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-800">Security Deposit ($)</label>
@@ -927,7 +927,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     Vincular Stripe Connect
                                 </button>
                             </div>
-                        )}                        </div>
+                        )}
 
                         <div className="pt-6 border-t flex justify-end gap-4">
                             <button type="button" onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
