@@ -623,11 +623,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                         </div>
                                     ))}
                                 </div>
-                            )}
-                        </div>
-
-                        <div>
-                            <label htmlFor="videoUrl" className="block text-sm font-bold text-gray-800">YouTube Video (Optional)</label>
+                            )}                            </div>                        </div>                        <div>                            <label htmlFor="videoUrl" className="block text-sm font-bold text-gray-800">YouTube Video (Optional)</label>
                              <input
                                 type="url"
                                 id="videoUrl"
