@@ -206,8 +206,8 @@ const HomePage: React.FC<HomePageProps> = ({
 
         if (layout === 'split') {
             return (
-                <div key={banner.id} className="bg-white h-[500px] flex flex-col md:flex-row overflow-hidden rounded-2xl shadow-xl">
-                    <div className="w-full md:w-1/2 h-1/2 md:h-full relative">
+                <div key={banner.id} className="bg-white md:h-[500px] flex flex-col md:flex-row overflow-hidden rounded-2xl shadow-xl">
+                    <div className="w-full md:w-1/2 aspect-[16/10] md:aspect-auto md:h-full relative">
                         <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover"/>
                     </div>
                     <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-gray-900 text-white">
@@ -226,7 +226,7 @@ const HomePage: React.FC<HomePageProps> = ({
         if (layout === 'wide') {
             return (
                 <div key={banner.id} className="bg-white overflow-hidden rounded-2xl shadow-xl">
-                    <div className="h-[300px] md:h-[400px] relative">
+                    <div className="aspect-[16/10] md:aspect-[21/9] md:min-h-[350px] relative">
                         <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover"/>
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent"></div>
                         <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10">
@@ -250,7 +250,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
         // Default 'overlay' layout
         return (
-            <div key={banner.id} className="relative bg-gray-800 h-[500px] text-white flex items-center justify-center overflow-hidden rounded-2xl shadow-xl">
+            <div key={banner.id} className="relative bg-gray-800 aspect-[16/9] md:aspect-[21/9] md:min-h-[450px] text-white flex items-center justify-center overflow-hidden rounded-2xl shadow-xl">
                 <div className="absolute inset-0">
                     <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover"/>
                     <div className="absolute inset-0 bg-black/50"></div>
