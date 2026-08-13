@@ -1035,7 +1035,7 @@ const App: React.FC = () => {
 
             <Header 
                 onNavigate={handleNavigate}
-                onLoginClick={() => setIsLoginModalOpen(true)} onSearch={(q) => handleSearch({text: q} as any)}
+                onLoginClick={() => setIsLoginModalOpen(true)} onSearch={(q) => { const CATS: any = {boats:'boats',boat:'boats',yacht:'boats',yachts:'boats',kayaks:'kayaks',kayak:'kayaks',canoe:'kayaks',jetskis:'jetskis',jetski:'jetskis',atv:'atv',quad:'atv',camping:'camping',tent:'camping',fishing:'fishing',watersports:'watersports',paddleboard:'watersports',sup:'watersports',kitesurf:'watersports',surf:'watersports',snow:'snow',ski:'snow',snowboard:'snow',bikes:'bikes',bike:'bikes',bicycle:'bikes',motorcycles:'motorcycles',motorcycle:'motorcycles',rvs:'rvs',rv:'rvs'}; const CITIES = ['Miami Beach','Fort Lauderdale','Pembroke Pines','West Palm Beach','Key West','Boca Raton','Miami','Tampa','Orlando','Naples','Sarasota','Jacksonville']; const lq = q.toLowerCase(); let category, location; for (const c of CITIES) if (lq.includes(c.toLowerCase())) { location = c; break; } const words = q.split(/\s+/); for (const w of words) if (CATS[w.toLowerCase()]) { category = CATS[w.toLowerCase()]; break; } const remaining = words.filter((w: string) => { const lw = w.toLowerCase(); return !CATS[lw] && (!location || !location.toLowerCase().split(/\s+/).includes(lw)); }).join(' ').trim(); handleSearch({category, location, text: remaining || undefined} as any); }}
                 onLogoutClick={handleLogout}
                 onOpenChat={() => { 
                     setInitialConversationId(null); 
