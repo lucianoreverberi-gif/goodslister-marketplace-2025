@@ -55,13 +55,13 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
                         <LockIcon className="h-8 w-8" />
                     </div>
                     
-                    <h3 className="text-xl font-bold text-gray-900">Unlock AI Hero Image Studio</h3>
+                    <h3 className="text-xl font-bold text-gray-900">✨ Sell more with AI-generated cover images</h3>
                     
                     <div className="mt-4 p-4 bg-white/80 backdrop-blur-md rounded-lg border border-amber-200 max-w-lg shadow-sm">
                         <div className="flex items-start gap-3">
                             <AlertIcon className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                             <p className="text-amber-900 text-sm font-medium text-left">
-                                To maintain trust on Goodslister, you must upload at least <strong>3 real photos</strong> of your item's actual condition before you can generate an AI cover image.
+                                No drone? No pro photographer? No problem. Describe your dream shot — like <em>"friends riding jet skis at sunset over Miami's turquoise water, drone view"</em> — and AI creates the perfect cover. <strong>Upload 3 real photos first</strong> to unlock (keeps things trustworthy for renters).
                             </p>
                         </div>
                     </div>
