@@ -1035,7 +1035,7 @@ const App: React.FC = () => {
 
             <Header 
                 onNavigate={handleNavigate}
-                onLoginClick={() => setIsLoginModalOpen(true)}
+                onLoginClick={() => setIsLoginModalOpen(true)} onSearch={(q) => handleSearch({text: q} as any)}
                 onLogoutClick={handleLogout}
                 onOpenChat={() => { 
                     setInitialConversationId(null); 
