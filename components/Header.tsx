@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Session, Page } from '../types';
-import { MessageSquareIcon, MenuIcon, XIcon } from './icons';
+import { MessageSquareIcon, MenuIcon, XIcon } from './icons';import HeaderSearch from './HeaderSearch';
 
 interface HeaderProps {
     onNavigate: (page: Page) => void;
@@ -9,10 +9,10 @@ interface HeaderProps {
     onLogoutClick: () => void;
     onOpenChat: () => void;
     session: Session | null;
-    logoUrl: string;
+    logoUrl: string;    onSearch?: (query: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick, onOpenChat, session, logoUrl }) => {
+const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick, onOpenChat, session, logoUrl, onSearch }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, page: Page) => {
@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
                             <img src={logoUrl} alt="Goodslister logo" className="h-8 w-auto" />
                         </a>
 
-                        {/* Desktop Nav & Auth */}
+                        {onSearch && (<div className="hidden md:block flex-1 max-w-md mx-6"><HeaderSearch onSearch={onSearch} compact /></div>)}{/* Desktop Nav & Auth */}
                         <div className="hidden md:flex items-center space-x-4">
                             <nav className="flex space-x-8 items-center">
                                 <NavLink href="/explore" page="explore" label="Explore" />
