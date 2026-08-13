@@ -606,7 +606,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                 onImageGenerated={handleAIImageGenerated}
                             />
 
-                            <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex justify-center">
+                            <div className="border-2 border-dashed border-cyan-400 hover:border-cyan-600 bg-cyan-50/40 hover:bg-cyan-50 rounded-xl p-12 flex justify-center transition-all cursor-pointer">
                                 <label className="cursor-pointer text-center">
                                     <UploadCloudIcon className="mx-auto h-12 w-12 text-gray-400" />
                                     <span className="mt-2 block text-sm font-medium text-cyan-600">Upload real photos</span>
