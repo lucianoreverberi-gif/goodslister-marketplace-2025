@@ -37,7 +37,7 @@ interface UserDashboardPageProps {
 
 type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant' | 'boosts';
 
-const STRIPE_ENABLED = process.env.STRIPE_ENABLED === 'true' || (typeof window !== 'undefined' && (window as any).NEXT_PUBLIC_STRIPE_ENABLED === 'true');
+const STRIPE_ENABLED = true;
 
 const PromotionModal: React.FC<{ listing: Listing, onClose: () => void, user: Session }> = ({ listing, onClose, user }) => {
     const [selectedPlanId, setSelectedPlanId] = useState<string>('spotlight');
