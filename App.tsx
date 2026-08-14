@@ -72,7 +72,7 @@ const App: React.FC = () => {
     }, [session]);
     
     // ... rest of state ...
-    const [listingToEdit, setListingToEdit] = useState<Listing | undefined>(undefined);
+    const [listingToEdit, setListingToEdit] = useState<Listing | undefined>(undefined); useEffect(() => { const p = new URLSearchParams(window.location.search); const bl = p.get("boost_success"); const bt = p.get("tier"); if (bl) { const tn: any = {local: "Local Boost (3 days)", spotlight: "Spotlight (7 days)", regional: "Regional Hero (14 days)"}; const tname = tn[bt || ""] || "Boost"; const NL = String.fromCharCode(10); setTimeout(function() { alert("🚀 Boost Activated!" + NL + NL + tname + " is now live for your listing." + NL + NL + "Your listing will appear at the top of relevant searches. Check My Boosts tab for performance stats."); }, 800); window.history.replaceState({}, "", "/#userDashboard"); } }, []);
 
     // Chat State
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
