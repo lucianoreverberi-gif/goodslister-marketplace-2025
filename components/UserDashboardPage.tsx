@@ -204,7 +204,7 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void, user: Se
 
     return (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
                 <div className="p-8 pb-4 flex justify-between items-start bg-slate-900 text-white">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-amber-400 text-slate-900 rounded-lg shadow-lg">
@@ -226,7 +226,7 @@ const PromotionModal: React.FC<{ listing: Listing, onClose: () => void, user: Se
                         {plans.map((plan) => (
                             <div 
                                 key={plan.id}
-                                onClick={() => setSelectedPlanId(plan.id)}
+                                onClick={() => { if (selectedPlanId === plan.id) { handlePromote(); } else { setSelectedPlanId(plan.id); } }}
                                 className={`relative group cursor-pointer flex flex-col rounded-3xl p-8 transition-all duration-300 h-full border-2 
                                     ${selectedPlanId === plan.id 
                                         ? 'bg-white border-cyan-500 shadow-2xl shadow-cyan-100 scale-[1.02] z-10' 
