@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_boosts_listing_status ON boosts(listing_id, status)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_boosts_session ON boosts(stripe_checkout_session_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_boosts_user ON boosts(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_boosts_user ON boosts(user_id)`; await sql`ALTER TABLE boosts ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ`; await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS boost_active_until TIMESTAMPTZ`; await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS boost_tier_active VARCHAR(20)`;
     await sql`
       CREATE TABLE IF NOT EXISTS boost_waitlist (
         id SERIAL PRIMARY KEY,
