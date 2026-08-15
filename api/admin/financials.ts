@@ -104,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const monthLabel = d.toLocaleDateString('en-US', { month: 'short' });
       const monthStart = d;
       const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    ostRev = 0, bookingRev = 0;
+    let boostRev = 0, bookingRev = 0;
       for (const b of boostsRows) {
         const c = new Date(b.created_at);
         if (c >= monthStart && c < monthEnd && (b.status === 'active' || b.status === 'expired')) {
