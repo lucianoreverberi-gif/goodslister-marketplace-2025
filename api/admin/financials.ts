@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         SELECT 
           id, tier, price_paid, status, created_at,
           stripe_checkout_session_id,
-          listing_id, user_id, NULL as listing_title, NULL as user_name FROM boosts
+          listing_id, user_id FROM boosts
         ORDER BY created_at DESC
       `;
       boostsRows = r.rows;
@@ -48,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       bookingsRows = r.rows;
     } catch (e) { /* table may not exist yet */ }
 
-    // Calculate date boundaries
+    const listingsMap = new Map<string, string>(); if (boostsRows.length > 0) { try { const listingIds = [...new Set(boostsRows.map((b: any) => b.listing_id).filter(Boolean))]; if (listingIds.length > 0) { const { rows: listingsRows } = await sql`SELECT id, title FROM listings WHERE id = ANY(${listingIds}::text[])`; for (const l of listingsRows) listingsMap.set(l.id, l.title); } } catch (e) { console.error("listings lookup:", e); } } // Calculate date boundaries
     const now = new Date();
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -125,7 +125,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: `boost_${b.id}`,
         date: b.created_at,
         category: 'BOOST',
-        description: `${tierNames[b.tier] || b.tier} - ${b.listing_title || 'Listing'}`,
+        description: `${tierNames[b.tier] || b.tier} - ${listingsMap.get(b.listing_id) || ('Listing #' + b.listing_id)}`,
         amount: isRefund ? -Math.abs(parseFloat(b.price_paid) || 0) : (parseFloat(b.price_paid) || 0),
         status: (b.status || 'unknown').toUpperCase(),
         user: b.user_name || 'Unknown',
