@@ -25,10 +25,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const r = await sql`
         SELECT 
-          b.id, b.tier, b.price_paid, b.status, b.created_at,
-          b.stripe_checkout_session_id,
+          id, tier, price_paid, status, created_at,
+          stripe_checkout_session_id,
           listing_id, user_id, NULL as listing_title, NULL as user_name FROM boosts
-        ORDER BY b.created_at DESC
+        ORDER BY created_at DESC
       `;
       boostsRows = r.rows;
     } catch (e) { console.error('boosts fetch:', e); }
