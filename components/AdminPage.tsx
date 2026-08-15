@@ -1244,7 +1244,7 @@ const DashboardTab: React.FC<{ onNavigate: (tab: string) => void }> = ({ onNavig
       setAlertsData(alerts);
       setLoading(false);
     }).catch(e => { console.error(e); setLoading(false); });
-  }, []);
+  }, [region]);
 
   const formatChange = (pct: number) => {
     if (pct === 0) return { text: 'No change', color: 'bg-gray-100 text-gray-600' };
