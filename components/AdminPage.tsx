@@ -60,7 +60,7 @@ const mockLedger = [
     { id: 'txn_108', date: '2024-05-12', category: 'PAYOUT', description: 'Rental Payment to Host', amount: -200.00, status: 'CLEARED', user: 'Host: Ana R.' },
 ];
 
-const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData] = useState<any>(null); useEffect(() => { fetch("/api/admin/financials?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(setFinancialsData).catch(console.error); }, []);
+const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData] = useState<any>(null); const [appDataForFin, setAppDataForFin] = useState<any>(null); useEffect(() => { Promise.all([fetch("/api/admin/financials?admin_email=lucianoreverberi@gmail.com").then(r => r.json()), fetch("/api/app-data").then(r => r.json())]).then(([fd, ad]) => { setFinancialsData(fd); setAppDataForFin(ad); }).catch(console.error); }, []);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('All Categories');
     const [filterStatus, setFilterStatus] = useState('All Statuses');
@@ -219,7 +219,7 @@ const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData
                                             </span>
                                         </td>
                                         <td className="p-4 font-bold text-slate-800">{txn.description}</td>
-                                        <td className="p-4 text-slate-500 font-bold">{txn.user}</td>
+                                        <td className="p-4 text-slate-500 font-bold">{(() => { const u = appDataForFin?.users?.find((x: any) => x.id === txn.user_id); return u ? (u.displayName || u.email || txn.user) : txn.user; })()}</td>
                                         <td className={`p-4 font-black text-right ${txn.amount > 0 ? 'text-emerald-500' : 'text-slate-900'}`}>
                                             {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
