@@ -60,7 +60,7 @@ const mockLedger = [
     { id: 'txn_108', date: '2024-05-12', category: 'PAYOUT', description: 'Rental Payment to Host', amount: -200.00, status: 'CLEARED', user: 'Host: Ana R.' },
 ];
 
-const FinancialsTab: React.FC = () => {
+const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData] = useState<any>(null); useEffect(() => { fetch("/api/admin/financials?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(setFinancialsData).catch(console.error); }, []); const [financialsData, setFinancialsData] = useState<any>(null); useEffect(() => { fetch("/api/admin/financials?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(setFinancialsData).catch(console.error); }, []);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('All Categories');
     const [filterStatus, setFilterStatus] = useState('All Statuses');
@@ -69,7 +69,7 @@ const FinancialsTab: React.FC = () => {
     const statuses = ['All Statuses', 'CLEARED', 'PROCESSED', 'PENDING', 'HELD'];
 
     const filteredEntries = useMemo(() => {
-        return mockLedger.filter(item => {
+        return (financialsData?.ledger || []).filter((item: any) => {
             const matchesSearch = item.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                  item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                                  item.user.toLowerCase().includes(searchQuery.toLowerCase());
@@ -77,7 +77,7 @@ const FinancialsTab: React.FC = () => {
             const matchesStatus = filterStatus === 'All Statuses' || item.status === filterStatus;
             return matchesSearch && matchesCategory && matchesStatus;
         });
-    }, [searchQuery, filterCategory, filterStatus]);
+    }, [searchQuery, filterCategory, filterStatus, financialsData]);
 
     const stats = useMemo(() => {
         const revenue = filteredEntries
