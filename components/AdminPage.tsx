@@ -60,7 +60,7 @@ const mockLedger = [
     { id: 'txn_108', date: '2024-05-12', category: 'PAYOUT', description: 'Rental Payment to Host', amount: -200.00, status: 'CLEARED', user: 'Host: Ana R.' },
 ];
 
-const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData] = useState<any>(null); useEffect(() => { fetch("/api/admin/financials?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(setFinancialsData).catch(console.error); }, []); const [financialsData, setFinancialsData] = useState<any>(null); useEffect(() => { fetch("/api/admin/financials?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(setFinancialsData).catch(console.error); }, []);
+const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData] = useState<any>(null); useEffect(() => { fetch("/api/admin/financials?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(setFinancialsData).catch(console.error); }, []);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('All Categories');
     const [filterStatus, setFilterStatus] = useState('All Statuses');
