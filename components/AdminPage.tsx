@@ -1232,13 +1232,13 @@ const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: s
 const DashboardTab: React.FC<{ onNavigate: (tab: string) => void }> = ({ onNavigate }) => {
   const [dashData, setDashData] = useState<any>(null);
   const [alertsData, setAlertsData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); const [region, setRegion] = useState("all");
 
   useEffect(() => {
     const email = 'lucianoreverberi@gmail.com';
     Promise.all([
-      fetch(`/api/admin/dashboard-stats?admin_email=${email}`).then(r => r.json()),
-      fetch(`/api/admin/alerts?admin_email=${email}`).then(r => r.json()),
+      fetch(`/api/admin/dashboard-stats?admin_email=${email}&region=${region}`).then(r => r.json()),
+      fetch(`/api/admin/alerts?admin_email=${email}&region=${region}`).then(r => r.json()),
     ]).then(([dash, alerts]) => {
       setDashData(dash);
       setAlertsData(alerts);
@@ -1287,7 +1287,7 @@ const DashboardTab: React.FC<{ onNavigate: (tab: string) => void }> = ({ onNavig
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Command Center</h2>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Command Center</h2> <select value={region} onChange={(e) => setRegion(e.target.value)} className="text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"><option value="all">🌎 All Regions</option><option value="miami" disabled>📍 Miami (soon)</option><option value="florida" disabled>📍 Florida (soon)</option></select>
         <div className="text-xs text-slate-400 font-semibold">
           Updated: {new Date(dashData?.generated_at || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
         </div>
