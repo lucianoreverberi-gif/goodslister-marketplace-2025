@@ -1229,6 +1229,183 @@ const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: s
     );
 };
 
+const DashboardTab: React.FC<{ onNavigate: (tab: string) => void }> = ({ onNavigate }) => {
+  const [dashData, setDashData] = useState<any>(null);
+  const [alertsData, setAlertsData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const email = 'lucianoreverberi@gmail.com';
+    Promise.all([
+      fetch(`/api/admin/dashboard-stats?admin_email=${email}`).then(r => r.json()),
+      fetch(`/api/admin/alerts?admin_email=${email}`).then(r => r.json()),
+    ]).then(([dash, alerts]) => {
+      setDashData(dash);
+      setAlertsData(alerts);
+      setLoading(false);
+    }).catch(e => { console.error(e); setLoading(false); });
+  }, []);
+
+  const formatChange = (pct: number) => {
+    if (pct === 0) return { text: 'No change', color: 'bg-gray-100 text-gray-600' };
+    const isPositive = pct > 0;
+    return {
+      text: `${isPositive ? '+' : ''}${pct}% vs last month`,
+      color: isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700',
+    };
+  };
+
+  const severityStyles: any = {
+    critical: 'bg-red-50 border-red-200 text-red-800',
+    warning: 'bg-amber-50 border-amber-200 text-amber-800',
+    info: 'bg-blue-50 border-blue-200 text-blue-800',
+  };
+
+  const activityColors: any = {
+    green: 'bg-green-500',
+    blue: 'bg-blue-500',
+    yellow: 'bg-yellow-500',
+    red: 'bg-red-500',
+    purple: 'bg-purple-500',
+    cyan: 'bg-cyan-500',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-slate-400 font-medium">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  const kpis = dashData?.kpis || {};
+  const gmvChange = formatChange(kpis.gmv?.change_pct || 0);
+  const revChange = formatChange(kpis.net_revenue?.change_pct || 0);
+  const alerts = alertsData?.alerts || [];
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Command Center</h2>
+        <div className="text-xs text-slate-400 font-semibold">
+          Updated: {new Date(dashData?.generated_at || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+        </div>
+      </div>
+
+      {/* Alerts Panel */}
+      {alerts.length > 0 && (
+        <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-black text-slate-900">ð¨ Alerts</h3>
+            <div className="flex items-center gap-2 text-xs font-bold">
+              {alertsData.critical_count > 0 && <span className="px-2 py-1 rounded-full bg-red-100 text-red-700">{alertsData.critical_count} critical</span>}
+              {alertsData.warning_count > 0 && <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700">{alertsData.warning_count} warning</span>}
+              {alertsData.info_count > 0 && <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700">{alertsData.info_count} info</span>}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {alerts.map((a: any) => (
+              <button
+                key={a.id}
+                onClick={() => onNavigate(a.action_tab)}
+                className={`text-left p-4 rounded-xl border transition-all hover:shadow-md ${severityStyles[a.severity]}`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <span className="text-2xl">{a.icon}</span>
+                  <span className="text-2xl font-black">{a.count}</span>
+                </div>
+                <div className="text-sm font-bold mb-1">{a.title}</div>
+                <div className="text-xs opacity-80">{a.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-br from-blue-600 to-cyan-600 p-6 rounded-[1.5rem] shadow-lg text-white">
+          <h3 className="text-xs font-bold opacity-90 uppercase tracking-wider">GMV (Gross Merchandise Value)</h3>
+          <p className="text-3xl font-black mt-2">${(kpis.gmv?.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+          <span className={`text-xs bg-white/20 px-2 py-1 rounded mt-3 inline-block font-bold`}>
+            {gmvChange.text}
+          </span>
+        </div>
+        <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Revenue</h3>
+          <p className="text-3xl font-black mt-2 text-slate-900">${(kpis.net_revenue?.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+          <span className={`text-xs px-2 py-1 rounded mt-3 inline-block font-bold ${revChange.color}`}>
+            {revChange.text}
+          </span>
+        </div>
+        <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Listings</h3>
+          <p className="text-3xl font-black mt-2 text-slate-900">{kpis.active_listings || 0}</p>
+          <span className="text-xs text-slate-500 mt-3 inline-block font-semibold">{kpis.active_boosts || 0} with boost</span>
+        </div>
+        <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Open Disputes</h3>
+          <p className={`text-3xl font-black mt-2 ${kpis.open_disputes > 0 ? 'text-red-600' : 'text-slate-900'}`}>{kpis.open_disputes || 0}</p>
+          <span className="text-xs text-slate-500 mt-3 inline-block font-semibold">{kpis.bookings_this_month || 0} bookings this month</span>
+        </div>
+      </div>
+
+      {/* Activity Feed + Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Activity Feed */}
+        <div className="lg:col-span-2 bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-6">
+          <h3 className="text-lg font-black text-slate-900 mb-4">Recent Activity</h3>
+          {(dashData?.activity || []).length === 0 ? (
+            <div className="text-sm text-slate-400 italic py-8 text-center">No activity yet</div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {(dashData?.activity || []).map((ev: any) => (
+                <div key={ev.id} className="flex items-start gap-3 pb-3 border-b border-slate-50 last:border-b-0">
+                  <span className={`mt-2 w-2 h-2 rounded-full flex-shrink-0 ${activityColors[ev.color] || 'bg-slate-400'}`}></span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-slate-900">{ev.title}</div>
+                    <div className="text-xs text-slate-500 truncate">{ev.subtitle}</div>
+                    <div className="text-[10px] text-slate-400 font-semibold uppercase mt-1">
+                      {new Date(ev.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Â· {new Date(ev.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  {ev.amount !== undefined && (
+                    <div className={`text-sm font-black flex-shrink-0 ${ev.amount < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {ev.amount > 0 ? '+' : ''}${Math.abs(ev.amount).toFixed(2)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-6">
+          <h3 className="text-lg font-black text-slate-900 mb-4">Quick Actions</h3>
+          <div className="space-y-2">
+            <button onClick={() => onNavigate('listings')} className="w-full text-left px-4 py-3 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded-xl text-sm font-bold transition-colors">
+              ð¦ Manage Listings
+            </button>
+            <button onClick={() => onNavigate('disputes')} className="w-full text-left px-4 py-3 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-sm font-bold transition-colors">
+              âï¸ Handle Disputes
+            </button>
+            <button onClick={() => onNavigate('financials')} className="w-full text-left px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-sm font-bold transition-colors">
+              ð° View Financials
+            </button>
+            <button onClick={() => onNavigate('boosts')} className="w-full text-left px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-sm font-bold transition-colors">
+              ð Manage Boosts
+            </button>
+            <button onClick={() => onNavigate('users')} className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-bold transition-colors">
+              ð¥ View Users
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 const AdminPage: React.FC<AdminPageProps> = ({ 
     users, 
     listings, 
@@ -1314,84 +1491,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'dashboard':
-                return (
-                    <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Global Overview</h2>
-                            <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
-                                <GlobeIcon className="h-4 w-4 text-gray-500 ml-2" />
-                                <span className="text-xs font-bold text-gray-500 uppercase mr-1">Region:</span>
-                                <select 
-                                    value={selectedRegion} 
-                                    onChange={(e) => setSelectedRegion(e.target.value)}
-                                    className="bg-transparent text-sm font-semibold text-gray-800 focus:outline-none cursor-pointer"
-                                >
-                                    <option value="GLOBAL">Earth (Global View)</option>
-                                    <option value="US">North America (USA)</option>
-                                    <option value="AR">South America (Argentina)</option>
-                                    <option value="EU">Europe (EU)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <SystemHealth />
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                            <div className="bg-gradient-to-br from-blue-600 to-cyan-600 p-6 rounded-lg shadow-lg text-white">
-                                <h3 className="text-sm font-medium opacity-90">Gross Merchandise Value (GMV)</h3>
-                                <p className="text-3xl font-bold mt-1">${stats.gmv.toLocaleString()}</p>
-                                <span className="text-xs bg-white/20 px-2 py-1 rounded mt-2 inline-block">+12% vs last month</span>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-sm font-medium text-gray-500">Net Revenue ({selectedRegion === 'GLOBAL' ? 'Global' : selectedRegion})</h3>
-                                <p className="text-3xl font-bold mt-1 text-gray-900">${stats.revenue.toLocaleString()}</p>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-sm font-medium text-gray-500">Active Listings</h3>
-                                <p className="text-3xl font-bold mt-1 text-gray-900">{stats.activeListings}</p>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow">
-                                <h3 className="text-sm font-medium text-gray-500">Open Disputes</h3>
-                                <p className="text-3xl font-bold mt-1 text-red-600">{stats.disputes}</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="font-bold text-gray-800 mb-4">Recent Activity in {selectedRegion === 'GLOBAL' ? 'All Regions' : selectedRegion}</h3>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center text-sm text-gray-600">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                        New user registration: <strong>Ana Rodriguez</strong>
-                                    </li>
-                                    <li className="flex items-center text-sm text-gray-600">
-                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                        New listing: <strong>Mountain Bike</strong> in Mendoza
-                                    </li>
-                                    <li className="flex items-center text-sm text-gray-600">
-                                        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                                        Booking request #492 pending approval
-                                    </li>
-                                </ul>
-                            </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="font-bold text-gray-800 mb-4">Quick Actions</h3>
-                                <div className="flex gap-2 flex-wrap">
-                                    <button onClick={() => setActiveTab('listings')} className="px-4 py-2 bg-cyan-100 text-cyan-700 rounded-md text-sm font-medium hover:bg-cyan-200">
-                                        Manage Listings
-                                    </button>
-                                    <button onClick={() => setActiveTab('disputes')} className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200">
-                                        Handle Disputes
-                                    </button>
-                                    <button onClick={() => setActiveTab('financials')} className="px-4 py-2 bg-green-100 text-green-700 rounded-md text-sm font-medium hover:bg-green-200">
-                                        View Financials
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+            case 'dashboard': return <DashboardTab onNavigate={setActiveTab} />;
             case 'bookings':
                 return <BookingsTab bookings={bookings} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'financials':
