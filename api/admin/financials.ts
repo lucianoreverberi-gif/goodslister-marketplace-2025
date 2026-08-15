@@ -27,11 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         SELECT 
           b.id, b.tier, b.price_paid, b.status, b.created_at,
           b.stripe_checkout_session_id,
-          l.title as listing_title,
-          u.display_name as user_name
-        FROM boosts b
-        LEFT JOIN listings l ON l.id = b.listing_id
-        LEFT JOIN users u ON u.id = b.user_id
+          listing_id, user_id, NULL as listing_title, NULL as user_name FROM boosts
         ORDER BY b.created_at DESC
       `;
       boostsRows = r.rows;
