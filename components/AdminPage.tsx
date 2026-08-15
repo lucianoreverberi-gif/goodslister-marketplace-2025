@@ -119,7 +119,7 @@ const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Financial Performance</h2>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Financial Performance</h2> {financialsData?.chart && (<div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm"><div className="flex items-center justify-between mb-6"><h3 className="text-lg font-black text-slate-900">Revenue Trend — Last 6 Months</h3><span className="text-xs font-bold text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">Total: ${(financialsData.chart.reduce((s: number, m: any) => s + m.total, 0)).toFixed(2)}</span></div><div className="flex items-end justify-between gap-3 h-56">{financialsData.chart.map((m: any, i: number) => {const maxVal = Math.max(...financialsData.chart.map((x: any) => x.total), 0.01); const heightPct = (m.total / maxVal) * 100; return (<div key={i} className="flex-1 flex flex-col items-center gap-2"><div className="text-xs font-bold text-slate-700">${m.total.toFixed(2)}</div><div className="w-full bg-slate-50 rounded-lg flex flex-col justify-end" style={{height: '160px'}}><div className="w-full bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-lg transition-all" style={{height: heightPct + '%', minHeight: m.total > 0 ? '4px' : '0'}} /></div><div className="text-xs font-semibold text-slate-500">{m.label}</div></div>);})}</div></div>)}
             
             {/* KPI Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
