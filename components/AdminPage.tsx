@@ -1617,6 +1617,9 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                     {userFlags[user.id]?.is_superhost && '⭐ '}{user.isIdVerified ? 'Verified' : 'Unverified'}{userFlags[user.id]?.is_superhost && ' • Superhost'}
                                                 </span>
                                             </td>
+                                            <td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.bookings_count) ?? 0}</td>
+                                            <td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.boosts_count) ?? 0}</td>
+                                            <td className="p-4 text-right"><span className="text-sm font-black text-emerald-600">${(enrichedUsers[user.id]?.ltv ?? 0).toFixed(2)}</span></td>
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <button 
