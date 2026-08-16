@@ -1621,7 +1621,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                 <div className="flex justify-end gap-2">
                                                     <button 
                                                         className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-black rounded-lg hover:bg-indigo-600 transition-all" 
-                                                        onClick={() => alert(`Promoted ${user.name}`)}
+                                                        onClick={async () => { const r = await fetch("/api/admin/user-flags", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ admin_email: "lucianoreverberi@gmail.com", user_id: user.id, action: "toggle_superhost" }) }); const j = await r.json(); if (r.ok) { alert(j.message || "Done"); refetchFlags(); } else { alert("Error: " + (j.error || "unknown")); } }}
                                                     >
                                                         PROMOTE
                                                     </button>
