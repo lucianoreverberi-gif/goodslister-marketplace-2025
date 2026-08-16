@@ -223,7 +223,7 @@ const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData
                                         <td className={`p-4 font-black text-right ${txn.amount > 0 ? 'text-emerald-500' : 'text-slate-900'}`}>
                                             {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                         </td>
-                                        <td className="p-4 text-right">
+                                        <td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.bookings_count) ?? 0}</td><td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.boosts_count) ?? 0}</td><td className="p-4 text-right"><span className="text-sm font-black text-emerald-600">${(enrichedUsers[user.id]?.ltv ?? 0).toFixed(2)}</span></td><td className="p-4 text-right">
                                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border flex items-center gap-1.5 justify-center w-fit ml-auto ${getStatusStyles(txn.status)}`}>
                                                 {txn.status === 'CLEARED' && <CheckCircleIcon className="h-3 w-3" />}
                                                 {txn.status}
@@ -1127,7 +1127,7 @@ const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: s
                                 <th className="p-4 font-black uppercase text-[10px] tracking-widest">Status</th>
                                 <th className="p-4 font-black uppercase text-[10px] tracking-widest">Security Deposit</th>
                                 <th className="p-4 font-black uppercase text-[10px] tracking-widest">Deposit Status</th>
-                                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
+                                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Bookings</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Boosts</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">LTV</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -1156,7 +1156,7 @@ const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: s
                                                 </span>
                                             ) : '-'}
                                         </td>
-                                        <td className="p-4 text-right">
+                                        <td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.bookings_count) ?? 0}</td><td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.boosts_count) ?? 0}</td><td className="p-4 text-right"><span className="text-sm font-black text-emerald-600">${(enrichedUsers[user.id]?.ltv ?? 0).toFixed(2)}</span></td><td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">
                                                 {/* Consistent Action for all bookings */}
                                                 <button 
@@ -1596,7 +1596,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest">Email</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest">Role</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest">Status</th>
-                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Bookings</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Boosts</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">LTV</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1617,7 +1617,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                     {user.isIdVerified ? 'Verified' : 'Unverified'}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-right">
+                                            <td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.bookings_count) ?? 0}</td><td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.boosts_count) ?? 0}</td><td className="p-4 text-right"><span className="text-sm font-black text-emerald-600">${(enrichedUsers[user.id]?.ltv ?? 0).toFixed(2)}</span></td><td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <button 
                                                         className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-black rounded-lg hover:bg-indigo-600 transition-all" 
@@ -1659,7 +1659,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest">Owner</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest">Price</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest">Location</th>
-                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Bookings</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Boosts</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">LTV</th><th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1682,7 +1682,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                                     {listing.location.city}, {listing.location.country}
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-right">
+                                            <td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.bookings_count) ?? 0}</td><td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.boosts_count) ?? 0}</td><td className="p-4 text-right"><span className="text-sm font-black text-emerald-600">${(enrichedUsers[user.id]?.ltv ?? 0).toFixed(2)}</span></td><td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <button 
                                                         onClick={() => onToggleFeatured(listing.id)}
