@@ -1587,7 +1587,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
             case 'users':
                 return (
                     <div className="animate-in fade-in duration-500">
-                        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-6">User Management ({filteredUsers.length})</h2>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"><h2 className="text-3xl font-black text-slate-900 tracking-tight">User Management ({filteredUsers.length})</h2><input type="text" value={usersSearch} onChange={(e) => setUsersSearch(e.target.value)} placeholder="🔍 Search by email or name..." className="px-4 py-2 border border-slate-200 rounded-xl text-sm w-full md:w-80 focus:outline-none focus:ring-2 focus:ring-cyan-500" /></div>
                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-slate-50 border-b border-slate-100 text-slate-400">
