@@ -1435,7 +1435,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
     // --- Global Region Context ---
     const [selectedRegion, setSelectedRegion] = useState<string>('GLOBAL'); 
-    const [disputes, setDisputes] = useState<Dispute[]>(mockDisputes); const [enrichedUsers, setEnrichedUsers] = useState<any>({}); const [usersSearch, setUsersSearch] = useState(""); useEffect(() => { fetch("/api/admin/users-enrich?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(d => setEnrichedUsers(d.users || {})).catch(console.error); }, []);
+    const [disputes, setDisputes] = useState<Dispute[]>(mockDisputes); const [enrichedUsers, setEnrichedUsers] = useState<any>({}); const [usersSearch, setUsersSearch] = useState(""); const [userFlags, setUserFlags] = useState<any>({}); const refetchFlags = () => { fetch("/api/admin/user-flags?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(d => setUserFlags(d.flags || {})).catch(console.error); }; useEffect(() => { refetchFlags(); }, []); useEffect(() => { fetch("/api/admin/users-enrich?admin_email=lucianoreverberi@gmail.com").then(r => r.json()).then(d => setEnrichedUsers(d.users || {})).catch(console.error); }, []);
 
     const wrapImageUpdate = async (loadingKey: string, updateFn: () => Promise<void>) => {
         setUploadingStates(prev => ({ ...prev, [loadingKey]: true }));
