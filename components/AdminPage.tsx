@@ -1614,7 +1614,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             </td>
                                             <td className="p-4">
                                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${user.isIdVerified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                                    {user.isIdVerified ? 'Verified' : 'Unverified'}
+                                                    {userFlags[user.id]?.is_superhost && '⭐ '}{user.isIdVerified ? 'Verified' : 'Unverified'}{userFlags[user.id]?.is_superhost && ' • Superhost'}
                                                 </span>
                                             </td>
                                             <td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.bookings_count) ?? 0}</td><td className="p-4 text-center text-slate-700 font-bold">{(enrichedUsers[user.id]?.boosts_count) ?? 0}</td><td className="p-4 text-right"><span className="text-sm font-black text-emerald-600">${(enrichedUsers[user.id]?.ltv ?? 0).toFixed(2)}</span></td><td className="p-4 text-right">
