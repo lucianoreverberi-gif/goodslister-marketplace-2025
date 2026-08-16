@@ -1474,7 +1474,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
     }, [listings, selectedRegion]);
 
     const filteredUsers = useMemo(() => {
-        if (selectedRegion === 'GLOBAL') return users;
+        // Moved inline below
         const regionFiltered = selectedRegion === "GLOBAL" ? users : users.filter((u: any) => u.homeRegion === selectedRegion); if (!usersSearch.trim()) return regionFiltered; const q = usersSearch.toLowerCase(); return regionFiltered.filter((u: any) => (u.email || "").toLowerCase().includes(q) || (u.name || u.displayName || "").toLowerCase().includes(q)); 
     }, [users, selectedRegion, usersSearch]);
 
