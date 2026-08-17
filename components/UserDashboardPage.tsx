@@ -35,7 +35,7 @@ interface UserDashboardPageProps {
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void;
 }
 
-type DashboardTab = 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant' | 'boosts';
+type DashboardTab = 'overview' | 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant' | 'boosts';
 
 const STRIPE_ENABLED = true;
 
@@ -802,7 +802,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
         onDeleteListing, onToggleFavorite, onUpdateAvatar, onUpdateProfile, 
         onVerificationUpdate, onBookingStatusUpdate, onUpdateDepositStatus, onViewPublicProfile 
     } = props;
-    const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
+    const [activeTab, setActiveTab] = useState<DashboardTab>('overview'); const [overviewData, setOverviewData] = useState<any>(null); useEffect(() => { fetch(`/api/user/overview?user_id=${user.id}`).then(r => r.json()).then(setOverviewData).catch(console.error); }, [user.id]);
     const [listingToBoost, setListingToBoost] = useState<Listing | null>(null);
 
     // Stripe Connect Integration States
@@ -914,7 +914,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
     };
 
     const tabs: { id: DashboardTab | 'boosts'; name: string; icon: React.ElementType }[] = [
-        { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon },
+        { id: 'overview', name: 'Home', icon: BarChartIcon },        { id: 'profile', name: 'Profile Settings', icon: UserCheckIcon },
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
         { id: 'boosts', name: 'My Boosts', icon: RocketIcon },
         { id: 'bookings', name: 'My Bookings', icon: CalendarIcon },
