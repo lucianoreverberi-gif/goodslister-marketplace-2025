@@ -955,28 +955,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                             <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                                 <LockIcon className="h-4 w-4 text-slate-400" /> Account Security
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">New Password</label>
-                                    <input 
-                                        type="password" 
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder="••••••••" 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20" 
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Confirm New Password</label>
-                                    <input 
-                                        type="password" 
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="••••••••" 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20" 
-                                    />
-                                </div>
-                            </div>
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4 flex items-start gap-3"><MailIcon className="h-5 w-5 text-cyan-600 flex-shrink-0 mt-0.5" /><div><p className="text-sm font-black text-slate-900">Password reset via email</p><p className="text-xs font-bold text-slate-500 mt-1">For your security, we will send a password reset link to your email address. Click the link to create a new password.</p></div></div>
                             {passwordMessage && (
                                 <div className={`mt-4 p-4 rounded-xl text-sm font-bold flex items-center gap-2 ${passwordMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                                     {passwordMessage.type === 'success' ? <CheckCircleIcon className="h-5 w-5" /> : <AlertTriangleIcon className="h-5 w-5" />}
@@ -989,7 +968,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                     disabled={isUpdatingPassword}
                                     className="px-4 py-1.5 bg-slate-800 text-white text-xs font-semibold rounded-md hover:bg-slate-950 transition-colors disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    {isUpdatingPassword ? <RefreshCwIcon className="h-3.5 w-3.5 animate-spin" /> : 'Update Password'}
+                                    {isUpdatingPassword ? <RefreshCwIcon className="h-3.5 w-3.5 animate-spin" /> : 'Send Reset Email'}
                                 </button>
                             </div>
                         </div>
