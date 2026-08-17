@@ -12,7 +12,7 @@ import {
     ArrowRightIcon, RefreshCwIcon, LightbulbIcon, ClockIcon, SlidersIcon,
     ShieldCheckIcon, InfoIcon, ExternalLinkIcon
 } from './icons';
-import ImageUploader from './ImageUploader';
+import ImageUploader from './ImageUploader';import { auth, sendPasswordResetEmail } from '../services/firebase';
 import { format } from 'date-fns';
 import ListingCard from './ListingCard';
 import RentalSessionWizard from './RentalSessionWizard';
