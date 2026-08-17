@@ -1623,7 +1623,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <button 
-                                                        onClick={() => { window.location.hash = "userProfile/" + user.id; }} className="px-3 py-1 bg-cyan-100 text-cyan-700 text-[10px] font-black rounded-lg hover:bg-cyan-200 transition-all uppercase" title="View Profile">👁️</button> <button className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-black rounded-lg hover:bg-indigo-600 transition-all" 
+                                                        onClick={() => { window.open("/#userProfile/" + user.id, "_blank"); }} className="px-3 py-1 bg-cyan-100 text-cyan-700 text-[10px] font-black rounded-lg hover:bg-cyan-200 transition-all uppercase" title="View Profile">👁️</button> <button className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-black rounded-lg hover:bg-indigo-600 transition-all" 
                                                         onClick={async () => { const r = await fetch("/api/admin/user-flags", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ admin_email: "lucianoreverberi@gmail.com", user_id: user.id, action: "toggle_superhost" }) }); const j = await r.json(); if (r.ok) { alert(j.message || "Done"); refetchFlags(); } else { alert("Error: " + (j.error || "unknown")); } }}
                                                     >
                                                         PROMOTE
