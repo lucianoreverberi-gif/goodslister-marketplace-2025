@@ -371,7 +371,7 @@ const MyBoostsManager: React.FC<{ user: Session, onBoostListing: () => void }> =
                             <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden">
                                 {activeBoosts.map(b => (
                                     <div key={b.id} className="p-5 flex items-center gap-5 hover:bg-slate-50/50 transition-colors border-b last:border-0 border-slate-50">
-                                        <img src={JSON.parse(b.listing_images)[0]} className="w-14 h-14 rounded-xl object-cover" />
+                                        <img src={(Array.isArray(b.listing_images) ? b.listing_images[0] : (typeof b.listing_images === "string" ? (b.listing_images.startsWith("[") ? JSON.parse(b.listing_images)[0] : b.listing_images.split(",")[0]) : ""))} className="w-14 h-14 rounded-xl object-cover" />
                                         <div className="flex-1">
                                             <h4 className="font-bold text-slate-900 text-sm">{b.listing_title}</h4>
                                             <div className="flex items-center gap-3 mt-1">
@@ -401,7 +401,7 @@ const MyBoostsManager: React.FC<{ user: Session, onBoostListing: () => void }> =
                             <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden opacity-80">
                                 {pastBoosts.map(b => (
                                     <div key={b.id} className="p-4 flex items-center gap-4 border-b last:border-0 border-slate-50 text-slate-700">
-                                        <img src={JSON.parse(b.listing_images)[0]} className="w-10 h-10 rounded-lg object-cover grayscale" />
+                                        <img src={(Array.isArray(b.listing_images) ? b.listing_images[0] : (typeof b.listing_images === "string" ? (b.listing_images.startsWith("[") ? JSON.parse(b.listing_images)[0] : b.listing_images.split(",")[0]) : ""))} className="w-10 h-10 rounded-lg object-cover grayscale" />
                                         <div className="flex-1">
                                             <h4 className="font-bold text-xs">{b.listing_title}</h4>
                                             <p className="text-[10px] font-medium text-slate-400">{format(new Date(b.starts_at), 'MMM dd')} - {format(new Date(b.expires_at), 'MMM dd')}</p>
