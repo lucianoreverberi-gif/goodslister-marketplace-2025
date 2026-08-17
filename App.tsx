@@ -51,10 +51,10 @@ interface Notification {
 const App: React.FC = () => {
     const [page, setPage] = useState<Page>(() => {
         const hash = window.location.hash.replace('#', '') as Page;
-        return hash || 'home';
+        if (hash.startsWith('userProfile/')) { return 'userProfile' as Page; } if (hash.startsWith('damage/')) { return 'damageDetail' as Page; } return hash || 'home';
     });
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);
-    const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(null);
+    const [selectedUserProfileId, setSelectedUserProfileId] = useState<string | null>(() => { const h = window.location.hash.replace('#', ''); return h.startsWith('userProfile/') ? h.substring(12) : null; });
     const { consent } = useCookieConsent();
     
     // Initialize session state
