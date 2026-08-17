@@ -887,13 +887,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
         }
         setIsUpdatingPassword(true);
         // Simulate API call
-        setTimeout(() => {
-            setIsUpdatingPassword(false);
-            setPasswordMessage({ text: 'Password updated successfully!', type: 'success' });
-            setNewPassword('');
-            setConfirmPassword('');
-            setTimeout(() => setPasswordMessage(null), 3000);
-        }, 1000);
+        if (!user.email) { setPasswordMessage({ text: 'No email found.', type: 'error' }); setIsUpdatingPassword(false); return; } sendPasswordResetEmail(auth, user.email).then(() => { setIsUpdatingPassword(false); setPasswordMessage({ text: 'Password reset email sent to ' + user.email + '. Check your inbox.', type: 'success' }); setNewPassword(''); setConfirmPassword(''); setTimeout(() => setPasswordMessage(null), 6000); }).catch((err) => { setIsUpdatingPassword(false); setPasswordMessage({ text: 'Error: ' + (err.message || 'Failed to send.'), type: 'error' }); setTimeout(() => setPasswordMessage(null), 5000); });
     };
 
     const handleCloseAccount = () => {
