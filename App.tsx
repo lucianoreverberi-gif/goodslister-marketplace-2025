@@ -159,7 +159,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '') as Page;
-            if ((hash as string).startsWith('damage/')) { const reportId = (hash as string).substring(7); if (reportId) { setSelectedDamageReportId(reportId); setPage('damageDetail' as any); } } else if (hash) setPage(hash);
+            if ((hash as string).startsWith('damage/')) { const reportId = (hash as string).substring(7); if (reportId) { setSelectedDamageReportId(reportId); setPage('damageDetail' as any); } } else if ((hash as string).startsWith('userProfile/')) { const userId = (hash as string).substring(12); if (userId) { setSelectedUserProfileId(userId); setPage('userProfile' as any); } } else if (hash) setPage(hash);
         };
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
