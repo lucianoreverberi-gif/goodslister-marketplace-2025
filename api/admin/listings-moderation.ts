@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const r = await sql`
           SELECT *
           FROM listings
-          ORDER BY created_at DESC
+          ORDER BY id DESC
           LIMIT 100
         `;
         listings = r.rows;
@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           SELECT *
           FROM listings
           WHERE moderation_status = ${filter}
-          ORDER BY created_at DESC
+          ORDER BY id DESC
           LIMIT 100
         `;
         listings = r.rows;
