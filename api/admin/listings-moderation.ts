@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let listings;
       if (filter === 'all') {
         const r = await sql`
-          SELECT id, title, description, price, category, moderation_status, moderation_rejection_reason, moderation_reviewed_at, moderation_reviewed_by, images, owner_id, created_at
+          SELECT *
           FROM listings
           ORDER BY created_at DESC
           LIMIT 100
@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         listings = r.rows;
       } else {
         const r = await sql`
-          SELECT id, title, description, price, category, moderation_status, moderation_rejection_reason, moderation_reviewed_at, moderation_reviewed_by, images, owner_id, created_at
+          SELECT *
           FROM listings
           WHERE moderation_status = ${filter}
           ORDER BY created_at DESC
