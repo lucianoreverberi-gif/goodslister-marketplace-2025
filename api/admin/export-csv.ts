@@ -56,12 +56,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       const { rows: bookings } = await sql`
         SELECT id, total_price, status, created_at, listing_id, renter_id
-        FROM bookings WHERE status IN ('confirmed', 'completed', 'active', 'checked_in')
+        FROM bookings
         ORDER BY id DESC LIMIT 5000
       `;
       const { rows: boosts } = await sql`
         SELECT id, user_id, tier, price_paid, status, created_at
-        FROM boosts WHERE status IN ('active', 'expired')
+        FROM boosts
         ORDER BY id DESC LIMIT 5000
       `;
       
