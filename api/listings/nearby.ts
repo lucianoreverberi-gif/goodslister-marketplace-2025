@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { rows } = category
       ? await sql`
           SELECT * FROM listings
-          WHERE status = 'active'
+          WHERE moderation_status = 'approved'
             AND location_lat BETWEEN ${minLat} AND ${maxLat}
             AND location_lng BETWEEN ${minLng} AND ${maxLng}
             AND category = ${category}
@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `
       : await sql`
           SELECT * FROM listings
-          WHERE status = 'active'
+          WHERE moderation_status = 'approved'
             AND location_lat BETWEEN ${minLat} AND ${maxLat}
             AND location_lng BETWEEN ${minLng} AND ${maxLng}
           LIMIT 500
