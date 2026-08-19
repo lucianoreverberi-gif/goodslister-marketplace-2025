@@ -1636,7 +1636,11 @@ const ExportCsvSection: React.FC = () => {    const [downloading, setDownloading
                                                     </button>
                                                     <button 
                                                         className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg hover:bg-slate-200 transition-all uppercase" 
-                                                        onClick={async () => { if (!user.email) { alert('User has no email'); return; } try { const methods = await fetchSignInMethodsForEmail(auth, user.email); if (methods.length === 0) { alert('User not found in Firebase Auth. Email: ' + user.email); return; } const hasPassword = methods.includes('password'); const hasGoogle = methods.includes('google.com'); if (hasGoogle && !hasPassword) { alert('This user signed up with Google. They dont have a password to reset. Ask them to click Sign in with Google.'); return; } if (!confirm('Send password reset email to ' + user.email + '?')) return; await sendPasswordResetEmail(auth, user.email); alert('Reset email sent to ' + user.email + '. Ask them to check inbox and spam folder.'); } catch (e) { alert('Error: ' + (e.message || 'failed')); } }}
+                                                        onClick={async () => { if (!user.email) { alert('User has no email'); return; } try { if (!confirm('Send password reset email to ' + user.email + '?')) return; await sendPasswordResetEmail(auth, user.email); alert('Reset email sent to ' + user.email + '.
+
+Ask them to:
+1. Check inbox + spam folder
+2. If nothing arrives in 5 min, they may have signed up with Google - ask them to try Sign in with Google instead'); } catch (e) { alert('Error: ' + (e.message || 'failed')); } }}
                                                     >
                                                         Reset
                                                     </button>
