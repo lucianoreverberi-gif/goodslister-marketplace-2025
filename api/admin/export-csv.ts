@@ -55,12 +55,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (e) {}
       
       const { rows: bookings } = await sql`
-        SELECT id, total_price, status, created_at, listing_id, renter_id
+        SELECT *
         FROM bookings
         ORDER BY id DESC LIMIT 5000
       `;
       const { rows: boosts } = await sql`
-        SELECT id, user_id, tier, price_paid, status, created_at
+        SELECT *
         FROM boosts
         ORDER BY id DESC LIMIT 5000
       `;
