@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { User, Listing, HeroSlide, Banner, CategoryImagesMap, ListingCategory, Dispute, Coupon, Booking } from '../types';
 import { LayoutDashboardIcon, UsersIcon, PackageIcon, PaletteIcon, XIcon, CreditCardIcon, CheckCircleIcon, ShieldIcon, LayoutOverlayIcon, LayoutSplitIcon, LayoutWideIcon, EyeIcon, GavelIcon, AlertIcon, CheckSquareIcon, TicketIcon, CogIcon, CalculatorIcon, DollarSignIcon, TrashIcon, MapPinIcon, BarChartIcon, ExternalLinkIcon, LockIcon, ArrowRightIcon, TrendUpIcon, UmbrellaIcon, AlertTriangleIcon, MegaphoneIcon, RocketIcon, SlidersIcon, GlobeIcon, UserCheckIcon, SearchIcon, RefreshCwIcon, CalendarIcon, SparklesIcon, StarIcon } from './icons';
 import ImageUploader from './ImageUploader';import AdminDamageDisputes from './AdminDamageDisputes';
-import { initialCategoryImages } from '../constants';
+import { initialCategoryImages } from '../constants';import { auth } from '../services/firebase';import { sendPasswordResetEmail, fetchSignInMethodsForEmail } from 'firebase/auth';
 
 type AdminTab = 'dashboard' | 'moderation' | 'users' | 'listings' | 'bookings' | 'financials' | 'risk_fund' | 'disputes' | 'content' | 'billing' | 'marketing' | 'settings' | 'boosts' | 'ai_ops';
 
@@ -1636,7 +1636,7 @@ const ExportCsvSection: React.FC = () => {    const [downloading, setDownloading
                                                     </button>
                                                     <button 
                                                         className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg hover:bg-slate-200 transition-all uppercase" 
-                                                        onClick={() => alert(`Reset password email sent to ${user.email}`)}
+                                                        onClick={async () => { if (!user.email) { alert('User has no email'); return; } try { const methods = await fetchSignInMethodsForEmail(auth, user.email); if (methods.length === 0) { alert('User not found in Firebase Auth. Email: ' + user.email); return; } const hasPassword = methods.includes('password'); const hasGoogle = methods.includes('google.com'); if (hasGoogle && !hasPassword) { alert('This user signed up with Google. They dont have a password to reset. Ask them to click Sign in with Google.'); return; } if (!confirm('Send password reset email to ' + user.email + '?')) return; await sendPasswordResetEmail(auth, user.email); alert('Reset email sent to ' + user.email + '. Ask them to check inbox and spam folder.'); } catch (e) { alert('Error: ' + (e.message || 'failed')); } }}
                                                     >
                                                         Reset
                                                     </button>
