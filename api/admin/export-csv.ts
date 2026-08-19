@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (type === 'bookings') {
       const { rows } = await sql`
-        SELECT b.id, b.listing_id, b.renter_id, b.status, b.total_price, b.deposit_amount, 
+        SELECT b.*, 
                b.stripe_payment_intent_id, b.created_at, b.start_date, b.end_date,
                l.title AS listing_title, l.owner_id AS host_id
         FROM bookings b
