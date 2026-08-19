@@ -1630,7 +1630,7 @@ const ExportCsvSection: React.FC = () => {    const [downloading, setDownloading
                                                     </button>
                                                     <button 
                                                         className="px-3 py-1 bg-red-100 text-red-600 text-[10px] font-black rounded-lg hover:bg-red-200 transition-all" 
-                                                        onClick={() => alert(`Simulated Ban for ${user.name}`)}
+                                                        onClick={async () => { const isSuspended = userFlags[user.id]?.is_suspended; const actionWord = isSuspended ? 'unsuspend' : 'suspend'; if (!confirm(`Are you sure you want to ${actionWord} ${user.name}? ${!isSuspended ? 'They will not be able to book or list.' : ''}`)) return; try { const r = await fetch('/api/admin/user-flags', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ admin_email: 'lucianoreverberi@gmail.com', user_id: user.id, action: 'toggle_suspend' }) }); const j = await r.json(); if (r.ok) { alert(j.message || 'Done'); loadUserFlags(); } else { alert('Error: ' + (j.error || 'unknown')); } } catch (e) { alert('Error: ' + e.message); } }}
                                                     >
                                                         SUSPEND
                                                     </button>
