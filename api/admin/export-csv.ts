@@ -37,13 +37,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (type === 'bookings') {
       const { rows } = await sql`
         SELECT b.*, 
-               b.stripe_payment_intent_id, b.created_at, b.start_date, b.end_date,
+               
                l.title AS listing_title, l.owner_id AS host_id
         FROM bookings b
         LEFT JOIN listings l ON b.listing_id = l.id
         ORDER BY b.id DESC LIMIT 5000
       `;
-      csv = toCSV(rows, ['id', 'created_at', 'start_date', 'end_date', 'status', 'listing_id', 'listing_title', 'host_id', 'renter_id', 'total_price', 'deposit_amount', 'stripe_payment_intent_id']);
+      csv = toCSV(rows, ['id', 'created_at', 'status', 'listing_id', 'listing_title', 'host_id', 'renter_id', 'total_price', 'deposit_amount', 'deposit_hold_status']);
       filename = `goodslister-bookings-${now}.csv`;
     }
     else if (type === 'financials') {
