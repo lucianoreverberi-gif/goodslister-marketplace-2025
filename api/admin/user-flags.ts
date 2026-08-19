@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await ensureTable();
+    await ensureTable(); try { await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE`; await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ`; await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS suspended_by TEXT`; } catch (e) { console.log('suspend cols migration skip:', e); } try { await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE`; await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ`; await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS suspended_by TEXT`; } catch (e) { console.log('suspend cols migration skip:', e); } try { await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE`; await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ`; await sql`ALTER TABLE admin_user_flags ADD COLUMN IF NOT EXISTS suspended_by TEXT`; } catch (e) { console.log('suspend cols migration skip:', e); }
 
     // ========= GET: fetch all user flags =========
     if (req.method === 'GET') {
@@ -98,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      return res.status(400).json({ error: `Unknown action: ${action}. Supported: toggle_superhost` });
+      if (action === 'toggle_suspend') { const { rows: current } = await sql`SELECT is_suspended FROM admin_user_flags WHERE user_id = ${user_id}`; const currentValue = current[0]?.is_suspended || false; const newValue = !currentValue; if (current.length === 0) { await sql`INSERT INTO admin_user_flags (user_id, is_suspended, suspended_at, suspended_by, updated_at) VALUES (${user_id}, ${newValue}, ${newValue ? new Date().toISOString() : null}, ${newValue ? adminEmail : null}, NOW())`; } else { await sql`UPDATE admin_user_flags SET is_suspended = ${newValue}, suspended_at = ${newValue ? new Date().toISOString() : null}, suspended_by = ${newValue ? adminEmail : null}, updated_at = NOW() WHERE user_id = ${user_id}`; } return res.status(200).json({ status: 'ok', user_id, action, previous_value: currentValue, new_value: newValue, message: newValue ? 'User suspended' : 'User unsuspended' }); } return res.status(400).json({ error: `Unknown action: ${action}. Supported: toggle_superhost, toggle_suspend` });
     }
 
     return res.status(405).json({ error: 'Method not allowed. Use GET or POST.' });
