@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { rows } = category
       ? await sql`
           SELECT id, title, description, category, subcategory, price_per_day, price_unit,
-                 image_url, images, average_rating, reviews_count,
+                 images, average_rating, reviews_count,
                  location_city, location_state, location_country, location_lat, location_lng,
                  boost_tier_active, boost_active_until, is_featured, owner_id
           FROM listings
@@ -78,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `
       : await sql`
           SELECT id, title, description, category, subcategory, price_per_day, price_unit,
-                 image_url, images, average_rating, reviews_count,
+                 images, average_rating, reviews_count,
                  location_city, location_state, location_country, location_lat, location_lng,
                  boost_tier_active, boost_active_until, is_featured, owner_id
           FROM listings
@@ -114,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subcategory: r.subcategory,
       pricePerDay: r.price_per_day ? Number(r.price_per_day) : null,
       priceUnit: r.price_unit || 'day',
-      imageUrl: r.image_url,
+      imageUrl: (Array.isArray(r.images) ? r.images[0] : (typeof r.images === 'string' && r.images.startsWith('[') ? JSON.parse(r.images)[0] : (typeof r.images === 'string' ? r.images.split(',')[0] : ''))),
       images: r.images,
       rating: r.average_rating ? Number(r.average_rating) : null,
       reviewsCount: r.reviews_count || 0,
