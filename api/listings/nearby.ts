@@ -65,11 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Query with optional category filter
     const { rows } = category
       ? await sql`
-          SELECT id, title, description, category, subcategory, price_per_day, price_unit,
-                 images, average_rating, reviews_count,
-                 location_city, location_state, location_country, location_lat, location_lng,
-                 boost_tier_active, boost_active_until, is_featured, owner_id
-          FROM listings
+          SELECT * FROM listings
           WHERE status = 'active'
             AND location_lat BETWEEN ${minLat} AND ${maxLat}
             AND location_lng BETWEEN ${minLng} AND ${maxLng}
@@ -77,11 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           LIMIT 500
         `
       : await sql`
-          SELECT id, title, description, category, subcategory, price_per_day, price_unit,
-                 images, average_rating, reviews_count,
-                 location_city, location_state, location_country, location_lat, location_lng,
-                 boost_tier_active, boost_active_until, is_featured, owner_id
-          FROM listings
+          SELECT * FROM listings
           WHERE status = 'active'
             AND location_lat BETWEEN ${minLat} AND ${maxLat}
             AND location_lng BETWEEN ${minLng} AND ${maxLng}
