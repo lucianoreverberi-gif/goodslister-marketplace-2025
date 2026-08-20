@@ -51,7 +51,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
     const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
-    const [minPrice, setMinPrice] = useState<string>('');    const [maxPrice, setMaxPrice] = useState<string>('');    const [pricingMode, setPricingMode] = useState<'all' | 'daily' | 'hourly'>('all');    const [minRating, setMinRating] = useState<number>(0);    const [dateRange, setDateRange] = useState<DateRange | undefined>();    const [datePopoverOpen, setDatePopoverOpen] = useState<boolean>(false);    const [dateRange, setDateRange] = useState<DateRange | undefined>();    const [datePopoverOpen, setDatePopoverOpen] = useState<boolean>(false);    const [dateRange, setDateRange] = useState<DateRange | undefined>();    const [datePopoverOpen, setDatePopoverOpen] = useState<boolean>(false);
+    const [minPrice, setMinPrice] = useState<string>('');    const [maxPrice, setMaxPrice] = useState<string>('');    const [pricingMode, setPricingMode] = useState<'all' | 'daily' | 'hourly'>('all');    const [minRating, setMinRating] = useState<number>(0);    const [dateRange, setDateRange] = useState<DateRange | undefined>();    const [datePopoverOpen, setDatePopoverOpen] = useState<boolean>(false);
     
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
     const [locationFilter, setLocationFilter] = useState('');
