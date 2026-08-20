@@ -51,8 +51,8 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
     const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
-    const maxPrice = useMemo(() => Math.max(...listings.map(l => l.pricePerDay || 0), 100), [listings]);
-    const [priceRange, setPriceRange] = useState<number>(maxPrice);
+    const [minPrice, setMinPrice] = useState<string>('');    const [maxPrice, setMaxPrice] = useState<string>('');    const [pricingMode, setPricingMode] = useState<'all' | 'daily' | 'hourly'>('all');
+    
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
     const [locationFilter, setLocationFilter] = useState('');
 
@@ -188,7 +188,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         setSearchTerm('');
         setSelectedCategories([]);
         setSelectedSubcategories([]);
-        setPriceRange(maxPrice);
+        setMinPrice(''); setMaxPrice(''); setPricingMode('all');
         setSortBy('rating_desc');
         setLocationFilter('');
         setMapZoom(4);
@@ -218,7 +218,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                 : true;
 
             const price = listing.pricingType === 'daily' ? listing.pricePerDay : listing.pricePerHour;
-            const matchesPrice = price ? price <= priceRange : true;
+            const minNum = minPrice ? parseFloat(minPrice) : 0; const maxNum = maxPrice ? parseFloat(maxPrice) : Infinity; const priceHourly = listing.pricePerHour || 0; const priceDaily = listing.pricePerDay || 0; let matchesPrice = true; if (pricingMode === 'daily') { matchesPrice = priceDaily > 0 && priceDaily >= minNum && priceDaily <= maxNum; } else if (pricingMode === 'hourly') { matchesPrice = priceHourly > 0 && priceHourly >= minNum && priceHourly <= maxNum; } else { const priceAny = priceDaily || priceHourly; matchesPrice = priceAny === 0 || (priceAny >= minNum && priceAny <= maxNum); }
 
             return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesLocation;
         });
@@ -259,7 +259,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         });
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, selectedSubcategories, priceRange, sortBy, locationFilter, userLocation]);
+    }, [listings, searchTerm, selectedCategories, selectedSubcategories, minPrice, maxPrice, pricingMode, sortBy, locationFilter, userLocation]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -434,7 +434,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                             </div>
                         )}
 
-                         {/* Price Filter */} <div> <div className="flex items-center justify-between"> <label htmlFor="price" className="block text-sm font-bold text-gray-800">Max Price</label> <span className="text-sm font-bold text-cyan-700">${priceRange}/day</span> </div> <input type="range" id="price" min="0" max={maxPrice} step="10" value={priceRange} onChange={e => { setPriceRange(Number(e.target.value)); setUserManuallySearched(false); }} className="mt-2 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-600" /> <div className="flex justify-between text-xs text-gray-500 mt-1"> <span>$0</span> <span>${maxPrice}+</span> </div> </div> {/* Search Filter */}
+                         {/* Price Filter */} <div> <label className="block text-sm font-bold text-gray-800">Price</label> <div className="mt-2 grid grid-cols-3 gap-2"> <div> <input type="number" min="0" placeholder="Min $" value={minPrice} onChange={e => { setMinPrice(e.target.value); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5" /> </div> <div> <input type="number" min="0" placeholder="Max $" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5" /> </div> <div> <select value={pricingMode} onChange={e => { setPricingMode(e.target.value as 'all' | 'daily' | 'hourly'); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5"> <option value="all">All</option> <option value="daily">Per Day</option> <option value="hourly">Per Hour</option> </select> </div> </div> </div> {/* Search Filter */}
                         <div>
                             <label htmlFor="search" className="block text-sm font-bold text-gray-800">Keyword</label>
                             <div className="relative mt-1">
