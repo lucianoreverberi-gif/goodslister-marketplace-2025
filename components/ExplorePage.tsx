@@ -8,7 +8,7 @@ import { subcategories } from '../constants';
 import ListingCard from './ListingCard';
 import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon } from './icons';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
-import { FilterCriteria } from '../services/geminiService';
+import { FilterCriteria } from '../services/geminiService';import { DayPicker, DateRange } from 'react-day-picker';import { format, parseISO, isWithinInterval, areIntervalsOverlapping } from 'date-fns';
 
 interface ExplorePageProps {
     listings: Listing[];
@@ -51,7 +51,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategories, setSelectedCategories] = useState<ListingCategory[]>([]);
     const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
-    const [minPrice, setMinPrice] = useState<string>('');    const [maxPrice, setMaxPrice] = useState<string>('');    const [pricingMode, setPricingMode] = useState<'all' | 'daily' | 'hourly'>('all');    const [minRating, setMinRating] = useState<number>(0);
+    const [minPrice, setMinPrice] = useState<string>('');    const [maxPrice, setMaxPrice] = useState<string>('');    const [pricingMode, setPricingMode] = useState<'all' | 'daily' | 'hourly'>('all');    const [minRating, setMinRating] = useState<number>(0);    const [dateRange, setDateRange] = useState<DateRange | undefined>();    const [datePopoverOpen, setDatePopoverOpen] = useState<boolean>(false);    const [dateRange, setDateRange] = useState<DateRange | undefined>();    const [datePopoverOpen, setDatePopoverOpen] = useState<boolean>(false);    const [dateRange, setDateRange] = useState<DateRange | undefined>();    const [datePopoverOpen, setDatePopoverOpen] = useState<boolean>(false);
     
     const [sortBy, setSortBy] = useState<SortOption>('rating_desc');
     const [locationFilter, setLocationFilter] = useState('');
@@ -188,7 +188,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         setSearchTerm('');
         setSelectedCategories([]);
         setSelectedSubcategories([]);
-        setMinPrice(''); setMaxPrice(''); setPricingMode('all'); setMinRating(0);
+        setMinPrice(''); setMaxPrice(''); setPricingMode('all'); setMinRating(0); setDateRange(undefined);
         setSortBy('rating_desc');
         setLocationFilter('');
         setMapZoom(4);
@@ -220,7 +220,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
             const price = listing.pricingType === 'daily' ? listing.pricePerDay : listing.pricePerHour;
             const minNum = minPrice ? parseFloat(minPrice) : 0; const maxNum = maxPrice ? parseFloat(maxPrice) : Infinity; const priceHourly = listing.pricePerHour || 0; const priceDaily = listing.pricePerDay || 0; let matchesPrice = true; if (pricingMode === 'daily') { matchesPrice = priceDaily > 0 && priceDaily >= minNum && priceDaily <= maxNum; } else if (pricingMode === 'hourly') { matchesPrice = priceHourly > 0 && priceHourly >= minNum && priceHourly <= maxNum; } else { const priceAny = priceDaily || priceHourly; matchesPrice = priceAny === 0 || (priceAny >= minNum && priceAny <= maxNum); } const matchesRating = minRating === 0 || (listing.rating || 0) >= minRating;
 
-            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesRating && matchesLocation;
+            return matchesSearch && matchesCategory && matchesSubcategory && matchesPrice && matchesRating && matchesDates && matchesLocation;
         });
 
         // GEO-AWARE & BOOST-PRIORITY SORTING
@@ -259,7 +259,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         });
 
         return filtered;
-    }, [listings, searchTerm, selectedCategories, selectedSubcategories, minPrice, maxPrice, pricingMode, minRating, sortBy, locationFilter, userLocation]);
+    }, [listings, searchTerm, selectedCategories, selectedSubcategories, minPrice, maxPrice, pricingMode, minRating, dateRange, sortBy, locationFilter, userLocation]);
     
     // Automatically adjust the map view to fit the filtered listings
     useEffect(() => {
@@ -434,7 +434,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                             </div>
                         )}
 
-                         {/* Price Filter */} <div> <label className="block text-sm font-bold text-gray-800">Price</label> <div className="mt-2 grid grid-cols-3 gap-2"> <div> <input type="number" min="0" placeholder="Min $" value={minPrice} onChange={e => { setMinPrice(e.target.value); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5" /> </div> <div> <input type="number" min="0" placeholder="Max $" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5" /> </div> <div> <select value={pricingMode} onChange={e => { setPricingMode(e.target.value as 'all' | 'daily' | 'hourly'); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5"> <option value="all">All</option> <option value="daily">Per Day</option> <option value="hourly">Per Hour</option> </select> </div> </div> </div> {/* Rating Filter */} <div> <label className="block text-sm font-bold text-gray-800">Rating</label> <select value={minRating} onChange={e => { setMinRating(Number(e.target.value)); setUserManuallySearched(false); }} className="mt-2 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5"> <option value="0">Any rating</option> <option value="4">4+ stars</option> <option value="4.5">4.5+ stars</option> </select> </div> {/* Search Filter */}
+                         {/* Price Filter */} <div> <label className="block text-sm font-bold text-gray-800">Price</label> <div className="mt-2 grid grid-cols-3 gap-2"> <div> <input type="number" min="0" placeholder="Min $" value={minPrice} onChange={e => { setMinPrice(e.target.value); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5" /> </div> <div> <input type="number" min="0" placeholder="Max $" value={maxPrice} onChange={e => { setMaxPrice(e.target.value); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5" /> </div> <div> <select value={pricingMode} onChange={e => { setPricingMode(e.target.value as 'all' | 'daily' | 'hourly'); setUserManuallySearched(false); }} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5"> <option value="all">All</option> <option value="daily">Per Day</option> <option value="hourly">Per Hour</option> </select> </div> </div> </div> {/* Rating Filter */} <div> <label className="block text-sm font-bold text-gray-800">Rating</label> <select value={minRating} onChange={e => { setMinRating(Number(e.target.value)); setUserManuallySearched(false); }} className="mt-2 w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-sm px-2 py-1.5"> <option value="0">Any rating</option> <option value="4">4+ stars</option> <option value="4.5">4.5+ stars</option> </select> </div> {/* Date Filter */} <div> <label className="block text-sm font-bold text-gray-800">Available Dates</label> <button type="button" onClick={() => setDatePopoverOpen(!datePopoverOpen)} className="mt-2 w-full flex items-center justify-between border border-gray-300 rounded-md shadow-sm text-sm px-3 py-2 hover:bg-gray-50 focus:ring-cyan-500 focus:border-cyan-500"> <span className={dateRange?.from ? 'text-gray-900' : 'text-gray-400'}> {dateRange?.from && dateRange?.to ? `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d')}` : dateRange?.from ? `From ${format(dateRange.from, 'MMM d')}` : 'Any dates'} </span> <span className="flex items-center gap-2"> {dateRange?.from && <span onClick={(e) => { e.stopPropagation(); setDateRange(undefined); setUserManuallySearched(false); }} className="text-xs text-red-500 hover:text-red-700 font-bold">Clear</span>} <span className="text-gray-400">📅</span> </span> </button> {datePopoverOpen && (<div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10"> <DayPicker mode="range" selected={dateRange} onSelect={(range) => { setDateRange(range); setUserManuallySearched(false); if (range?.from && range?.to) setDatePopoverOpen(false); }} disabled={{ before: new Date() }} numberOfMonths={1} /> </div>)} </div> {/* Search Filter */}
                         <div>
                             <label htmlFor="search" className="block text-sm font-bold text-gray-800">Keyword</label>
                             <div className="relative mt-1">
