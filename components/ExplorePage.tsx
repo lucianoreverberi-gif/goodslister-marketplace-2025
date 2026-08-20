@@ -180,9 +180,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         setSelectedCategories(prev => {
             // Reset manual search flag when user changes filters, so map can auto-fit to new results
             setUserManuallySearched(false);
-            return prev.includes(category)
-                ? prev.filter(c => c !== category)
-                : [...prev, category];
+            return prev.includes(category) ? [] : [category];
         });
     };
 
@@ -436,7 +434,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                             </div>
                         )}
 
-                         {/* Search Filter */}
+                         {/* Price Filter */} <div> <div className="flex items-center justify-between"> <label htmlFor="price" className="block text-sm font-bold text-gray-800">Max Price</label> <span className="text-sm font-bold text-cyan-700">${priceRange}/day</span> </div> <input type="range" id="price" min="0" max={maxPrice} step="10" value={priceRange} onChange={e => { setPriceRange(Number(e.target.value)); setUserManuallySearched(false); }} className="mt-2 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-600" /> <div className="flex justify-between text-xs text-gray-500 mt-1"> <span>$0</span> <span>${maxPrice}+</span> </div> </div> {/* Search Filter */}
                         <div>
                             <label htmlFor="search" className="block text-sm font-bold text-gray-800">Keyword</label>
                             <div className="relative mt-1">
