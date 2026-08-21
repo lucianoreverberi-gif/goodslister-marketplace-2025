@@ -472,7 +472,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                 </div>
 
                 {/* Listing Grid */}
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                <div className="p-4 bg-gray-50 md:overflow-y-auto md:flex-1">
                     {filteredAndSortedListings.length > 0 ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             {filteredAndSortedListings.map(listing => (
