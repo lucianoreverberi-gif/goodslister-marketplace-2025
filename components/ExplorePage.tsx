@@ -505,14 +505,14 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                 </div>
             </div>
             
-            {/* Draggable Divider (Desktop only) */}
+            {/* Mini Legal Footer - Mobile only */} <div className="md:hidden py-6 px-4 text-center text-xs text-gray-500 border-t border-gray-200"> <div className="flex flex-wrap justify-center gap-x-3 gap-y-2"> <a href="#terms" onClick={(e) => { e.preventDefault(); window.location.hash = 'terms'; }} className="hover:text-cyan-600">Terms</a> <span>·</span> <a href="#privacy" onClick={(e) => { e.preventDefault(); window.location.hash = 'privacy'; }} className="hover:text-cyan-600">Privacy</a> <span>·</span> <a href="#cookies" onClick={(e) => { e.preventDefault(); window.location.hash = 'cookies'; }} className="hover:text-cyan-600">Cookies</a> <span>·</span> <a href="#doNotSell" onClick={(e) => { e.preventDefault(); window.location.hash = 'doNotSell'; }} className="hover:text-cyan-600">Do Not Sell (CA)</a> </div> <p className="mt-3">© 2026 GOODSLISTER LLC. All rights reserved.</p> </div> {/* Draggable Divider (Desktop only) */}
             <div
                 onMouseDown={handleMouseDown}
                 className="hidden md:block w-2 cursor-col-resize bg-gray-200 hover:bg-cyan-400 active:bg-cyan-500 transition-colors duration-200 flex-shrink-0"
             ></div>
 
             {/* Right Panel - Map */}
-            <div className={`flex-1 relative h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : 'block'}`}>
+            <div className={`flex-1 relative h-[calc(100dvh-64px)] md:h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : 'block'}`}>
                 <GoogleMap
                     mapContainerStyle={mapContainerStyle}
                     center={mapCenter}
