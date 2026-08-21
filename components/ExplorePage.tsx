@@ -315,7 +315,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
     if (!isLoaded) return <div className="p-8 text-center">Loading map and listings...</div>;
 
     return (
-        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden relative">
+        <div className="flex flex-col md:flex-row h-[calc(100dvh-64px)] overflow-hidden relative">
             {/* Mobile View Toggle Button */}
             <div className="md:hidden absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
                 <button
