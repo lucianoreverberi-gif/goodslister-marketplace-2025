@@ -340,7 +340,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
             <div
                 style={!isMobile ? { width: `${sidebarWidth}px` } : {}}
                 className={`w-full flex-col flex-shrink-0 bg-white border-r border-gray-200 transition-all duration-300 
-                    ${isMobile ? (mobileView === 'map' ? 'hidden' : 'flex h-full') : 'flex'}
+                    ${isMobile ? (mobileView === 'map' ? 'hidden' : 'flex h-full') : 'flex md:overflow-y-auto'}
                 `}
             >
                 <div className="p-4 border-b flex-shrink-0">
@@ -472,7 +472,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                 </div>
 
                 {/* Listing Grid */}
-                <div className="p-4 bg-gray-50 md:overflow-y-auto md:flex-1">
+                <div className="p-4 bg-gray-50">
                     {filteredAndSortedListings.length > 0 ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             {filteredAndSortedListings.map(listing => (
