@@ -512,7 +512,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
             ></div>
 
             {/* Right Panel - Map */}
-            <div className={`flex-1 relative h-[calc(100dvh-64px)] md:h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : 'block'}`}>
+            <div className={`relative h-[calc(100dvh-64px)] md:flex-1 md:h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : 'block'}`}>
                 <GoogleMap
                     mapContainerStyle={mapContainerStyle}
                     center={mapCenter}
