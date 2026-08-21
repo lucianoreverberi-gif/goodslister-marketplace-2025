@@ -1052,7 +1052,7 @@ const App: React.FC = () => {
             <main className="flex-grow">
                 {renderPage()}
             </main>
-            {page !== 'explore' && <Footer logoUrl={logoUrl} onNavigate={handleNavigate} />}
+            <div className={page === "explore" ? "hidden md:block" : ""}><Footer logoUrl={logoUrl} onNavigate={handleNavigate} /></div>
 
             <CookieConsentBanner />
             {consent?.analytics && <SpeedInsights />}
