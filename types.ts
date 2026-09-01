@@ -111,6 +111,10 @@ export interface Listing {
     whatsIncluded?: string;
     itinerary?: string;
     priceUnit?: PriceUnit;
+    // NEW: Item Identification for Rental Agreement PDF
+    brand?: string;
+    model?: string;
+    fullAddress?: string;
 
     // NEW: Contract Management
     contractPreference?: 'standard' | 'custom';
