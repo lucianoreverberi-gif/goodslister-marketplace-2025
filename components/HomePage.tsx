@@ -538,8 +538,8 @@ const HomePage: React.FC<HomePageProps> = ({
                                 <div className="bg-blue-100 text-blue-600 rounded-full p-4 mb-6 group-hover:bg-blue-200 transition-colors">
                                     <FileSignatureIcon className="h-10 w-10" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Smart Contracts</h3>
-                                <p className="mt-2 text-base text-gray-600">Generate detailed rental agreements in seconds. AI protects your interests with clear and concise clauses.</p>
+                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-700">Rental Agreements</h3>
+                                <p className="mt-2 text-base text-gray-600">Download standardized rental agreements as PDF for every booking. Clear terms that protect both host and renter.</p>
                             </a>
                             <a 
                                 href="/create-listing"
