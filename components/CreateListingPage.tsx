@@ -83,6 +83,10 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     // Location
     const initialLocationStr = initialData ? `${initialData.location.city}, ${initialData.location.state}, ${initialData.location.country}` : '';
     const [location, setLocation] = useState(initialLocationStr);
+    // NEW: Item Identification for Rental Agreement PDF
+    const [brand, setBrand] = useState(initialData?.brand || '');
+    const [model, setModel] = useState(initialData?.model || '');
+    const [fullAddress, setFullAddress] = useState(initialData?.fullAddress || '');
     
     // Media & Rules
     const [videoUrl, setVideoUrl] = useState(initialData?.videoUrl || '');
@@ -359,7 +363,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             fuelPolicy,
             skillLevel,
             whatsIncluded,
-            itinerary
+            itinerary,
+            
+            // NEW: Item Identification for Rental Agreement PDF
+            brand,
+            model,
+            fullAddress
         };
 
         try {
@@ -499,6 +508,31 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             <div>
                                 <label className="block text-sm font-bold text-gray-800">Location</label>
                                 <input ref={locationInputRef} type="text" value={location} onChange={e => setLocation(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md shadow-sm" placeholder="E.g., Miami, FL" />
+                            </div>
+                        </div>
+
+                        {/* NEW: Item Identification for Rental Agreement PDF (all optional) */}
+                        <div className="bg-cyan-50 p-6 rounded-lg border border-cyan-100 space-y-4">
+                            <div>
+                                <h3 className="text-sm font-bold text-cyan-900 flex items-center gap-2">
+                                    <FileTextIcon className="h-4 w-4" /> Item Identification (Optional)
+                                </h3>
+                                <p className="mt-1 text-xs text-cyan-700">These details appear on the rental agreement PDF for legal clarity. All optional.</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-cyan-900">Brand</label>
+                                    <input type="text" value={brand} onChange={e => setBrand(e.target.value)} className="mt-1 block w-full border-cyan-200 rounded-md shadow-sm text-sm" placeholder="E.g., Sea Eagle, Yamaha, Honda" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-cyan-900">Model</label>
+                                    <input type="text" value={model} onChange={e => setModel(e.target.value)} className="mt-1 block w-full border-cyan-200 rounded-md shadow-sm text-sm" placeholder="E.g., 380x Explorer, WaveRunner FX HO" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-cyan-900">Full Pickup/Return Address</label>
+                                <input type="text" value={fullAddress} onChange={e => setFullAddress(e.target.value)} className="mt-1 block w-full border-cyan-200 rounded-md shadow-sm text-sm" placeholder="E.g., 123 Ocean Drive, Miami Beach, FL 33139, USA" />
+                                <p className="mt-1 text-xs text-cyan-700">Full street address appears only in the signed agreement PDF, never in the public listing.</p>
                             </div>
                         </div>
 
