@@ -10,7 +10,7 @@ import {
     UserCheckIcon, TrashIcon, AlertTriangleIcon, RocketIcon, ZapIcon, LockIcon,
     MapPinIcon, WandSparklesIcon, MegaphoneIcon, SparklesIcon, TrendUpIcon, 
     ArrowRightIcon, RefreshCwIcon, LightbulbIcon, ClockIcon, SlidersIcon,
-    ShieldCheckIcon, InfoIcon, ExternalLinkIcon
+    ShieldCheckIcon, InfoIcon, ExternalLinkIcon, FileTextIcon
 } from './icons';
 import ImageUploader from './ImageUploader';import { auth, sendPasswordResetEmail } from '../services/firebase';
 import { format } from 'date-fns';
@@ -489,7 +489,7 @@ const BookingsManager: React.FC<{
                             )}
                             {b.status === 'active' && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-5 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-black shadow shadow-slate-200 transition-all flex items-center gap-2">
-                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN</button>)}{((mode === 'renting' && b.status === 'active') || (mode === 'hosting' && b.status === 'completed')) && (<button onClick={() => setDamageReportBooking(b)} className="px-5 py-2 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 shadow shadow-red-100 transition-all flex items-center gap-2"><AlertTriangleIcon className="h-3.5 w-3.5" /> REPORT DAMAGE</button>)}{false && (<button style={{display:'none'}}>
+                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN</button>)}{((mode === 'renting' && b.status === 'active') || (mode === 'hosting' && b.status === 'completed')) && (<button onClick={() => setDamageReportBooking(b)} className="px-5 py-2 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 shadow shadow-red-100 transition-all flex items-center gap-2"><AlertTriangleIcon className="h-3.5 w-3.5" /> REPORT DAMAGE</button>)}{(b.status === 'confirmed' || b.status === 'active' || b.status === 'completed') && (<button onClick={async () => { setProcessingId(b.id); try { const res = await fetch('/api/bookings/generate-agreement', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({bookingId: b.id}) }); const data = await res.json(); if (data.success && data.url) { window.open(data.url, '_blank'); } else { alert('Failed to generate agreement: ' + (data.error || 'Unknown error')); } } catch (e) { alert('Error: ' + e.message); } finally { setProcessingId(null); } }} disabled={processingId === b.id} className="px-5 py-2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-200 border border-slate-200 transition-all flex items-center gap-2 disabled:opacity-50"><FileTextIcon className="h-3.5 w-3.5" /> {processingId === b.id ? 'LOADING...' : 'AGREEMENT PDF'}</button>)}{false && (<button style={{display:'none'}}>
                                 </button>
                             )}
                         </div>
