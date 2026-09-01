@@ -52,8 +52,13 @@ export const processSearchQuery = async (query: string): Promise<FilterCriteria>
 /**
  * Generates a listing description via API.
  */
-export const generateListingDescription = async (title: string, location: string, features: string[]): Promise<ListingDescriptionResult> => {
-    const data = await callAiApi('generate', { title, location, features });
+export const generateListingDescription = async (
+    title: string,
+    location: string,
+    features: string[],
+    context?: { category?: string; subcategory?: string; listingType?: string; brand?: string; model?: string }
+): Promise<ListingDescriptionResult> => {
+    const data = await callAiApi('generate', { title, location, features, context: context || {} });
     return { description: data.description, sources: data.sources };
 };
 
