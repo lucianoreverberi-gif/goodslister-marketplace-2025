@@ -126,12 +126,39 @@ Valid categories: boats, kayaks, jetskis, atv, camping, fishing, watersports, sn
 
       // 2) Generate listing description -> { description, sources }
       case 'generate': {
-        const prompt = `You are a listing description writer for Goodslister, an adventure gear rental marketplace.
-Write a compelling, honest, 2-3 sentence rental listing description.
-Title: "${payload.title || ''}"
-Location: "${payload.location || ''}"
-Features: ${(payload.features || []).join(', ')}
-Return ONLY JSON: { "description": string }`;
+        const ctx = payload.context || {};
+        const isExperience = ctx.listingType === 'experience';
+        const prompt = `You are an expert copywriter for Goodslister, a peer-to-peer adventure gear rental marketplace in Florida.
+
+Write a compelling, conversion-optimized rental listing description in ENGLISH.
+
+CONTEXT:
+- Title: "${payload.title || ''}"
+- Location: "${payload.location || ''}"
+- Category: ${ctx.category || 'general'}${ctx.subcategory ? ' / ' + ctx.subcategory : ''}
+- Listing Type: ${isExperience ? 'EXPERIENCE (guided tour/activity)' : 'RENTAL (self-service equipment rental)'}
+${ctx.brand ? '- Brand: ' + ctx.brand : ''}
+${ctx.model ? '- Model: ' + ctx.model : ''}
+- Key Features: ${(payload.features || []).filter(Boolean).join(' | ') || 'none provided'}
+
+STRUCTURE (write as flowing prose, NOT bullet points):
+1. HOOK: Open with an evocative 1-sentence hook that paints the experience (sunset paddle, adrenaline rush, family adventure). Match the tone to the category.
+2. WHAT IT IS: 1-2 sentences describing the item/experience concretely — mention brand/model if provided, key specs, capacity, condition.
+3. WHO IT'S FOR: 1 sentence naming the ideal user (beginners, families, thrill-seekers, groups of 4, etc.).
+4. LOCATION HOOK: 1 sentence tying it to what makes ${payload.location || 'the area'} special (weather, scenery, launch spots, proximity).
+5. CTA: 1 closing sentence inviting the booking with a friendly, confident tone.
+
+RULES:
+- Length: 100-180 words (4-6 sentences total).
+- Tone: warm, confident, honest — like a knowledgeable local friend. NEVER salesy or hyperbolic.
+- Use 1-2 relevant emojis MAX (only if they fit naturally — e.g., 🌊 for water, 🏔️ for mountains, 🚤 for boats). Skip entirely for professional categories (vehicles, RVs).
+- SEO: naturally include the category/subcategory and location name.
+- NO markdown, NO headers, NO bullet points — flowing prose only.
+- NO invented specs, warranties, or claims. If a detail is not provided, don't fabricate.
+- NO price mentions (that's shown separately).
+- Write in English regardless of location.
+
+Return ONLY valid JSON: { "description": string }`;
         const r = await callGemini(apiKey, prompt, true);
         if (!r.ok) return response.status(r.status).json({ error: 'AI service error' });
         const description = (r.json && (r.json.description ?? r.json.raw)) || '';
