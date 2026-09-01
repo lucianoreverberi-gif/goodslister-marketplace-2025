@@ -243,7 +243,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                 if (itinerary) contextFeatures.push(`Itinerary: ${itinerary}`);
                 if (skillLevel) contextFeatures.push(`Skill Level: ${skillLevel}`);
             }
-            const result = await generateListingDescription(title, location, contextFeatures);
+            const result = await generateListingDescription(title, location, contextFeatures, { category, subcategory, listingType, brand, model });
             setDescription(result.description);
             setSources(result.sources);
         } catch (error) {
