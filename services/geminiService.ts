@@ -2,7 +2,13 @@ import { Listing, ListingCategory } from '../types.js';
 
 export interface FilterCriteria {
     category?: ListingCategory;
+    subcategory?: string;
     location?: string;
+    dateFrom?: string; // ISO YYYY-MM-DD
+    dateTo?: string;   // ISO YYYY-MM-DD
+    priceMax?: number;
+    minRating?: number;
+    capacity?: number;
     text?: string;
 }
 
