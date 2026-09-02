@@ -278,12 +278,44 @@ Text: "${payload.text || ''}"`;
 
       // 8) Translate -> { translatedText }
       case 'translate': {
-        const prompt = `Translate the following text from ${payload.sourceLang || 'auto'} to ${payload.targetLang || 'English'}.
-Return ONLY the translated text, with no preamble, quotes or markdown.
-Text: "${payload.text || ''}"`;
-        const r = await callGemini(apiKey, prompt, false);
+        // Multilingual Chat v2 - auto-detect source, skip if same as target, always JSON response
+        const targetLang = payload.targetLang || 'English';
+        const text = (payload.text || '').trim();
+        if (!text) return response.status(200).json({ translatedText: '', detectedSourceLang: null, sameLanguage: true });
+        
+        const prompt = `You are a chat message translator for Goodslister, a P2P adventure gear marketplace.
+
+TASK:
+1. Detect the language of the input text (English, Spanish, Portuguese, French, German, Italian, or other ISO name).
+2. Compare with target language: "${targetLang}"
+3. If they are the SAME language (semantically), return { "sameLanguage": true, "detectedSourceLang": "...", "translatedText": "" } - no translation needed.
+4. If they DIFFER, translate accurately preserving tone, informal contractions, emojis, and any listing/product terms verbatim (brand names, model numbers, addresses).
+
+INPUT TEXT: "${text.replace(/"/g, '\\"')}"
+TARGET LANGUAGE: "${targetLang}"
+
+RULES:
+- Preserve emojis in place.
+- Do NOT translate proper nouns (people names, city names, brand/model names).
+- Do NOT translate URLs or numeric codes.
+- Keep the tone (formal/informal) consistent.
+- If input has multiple sentences, translate each preserving order.
+- If input is very short (like "ok", "si", "yes"), still detect language accurately.
+
+Return ONLY valid JSON:
+{
+  "detectedSourceLang": "English" | "Spanish" | ...,
+  "sameLanguage": boolean,
+  "translatedText": "..."  (empty string if sameLanguage=true)
+}`;
+        const r = await callGemini(apiKey, prompt, true);
         if (!r.ok) return response.status(r.status).json({ error: 'AI service error' });
-        return response.status(200).json({ translatedText: (r.text || '').trim() });
+        const j = r.json || {};
+        return response.status(200).json({
+          translatedText: j.translatedText || '',
+          detectedSourceLang: j.detectedSourceLang || null,
+          sameLanguage: j.sameLanguage === true
+        });
       }
 
       default:
