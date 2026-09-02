@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Listing } from '../types';
 import { XIcon, SendIcon, LanguagesIcon, ChevronLeftIcon, MessageSquareIcon } from './icons';
-import { translateText } from '../services/geminiService';
+import { getOrCreateTranslation } from '../services/translationCache';
 import { useChatSocket } from '../hooks/useChatSocket';
 
 interface ChatInboxModalProps {
@@ -41,7 +41,7 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
     const { conversations, messages, sendMessage, loading } = useChatSocket(currentUser.id, activeConversationId);
     
     const [messageInput, setMessageInput] = useState('');
-    const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
+    const [translatedMessages, setTranslatedMessages] = useState<Record<string, { text: string; sourceLang: string | null; sameLanguage: boolean }>>({});
     const [isTranslating, setIsTranslating] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -83,18 +83,15 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
         }
     }, [messages.length, activeConversationId]);
 
-    // Translation Logic
+    // Translation Logic v2 - Firestore-cached, auto-detects source language, works for any user language
+    // Stores rich metadata { text, detectedSourceLang, sameLanguage } per message
     useEffect(() => {
         if (!messages || messages.length === 0) return;
         const translateAllMessages = async () => {
-            if (userLanguage === 'English') {
-                 setTranslatedMessages({}); 
-                 return;
-            }
             setIsTranslating(true);
-            const translations: Record<string, string> = { ...translatedMessages };
+            const translations: Record<string, { text: string; sourceLang: string | null; sameLanguage: boolean }> = { ...translatedMessages };
             
-            // Only translate new messages not already translated
+            // Only process incoming messages (not sent by me) not already resolved
             const messagesToTranslate = messages.filter(
                 (msg: any) => msg.senderId !== currentUser.id && msg.text && !translations[msg.id]
             );
@@ -105,8 +102,12 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
             }
 
             await Promise.all(messagesToTranslate.map(async (msg: any) => {
-                const translatedText = await translateText(msg.text, userLanguage, "English");
-                translations[msg.id] = translatedText;
+                const result = await getOrCreateTranslation(msg.id, msg.text, userLanguage);
+                translations[msg.id] = {
+                    text: result.translatedText,
+                    sourceLang: result.detectedSourceLang,
+                    sameLanguage: result.sameLanguage
+                };
             }));
             setTranslatedMessages(translations);
             setIsTranslating(false);
@@ -235,16 +236,23 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
 
                                 {messages.map((msg: any) => {
                                     const isMe = msg.senderId === 'me' || msg.senderId === currentUser.id;
-                                    const translated = translatedMessages[msg.id];
+                                    const trans = translatedMessages[msg.id];
+                                    // Show translated text only if we have one AND source language differs from target
+                                    const showTranslation = !isMe && trans && !trans.sameLanguage && trans.text;
+                                    const displayText = showTranslation ? trans.text : msg.text;
                                     
                                     return (
                                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm relative ${isMe ? 'bg-cyan-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'}`}>
-                                                <p className="text-sm leading-relaxed">{translated || msg.text}</p>
-                                                {translated && (
-                                                    <p className="text-[10px] mt-1 opacity-70 italic border-t border-white/20 pt-1">
-                                                        Original: "{msg.text}"
-                                                    </p>
+                                                <p className="text-sm leading-relaxed">{displayText}</p>
+                                                {showTranslation && (
+                                                    <div className="mt-1.5 pt-1.5 border-t border-white/20">
+                                                        <div className="flex items-center gap-1 text-[10px] opacity-70 mb-0.5">
+                                                            <LanguagesIcon className="h-2.5 w-2.5" />
+                                                            <span className="font-semibold">Translated{trans.sourceLang ? ` from ${trans.sourceLang}` : ''}</span>
+                                                        </div>
+                                                        <p className="text-[10px] opacity-60 italic">"{msg.text}"</p>
+                                                    </div>
                                                 )}
                                                 <div className={`flex items-center justify-end gap-1 mt-1`}>
                                                     <span className={`text-[10px] ${isMe ? 'text-cyan-100' : 'text-gray-400'}`}>
