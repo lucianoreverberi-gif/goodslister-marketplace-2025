@@ -114,11 +114,78 @@ export default async function handler(
     switch (action) {
       // 1) Natural-language search -> { criteria }
       case 'search': {
-        const prompt = `You are a search assistant for an adventure gear rental marketplace called Goodslister.
-Parse this natural language search query and return ONLY a JSON object with optional filter criteria.
+        // Neural Search v2 - bilingual, extracts dates, prices, capacity, subcategory
+        const now = new Date();
+        const todayISO = now.toISOString().split('T')[0];
+        const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
+        const prompt = `You are a search parser for Goodslister, a peer-to-peer adventure gear rental marketplace based in Florida, USA.
+
+Today is ${todayISO} (day of week: ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayOfWeek]}).
+
+Parse this user search query (may be in English or Spanish) and return ONLY a JSON object with the extracted filter criteria.
+
 Query: "${payload.query}"
-Return JSON only with these optional fields: { "category": string, "location": string, "text": string }
-Valid categories: boats, kayaks, jetskis, atv, camping, fishing, watersports, snow, bikes, motorcycles, rvs`;
+
+VALID CATEGORIES (use these EXACT English strings, never translate):
+- "Water Sports" (for kayaks, kayak, canoe, jet ski, jetski, paddleboard, SUP, surf, kitesurf, windsurf, snorkel, dive, bote inflable)
+- "Boats" (for boat, boats, yacht, yates, bote, barco, pontoon, sailboat, velero)
+- "Fishing" (for fishing gear, fishing rod, caña de pescar, pesca, aparejos)
+- "Camping" (for tent, tenda, carpa, sleeping bag, camping gear, acampar)
+- "ATVs & UTVs" (for atv, quad, cuatriciclo, side-by-side, buggy)
+- "Motorcycles" (for motorcycle, moto, bike (only motorized), harley, scooter)
+- "Bikes" (for bicycle, bici, mountain bike, e-bike, road bike)
+- "RVs" (for rv, motorhome, casa rodante, camper van, van)
+- "Winter Sports" (for ski, snowboard, esquí, snow — rare in FL)
+
+SUBCATEGORIES (return in English, must fit within the parent category):
+- Under Water Sports: "Kayak", "Jet Ski", "Paddleboard", "Surf", "Snorkel"
+- Under Boats: "Yacht", "Pontoon", "Sailboat", "Fishing Boat"
+- Under Fishing: "Rod & Reel", "Fly Fishing", "Deep Sea"
+- Under Camping: "Tent", "Sleeping Gear", "Cooking"
+- Under Motorcycles: "Sport", "Cruiser", "Scooter"
+- Under Bikes: "Mountain", "Road", "E-Bike"
+- Return null if uncertain.
+
+LOCATION extraction:
+- Recognize Florida cities: Miami, Miami Beach, Fort Lauderdale, West Palm Beach, Boca Raton, Pembroke Pines, Key West, Tampa, Orlando, Naples, Sarasota, Jacksonville, Homestead, Coral Gables, Hollywood, Delray Beach.
+- Return the exact English city name string, or null.
+
+DATE parsing (return ISO YYYY-MM-DD strings):
+- "today", "hoy" -> dateFrom = today, dateTo = today
+- "tomorrow", "mañana" -> both = today + 1
+- "this weekend", "fin de semana", "el finde", "sábado" (if today is Mon-Fri, next Saturday; if today is Sat, today) -> dateFrom = upcoming Saturday, dateTo = upcoming Sunday
+- "next weekend", "próximo fin de semana" -> +7 from this-weekend
+- "next week", "la próxima semana" -> dateFrom = next Monday, dateTo = next Sunday
+- Specific day names: "sat", "sábado", "monday", "lunes" -> the next occurrence (>=today)
+- "next 3 days", "los próximos 3 días" -> today to today+3
+- If no date mentioned, omit dateFrom/dateTo entirely.
+
+PRICE sensitivity (map to priceMax numeric USD):
+- "cheap", "barato", "económico", "affordable", "budget" -> priceMax: 75
+- "mid-range", "mid range", "moderate" -> priceMax: 200
+- "premium", "luxury", "high-end", "lujo" -> omit priceMax (no max)
+- Specific "under $X" or "menos de $X" -> priceMax: X
+- If no price mention, omit priceMax.
+
+CAPACITY (number of people, extract integer):
+- "for 4 people", "para 4 personas", "4 pax", "4 pers" -> capacity: 4
+- "for two", "para dos", "para pareja", "for a couple" -> capacity: 2
+- "for a group", "for a big group", "para grupo grande" -> capacity: 6
+- "solo", "individual", "single" -> capacity: 1
+- If no capacity mention, omit.
+
+MIN RATING:
+- "top rated", "best rated", "los mejores", "mejor calificados" -> minRating: 4.5
+- "4 stars or more", "4+ stars" -> minRating: 4
+- Otherwise omit.
+
+TEXT (fallback):
+- Any remaining descriptive words that don't fit above (e.g., item names, brand hints, "with captain", "con captain", "instant book").
+- Keep original language.
+- Omit if empty.
+
+Return ONLY valid JSON with omitted fields excluded. Example:
+{ "category": "Water Sports", "subcategory": "Kayak", "location": "Miami Beach", "dateFrom": "2026-09-05", "dateTo": "2026-09-06", "priceMax": 75, "capacity": 2 }`;
         const r = await callGemini(apiKey, prompt, true);
         if (!r.ok) return response.status(r.status).json({ error: 'AI service error' });
         return response.status(200).json({ criteria: r.json || {} });
