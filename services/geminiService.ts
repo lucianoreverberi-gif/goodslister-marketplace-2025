@@ -96,13 +96,40 @@ export const getListingAdvice = async (listing: Listing, type: ListingAdviceType
 /**
  * Translates text via API.
  */
-export const translateText = async (text: string, targetLang: string, sourceLang: string): Promise<string> => {
-    if (sourceLang.toLowerCase() === targetLang.toLowerCase()) return text;
+export interface TranslationResult {
+    translatedText: string;
+    detectedSourceLang: string | null;
+    sameLanguage: boolean;
+}
+
+export const translateText = async (text: string, targetLang: string, sourceLang?: string): Promise<string> => {
+    if (sourceLang && sourceLang.toLowerCase() === targetLang.toLowerCase()) return text;
     try {
          const data = await callAiApi('translate', { text, targetLang, sourceLang });
-         return data.translatedText;
+         return data.translatedText || text;
     } catch (e) {
         return text;
+    }
+};
+
+/**
+ * Multilingual Chat v2 - returns full translation result including detected source language.
+ * Skips API call if source (if provided) equals target.
+ */
+export const translateChatMessage = async (text: string, targetLang: string): Promise<TranslationResult> => {
+    if (!text || !text.trim()) {
+        return { translatedText: '', detectedSourceLang: null, sameLanguage: true };
+    }
+    try {
+        const data = await callAiApi('translate', { text, targetLang });
+        return {
+            translatedText: data.translatedText || '',
+            detectedSourceLang: data.detectedSourceLang || null,
+            sameLanguage: data.sameLanguage === true
+        };
+    } catch (e) {
+        // Graceful fallback: assume same language
+        return { translatedText: '', detectedSourceLang: null, sameLanguage: true };
     }
 };
 
