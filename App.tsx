@@ -77,7 +77,16 @@ const App: React.FC = () => {
     // Chat State
     const [isChatInboxOpen, setIsChatInboxOpen] = useState(false);
     const [chatContext, setChatContext] = useState<{ listing?: Listing, recipient?: User, conversationId?: string } | null>(null);
-    const [userLanguage, setUserLanguage] = useState('English');
+    const [userLanguage, setUserLanguage] = useState<string>(() => {
+        // Auto-detect from browser locale on first load (English fallback)
+        if (typeof navigator === 'undefined') return 'English';
+        const raw = (navigator.language || 'en').toLowerCase();
+        if (raw.startsWith('es')) return 'Spanish';
+        if (raw.startsWith('pt')) return 'Português';
+        if (raw.startsWith('fr')) return 'Français';
+        if (raw.startsWith('de')) return 'Deutsch';
+        return 'English';
+    });
     const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
 
     // Notification System State
