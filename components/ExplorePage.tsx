@@ -88,12 +88,27 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         libraries: LIBRARIES,
     });
     
-    // Apply initial filters from homepage search
+    // Apply initial filters from homepage search (Neural Search v2 populates all fields)
     useEffect(() => {
         if (initialFilters) {
             setSearchTerm(initialFilters.text || '');
             setSelectedCategories(initialFilters.category ? [initialFilters.category] : []);
+            setSelectedSubcategories(initialFilters.subcategory ? [initialFilters.subcategory] : []);
             setLocationFilter(initialFilters.location || '');
+            // Price
+            if (initialFilters.priceMax !== undefined && initialFilters.priceMax !== null) {
+                setMaxPrice(String(initialFilters.priceMax));
+            }
+            // Rating
+            if (initialFilters.minRating !== undefined && initialFilters.minRating !== null) {
+                setMinRating(initialFilters.minRating);
+            }
+            // Date range
+            if (initialFilters.dateFrom || initialFilters.dateTo) {
+                const from = initialFilters.dateFrom ? new Date(initialFilters.dateFrom + 'T00:00:00') : undefined;
+                const to = initialFilters.dateTo ? new Date(initialFilters.dateTo + 'T00:00:00') : from;
+                if (from) setDateRange({ from, to });
+            }
             onClearInitialFilters(); // Clear after applying to prevent re-applying
         }
     }, [initialFilters, onClearInitialFilters]);
