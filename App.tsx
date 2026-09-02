@@ -37,7 +37,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useCookieConsent } from './hooks/useCookieConsent';
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
-import { FilterCriteria, translateText } from './services/geminiService';
+import { FilterCriteria, translateText, processSearchQuery } from './services/geminiService';
 import { CheckCircleIcon, BellIcon, MailIcon, XIcon, MessageCircleIcon } from './components/icons';
 import { format } from 'date-fns';
 
@@ -1035,7 +1035,7 @@ const App: React.FC = () => {
 
             <Header 
                 onNavigate={handleNavigate}
-                onLoginClick={() => setIsLoginModalOpen(true)} onSearch={(q) => { const CATS: any = {boats:'Boats',boat:'Boats',yacht:'Boats',yachts:'Boats',kayaks:'Water Sports',kayak:'Water Sports',canoe:'Water Sports',jetskis:'Water Sports',jetski:'Water Sports',atv:'ATVs & UTVs',quad:'ATVs & UTVs',camping:'Camping',tent:'Camping',fishing:'Fishing',watersports:'Water Sports',paddleboard:'Water Sports',sup:'Water Sports',kitesurf:'Water Sports',surf:'Water Sports',snow:'Winter Sports',ski:'Winter Sports',snowboard:'Winter Sports',bikes:'Bikes',bike:'Bikes',bicycle:'Bikes',motorcycles:'Motorcycles',motorcycle:'Motorcycles',rvs:'RVs',rv:'RVs'}; const CITIES = ['Miami Beach','Fort Lauderdale','Pembroke Pines','West Palm Beach','Key West','Boca Raton','Miami','Tampa','Orlando','Naples','Sarasota','Jacksonville']; const lq = q.toLowerCase(); let category, location; for (const c of CITIES) if (lq.includes(c.toLowerCase())) { location = c; break; } const words = q.split(/\s+/); for (const w of words) if (CATS[w.toLowerCase()]) { category = CATS[w.toLowerCase()]; break; } const remaining = words.filter((w: string) => { const lw = w.toLowerCase(); return !CATS[lw] && (!location || !location.toLowerCase().split(/\s+/).includes(lw)); }).join(' ').trim(); handleSearch({category, location, text: remaining || undefined} as any); }}
+                onLoginClick={() => setIsLoginModalOpen(true)} onSearch={async (q) => { try { const criteria = await processSearchQuery(q); handleSearch(criteria); } catch (e) { console.error('Neural search failed, falling back to text search:', e); handleSearch({ text: q } as any); } }}
                 onLogoutClick={handleLogout}
                 onOpenChat={() => { 
                     setInitialConversationId(null); 
