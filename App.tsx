@@ -8,6 +8,7 @@ import {
   signInWithGoogle, 
   db, 
   setDoc, 
+  getDoc, 
   doc, 
   serverTimestamp,
   signInWithEmailAndPassword,
@@ -261,7 +262,15 @@ const App: React.FC = () => {
     // NEW: Sync user to Firestore for chat UI discoverability
     const syncUserToFirestore = async (user: User) => {
         try {
-            await setDoc(doc(db, 'users', user.id), {
+            const userRef = doc(db, 'users', user.id);
+            // Check if user existed before to detect first-time signups → welcome email
+            let isNewUser = false;
+            try {
+                const existing = await getDoc(userRef);
+                isNewUser = !existing.exists();
+            } catch (e) { /* proceed as new if check fails */ isNewUser = true; }
+
+            await setDoc(userRef, {
                 id: user.id,
                 name: user.name,
                 email: user.email,
@@ -269,6 +278,19 @@ const App: React.FC = () => {
                 role: user.role || 'USER',
                 lastSeen: serverTimestamp()
             }, { merge: true });
+
+            // Send welcome email on first-time signup (fire and forget)
+            if (isNewUser && user.email) {
+                fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'welcome',
+                        to: user.email,
+                        data: { userName: user.name || 'there' }
+                    })
+                }).catch(e => console.warn('Welcome email failed:', e));
+            }
         } catch (e) {
             console.warn("Firestore user sync failed:", e);
         }
