@@ -12,7 +12,9 @@ import {
     QueryDocumentSnapshot,
     DocumentData,
     getDocs,
-    writeBatch
+    writeBatch,
+    addDoc,
+    serverTimestamp
 } from 'firebase/firestore';
 
 /**
@@ -145,4 +147,38 @@ export const formatRelativeTime = (date: Date): string => {
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+/**
+ * Create a notification for a target user (client-side write).
+ * MVP approach - post-launch we'll migrate to firebase-admin backend triggers.
+ * Fire-and-forget: errors logged, never blocking.
+ */
+export interface CreateNotificationInput {
+    userId: string; // recipient
+    type: NotificationType;
+    title: string;
+    message: string;
+    link?: string;
+}
+
+export const createNotification = async (input: CreateNotificationInput): Promise<void> => {
+    const { userId, type, title, message, link } = input;
+    if (!userId || !type || !title) {
+        console.warn('createNotification: missing required fields', input);
+        return;
+    }
+    try {
+        const notifRef = collection(db, 'notifications', userId, 'items');
+        await addDoc(notifRef, {
+            type,
+            title,
+            message: message || '',
+            link: link || '',
+            read: false,
+            createdAt: serverTimestamp()
+        });
+    } catch (e) {
+        console.warn('Failed to create notification for', userId, e);
+    }
 };
