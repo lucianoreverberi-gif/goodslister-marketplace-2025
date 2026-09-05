@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Session, Page } from '../types';
 import { MessageSquareIcon, MenuIcon, XIcon } from './icons';import HeaderSearch from './HeaderSearch';
+import NotificationsBell from './NotificationsBell';
 
 interface HeaderProps {
     onNavigate: (page: Page) => void;
@@ -80,6 +81,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, onLoginClick, onLogoutClick
                                     <button onClick={onOpenChat} className="text-gray-500 hover:text-gray-900 p-1 rounded-full">
                                         <MessageSquareIcon className="h-6 w-6" />
                                     </button>
+                                    <NotificationsBell userId={session.id} onNavigate={(hash) => { window.location.hash = hash; }} />
                                     <img src={session.avatarUrl} alt={session.name} className="w-8 h-8 rounded-full object-cover" />
                                     <button onClick={onLogoutClick} className="text-sm font-medium text-gray-500 hover:text-gray-900">
                                         Log Out
