@@ -39,6 +39,7 @@ import { useCookieConsent } from './hooks/useCookieConsent';
 import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, CategoryImagesMap, ListingCategory, Booking, Session } from './types';
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText, processSearchQuery } from './services/geminiService';
+import { createNotification } from './services/notificationsService';
 import { CheckCircleIcon, BellIcon, MailIcon, XIcon, MessageCircleIcon } from './components/icons';
 import { format } from 'date-fns';
 
@@ -628,6 +629,15 @@ const App: React.FC = () => {
         const host = listing.owner;
         const renter = session;
 
+        // 1. Notify Host via Firestore (client-side MVP - migrates to firebase-admin post-launch)
+        createNotification({
+            userId: host.id,
+            type: 'booking_new',
+            title: 'New booking request',
+            message: `${renter.name} wants to book "${listing.title}" (${format(startDate, 'MMM dd')}${startDate.getTime() !== endDate.getTime() ? ' - ' + format(endDate, 'MMM dd') : ''})`,
+            link: '#userDashboard'
+        });
+
         // 1. Notify Host
         mockApi.sendEmail('booking_request_host', host.email, {
             hostName: host.name,
@@ -692,6 +702,42 @@ const App: React.FC = () => {
             hostName: host.name,
             renterName: renter.name,
         };
+
+        // Firestore notifications (client-side MVP) - by status branch
+        if (newStatus === 'confirmed') {
+            createNotification({
+                userId: renter.id,
+                type: 'booking_confirmed',
+                title: 'Booking confirmed!',
+                message: `${host.name} confirmed your booking for "${listing.title}"`,
+                link: '#userDashboard'
+            });
+            createNotification({
+                userId: host.id,
+                type: 'booking_confirmed',
+                title: 'Booking confirmed',
+                message: `You confirmed ${renter.name}'s booking for "${listing.title}"`,
+                link: '#userDashboard'
+            });
+        } else if (newStatus === 'rejected') {
+            createNotification({
+                userId: renter.id,
+                type: 'booking_rejected',
+                title: 'Booking rejected',
+                message: `${host.name} rejected your booking for "${listing.title}"`,
+                link: '#userDashboard'
+            });
+        } else if (newStatus === 'cancelled') {
+            const otherPartyId = session?.id === host.id ? renter.id : host.id;
+            const otherPartyName = session?.id === host.id ? renter.name : host.name;
+            createNotification({
+                userId: otherPartyId,
+                type: 'booking_cancelled',
+                title: 'Booking cancelled',
+                message: `A booking for "${listing.title}" was cancelled`,
+                link: '#userDashboard'
+            });
+        }
 
         if (newStatus === 'confirmed') {
             // To Renter
