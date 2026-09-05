@@ -45,6 +45,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await sql`UPDATE listings SET booked_dates = ${bookedDates} WHERE id = ${listingId}`;
 
+    // ========== EMAIL NOTIFICATIONS (fire-and-forget) ==========
+    // Wire up existing send-email templates for booking lifecycle
+    try {
+      const listing = await sql`SELECT title, owner_id FROM listings WHERE id = ${listingId} LIMIT 1`;
+      const listingData = listing.rows[0] || {};
+      const hostQ = await sql`SELECT name, email FROM users WHERE id = ${listingData.owner_id} LIMIT 1`;
+      const renterQ = await sql`SELECT name, email FROM users WHERE id = ${renterId} LIMIT 1`;
+      const host = hostQ.rows[0] || {};
+      const renter = renterQ.rows[0] || {};
+
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      const host_ = req.headers.host || 'www.goodslister.com';
+      const baseUrl = `${protocol}://${host_}`;
+
+      const commonData = {
+        bookingId: id,
+        listingTitle: listingData.title || 'listing',
+        hostName: host.name || 'Host',
+        renterName: renter.name || 'Renter',
+        startDate,
+        endDate,
+        totalPrice: (totalPrice || 0).toFixed(2),
+        amountPaid: (amountPaidOnline || 0).toFixed(2),
+        balanceDue: (balanceDueOnSite || 0).toFixed(2),
+        securityDeposit: (securityDeposit || 0).toFixed(2)
+      };
+
+      // Email to Host: booking request received
+      if (host.email) {
+        fetch(`${baseUrl}/api/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'booking_request_host', to: host.email, data: { ...commonData, userName: host.name } })
+        }).catch(e => console.warn('host booking email failed:', e));
+      }
+
+      // Email to Renter: booking request confirmation
+      if (renter.email) {
+        fetch(`${baseUrl}/api/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'booking_request_renter', to: renter.email, data: { ...commonData, userName: renter.name } })
+        }).catch(e => console.warn('renter booking email failed:', e));
+      }
+    } catch (emailError) {
+      console.warn('Booking email notifications failed (non-blocking):', emailError);
+    }
+
     return res.status(200).json({ success: true, booking: { id, listingId, renterId, startDate, endDate, totalPrice, status: 'pending' } });
   } catch (error: any) {
     console.error('Create booking error:', error);
