@@ -6,7 +6,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { Listing, ListingCategory } from '../types';
 import { subcategories } from '../constants';
 import ListingCard from './ListingCard';
-import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon } from './icons';
+import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon, CompassIcon } from './icons';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';import { DayPicker, DateRange } from 'react-day-picker';import { format, parseISO, isWithinInterval, areIntervalsOverlapping } from 'date-fns';
 
@@ -506,15 +506,27 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20">
-                            <h3 className="text-xl font-semibold text-gray-800">No results found</h3>
-                            <p className="mt-2 text-gray-600">
-                                We couldn't find any items matching your filters in this location. 
-                                <br />Try moving the map or changing your search terms.
+                        <div className="text-center py-16 px-6 flex flex-col items-center gap-4 animate-in fade-in">
+                            <div className="bg-cyan-50 p-6 rounded-3xl">
+                                <CompassIcon className="h-12 w-12 text-cyan-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800">No listings found here</h3>
+                                <p className="mt-2 text-gray-600 max-w-md">
+                                    We couldn't find any adventures matching your filters. Try broadening your search or exploring a different area.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-3 mt-2 justify-center">
+                                <button onClick={clearFilters} className="px-5 py-2.5 bg-cyan-600 text-white rounded-xl font-semibold hover:bg-cyan-700 transition-all shadow-sm">
+                                    Clear all filters
+                                </button>
+                                <button onClick={() => { window.location.hash = 'createListing'; }} className="px-5 py-2.5 bg-white text-cyan-600 border border-cyan-200 rounded-xl font-semibold hover:bg-cyan-50 transition-all">
+                                    List your own item
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2 max-w-sm">
+                                Tip: Zoom out on the map or remove some filters to see more results.
                             </p>
-                            <button onClick={clearFilters} className="mt-4 text-cyan-600 hover:underline font-medium">
-                                Clear all filters
-                            </button>
                         </div>
                     )}
                 </div>
