@@ -154,9 +154,14 @@ const ChatInboxModal: React.FC<ChatInboxModalProps> = ({ isOpen, onClose, curren
                         )}
                         
                         {!loading && conversations.length === 0 && (
-                            <div className="p-8 text-center text-gray-500">
-                                <MessageSquareIcon className="h-10 w-10 mx-auto mb-2 text-gray-300" />
-                                <p>No messages yet.</p>
+                            <div className="p-10 text-center flex flex-col items-center gap-3 animate-in fade-in">
+                                <div className="bg-cyan-50 p-4 rounded-2xl">
+                                    <MessageSquareIcon className="h-10 w-10 text-cyan-500" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-800">No messages yet</h3>
+                                <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+                                    When you contact a host or receive a booking request, your conversations will appear here.
+                                </p>
                             </div>
                         )}
 
