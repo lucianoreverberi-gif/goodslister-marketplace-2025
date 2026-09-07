@@ -5,6 +5,10 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/robots.txt",
+      "destination": "/api/robots"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
