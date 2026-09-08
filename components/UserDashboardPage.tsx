@@ -452,7 +452,27 @@ const BookingsManager: React.FC<{
              {damageReportBooking && (                 <DamageReportModal                    bookingId={damageReportBooking.id}                    reporterId={userId}                    reporterRole={mode === 'renting' ? 'renter' : 'host'}                    depositAmount={damageReportBooking.securityDeposit || 0}                    onClose={() => setDamageReportBooking(null)}                    onSuccess={() => setDamageReportBooking(null)}                 />             )}             <div className="mb-6"><h2 className="text-2xl font-bold text-slate-800 mb-4">{mode === 'renting' ? 'My Trips' : 'Reservations'}</h2><div className="grid grid-cols-2 gap-3"><button onClick={() => setMode('renting')} className={`p-4 rounded-2xl border-2 transition-all text-left ${mode === 'renting' ? 'bg-cyan-50 border-cyan-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`}><div className="flex items-center justify-between mb-1"><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Renting</span><span className="text-2xl font-black text-slate-900">{rentingCount}</span></div><div className="text-xs font-bold text-slate-500">Adventures I'm renting</div></button><button onClick={() => setMode('hosting')} className={`p-4 rounded-2xl border-2 transition-all text-left ${mode === 'hosting' ? 'bg-cyan-50 border-cyan-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`}><div className="flex items-center justify-between mb-1"><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hosting</span><span className="text-2xl font-black text-slate-900">{hostingCount}</span></div><div className="flex items-center gap-2"><div className="text-xs font-bold text-slate-500">People renting my stuff</div>{pendingHostCount > 0 && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap">{pendingHostCount} PENDING</span>}</div></button></div></div>
 
             <div className="space-y-4">
-                {displayedBookings.length === 0 && (<div className="bg-white p-12 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center gap-4"><div className="bg-cyan-50 p-4 rounded-2xl"><CalendarIcon className="h-10 w-10 text-cyan-600" /></div><h3 className="text-xl font-bold text-slate-800">{mode === 'renting' ? 'No trips yet' : 'No reservations yet'}</h3><p className="text-sm text-slate-500 max-w-md leading-relaxed">{mode === 'renting' ? "You haven't booked any adventures yet. Explore listings to find your first rental!" : "You don't have any reservations yet. Publish listings to start receiving bookings!"}</p></div>)} {displayedBookings.map(b => (
+                {displayedBookings.length === 0 && (
+                    <div className="bg-white p-12 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center gap-4">
+                        <div className="bg-cyan-50 p-4 rounded-2xl">
+                            <CalendarIcon className="h-10 w-10 text-cyan-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800">
+                            {mode === 'renting' ? 'No trips yet' : 'No reservations yet'}
+                        </h3>
+                        <p className="text-sm text-slate-500 max-w-md leading-relaxed">
+                            {mode === 'renting'
+                                ? "You haven't booked any adventures yet. Discover kayaks, boats, gear and more nearby."
+                                : "You don't have any reservations yet. Publish a listing and start earning from your gear."}
+                        </p>
+                        <button
+                            onClick={() => { window.location.hash = mode === 'renting' ? 'explore' : 'createListing'; }}
+                            className="mt-2 px-6 py-3 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700 transition-all shadow-sm"
+                        >
+                            {mode === 'renting' ? 'Explore adventures' : 'List your first item'}
+                        </button>
+                    </div>
+                )} {displayedBookings.map(b => (
                     <div key={b.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-900">
                         <div className="flex items-center gap-4 w-full md:w-auto">
                             <img src={b.listing.images[0]} className="w-16 h-16 rounded-2xl object-cover bg-slate-100" />
@@ -1026,7 +1046,25 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                                     ))}
                                 </tbody>
                             </table>
-                            {listings.length === 0 && <div className="p-20 text-center text-slate-400 italic font-bold">No items listed. Start earning today!</div>}
+                            {listings.length === 0 && (
+                            <div className="bg-white p-12 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center gap-4 animate-in fade-in">
+                                <div className="bg-emerald-50 p-4 rounded-2xl">
+                                    <PackageIcon className="h-10 w-10 text-emerald-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800">No listings yet</h3>
+                                <p className="text-sm text-slate-500 max-w-md leading-relaxed">
+                                    Turn your unused gear into income. Kayaks, boats, tents, bikes — anything you'd rent to a friend can earn you money here.
+                                </p>
+                                <button
+                                    onClick={() => { window.location.hash = 'createListing'; }}
+                                    className="mt-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-sm inline-flex items-center gap-2"
+                                >
+                                    <RocketIcon className="h-5 w-5" />
+                                    Create your first listing
+                                </button>
+                                <p className="text-xs text-slate-400 mt-1">Takes about 3 minutes</p>
+                            </div>
+                        )}
                         </div>
                     </div>
                 );
@@ -1203,7 +1241,23 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {favoriteListings.map(l => <ListingCard key={l.id} listing={l} onClick={() => onListingClick?.(l.id)} isFavorite={true} onToggleFavorite={onToggleFavorite} />)}
                             </div>
-                        ) : <p className="text-center p-20 text-slate-400 italic font-bold">No saved items yet.</p>}
+                        ) : (
+                            <div className="bg-white p-12 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center gap-4 animate-in fade-in">
+                                <div className="bg-rose-50 p-4 rounded-2xl">
+                                    <HeartIcon className="h-10 w-10 text-rose-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800">No saved items yet</h3>
+                                <p className="text-sm text-slate-500 max-w-md leading-relaxed">
+                                    Tap the heart on any listing to save it here for later — perfect for planning your next adventure.
+                                </p>
+                                <button
+                                    onClick={() => { window.location.hash = 'explore'; }}
+                                    className="mt-2 px-6 py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-all shadow-sm"
+                                >
+                                    Browse listings
+                                </button>
+                            </div>
+                        )}
                     </div>
                 );
             default:
