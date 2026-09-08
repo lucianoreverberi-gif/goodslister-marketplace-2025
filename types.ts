@@ -102,6 +102,9 @@ export interface Listing {
     securityDeposit?: number;
     security_deposit?: number;
     operation_mode?: 1 | 2 | 3;
+    // NEW: Host-configurable license requirement
+    licenseRequired?: boolean;
+    licenseType?: string;
     item_value?: number;
     listingType?: ListingType;
     operatorLicenseId?: string;
