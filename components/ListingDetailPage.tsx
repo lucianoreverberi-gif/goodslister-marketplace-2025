@@ -690,17 +690,49 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         </button>
                                     )}
 
-                                    {requiresLicense && (
-                                        <div className="flex items-center gap-2 justify-center py-2">
-                                            <AlertTriangleIcon className="h-3.5 w-3.5 text-amber-500" />
-                                            <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Vetting Process applies to this gear</p>
+                                    {listing.licenseRequired && (
+                                        <div className="mt-2 p-3 bg-cyan-50 border border-cyan-100 rounded-2xl">
+                                            <div className="flex items-start gap-2">
+                                                <FileTextIcon className="h-4 w-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                                <div>
+                                                    <p className="text-xs font-black text-slate-800">License required for this rental</p>
+                                                    {listing.licenseType && (
+                                                        <p className="text-xs text-slate-600 mt-0.5">{listing.licenseType}</p>
+                                                    )}
+                                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                                        Message the host to confirm requirements before booking.
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="mt-6 flex items-center justify-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <ShieldCheckIcon className="h-4 w-4 text-emerald-500" /> Professional Grade Host Protection
+                            {/* Expanded Host Protection Card */}
+                            <div className="mt-6 p-5 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-100 rounded-3xl">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <ShieldCheckIcon className="h-5 w-5 text-emerald-600" />
+                                    <h4 className="text-sm font-black text-slate-800">Your booking is protected</h4>
+                                </div>
+                                <ul className="space-y-2 text-xs text-slate-600">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                        <span>Secure payment powered by Stripe</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                        <span>Rental agreement signed digitally</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                        <span>Security deposit held during rental</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                        <span>Dispute resolution if things go wrong</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
