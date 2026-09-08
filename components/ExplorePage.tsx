@@ -33,9 +33,11 @@ const mapContainerStyle = {
 };
 
 const defaultCenter = {
-  lat: -38.4161, // Centered on Argentina
-  lng: -63.6167
+  lat: 25.7617, // Miami, FL - marketplace HQ
+  lng: -80.1918
 };
+
+const DEFAULT_ZOOM = 11;
 
 const ExplorePage: React.FC<ExplorePageProps> = ({ 
     listings, 
@@ -109,9 +111,32 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                 const to = initialFilters.dateTo ? new Date(initialFilters.dateTo + 'T00:00:00') : from;
                 if (from) setDateRange({ from, to });
             }
+            // Geocode the location string to recenter the map (e.g. header/home search with "Alaska")
+            if (initialFilters.location && (window as any).google?.maps?.Geocoder) {
+                const geocoder = new (window as any).google.maps.Geocoder();
+                geocoder.geocode({ address: initialFilters.location }, (results: any, status: string) => {
+                    if (status === 'OK' && results && results[0]) {
+                        const loc = results[0].geometry.location;
+                        setMapCenter({ lat: loc.lat(), lng: loc.lng() });
+                        // Zoom based on geometry viewport if available
+                        const viewport = results[0].geometry.viewport;
+                        if (viewport) {
+                            // Fit bounds when map is available
+                            setUserManuallySearched(true);
+                            if (map) {
+                                map.fitBounds(viewport);
+                            } else {
+                                setMapZoom(8); // Reasonable default until map loads
+                            }
+                        } else {
+                            setMapZoom(11);
+                        }
+                    }
+                });
+            }
             onClearInitialFilters(); // Clear after applying to prevent re-applying
         }
-    }, [initialFilters, onClearInitialFilters]);
+    }, [initialFilters, onClearInitialFilters, map]);
 
     // Clean up subcategories when categories change
     useEffect(() => {
@@ -511,9 +536,15 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                                 <CompassIcon className="h-12 w-12 text-cyan-600" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-800">No listings found here</h3>
+                                <h3 className="text-2xl font-bold text-gray-800">
+                                    {locationFilter
+                                        ? `No listings in ${locationFilter.split(',')[0]} yet`
+                                        : 'No listings found here'}
+                                </h3>
                                 <p className="mt-2 text-gray-600 max-w-md">
-                                    We couldn't find any adventures matching your filters. Try broadening your search or exploring a different area.
+                                    {locationFilter
+                                        ? `Be the first to list your gear in ${locationFilter.split(',')[0]} and start earning today.`
+                                        : "We couldn't find any adventures matching your filters. Try broadening your search or exploring a different area."}
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-3 mt-2 justify-center">
@@ -521,11 +552,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                                     Clear all filters
                                 </button>
                                 <button onClick={() => { window.location.hash = 'createListing'; }} className="px-5 py-2.5 bg-white text-cyan-600 border border-cyan-200 rounded-xl font-semibold hover:bg-cyan-50 transition-all">
-                                    List your own item
+                                    {locationFilter ? `List your item in ${locationFilter.split(',')[0]}` : 'List your own item'}
                                 </button>
                             </div>
                             <p className="text-xs text-gray-400 mt-2 max-w-sm">
-                                Tip: Zoom out on the map or remove some filters to see more results.
+                                {locationFilter
+                                    ? 'We\'re expanding fast! Your listing helps us grow into new areas.'
+                                    : 'Tip: Zoom out on the map or remove some filters to see more results.'}
                             </p>
                         </div>
                     )}
