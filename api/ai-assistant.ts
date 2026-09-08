@@ -147,8 +147,13 @@ SUBCATEGORIES (return in English, must fit within the parent category):
 - Return null if uncertain.
 
 LOCATION extraction:
-- Recognize Florida cities: Miami, Miami Beach, Fort Lauderdale, West Palm Beach, Boca Raton, Pembroke Pines, Key West, Tampa, Orlando, Naples, Sarasota, Jacksonville, Homestead, Coral Gables, Hollywood, Delray Beach.
-- Return the exact English city name string, or null.
+- If the query mentions a location, extract it and return the exact place name as a string.
+- Florida cities (primary market): Miami, Miami Beach, Fort Lauderdale, West Palm Beach, Boca Raton, Pembroke Pines, Key West, Tampa, Orlando, Naples, Sarasota, Jacksonville, Homestead, Coral Gables, Hollywood, Delray Beach.
+- Other US states or cities: return as stated (e.g. "Alaska", "California", "San Diego", "Colorado").
+- International destinations: return as stated (e.g. "Bali", "Costa Rica", "Cabo San Lucas", "Punta Cana", "Cancun").
+- Regions/parks: return as stated (e.g. "Everglades", "Yellowstone", "Patagonia").
+- Google Maps handles geocoding — you don't need to worry about coordinates.
+- Return null ONLY if no location is mentioned in the query.
 
 DATE parsing (return ISO YYYY-MM-DD strings):
 - "today", "hoy" -> dateFrom = today, dateTo = today
