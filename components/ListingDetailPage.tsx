@@ -54,6 +54,8 @@ interface ListingDetailPageProps {
     isFavorite: boolean;
     onToggleFavorite: (id: string) => void;
     onViewOwnerProfile?: () => void;
+    similarListings?: Listing[];
+    onListingClick?: (id: string) => void;
 }
 
 const BookingConfirmationModal: React.FC<{ booking: Booking, onClose: () => void }> = ({ booking, onClose }) => (
@@ -238,7 +240,7 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = (props) => (
     </Elements>
 );
 
-const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile }) => {
+const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile, similarListings = [], onListingClick }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [range, setRange] = useState<DateRange | undefined>();
     const [hourlyDate, setHourlyDate] = useState<Date | undefined>(undefined);
@@ -385,16 +387,33 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                             Back to explore
                         </button>
                         <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-3">
-                                <p className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em]">{listing.category}{listing.subcategory && ` • ${listing.subcategory}`}</p>
+                            {/* Breadcrumb - clickable filters */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                    onClick={() => { window.location.hash = `explore?category=${encodeURIComponent(listing.category)}`; }}
+                                    className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] hover:text-cyan-700 hover:underline transition-colors"
+                                >
+                                    {listing.category}
+                                </button>
+                                {listing.subcategory && (
+                                    <>
+                                        <span className="text-[10px] font-black text-slate-300">•</span>
+                                        <button
+                                            onClick={() => { window.location.hash = `explore?subcategory=${encodeURIComponent(listing.subcategory || '')}`; }}
+                                            className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] hover:text-cyan-700 hover:underline transition-colors"
+                                        >
+                                            {listing.subcategory}
+                                        </button>
+                                    </>
+                                )}
                                 {listing.isInstantBook && (
-                                    <span className="flex items-center gap-1.5 text-[8px] font-black text-emerald-700 uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <span className="ml-1 flex items-center gap-1.5 text-[8px] font-black text-emerald-700 uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
                                         <ZapIcon className="h-2.5 w-2.5 fill-emerald-700" /> Instant Book
                                     </span>
                                 )}
                             </div>
                             <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">{listing.title}</h1>
-                            <div className="flex items-center gap-6 mt-2">
+                            <div className="flex items-center gap-4 flex-wrap mt-2">
                                 <div className="flex items-center text-sm text-slate-500 font-bold">
                                     <MapPinIcon className="h-4 w-4 mr-1.5 text-cyan-500" />
                                     <span>{listing.location.city}, {listing.location.state}</span>
@@ -404,6 +423,31 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     <span className="font-black text-slate-900 text-xs">{listing.rating}</span>
                                     <span className="text-[10px] text-slate-400 ml-1 font-bold">({Math.floor(Math.random() * 50) + 10} reviews)</span>
                                 </div>
+                                {/* Mini Owner Card - Hosted by [avatar] [name] */}
+                                <button
+                                    onClick={onViewOwnerProfile}
+                                    className="flex items-center gap-2 bg-white border border-slate-200 pl-1 pr-3 py-1 rounded-full hover:bg-slate-50 transition-all shadow-sm"
+                                >
+                                    <img src={listing.owner.avatarUrl} alt={listing.owner.name} className="w-6 h-6 rounded-full object-cover" />
+                                    <span className="text-xs font-bold text-slate-700">
+                                        Hosted by {listing.owner.name.split(' ')[0]}
+                                    </span>
+                                </button>
+                            </div>
+                            {/* Trust Signals Row */}
+                            <div className="flex items-center gap-2 flex-wrap mt-3">
+                                <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-600 uppercase tracking-wider bg-white border border-slate-200 px-2.5 py-1 rounded-full">
+                                    <ShieldCheckIcon className="h-3 w-3 text-emerald-500" /> Verified Host
+                                </span>
+                                <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-600 uppercase tracking-wider bg-white border border-slate-200 px-2.5 py-1 rounded-full">
+                                    <FileSignatureIcon className="h-3 w-3 text-cyan-500" /> Rental Agreement
+                                </span>
+                                <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-600 uppercase tracking-wider bg-white border border-slate-200 px-2.5 py-1 rounded-full">
+                                    <LockIcon className="h-3 w-3 text-indigo-500" /> Secure Payment
+                                </span>
+                                <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-600 uppercase tracking-wider bg-white border border-slate-200 px-2.5 py-1 rounded-full">
+                                    <MessageSquareIcon className="h-3 w-3 text-rose-500" /> Direct Chat
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -661,6 +705,51 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                         </div>
                     </div>
                 </div>
+
+                {/* Similar Listings Section */}
+                {similarListings && similarListings.length > 0 && (
+                    <section className="mt-16 pt-12 border-t border-slate-100">
+                        <div className="flex items-end justify-between mb-6">
+                            <div>
+                                <h3 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">You might also like</h3>
+                                <p className="text-sm text-slate-500 font-bold mt-1">More {listing.category.toLowerCase()} adventures near {listing.location.city}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                            {similarListings.slice(0, 4).map(sim => (
+                                <button
+                                    key={sim.id}
+                                    onClick={() => onListingClick && onListingClick(sim.id)}
+                                    className="group text-left bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
+                                >
+                                    <div className="relative w-full h-48 overflow-hidden bg-slate-100">
+                                        <img
+                                            src={Array.isArray(sim.images) ? sim.images[0] : (typeof sim.images === 'string' ? (sim.images as string).split(',')[0] : '')}
+                                            alt={sim.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full text-[11px] font-black text-slate-900 shadow-sm">
+                                            {sim.pricingType === 'hourly' ? `$${sim.pricePerHour}/hr` : `$${sim.pricePerDay}/day`}
+                                        </div>
+                                    </div>
+                                    <div className="p-4">
+                                        <h4 className="text-sm font-black text-slate-900 line-clamp-1 group-hover:text-cyan-600 transition-colors">
+                                            {sim.title}
+                                        </h4>
+                                        <p className="text-xs text-slate-500 font-bold mt-1 flex items-center gap-1">
+                                            <MapPinIcon className="h-3 w-3 text-cyan-500" />
+                                            {sim.location.city}
+                                        </p>
+                                        <div className="flex items-center gap-1 mt-2">
+                                            <StarIcon className="h-3 w-3 text-amber-400 fill-amber-400" />
+                                            <span className="text-xs font-black text-slate-700">{sim.rating || 'New'}</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </div>
 
         </div>
