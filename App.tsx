@@ -965,7 +965,9 @@ const App: React.FC = () => {
                     onCreateBooking={handleCreateBooking}
                     isFavorite={session?.favorites?.includes(listing.id) || false}
                     onToggleFavorite={handleToggleFavorite}
-                    onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)} // NEW PROP
+                    onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)}
+                    similarListings={listings.filter((l: Listing) => l.category === listing.category && l.id !== listing.id).slice(0, 4)}
+                    onListingClick={(id) => { setSelectedListingId(id); handleNavigate('listingDetail'); }}
                 /> : <p>Listing not found.</p>;
             case 'userProfile': // NEW PAGE CASE
                 const profileUser = users.find((u: User) => u.id === selectedUserProfileId);
