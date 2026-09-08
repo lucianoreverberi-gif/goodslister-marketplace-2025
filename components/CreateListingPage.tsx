@@ -91,6 +91,8 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     // Media & Rules
     const [videoUrl, setVideoUrl] = useState(initialData?.videoUrl || '');
     const [ownerRules, setOwnerRules] = useState(initialData?.ownerRules || '');
+    const [licenseRequired, setLicenseRequired] = useState<boolean>(initialData?.licenseRequired || false);
+    const [licenseType, setLicenseType] = useState(initialData?.licenseType || '');
     
     // Pricing
     const [pricingType, setPricingType] = useState<'daily' | 'hourly'>(initialData?.pricingType || 'daily');
@@ -368,7 +370,11 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
             // NEW: Item Identification for Rental Agreement PDF
             brand,
             model,
-            fullAddress
+            fullAddress,
+            
+            // NEW: Host-configurable license requirement
+            licenseRequired,
+            licenseType: licenseType || undefined
         };
 
         try {
@@ -776,24 +782,58 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             />
                         </div>
 
-                        {/* Contract Agreement Section */}
-                        <div className="bg-white p-6 rounded-xl border border-gray-200">
-                            <h3 className="text-lg font-bold text-gray-900 border-b pb-2">
-                                Contract Agreement
-                            </h3>
-                            <div className="mt-4 flex items-start gap-3">
-                                <ShieldCheckIcon className="h-8 w-8 text-cyan-600 flex-shrink-0" />
-                                <div>
-                                    <span className="block font-bold text-gray-900">
-                                        Goodslister Standard Agreement
-                                    </span>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        All rentals on Goodslister use our Standard Rental Agreement, 
-                                        which the renter accepts at checkout. This protects both you 
-                                        and the renter under our platform terms. Custom contracts are 
-                                        currently not supported.
-                                    </p>
+                        {/* License Requirement */}
+                        <div className="bg-cyan-50/50 p-5 rounded-xl border border-cyan-100">
+                            <label className="block text-sm font-bold text-gray-800">Does the renter need a license or certification?</label>
+                            <p className="text-xs text-gray-500 mt-1">Some gear like motorcycles, jet skis, or boats may require specific licenses depending on your state.</p>
+                            <div className="mt-3 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setLicenseRequired(false)}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                                        !licenseRequired
+                                            ? 'bg-white border-cyan-500 text-cyan-700 shadow-sm'
+                                            : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                    }`}
+                                >
+                                    No — anyone can rent
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setLicenseRequired(true)}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                                        licenseRequired
+                                            ? 'bg-white border-cyan-500 text-cyan-700 shadow-sm'
+                                            : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                    }`}
+                                >
+                                    Yes — license required
+                                </button>
+                            </div>
+                            {licenseRequired && (
+                                <div className="mt-4 animate-in fade-in">
+                                    <label htmlFor="license-type" className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        What kind of license? (Optional)
+                                    </label>
+                                    <input
+                                        id="license-type"
+                                        type="text"
+                                        value={licenseType}
+                                        onChange={(e) => setLicenseType(e.target.value)}
+                                        className="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                        placeholder="e.g. Motorcycle license M, Florida Boating Safety Card, Driver's license"
+                                    />
+                                    <p className="text-[11px] text-gray-500 mt-1.5">This helps renters know what to prepare before contacting you.</p>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Standard Agreement Badge (compact) */}
+                        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                            <ShieldCheckIcon className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-slate-800">Standard Rental Agreement included</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Automatically signed by both parties at booking.</p>
                             </div>
                         </div>
 

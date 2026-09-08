@@ -690,17 +690,73 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                         </button>
                                     )}
 
-                                    {requiresLicense && (
-                                        <div className="flex items-center gap-2 justify-center py-2">
-                                            <AlertTriangleIcon className="h-3.5 w-3.5 text-amber-500" />
-                                            <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Vetting Process applies to this gear</p>
+                                    {/* License requirement badge - always visible with 3 states */}
+                                    {listing.licenseRequired === true ? (
+                                        <div className="mt-2 p-3 bg-cyan-50 border border-cyan-100 rounded-2xl">
+                                            <div className="flex items-start gap-2">
+                                                <FileTextIcon className="h-4 w-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                                <div>
+                                                    <p className="text-xs font-black text-slate-800">License required</p>
+                                                    {listing.licenseType && (
+                                                        <p className="text-xs text-slate-600 mt-0.5">{listing.licenseType}</p>
+                                                    )}
+                                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                                        Message the host to confirm requirements before booking.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : listing.licenseRequired === false ? (
+                                        <div className="mt-2 flex items-center gap-2 p-2.5 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                                            <CheckCircleIcon className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                                            <p className="text-xs font-bold text-slate-700">No license needed to rent this gear</p>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-2 flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                                            <MessageSquareIcon className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                                            <p className="text-xs font-bold text-slate-600">Check with host about license requirements</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="mt-6 flex items-center justify-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <ShieldCheckIcon className="h-4 w-4 text-emerald-500" /> Professional Grade Host Protection
+                            {/* Expanded Host Protection Card - PROMINENT */}
+                            <div className="mt-6 p-6 bg-gradient-to-br from-emerald-50 via-cyan-50 to-blue-50 border-2 border-emerald-200 rounded-3xl shadow-sm">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-white rounded-2xl shadow-sm">
+                                        <ShieldCheckIcon className="h-7 w-7 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-lg font-black text-slate-900">Your booking is protected</h4>
+                                        <p className="text-xs text-slate-500 font-bold">Full-cycle rental protection included</p>
+                                    </div>
+                                </div>
+                                <ul className="space-y-2.5 text-sm text-slate-700 font-medium">
+                                    <li className="flex items-start gap-2.5">
+                                        <div className="p-1 bg-white rounded-full mt-0.5 shadow-sm">
+                                            <CheckCircleIcon className="h-4 w-4 text-emerald-600" />
+                                        </div>
+                                        <span><strong className="font-black">Secure payment</strong> powered by Stripe (PCI compliant)</span>
+                                    </li>
+                                    <li className="flex items-start gap-2.5">
+                                        <div className="p-1 bg-white rounded-full mt-0.5 shadow-sm">
+                                            <CheckCircleIcon className="h-4 w-4 text-emerald-600" />
+                                        </div>
+                                        <span><strong className="font-black">Digital rental agreement</strong> signed by both parties at checkout</span>
+                                    </li>
+                                    <li className="flex items-start gap-2.5">
+                                        <div className="p-1 bg-white rounded-full mt-0.5 shadow-sm">
+                                            <CheckCircleIcon className="h-4 w-4 text-emerald-600" />
+                                        </div>
+                                        <span><strong className="font-black">Security deposit</strong> held during rental — released after return</span>
+                                    </li>
+                                    <li className="flex items-start gap-2.5">
+                                        <div className="p-1 bg-white rounded-full mt-0.5 shadow-sm">
+                                            <CheckCircleIcon className="h-4 w-4 text-emerald-600" />
+                                        </div>
+                                        <span><strong className="font-black">Dispute resolution</strong> with our support team if issues arise</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>

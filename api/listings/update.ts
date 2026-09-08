@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         skill_level = ${listing.skillLevel}, 
         whats_included = ${listing.whatsIncluded}, 
         itinerary = ${listing.itinerary},
-        price_unit = ${listing.priceUnit}, deposit_amount = ${listing.securityDeposit || 0}, item_value = ${listing.item_value || 0}
+        price_unit = ${listing.priceUnit}, deposit_amount = ${listing.securityDeposit || 0}, item_value = ${listing.item_value || 0}, license_required = ${listing.licenseRequired || false}, license_type = ${listing.licenseType || null}
       WHERE id = ${listing.id}
     `;
     
