@@ -159,7 +159,7 @@ const HeaderSearch: React.FC<HeaderSearchProps> = ({ onSearch, compact = false }
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search: kayak, jetski, boat in Miamiâ¦"
+            placeholder="Search: kayak, jetski, boat in Miami, Alaska, Bali..."
             className={`flex-1 min-w-0 bg-transparent outline-none text-sm text-gray-900 placeholder-gray-500 ${compact ? 'py-1' : 'py-2'}`}
             aria-label="Search"
           />
