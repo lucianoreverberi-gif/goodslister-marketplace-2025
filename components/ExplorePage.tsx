@@ -6,7 +6,8 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { Listing, ListingCategory } from '../types';
 import { subcategories } from '../constants';
 import ListingCard from './ListingCard';
-import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon, CompassIcon } from './icons';
+import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon, CompassIcon, AlertTriangleIcon } from './icons';
+import { ListingsGridSkeleton } from './Skeleton';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';import { DayPicker, DateRange } from 'react-day-picker';import { format, parseISO, isWithinInterval, areIntervalsOverlapping } from 'date-fns';
 
@@ -351,8 +352,21 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
         }
     };
 
-    if (loadError) return <div className="p-8 text-center">Error loading maps. Please check the API key.</div>;
-    if (!isLoaded) return <div className="p-8 text-center">Loading map and listings...</div>;
+    if (loadError) return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
+            <div className="bg-rose-50 p-4 rounded-3xl"><AlertTriangleIcon className="h-10 w-10 text-rose-500" /></div>
+            <div className="text-center">
+                <h3 className="text-lg font-black text-slate-800">Map failed to load</h3>
+                <p className="text-sm text-slate-500 mt-1">Check your connection and refresh the page.</p>
+            </div>
+            <button onClick={()=>window.location.reload()} className="px-5 py-2.5 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700">Refresh</button>
+        </div>
+    );
+    if (!isLoaded) return (
+        <div className="max-w-6xl mx-auto px-4 py-8">
+            <ListingsGridSkeleton count={8} />
+        </div>
+    );
 
     return (
         <div className="flex flex-col md:flex-row md:h-[calc(100dvh-64px)] md:overflow-hidden relative">
