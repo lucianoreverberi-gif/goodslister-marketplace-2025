@@ -828,24 +828,12 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             )}
                         </div>
 
-                        {/* Contract Agreement Section */}
-                        <div className="bg-white p-6 rounded-xl border border-gray-200">
-                            <h3 className="text-lg font-bold text-gray-900 border-b pb-2">
-                                Contract Agreement
-                            </h3>
-                            <div className="mt-4 flex items-start gap-3">
-                                <ShieldCheckIcon className="h-8 w-8 text-cyan-600 flex-shrink-0" />
-                                <div>
-                                    <span className="block font-bold text-gray-900">
-                                        Goodslister Standard Agreement
-                                    </span>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        All rentals on Goodslister use our Standard Rental Agreement, 
-                                        which the renter accepts at checkout. This protects both you 
-                                        and the renter under our platform terms. Custom contracts are 
-                                        currently not supported.
-                                    </p>
-                                </div>
+                        {/* Standard Agreement Badge (compact) */}
+                        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                            <ShieldCheckIcon className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-slate-800">Standard Rental Agreement included</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Automatically signed by both parties at booking.</p>
                             </div>
                         </div>
 
