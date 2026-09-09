@@ -502,6 +502,57 @@ const BookingsManager: React.FC<{
                             </div>
                         </div>
                         <div className="flex gap-2 w-full md:w-auto justify-end">
+                            {mode === 'hosting' && b.status === 'pending' && (
+                                <>
+                                    <button 
+                                        onClick={async () => {
+                                            if (!confirm('Approve this booking request?')) return;
+                                            setProcessingId(b.id);
+                                            try {
+                                                await onBookingStatusUpdate(b.id, 'confirmed');
+                                            } finally {
+                                                setProcessingId(null);
+                                            }
+                                        }} 
+                                        disabled={processingId === b.id}
+                                        className="px-5 py-2 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 shadow shadow-emerald-100 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        <CheckCircleIcon className="h-3.5 w-3.5" /> {processingId === b.id ? 'APPROVING...' : 'APPROVE'}
+                                    </button>
+                                    <button 
+                                        onClick={async () => {
+                                            if (!confirm('Reject this booking request? The renter will be refunded.')) return;
+                                            setProcessingId(b.id);
+                                            try {
+                                                await onBookingStatusUpdate(b.id, 'rejected');
+                                            } finally {
+                                                setProcessingId(null);
+                                            }
+                                        }} 
+                                        disabled={processingId === b.id}
+                                        className="px-5 py-2 bg-white text-red-600 border border-red-200 text-[10px] font-bold rounded-lg hover:bg-red-50 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        <XIcon className="h-3.5 w-3.5" /> REJECT
+                                    </button>
+                                </>
+                            )}
+                            {mode === 'renting' && b.status === 'pending' && (
+                                <button 
+                                    onClick={async () => {
+                                        if (!confirm('Cancel this booking request? You will be refunded.')) return;
+                                        setProcessingId(b.id);
+                                        try {
+                                            await onBookingStatusUpdate(b.id, 'cancelled');
+                                        } finally {
+                                            setProcessingId(null);
+                                        }
+                                    }} 
+                                    disabled={processingId === b.id}
+                                    className="px-5 py-2 bg-white text-slate-600 border border-slate-200 text-[10px] font-bold rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    <XIcon className="h-3.5 w-3.5" /> CANCEL REQUEST
+                                </button>
+                            )}
                             {b.status === 'confirmed' && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-5 py-2 bg-cyan-600 text-white text-[10px] font-bold rounded-lg hover:bg-cyan-700 shadow shadow-cyan-100 transition-all flex items-center gap-2">
                                     <RocketIcon className="h-3.5 w-3.5" /> CHECK-IN
