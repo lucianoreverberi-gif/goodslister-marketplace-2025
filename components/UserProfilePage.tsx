@@ -224,15 +224,22 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                             <h2 className="text-xl font-bold text-gray-900 mb-6">What people are saying</h2>
                             {reviews.length > 0 ? (
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
-                                    {reviews.map((r) => (
+                                    {reviews.map((r) => {
+                                        const authorName = r.author_name || (r.role === 'HOST' ? 'A host' : 'A guest');
+                                        const authorInitials = authorName.split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
+                                        return (
                                         <div key={r.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center text-cyan-700 text-xs font-black">
-                                                        {(r.role === 'HOST' ? 'H' : 'R')}
-                                                    </div>
+                                                    {r.author_avatar ? (
+                                                        <img src={r.author_avatar} alt={authorName} className="w-10 h-10 rounded-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center text-cyan-700 text-xs font-black">
+                                                            {authorInitials}
+                                                        </div>
+                                                    )}
                                                     <div>
-                                                        <p className="font-bold text-gray-900 text-sm">{r.role === 'HOST' ? 'A host' : 'A guest'}</p>
+                                                        <p className="font-bold text-gray-900 text-sm">{authorName} <span className="text-xs font-medium text-gray-400 ml-1">· {r.role === 'HOST' ? 'Host' : 'Guest'}</span></p>
                                                         <p className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
                                                     </div>
                                                 </div>
@@ -242,7 +249,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                             </div>
                                             {r.comment && <p className="text-gray-600 text-sm">{r.comment}</p>}
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="bg-gray-50 p-8 rounded-xl text-center text-gray-500 italic">
