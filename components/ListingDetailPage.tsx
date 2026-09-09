@@ -658,6 +658,18 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                     <span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span>
                                                 </div>
                                             </div>
+                                            {/* ID Verification early-warning for first-time renters */}
+                                            {currentUser && !isOwner && !(currentUser as any).identity_verified && (
+                                                <div className="mb-3 p-3 bg-cyan-500/10 border border-cyan-400/30 rounded-2xl backdrop-blur-sm">
+                                                    <div className="flex items-start gap-2">
+                                                        <ShieldCheckIcon className="h-4 w-4 text-cyan-300 flex-shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-xs font-black text-white leading-snug">First booking? Quick 60-second ID check at checkout.</p>
+                                                            <p className="text-[10px] font-bold text-cyan-200/80 mt-0.5 leading-snug">Powered by Stripe. Your data stays secure.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="pt-4 border-t border-white/10">
                                                 <div className="flex justify-between items-end">
                                                     <div>
