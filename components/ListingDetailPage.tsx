@@ -252,6 +252,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showIdentityModal, setShowIdentityModal] = useState(false);
     const [apiVerified, setApiVerified] = useState<boolean | null>(null);
+    const [insurancePlan, setInsurancePlan] = useState<'none' | 'standard' | 'premium'>('standard');
+
+    const isOwner = currentUser?.id === listing.owner.id;
 
     // Fetch fresh identity status on mount to avoid stale session issues
     useEffect(() => {
@@ -269,9 +272,6 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
         })();
         return () => { cancelled = true; };
     }, [currentUser?.id, isOwner]);
-    const [insurancePlan, setInsurancePlan] = useState<'none' | 'standard' | 'premium'>('standard');
-
-    const isOwner = currentUser?.id === listing.owner.id;
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
     const isHourly = listing.pricingType === 'hourly';
