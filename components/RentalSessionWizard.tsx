@@ -300,6 +300,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     // Defensive: booking.listing may be undefined if data enrichment failed at bootstrap
     const requiresLicense = booking.listing ? LegalService.isLicenseRequired(booking.listing) : false;
 
+    // Set initial step ONCE on mount. Do NOT re-fire on status changes -
+    // it would jump the wizard back to RETURN_INSPECTION after handover completes.
     useEffect(() => {
         if (initialMode === 'return' || booking.status === 'active') {
             setPhase('RETURN');
@@ -308,7 +310,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
             setPhase('HANDOVER');
             setStep('PAYMENT_COLLECTION');
         }
-    }, [booking.status, initialMode]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleContractSign = () => {
         setIsLoading(true);
