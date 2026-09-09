@@ -87,11 +87,24 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectR
             if (!uploadResponse.ok) {
                 const errorText = await uploadResponse.text();
                 let errorMessage = "Upload failed";
+                let isDuplicate = false;
+                let userMessage = '';
                 try {
                     const errorData = JSON.parse(errorText);
+                    // Anti-fraud: duplicate photo rejection
+                    if (uploadResponse.status === 409 && errorData.error === 'DUPLICATE_PHOTO') {
+                        isDuplicate = true;
+                        userMessage = errorData.userMessage || errorData.message || 'Esta foto ya fue utilizada. Por favor tomá una nueva.';
+                    }
                     errorMessage = errorData.error || errorMessage;
                 } catch (e) {
                     errorMessage = errorText || errorMessage;
+                }
+                if (isDuplicate) {
+                    alert(userMessage);
+                    setCapturedImage(null);
+                    startCamera();
+                    return;
                 }
                 throw new Error(errorMessage);
             }
