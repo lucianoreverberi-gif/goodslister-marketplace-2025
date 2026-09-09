@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking, InspectionPhoto, ListingCategory } from '../types';
 import { CameraIcon, CheckCircleIcon, MapPinIcon, RefreshCwIcon, XIcon, AlertCircleIcon, ShieldIcon, ChevronRightIcon, ChevronLeftIcon, ZapIcon } from './icons';
 import ImageUploader from './ImageUploader';
+import CameraCapture from './CameraCapture';
 
 interface DigitalInspectionProps {
     booking: Booking;
@@ -91,7 +92,7 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
             </div>
 
             {/* Split View Comparison */}
-            <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden bg-black">
+            <div className="flex-1 flex flex-col md:flex-row relative overflow-y-auto md:overflow-hidden bg-black">
                 
                 {/* Reference Photo (During Return) */}
                 {mode === 'return' && handoverReferencePhotos && handoverReferencePhotos[step] && (
@@ -104,7 +105,7 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
                 )}
 
                 {/* Active Capture Area */}
-                <div className="flex-1 relative flex items-center justify-center p-4">
+                <div className="flex-1 relative flex md:items-center justify-center p-4 pb-32 md:pb-4 md:overflow-y-auto">
                     {photos[step] ? (
                         <div className="relative w-full h-full animate-in zoom-in-95">
                             <img src={photos[step].url} className="w-full h-full object-contain rounded-2xl" />
@@ -139,7 +140,16 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
                             </div>
 
                             <div className="bg-white/5 border border-white/10 p-2 rounded-3xl">
-                                <ImageUploader label="" currentImageUrl="" onImageChange={handlePhotoUpload} bookingId={booking.id} photoType={mode} angleId={currentAngle.id} angleLabel={currentAngle.label} folder={`inspections/${booking.id}`} />
+                                <CameraCapture
+                                    label=""
+                                    aspectRatio="video"
+                                    onCapture={handlePhotoUpload}
+                                    bookingId={booking.id}
+                                    photoType={mode}
+                                    angleId={currentAngle.id}
+                                    angleLabel={currentAngle.label}
+                                    folder={`inspections/${booking.id}`}
+                                />
                             </div>
                         </div>
                     )}
