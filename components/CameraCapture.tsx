@@ -7,9 +7,14 @@ interface CameraCaptureProps {
     label: string;
     aspectRatio?: 'video' | 'portrait' | 'id-card';
     folder?: string;
+    // Optional verification context for 3-tier photo verification
+    bookingId?: string;
+    photoType?: 'handover' | 'return';
+    angleId?: string;
+    angleLabel?: string;
 }
 
-const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectRatio = 'video', folder = 'verifications' }) => {
+const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectRatio = 'video', folder = 'verifications', bookingId, photoType, angleId, angleLabel }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [stream, setStream] = useState<MediaStream | null>(null);
@@ -79,7 +84,9 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectR
             const filename = `capture_${Date.now()}.jpg`;
 
             // Upload to server
-            const uploadResponse = await fetch(`/api/upload-image?filename=${encodeURIComponent(filename)}&folder=${encodeURIComponent(folder)}`, {
+            // Build URL with verification context if bookingId provided (enables 3-tier server-side verification)
+            const verifyParams = bookingId ? `&bookingId=${encodeURIComponent(bookingId)}&photoType=${encodeURIComponent(photoType||'handover')}${angleId?`&angleId=${encodeURIComponent(angleId)}`:''}${angleLabel?`&angleLabel=${encodeURIComponent(angleLabel)}`:''}&verify=true` : '';
+            const uploadResponse = await fetch(`/api/upload-image?filename=${encodeURIComponent(filename)}&folder=${encodeURIComponent(folder)}${verifyParams}`, {
                 method: 'POST',
                 body: blob,
             });
@@ -106,6 +113,17 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectR
                     startCamera();
                     return;
                 }
+                // Anti-fraud: 3-tier verification rejection (400 status)
+                try {
+                    const errorData = JSON.parse(errorText);
+                    if (uploadResponse.status === 400 && errorData.error === 'PHOTO_VERIFICATION_FAILED') {
+                        const msg = errorData.userMessage || 'Esta foto no pasó las verificaciones de seguridad. Tomá una nueva.';
+                        alert(msg);
+                        setCapturedImage(null);
+                        startCamera();
+                        return;
+                    }
+                } catch(e) {}
                 throw new Error(errorMessage);
             }
 
