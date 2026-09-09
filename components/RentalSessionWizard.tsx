@@ -192,6 +192,38 @@ const IdentityVerificationStep: React.FC<{
 };
 
 const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, initialMode, onStatusChange, onUpdateDepositStatus, onComplete }) => {
+    // Guard: if booking.listing is missing (data enrichment failed), show error instead of crashing
+    if (!booking.listing) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+                <div className="max-w-md w-full bg-white rounded-3xl shadow-lg p-8 border border-slate-100 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-50 rounded-3xl mb-4">
+                        <AlertTriangleIcon className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 mb-2">Listing data unavailable</h2>
+                    <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                        We could not load the listing details for this booking. Please try refreshing the page.
+                        If the problem persists, contact support.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-6 py-3 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700"
+                        >
+                            Refresh page
+                        </button>
+                        <button
+                            onClick={onComplete}
+                            className="px-6 py-3 bg-white text-slate-700 border-2 border-slate-200 rounded-xl font-bold hover:bg-slate-50"
+                        >
+                            Go back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     const [phase, setPhase] = useState<WizardPhase>('IDLE');
     const [step, setStep] = useState<WizardStep>('PAYMENT_COLLECTION');
     const [isLoading, setIsLoading] = useState(false);
@@ -207,7 +239,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     // Verification Photos to cleanup later
     const [verificationPhotos, setVerificationPhotos] = useState<{id: string, face: string} | null>(null);
 
-    const requiresLicense = LegalService.isLicenseRequired(booking.listing);
+    // Defensive: booking.listing may be undefined if data enrichment failed at bootstrap
+    const requiresLicense = booking.listing ? LegalService.isLicenseRequired(booking.listing) : false;
 
     useEffect(() => {
         if (initialMode === 'return' || booking.status === 'active') {
@@ -302,7 +335,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         </div>
                         <div className="text-center py-8">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Host Payout Due Now</p>
-                            <h4 className="text-6xl font-black text-slate-900 tracking-tighter">${booking.balanceDueOnSite.toFixed(2)}</h4>
+                            <h4 className="text-6xl font-black text-slate-900 tracking-tighter">${(booking.balanceDueOnSite || 0).toFixed(2)}</h4>
                             <p className="text-xs text-slate-400 mt-4 font-bold">+ Security Deposit (Held separately if needed)</p>
                         </div>
                         <button 
