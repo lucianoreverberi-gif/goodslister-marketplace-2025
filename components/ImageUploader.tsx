@@ -57,6 +57,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImageUrl, onImageC
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ error: 'Error al subir' }));
+                    // Anti-fraud: handle duplicate photo rejection with user-friendly message
+                    if (response.status === 409 && errorData.error === 'DUPLICATE_PHOTO') {
+                        const msg = errorData.userMessage || errorData.message || 'Esta foto ya fue utilizada. Por favor tomá una nueva.';
+                        alert(msg);
+                        setImageUrl(currentImageUrl);
+                        return;
+                    }
                     throw new Error(errorData.error || 'Upload failed');
                 }
 
