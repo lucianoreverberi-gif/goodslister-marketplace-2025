@@ -208,7 +208,7 @@ const ReviewWizard: React.FC<ReviewWizardProps> = ({ bookingId, authorId, target
                         <div className="bg-blue-50 p-4 rounded-lg flex gap-3 items-start">
                             <AlertIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                             <p className="text-xs text-blue-800 leading-relaxed">
-                                <strong>Double-Blind System:</strong> Your review will be hidden until {targetName} submits theirs, or until 14 days have passed. This ensures honest, unbiased feedback.
+                                <strong>Double-Blind System:</strong> Your review will be hidden until {targetName} submits theirs, or until 3 days have passed. This ensures honest, unbiased feedback.
                             </p>
                         </div>
 
