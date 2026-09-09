@@ -643,19 +643,19 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     </div>
 
                                     {priceDetails ? (
-                                        <div className="bg-slate-900 rounded-[2rem] p-6 text-white space-y-4 shadow-xl animate-in zoom-in-95 duration-300">
+                                        <div className="bg-gradient-to-b from-cyan-50/60 to-white rounded-[2rem] p-6 text-slate-900 space-y-4 shadow-xl shadow-cyan-100/40 border border-cyan-100/60 animate-in zoom-in-95 duration-300">
                                             <div className="space-y-3">
-                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
                                                     <span>Rental Cost</span>
-                                                    <span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span>
+                                                    <span className="font-black text-slate-900 text-sm">${priceDetails.rentalTotal.toFixed(2)}</span>
                                                 </div>
-                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1">Protocol & Service Fees <ShieldIcon className="h-3 w-3" /></span>
-                                                    <span className="font-black text-white">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span>
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1.5">Protocol & Fees <ShieldIcon className="h-3 w-3 text-emerald-500" /></span>
+                                                    <span className="font-black text-slate-900 text-sm">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span>
                                                 </div>
-                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1">Security Deposit <LockIcon className="h-3 w-3" /></span>
-                                                    <span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span>
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1.5">Security Deposit <LockIcon className="h-3 w-3 text-emerald-500" /></span>
+                                                    <span className="font-black text-slate-900 text-sm">${priceDetails.securityDeposit.toFixed(2)}</span>
                                                 </div>
                                             </div>
                                             {/* ID Verification early-warning for first-time renters */}
@@ -670,20 +670,20 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                     </div>
                                                 </div>
                                             )}
-                                            <div className="pt-4 border-t border-white/10">
+                                            <div className="pt-4 border-t border-slate-200/70">
                                                 <div className="flex justify-between items-end">
                                                     <div>
-                                                        <p className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Total to Pay</p>
-                                                        <p className="text-3xl font-black tracking-tight text-white">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</p>
+                                                        <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest">Total to Pay</p>
+                                                        <p className="text-3xl font-black tracking-tight text-slate-900">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</p>
                                                     </div>
                                                     <button 
                                                         onClick={handleBookClick}
-                                                        className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-black rounded-2xl shadow-xl shadow-cyan-900/20 transition-all active:scale-95 text-xs uppercase"
+                                                        className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-black rounded-2xl shadow-lg shadow-cyan-600/25 transition-all active:scale-95 text-xs uppercase"
                                                     >
                                                         {isOwner ? 'This is your listing' : 'Reserve Now'}
                                                     </button>
                                                 </div>
-                                                <p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.15em] text-center mt-6">Secure checkout powered by Stripe</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] text-center mt-6">Secure checkout powered by Stripe</p>
                                             </div>
                                         </div>
                                     ) : (
