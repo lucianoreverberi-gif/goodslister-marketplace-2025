@@ -103,7 +103,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: row.status,
         protectionType: row.protection_type,
         protectionFee: Number(row.protection_fee),
-        paymentMethod: row.payment_method
+        paymentMethod: row.payment_method,
+        // Payment split fields (from DB or default to 0)
+        amountPaidOnline: row.amount_paid_online != null ? Number(row.amount_paid_online) : Number(row.total_price),
+        balanceDueOnSite: row.balance_due_on_site != null ? Number(row.balance_due_on_site) : 0,
+        // Deposit tracking
+        securityDeposit: row.deposit_amount != null ? Number(row.deposit_amount) : (listing?.securityDeposit || 0),
+        depositStatus: row.deposit_hold_status || 'held',
+        depositHoldStatus: row.deposit_hold_status || 'held',
+        stripeDepositPaymentIntentId: row.stripe_deposit_payment_intent_id
       };
     }).filter(b => b.listing);
 
