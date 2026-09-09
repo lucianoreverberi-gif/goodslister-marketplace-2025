@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Listing, Booking } from '../types';
 import { StarIcon, ShieldCheckIcon, CheckCircleIcon, MapPinIcon, CalendarIcon, MessageSquareIcon, PackageIcon } from './icons';
 import ListingCard from './ListingCard';
@@ -25,6 +25,24 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
     favoriteIds,
     onEditProfile 
 }) => {
+    // Fetch real reviews from DB
+    const [reviews, setReviews] = useState<any[]>([]);
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch('/api/reviews/list?targetId=' + encodeURIComponent(profileUser.id));
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.reviews && Array.isArray(data.reviews)) {
+                        setReviews(data.reviews);
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to fetch reviews:', e);
+            }
+        })();
+    }, [profileUser.id]);
+
     const isOwnProfile = currentUser?.id === profileUser.id;
     const [isEditing, setIsEditing] = useState(false);
     const [bio, setBio] = useState(profileUser.bio || '');
@@ -201,27 +219,38 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                             </div>
                         )}
 
-                        {/* Reviews Preview (Mocked for now as we don't fetch specific reviews yet) */}
+                        {/* Reviews from DB (real, PUBLISHED only) */}
                         <div>
                             <h2 className="text-xl font-bold text-gray-900 mb-6">What people are saying</h2>
-                            {profileUser.totalReviews && profileUser.totalReviews > 0 ? (
+                            {reviews.length > 0 ? (
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
-                                    {/* Mock Review 1 */}
-                                    <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold">JD</div>
-                                                <div>
-                                                    <p className="font-bold text-gray-900 text-sm">John Doe</p>
-                                                    <p className="text-xs text-gray-400">August 2024</p>
+                                    {reviews.map((r) => {
+                                        const authorName = r.author_name || (r.role === 'HOST' ? 'A host' : 'A guest');
+                                        const authorInitials = authorName.split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
+                                        return (
+                                        <div key={r.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-3">
+                                                    {r.author_avatar ? (
+                                                        <img src={r.author_avatar} alt={authorName} className="w-10 h-10 rounded-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center text-cyan-700 text-xs font-black">
+                                                            {authorInitials}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 text-sm">{authorName} <span className="text-xs font-medium text-gray-400 ml-1">· {r.role === 'HOST' ? 'Host' : 'Guest'}</span></p>
+                                                        <p className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex text-yellow-400">
+                                                    {[1,2,3,4,5].map(i => <StarIcon key={i} className={`h-4 w-4 ${i <= (r.rating || 0) ? '' : 'text-gray-200'}`} />)}
                                                 </div>
                                             </div>
-                                            <div className="flex text-yellow-400">
-                                                {[1,2,3,4,5].map(i => <StarIcon key={i} className="h-4 w-4" />)}
-                                            </div>
+                                            {r.comment && <p className="text-gray-600 text-sm">{r.comment}</p>}
                                         </div>
-                                        <p className="text-gray-600 text-sm">Great experience renting from {profileUser.name}. Equipment was in perfect condition and communication was super easy.</p>
-                                    </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="bg-gray-50 p-8 rounded-xl text-center text-gray-500 italic">

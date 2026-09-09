@@ -6,9 +6,15 @@ interface ImageUploaderProps {
     onImageChange: (newImageUrl: string) => void;
     label: string;
     isLoading?: boolean;
+    // Optional verification context for 3-tier photo verification
+    bookingId?: string;
+    photoType?: 'handover' | 'return';
+    angleId?: string;
+    angleLabel?: string;
+    folder?: string;
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImageUrl, onImageChange, label, isLoading: parentIsLoading }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImageUrl, onImageChange, label, isLoading: parentIsLoading, bookingId, photoType, angleId, angleLabel, folder }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isHovered, setIsHovered] = useState(false);
     const [imageUrl, setImageUrl] = useState(currentImageUrl);
@@ -50,13 +56,29 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ currentImageUrl, onImageC
 
             // Subir a Vercel Blob
             try {
-                const response = await fetch(`/api/upload-image?filename=${encodeURIComponent(file.name)}`, {
+                const folderQ = folder ? `&folder=${encodeURIComponent(folder)}` : '';
+                const verifyQ = bookingId ? `&bookingId=${encodeURIComponent(bookingId)}&photoType=${encodeURIComponent(photoType||'handover')}${angleId?`&angleId=${encodeURIComponent(angleId)}`:''}${angleLabel?`&angleLabel=${encodeURIComponent(angleLabel)}`:''}&verify=true` : '';
+                const response = await fetch(`/api/upload-image?filename=${encodeURIComponent(file.name)}${folderQ}${verifyQ}`, {
                     method: 'POST',
                     body: file, // Send the file data directly in the body
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ error: 'Error al subir' }));
+                    // Anti-fraud: handle duplicate photo rejection with user-friendly message
+                    if (response.status === 409 && errorData.error === 'DUPLICATE_PHOTO') {
+                        const msg = errorData.userMessage || errorData.message || 'Esta foto ya fue utilizada. Por favor tomá una nueva.';
+                        alert(msg);
+                        setImageUrl(currentImageUrl);
+                        return;
+                    }
+                    // 3-tier verification rejection
+                    if (response.status === 400 && errorData.error === 'PHOTO_VERIFICATION_FAILED') {
+                        const msg = errorData.userMessage || 'Esta foto no pasó las verificaciones de seguridad. Tomá una nueva.';
+                        alert(msg);
+                        setImageUrl(currentImageUrl);
+                        return;
+                    }
                     throw new Error(errorData.error || 'Upload failed');
                 }
 
