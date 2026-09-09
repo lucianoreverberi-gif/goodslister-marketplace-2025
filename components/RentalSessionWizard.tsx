@@ -398,11 +398,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         </div>
                         <button 
                             onClick={() => {
-                                if (requiresLicense) {
-                                    setStep('IDENTITY_VERIFICATION');
-                                } else {
-                                    setStep('CONTRACT_SIGNING');
-                                }
+                                // Always require identity verification (real face-api.js match)
+                                setStep('IDENTITY_VERIFICATION');
                             }}
                             className="w-full py-5 bg-slate-900 hover:bg-black text-white font-black rounded-3xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95"
                         >
