@@ -19,6 +19,7 @@ import {
 } from './services/firebase';
 import Header from './components/Header';import IdentityPendingPage from './components/IdentityPendingPage';
 import Footer from './components/Footer';
+import { useToast } from './components/Toast';
 import HomePage from './components/HomePage';
 import ListingDetailPage from './components/ListingDetailPage';
 import CreateListingPage from './components/CreateListingPage';
@@ -51,6 +52,7 @@ interface Notification {
 }
 
 const App: React.FC = () => {
+    const { toast } = useToast();
     const [page, setPage] = useState<Page>(() => {
         const hash = window.location.hash.replace('#', '') as Page;
         if (hash.startsWith('userProfile/')) { return 'userProfile' as Page; } if (hash.startsWith('damage/')) { return 'damageDetail' as Page; } if (hash.startsWith('userProfile/')) return 'userProfile' as Page; if (hash.startsWith('damage/')) return 'damageDetail' as Page; return hash || 'home';
@@ -623,6 +625,9 @@ const App: React.FC = () => {
             bookings: updatedBookings,
             listings: updatedListings
         });
+
+        // Success feedback
+        toast.success('Booking request sent! You will hear back from the host shortly.');
 
         // Send Booking Request Emails
         const listing = result.updatedListing;

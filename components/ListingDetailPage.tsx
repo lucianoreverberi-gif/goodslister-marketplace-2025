@@ -249,10 +249,29 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [isBooking, setIsBooking] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);    const [showIdentityModal, setShowIdentityModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showIdentityModal, setShowIdentityModal] = useState(false);
+    const [apiVerified, setApiVerified] = useState<boolean | null>(null);
     const [insurancePlan, setInsurancePlan] = useState<'none' | 'standard' | 'premium'>('standard');
 
     const isOwner = currentUser?.id === listing.owner.id;
+
+    // Fetch fresh identity status on mount to avoid stale session issues
+    useEffect(() => {
+        if (!currentUser || isOwner) { setApiVerified(null); return; }
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch("/api/identity/status?userId=" + encodeURIComponent(currentUser.id));
+                if (!res.ok || cancelled) return;
+                const data = await res.json();
+                if (!cancelled) setApiVerified(data.verified === true);
+            } catch (err) {
+                if (!cancelled) setApiVerified(null);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [currentUser?.id, isOwner]);
     const bookedDays = listing.bookedDates?.map(d => new Date(d)) || [];
     const disabledDays = [{ before: new Date() }, ...bookedDays];
     const isHourly = listing.pricingType === 'hourly';
@@ -310,7 +329,36 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             alert("Please log in to book.");
             return;
         }
-        if (isOwner || !priceDetails) return; if (!(currentUser as any).identity_verified) { try { const statusRes = await fetch('/api/identity/status?userId=' + encodeURIComponent(currentUser.id)); if (statusRes.ok) { const statusData = await statusRes.json(); if (statusData.latestStatus === 'processing' || statusData.latestStatus === 'requires_input') { (window as any).__identityPendingStatus = statusData.latestStatus; window.location.hash = 'identityPending'; return; } } } catch(e) { console.warn('Identity status check failed:', e); } setShowIdentityModal(true); return; }
+        if (isOwner || !priceDetails) return;
+        
+        // ALWAYS fetch fresh identity status from API (session may be stale)
+        try {
+            const statusRes = await fetch('/api/identity/status?userId=' + encodeURIComponent(currentUser.id));
+            if (statusRes.ok) {
+                const statusData = await statusRes.json();
+                
+                // If verified fresh from DB, skip modal and proceed
+                if (statusData.verified === true) {
+                    setShowPaymentModal(true);
+                    return;
+                }
+                
+                // Verification is pending or failed - redirect to pending page
+                if (statusData.latestStatus === 'processing' || statusData.latestStatus === 'requires_input') {
+                    (window as any).__identityPendingStatus = statusData.latestStatus;
+                    window.location.hash = 'identityPending';
+                    return;
+                }
+            }
+        } catch(e) {
+            console.warn('Identity status check failed:', e);
+        }
+        
+        // Fallback: show verification modal for users without verification
+        if (!(currentUser as any).identity_verified) {
+            setShowIdentityModal(true);
+            return;
+        }
         setShowPaymentModal(true);
     };
 
@@ -643,35 +691,47 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                     </div>
 
                                     {priceDetails ? (
-                                        <div className="bg-slate-900 rounded-[2rem] p-6 text-white space-y-4 shadow-xl animate-in zoom-in-95 duration-300">
+                                        <div className="bg-gradient-to-b from-cyan-50/60 to-white rounded-[2rem] p-6 text-slate-900 space-y-4 shadow-xl shadow-cyan-100/40 border border-cyan-100/60 animate-in zoom-in-95 duration-300">
                                             <div className="space-y-3">
-                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
                                                     <span>Rental Cost</span>
-                                                    <span className="font-black text-white">${priceDetails.rentalTotal.toFixed(2)}</span>
+                                                    <span className="font-black text-slate-900 text-sm">${priceDetails.rentalTotal.toFixed(2)}</span>
                                                 </div>
-                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1">Protocol & Service Fees <ShieldIcon className="h-3 w-3" /></span>
-                                                    <span className="font-black text-white">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span>
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1.5">Protocol & Fees <ShieldIcon className="h-3 w-3 text-emerald-500" /></span>
+                                                    <span className="font-black text-slate-900 text-sm">${(priceDetails.serviceFee + priceDetails.protectionFee).toFixed(2)}</span>
                                                 </div>
-                                                <div className="flex justify-between text-[10px] font-bold opacity-60 uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1">Security Deposit <LockIcon className="h-3 w-3" /></span>
-                                                    <span className="font-black text-white">${priceDetails.securityDeposit.toFixed(2)}</span>
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1.5">Security Deposit <LockIcon className="h-3 w-3 text-emerald-500" /></span>
+                                                    <span className="font-black text-slate-900 text-sm">${priceDetails.securityDeposit.toFixed(2)}</span>
                                                 </div>
                                             </div>
-                                            <div className="pt-4 border-t border-white/10">
+                                            {/* ID Verification early-warning for first-time renters */}
+                                            {currentUser && !isOwner && !(currentUser as any).identity_verified && apiVerified !== true && (
+                                                <div className="mb-3 p-3 bg-slate-100 border border-slate-200 rounded-2xl">
+                                                    <div className="flex items-start gap-2">
+                                                        <ShieldCheckIcon className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-xs font-black text-slate-800 leading-snug">First booking? Quick 60-second ID check at checkout.</p>
+                                                            <p className="text-[10px] font-bold text-emerald-600 mt-0.5 leading-snug">Powered by Stripe. Your data stays secure.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="pt-4 border-t border-slate-200/70">
                                                 <div className="flex justify-between items-end">
                                                     <div>
-                                                        <p className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Total to Pay</p>
-                                                        <p className="text-3xl font-black tracking-tight text-white">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</p>
+                                                        <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest">Total to Pay</p>
+                                                        <p className="text-3xl font-black tracking-tight text-slate-900">${(priceDetails.totalPrice + priceDetails.securityDeposit).toFixed(2)}</p>
                                                     </div>
                                                     <button 
                                                         onClick={handleBookClick}
-                                                        className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-black rounded-2xl shadow-xl shadow-cyan-900/20 transition-all active:scale-95 text-xs uppercase"
+                                                        className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-black rounded-2xl shadow-lg shadow-cyan-600/25 transition-all active:scale-95 text-xs uppercase"
                                                     >
                                                         {isOwner ? 'This is your listing' : 'Reserve Now'}
                                                     </button>
                                                 </div>
-                                                <p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.15em] text-center mt-6">Secure checkout powered by Stripe</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] text-center mt-6">Secure checkout powered by Stripe</p>
                                             </div>
                                         </div>
                                     ) : (
