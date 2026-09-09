@@ -3,8 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
  * GET /api/reviews/list?authorId=X or ?targetId=X or ?bookingId=X
- * Returns reviews matching the filter.
- * Used by dashboard to know which bookings the user already reviewed.
+ * Returns reviews with author details (name + avatar) joined from users table.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -18,11 +17,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let result;
     if (bookingId && !Array.isArray(bookingId)) {
-      result = await sql`SELECT id, booking_id, author_id, target_id, role, rating, status, created_at FROM reviews WHERE booking_id = ${bookingId} ORDER BY created_at DESC`;
+      result = await sql`
+        SELECT r.id, r.booking_id, r.author_id, r.target_id, r.role, r.rating, r.comment, r.status, r.created_at,
+               u.name AS author_name, u.avatar_url AS author_avatar
+        FROM reviews r
+        LEFT JOIN users u ON u.id = r.author_id
+        WHERE r.booking_id = ${bookingId} ORDER BY r.created_at DESC
+      `;
     } else if (authorId && !Array.isArray(authorId)) {
-      result = await sql`SELECT id, booking_id, author_id, target_id, role, rating, status, created_at FROM reviews WHERE author_id = ${authorId} ORDER BY created_at DESC`;
+      result = await sql`
+        SELECT r.id, r.booking_id, r.author_id, r.target_id, r.role, r.rating, r.comment, r.status, r.created_at,
+               u.name AS author_name, u.avatar_url AS author_avatar
+        FROM reviews r
+        LEFT JOIN users u ON u.id = r.author_id
+        WHERE r.author_id = ${authorId} ORDER BY r.created_at DESC
+      `;
     } else if (targetId && !Array.isArray(targetId)) {
-      result = await sql`SELECT id, booking_id, author_id, target_id, role, rating, comment, status, created_at FROM reviews WHERE target_id = ${targetId} AND status = 'PUBLISHED' ORDER BY created_at DESC`;
+      result = await sql`
+        SELECT r.id, r.booking_id, r.author_id, r.target_id, r.role, r.rating, r.comment, r.status, r.created_at,
+               u.name AS author_name, u.avatar_url AS author_avatar
+        FROM reviews r
+        LEFT JOIN users u ON u.id = r.author_id
+        WHERE r.target_id = ${targetId} AND r.status = 'PUBLISHED' ORDER BY r.created_at DESC
+      `;
     } else {
       return res.status(400).json({ error: 'Invalid params' });
     }
