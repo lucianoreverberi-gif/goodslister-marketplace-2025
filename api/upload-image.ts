@@ -27,13 +27,25 @@ export default async function handler(
     // Vercel Blob 'put' can handle the request stream directly if bodyParser is disabled
     const blob = await put(fullPath, request, {
       access: 'public',
-      addRandomSuffix: true, // Ensures unique filenames - prevents "blob already exists" error
+      // Do NOT use addRandomSuffix - we WANT to reject duplicate uploads.
+      // This is an anti-fraud measure: prevents renters from reusing check-in photos
+      // during return inspection to hide damage.
     });
 
     return response.status(200).json(blob);
   } catch (error) {
     console.error('Error uploading to Vercel Blob:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+
+    // Detect duplicate blob error - this is an intentional anti-fraud rejection
+    if (message.toLowerCase().includes('blob already exists')) {
+      return response.status(409).json({
+        error: 'DUPLICATE_PHOTO',
+        message: 'This photo has already been used. For security and fraud prevention, please take a new photo of the current condition.',
+        userMessage: 'Foto rechazada: esta imagen ya fue utilizada. Por seguridad, tomá una foto nueva del estado actual.'
+      });
+    }
+
     return response.status(500).json({ error: `Upload failed: ${message}` });
   }
 }
