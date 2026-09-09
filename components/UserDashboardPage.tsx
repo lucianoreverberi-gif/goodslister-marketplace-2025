@@ -8,6 +8,7 @@ import ListingCard from './ListingCard';
 import RentalSessionWizard from './RentalSessionWizard';
 import ConnectStripeModal from './ConnectStripeModal';import DamageReportModal from './DamageReportModal';
 import ReviewWizard from './ReviewWizard';
+import ConfirmActionModal from './ConfirmActionModal';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -426,6 +427,7 @@ const BookingsManager: React.FC<{
     const [processingId, setProcessingId] = useState<string | null>(null);    const [damageReportBooking, setDamageReportBooking] = useState<Booking | null>(null);
     const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
     const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set());
+    const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; confirmLabel: string; variant: 'danger' | 'warning' | 'primary' | 'success'; action: () => Promise<void> } | null>(null);
 
     // Fetch existing reviews on mount to know which bookings the user already reviewed
     useEffect(() => {
@@ -459,7 +461,18 @@ const BookingsManager: React.FC<{
                      />
                  </div>
              )}
-             {reviewingBooking && (
+             {confirmAction && (
+                <ConfirmActionModal
+                    title={confirmAction.title}
+                    message={confirmAction.message}
+                    confirmLabel={confirmAction.confirmLabel}
+                    variant={confirmAction.variant}
+                    isProcessing={!!processingId}
+                    onConfirm={confirmAction.action}
+                    onClose={() => setConfirmAction(null)}
+                />
+            )}
+            {reviewingBooking && (
                 <div className="fixed inset-0 z-[100] bg-slate-100 overflow-y-auto p-4">
                     <ReviewWizard 
                         bookingId={reviewingBooking.id}
@@ -528,13 +541,7 @@ const BookingsManager: React.FC<{
                                 <>
                                     <button 
                                         onClick={async () => {
-                                            if (!confirm('Approve this booking request?')) return;
-                                            setProcessingId(b.id);
-                                            try {
-                                                await onStatusUpdate(b.id, 'confirmed');
-                                            } finally {
-                                                setProcessingId(null);
-                                            }
+                                            setConfirmAction({ title: 'Approve this booking?', message: 'Approving confirms the rental and notifies the guest. Payment holds will convert to a charge.', confirmLabel: 'Yes, Approve', variant: 'success', action: async () => { setProcessingId(b.id); try { await onStatusUpdate(b.id, 'confirmed'); } finally { setProcessingId(null); setConfirmAction(null); } } });
                                         }} 
                                         disabled={processingId === b.id}
                                         className="px-5 py-2 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 shadow shadow-emerald-100 transition-all flex items-center gap-2 disabled:opacity-50"
@@ -543,13 +550,7 @@ const BookingsManager: React.FC<{
                                     </button>
                                     <button 
                                         onClick={async () => {
-                                            if (!confirm('Reject this booking request? The renter will be refunded.')) return;
-                                            setProcessingId(b.id);
-                                            try {
-                                                await onStatusUpdate(b.id, 'rejected');
-                                            } finally {
-                                                setProcessingId(null);
-                                            }
+                                            setConfirmAction({ title: 'Reject this request?', message: 'The guest will be notified and payment holds will be refunded. This cannot be undone.', confirmLabel: 'Yes, Reject', variant: 'danger', action: async () => { setProcessingId(b.id); try { await onStatusUpdate(b.id, 'rejected'); } finally { setProcessingId(null); setConfirmAction(null); } } });
                                         }} 
                                         disabled={processingId === b.id}
                                         className="px-5 py-2 bg-white text-red-600 border border-red-200 text-[10px] font-bold rounded-lg hover:bg-red-50 transition-all flex items-center gap-2 disabled:opacity-50"
@@ -561,13 +562,7 @@ const BookingsManager: React.FC<{
                             {mode === 'renting' && b.status === 'pending' && (
                                 <button 
                                     onClick={async () => {
-                                        if (!confirm('Cancel this booking request? You will be refunded.')) return;
-                                        setProcessingId(b.id);
-                                        try {
-                                            await onStatusUpdate(b.id, 'cancelled');
-                                        } finally {
-                                            setProcessingId(null);
-                                        }
+                                        setConfirmAction({ title: 'Cancel your request?', message: 'You will be refunded shortly. The host will be notified.', confirmLabel: 'Yes, Cancel', variant: 'warning', action: async () => { setProcessingId(b.id); try { await onStatusUpdate(b.id, 'cancelled'); } finally { setProcessingId(null); setConfirmAction(null); } } });
                                     }} 
                                     disabled={processingId === b.id}
                                     className="px-5 py-2 bg-white text-slate-600 border border-slate-200 text-[10px] font-bold rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-50"
