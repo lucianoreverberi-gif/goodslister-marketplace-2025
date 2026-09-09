@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import ListingCard from './ListingCard';
 import RentalSessionWizard from './RentalSessionWizard';
 import ConnectStripeModal from './ConnectStripeModal';import DamageReportModal from './DamageReportModal';
+import ReviewWizard from './ReviewWizard';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -433,6 +434,7 @@ const BookingsManager: React.FC<{
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     const [processingId, setProcessingId] = useState<string | null>(null);    const [damageReportBooking, setDamageReportBooking] = useState<Booking | null>(null);
+    const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
     
     const displayedBookings = mode === 'renting' ? bookings.filter(b => b.renterId === userId) : bookings.filter(b => b.listing.owner.id === userId);
 
@@ -449,7 +451,19 @@ const BookingsManager: React.FC<{
                      />
                  </div>
              )}
-             {damageReportBooking && (                 <DamageReportModal                    bookingId={damageReportBooking.id}                    reporterId={userId}                    reporterRole={mode === 'renting' ? 'renter' : 'host'}                    depositAmount={damageReportBooking.securityDeposit || 0}                    onClose={() => setDamageReportBooking(null)}                    onSuccess={() => setDamageReportBooking(null)}                 />             )}             <div className="mb-6"><h2 className="text-2xl font-bold text-slate-800 mb-4">{mode === 'renting' ? 'My Trips' : 'Reservations'}</h2><div className="grid grid-cols-2 gap-3"><button onClick={() => setMode('renting')} className={`p-4 rounded-2xl border-2 transition-all text-left ${mode === 'renting' ? 'bg-cyan-50 border-cyan-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`}><div className="flex items-center justify-between mb-1"><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Renting</span><span className="text-2xl font-black text-slate-900">{rentingCount}</span></div><div className="text-xs font-bold text-slate-500">Adventures I'm renting</div></button><button onClick={() => setMode('hosting')} className={`p-4 rounded-2xl border-2 transition-all text-left ${mode === 'hosting' ? 'bg-cyan-50 border-cyan-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`}><div className="flex items-center justify-between mb-1"><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hosting</span><span className="text-2xl font-black text-slate-900">{hostingCount}</span></div><div className="flex items-center gap-2"><div className="text-xs font-bold text-slate-500">People renting my stuff</div>{pendingHostCount > 0 && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap">{pendingHostCount} PENDING</span>}</div></button></div></div>
+             {reviewingBooking && (
+                <div className="fixed inset-0 z-[100] bg-slate-100 overflow-y-auto p-4">
+                    <ReviewWizard 
+                        bookingId={reviewingBooking.id}
+                        authorId={userId}
+                        targetId={mode === 'renting' ? reviewingBooking.listing.owner.id : reviewingBooking.renterId}
+                        targetName={mode === 'renting' ? reviewingBooking.listing.owner.name : 'Renter'}
+                        role={mode === 'renting' ? 'RENTER' : 'HOST'}
+                        onComplete={() => setReviewingBooking(null)}
+                    />
+                </div>
+            )}
+            {damageReportBooking && (                 <DamageReportModal                    bookingId={damageReportBooking.id}                    reporterId={userId}                    reporterRole={mode === 'renting' ? 'renter' : 'host'}                    depositAmount={damageReportBooking.securityDeposit || 0}                    onClose={() => setDamageReportBooking(null)}                    onSuccess={() => setDamageReportBooking(null)}                 />             )}             <div className="mb-6"><h2 className="text-2xl font-bold text-slate-800 mb-4">{mode === 'renting' ? 'My Trips' : 'Reservations'}</h2><div className="grid grid-cols-2 gap-3"><button onClick={() => setMode('renting')} className={`p-4 rounded-2xl border-2 transition-all text-left ${mode === 'renting' ? 'bg-cyan-50 border-cyan-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`}><div className="flex items-center justify-between mb-1"><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Renting</span><span className="text-2xl font-black text-slate-900">{rentingCount}</span></div><div className="text-xs font-bold text-slate-500">Adventures I'm renting</div></button><button onClick={() => setMode('hosting')} className={`p-4 rounded-2xl border-2 transition-all text-left ${mode === 'hosting' ? 'bg-cyan-50 border-cyan-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`}><div className="flex items-center justify-between mb-1"><span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hosting</span><span className="text-2xl font-black text-slate-900">{hostingCount}</span></div><div className="flex items-center gap-2"><div className="text-xs font-bold text-slate-500">People renting my stuff</div>{pendingHostCount > 0 && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap">{pendingHostCount} PENDING</span>}</div></button></div></div>
 
             <div className="space-y-4">
                 {displayedBookings.length === 0 && (
@@ -488,7 +502,7 @@ const BookingsManager: React.FC<{
                                     }`}>
                                         {b.status}
                                     </span>
-                                    {b.securityDeposit && b.securityDeposit > 0 && (
+                                    {Boolean(b.securityDeposit) && b.securityDeposit > 0 && (
                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
                                             b.depositStatus === 'held' ? 'bg-cyan-600 text-white' :
                                             b.depositStatus === 'released' ? 'bg-emerald-100 text-emerald-700' :
@@ -560,7 +574,7 @@ const BookingsManager: React.FC<{
                             )}
                             {b.status === 'active' && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-5 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-black shadow shadow-slate-200 transition-all flex items-center gap-2">
-                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN</button>)}{((mode === 'renting' && b.status === 'active') || (mode === 'hosting' && b.status === 'completed')) && (<button onClick={() => setDamageReportBooking(b)} className="px-5 py-2 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 shadow shadow-red-100 transition-all flex items-center gap-2"><AlertTriangleIcon className="h-3.5 w-3.5" /> REPORT DAMAGE</button>)}{(b.status === 'pending' || b.status === 'confirmed' || b.status === 'active' || b.status === 'completed') && (<button onClick={async () => { setProcessingId(b.id); try { const res = await fetch('/api/bookings/generate-agreement', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({bookingId: b.id}) }); const data = await res.json(); if (data.success && data.url) { window.open(data.url, '_blank'); } else { alert('Failed to generate agreement: ' + (data.error || 'Unknown error')); } } catch (e) { alert('Error: ' + e.message); } finally { setProcessingId(null); } }} disabled={processingId === b.id} className="px-5 py-2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-200 border border-slate-200 transition-all flex items-center gap-2 disabled:opacity-50"><FileTextIcon className="h-3.5 w-3.5" /> {processingId === b.id ? 'LOADING...' : 'AGREEMENT PDF'}</button>)}{false && (<button style={{display:'none'}}>
+                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN</button>)}{((mode === 'renting' && b.status === 'active') || (mode === 'hosting' && b.status === 'completed')) && (<button onClick={() => setDamageReportBooking(b)} className="px-5 py-2 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 shadow shadow-red-100 transition-all flex items-center gap-2"><AlertTriangleIcon className="h-3.5 w-3.5" /> REPORT DAMAGE</button>)}{b.status === 'completed' && (<button onClick={() => setReviewingBooking(b)} className="px-5 py-2 bg-amber-500 text-white text-[10px] font-bold rounded-lg hover:bg-amber-600 shadow shadow-amber-100 transition-all flex items-center gap-2"><StarIcon className="h-3.5 w-3.5" /> LEAVE REVIEW</button>)}{(b.status === 'pending' || b.status === 'confirmed' || b.status === 'active' || b.status === 'completed') && (<button onClick={async () => { setProcessingId(b.id); try { const res = await fetch('/api/bookings/generate-agreement', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({bookingId: b.id}) }); const data = await res.json(); if (data.success && data.url) { window.open(data.url, '_blank'); } else { alert('Failed to generate agreement: ' + (data.error || 'Unknown error')); } } catch (e) { alert('Error: ' + e.message); } finally { setProcessingId(null); } }} disabled={processingId === b.id} className="px-5 py-2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-200 border border-slate-200 transition-all flex items-center gap-2 disabled:opacity-50"><FileTextIcon className="h-3.5 w-3.5" /> {processingId === b.id ? 'LOADING...' : 'AGREEMENT PDF'}</button>)}{false && (<button style={{display:'none'}}>
                                 </button>
                             )}
                         </div>
