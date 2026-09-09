@@ -435,6 +435,24 @@ const BookingsManager: React.FC<{
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     const [processingId, setProcessingId] = useState<string | null>(null);    const [damageReportBooking, setDamageReportBooking] = useState<Booking | null>(null);
     const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
+    const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set());
+
+    // Fetch existing reviews on mount to know which bookings the user already reviewed
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch('/api/reviews/list?authorId=' + encodeURIComponent(userId));
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.reviews && Array.isArray(data.reviews)) {
+                        setReviewedBookingIds(new Set(data.reviews.map((r: any) => r.booking_id)));
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to fetch user reviews:', e);
+            }
+        })();
+    }, [userId]);
     
     const displayedBookings = mode === 'renting' ? bookings.filter(b => b.renterId === userId) : bookings.filter(b => b.listing.owner.id === userId);
 
@@ -459,7 +477,7 @@ const BookingsManager: React.FC<{
                         targetId={mode === 'renting' ? reviewingBooking.listing.owner.id : reviewingBooking.renterId}
                         targetName={mode === 'renting' ? reviewingBooking.listing.owner.name : 'Renter'}
                         role={mode === 'renting' ? 'RENTER' : 'HOST'}
-                        onComplete={() => setReviewingBooking(null)}
+                        onComplete={() => { setReviewedBookingIds(prev => new Set([...prev, reviewingBooking.id])); setReviewingBooking(null); }}
                     />
                 </div>
             )}
@@ -574,7 +592,7 @@ const BookingsManager: React.FC<{
                             )}
                             {b.status === 'active' && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-5 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-black shadow shadow-slate-200 transition-all flex items-center gap-2">
-                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN</button>)}{((mode === 'renting' && b.status === 'active') || (mode === 'hosting' && b.status === 'completed')) && (<button onClick={() => setDamageReportBooking(b)} className="px-5 py-2 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 shadow shadow-red-100 transition-all flex items-center gap-2"><AlertTriangleIcon className="h-3.5 w-3.5" /> REPORT DAMAGE</button>)}{b.status === 'completed' && (<button onClick={() => setReviewingBooking(b)} className="px-5 py-2 bg-amber-500 text-white text-[10px] font-bold rounded-lg hover:bg-amber-600 shadow shadow-amber-100 transition-all flex items-center gap-2"><StarIcon className="h-3.5 w-3.5" /> LEAVE REVIEW</button>)}{(b.status === 'pending' || b.status === 'confirmed' || b.status === 'active' || b.status === 'completed') && (<button onClick={async () => { setProcessingId(b.id); try { const res = await fetch('/api/bookings/generate-agreement', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({bookingId: b.id}) }); const data = await res.json(); if (data.success && data.url) { window.open(data.url, '_blank'); } else { alert('Failed to generate agreement: ' + (data.error || 'Unknown error')); } } catch (e) { alert('Error: ' + e.message); } finally { setProcessingId(null); } }} disabled={processingId === b.id} className="px-5 py-2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-200 border border-slate-200 transition-all flex items-center gap-2 disabled:opacity-50"><FileTextIcon className="h-3.5 w-3.5" /> {processingId === b.id ? 'LOADING...' : 'AGREEMENT PDF'}</button>)}{false && (<button style={{display:'none'}}>
+                                    <RefreshCwIcon className="h-3.5 w-3.5" /> RETURN</button>)}{((mode === 'renting' && b.status === 'active') || (mode === 'hosting' && b.status === 'completed')) && (<button onClick={() => setDamageReportBooking(b)} className="px-5 py-2 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 shadow shadow-red-100 transition-all flex items-center gap-2"><AlertTriangleIcon className="h-3.5 w-3.5" /> REPORT DAMAGE</button>)}{b.status === 'completed' && !reviewedBookingIds.has(b.id) && (<button onClick={() => setReviewingBooking(b)} className="px-5 py-2 bg-amber-500 text-white text-[10px] font-bold rounded-lg hover:bg-amber-600 shadow shadow-amber-100 transition-all flex items-center gap-2"><StarIcon className="h-3.5 w-3.5" /> LEAVE REVIEW</button>)}{b.status === 'completed' && reviewedBookingIds.has(b.id) && (<span className="px-5 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-lg flex items-center gap-2"><CheckCircleIcon className="h-3.5 w-3.5" /> REVIEW SUBMITTED</span>)}{(b.status === 'pending' || b.status === 'confirmed' || b.status === 'active' || b.status === 'completed') && (<button onClick={async () => { setProcessingId(b.id); try { const res = await fetch('/api/bookings/generate-agreement', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({bookingId: b.id}) }); const data = await res.json(); if (data.success && data.url) { window.open(data.url, '_blank'); } else { alert('Failed to generate agreement: ' + (data.error || 'Unknown error')); } } catch (e) { alert('Error: ' + e.message); } finally { setProcessingId(null); } }} disabled={processingId === b.id} className="px-5 py-2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-200 border border-slate-200 transition-all flex items-center gap-2 disabled:opacity-50"><FileTextIcon className="h-3.5 w-3.5" /> {processingId === b.id ? 'LOADING...' : 'AGREEMENT PDF'}</button>)}{false && (<button style={{display:'none'}}>
                                 </button>
                             )}
                         </div>
