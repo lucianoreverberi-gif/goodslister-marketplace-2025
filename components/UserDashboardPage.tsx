@@ -509,7 +509,7 @@ const BookingsManager: React.FC<{
                                             if (!confirm('Approve this booking request?')) return;
                                             setProcessingId(b.id);
                                             try {
-                                                await onBookingStatusUpdate(b.id, 'confirmed');
+                                                await onStatusUpdate(b.id, 'confirmed');
                                             } finally {
                                                 setProcessingId(null);
                                             }
@@ -524,7 +524,7 @@ const BookingsManager: React.FC<{
                                             if (!confirm('Reject this booking request? The renter will be refunded.')) return;
                                             setProcessingId(b.id);
                                             try {
-                                                await onBookingStatusUpdate(b.id, 'rejected');
+                                                await onStatusUpdate(b.id, 'rejected');
                                             } finally {
                                                 setProcessingId(null);
                                             }
@@ -542,7 +542,7 @@ const BookingsManager: React.FC<{
                                         if (!confirm('Cancel this booking request? You will be refunded.')) return;
                                         setProcessingId(b.id);
                                         try {
-                                            await onBookingStatusUpdate(b.id, 'cancelled');
+                                            await onStatusUpdate(b.id, 'cancelled');
                                         } finally {
                                             setProcessingId(null);
                                         }
