@@ -33,14 +33,14 @@ const IdentityVerificationModal: React.FC<Props> = ({ userId, onClose }) => {
       <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
         <div className="text-center mb-4">
           <div className="mx-auto w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mb-3">
-            <span className="text-3xl">ð</span>
+            <span className="text-3xl" role="img" aria-label="lock">🔒</span>
           </div>
           <h2 className="text-xl font-bold mb-2">Verify Your Identity</h2>
           <p className="text-gray-600 text-sm">To protect our community, we verify all new renters. Takes about 2 minutes.</p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
-          <div className="mb-2">â Government-issued photo ID (driver's license or passport)</div>
-          <div>â Quick selfie for verification</div>
+          <div className="mb-2 flex items-start gap-2"><span className="text-emerald-500 font-bold flex-shrink-0">✓</span><span>Government-issued photo ID (driver's license or passport)</span></div>
+          <div className="flex items-start gap-2"><span className="text-emerald-500 font-bold flex-shrink-0">✓</span><span>Quick selfie for verification</span></div>
         </div>
         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-2 mb-4">{error}</div>}
         <button onClick={handleVerify} disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg mb-2 transition">
