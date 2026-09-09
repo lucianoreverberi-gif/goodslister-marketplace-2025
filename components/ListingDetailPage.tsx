@@ -249,7 +249,26 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
     const [isBooking, setIsBooking] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [successfulBooking, setSuccessfulBooking] = useState<Booking | null>(null);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);    const [showIdentityModal, setShowIdentityModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showIdentityModal, setShowIdentityModal] = useState(false);
+    const [apiVerified, setApiVerified] = useState<boolean | null>(null);
+
+    // Fetch fresh identity status on mount to avoid stale session issues
+    useEffect(() => {
+        if (!currentUser || isOwner) { setApiVerified(null); return; }
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch("/api/identity/status?userId=" + encodeURIComponent(currentUser.id));
+                if (!res.ok || cancelled) return;
+                const data = await res.json();
+                if (!cancelled) setApiVerified(data.verified === true);
+            } catch (err) {
+                if (!cancelled) setApiVerified(null);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [currentUser?.id, isOwner]);
     const [insurancePlan, setInsurancePlan] = useState<'none' | 'standard' | 'premium'>('standard');
 
     const isOwner = currentUser?.id === listing.owner.id;
@@ -688,7 +707,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
                                                 </div>
                                             </div>
                                             {/* ID Verification early-warning for first-time renters */}
-                                            {currentUser && !isOwner && !(currentUser as any).identity_verified && (
+                                            {currentUser && !isOwner && !(currentUser as any).identity_verified && apiVerified !== true && (
                                                 <div className="mb-3 p-3 bg-slate-100 border border-slate-200 rounded-2xl">
                                                     <div className="flex items-start gap-2">
                                                         <ShieldCheckIcon className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
