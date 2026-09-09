@@ -139,7 +139,7 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
                             </div>
 
                             <div className="bg-white/5 border border-white/10 p-2 rounded-3xl">
-                                <ImageUploader label="" currentImageUrl="" onImageChange={handlePhotoUpload} />
+                                <ImageUploader label="" currentImageUrl="" onImageChange={handlePhotoUpload} bookingId={booking.id} photoType={mode} angleId={currentAngle.id} angleLabel={currentAngle.label} folder={`inspections/${booking.id}`} />
                             </div>
                         </div>
                     )}
