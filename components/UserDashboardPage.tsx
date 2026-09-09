@@ -419,9 +419,10 @@ const ProfileCompletenessWidget: React.FC<{ user: Session, compact?: boolean }> 
 const BookingsManager: React.FC<{ 
     bookings: Booking[], 
     userId: string, 
+    userName: string,
     onStatusUpdate: (id: string, status: string) => Promise<void>,
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void
-}> = ({ bookings, userId, onStatusUpdate, onUpdateDepositStatus }) => {
+}> = ({ bookings, userId, userName, onStatusUpdate, onUpdateDepositStatus }) => {
     const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => hostingCount > 0 ? 'hosting' : 'renting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
@@ -468,7 +469,7 @@ const BookingsManager: React.FC<{
                     booking={signingBooking}
                     userId={userId}
                     role={mode === 'renting' ? 'RENTER' : 'HOST'}
-                    userFullName={user.name}
+                    userFullName={userName}
                     onSigned={() => {
                         // Optimistic local update - mark booking as signed
                         if (mode === 'renting') {
@@ -1176,7 +1177,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             case 'boosts':
                 return <MyBoostsManager user={user} onBoostListing={() => setActiveTab('listings')} />;
             case 'bookings':
-                return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
+                return <BookingsManager bookings={bookings} userId={user.id} userName={user.name} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'security':
                 return <SecurityTab user={user} onVerify={(type) => onVerificationUpdate(user.id, type)} />;
             case 'aiAssistant':
