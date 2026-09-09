@@ -27,6 +27,7 @@ export default async function handler(
     // Vercel Blob 'put' can handle the request stream directly if bodyParser is disabled
     const blob = await put(fullPath, request, {
       access: 'public',
+      addRandomSuffix: true, // Ensures unique filenames - prevents "blob already exists" error
     });
 
     return response.status(200).json(blob);
