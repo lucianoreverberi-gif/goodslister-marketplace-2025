@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { CameraIcon, RefreshCwIcon, CheckCircleIcon, XIcon } from './icons';
+import { CameraIcon, RefreshCwIcon, CheckCircleIcon, XIcon, AlertCircleIcon } from './icons';
 
 interface CameraCaptureProps {
     onCapture: (imageUrl: string) => void;
@@ -21,6 +21,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectR
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [verificationError, setVerificationError] = useState<{title: string, message: string, type: 'duplicate' | 'time' | 'location' | 'edited' | 'generic'} | null>(null);
 
     const startCamera = async () => {
         try {
@@ -108,7 +109,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectR
                     errorMessage = errorText || errorMessage;
                 }
                 if (isDuplicate) {
-                    alert(userMessage);
+                    setVerificationError({title:'Foto duplicada',message:userMessage,type:'duplicate'});
                     setCapturedImage(null);
                     startCamera();
                     return;
@@ -117,8 +118,22 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectR
                 try {
                     const errorData = JSON.parse(errorText);
                     if (uploadResponse.status === 400 && errorData.error === 'PHOTO_VERIFICATION_FAILED') {
-                        const msg = errorData.userMessage || 'Esta foto no pasó las verificaciones de seguridad. Tomá una nueva.';
-                        alert(msg);
+                        const flag = errorData.flags?.[0] || '';
+                        const flagToType: Record<string,'duplicate' | 'time' | 'location' | 'edited' | 'generic'> = {
+                            TIMESTAMP_OUT_OF_RANGE: 'time',
+                            GPS_TOO_FAR: 'location',
+                            EDITED_BY_SOFTWARE: 'edited',
+                        };
+                        const flagToTitle: Record<string, string> = {
+                            TIMESTAMP_OUT_OF_RANGE: 'Foto no reciente',
+                            GPS_TOO_FAR: 'Ubicación incorrecta',
+                            EDITED_BY_SOFTWARE: 'Foto editada',
+                        };
+                        setVerificationError({
+                            title: flagToTitle[flag] || 'Verificación fallida',
+                            message: errorData.userMessage || 'Esta foto no pasó las verificaciones de seguridad. Tomá una nueva.',
+                            type: flagToType[flag] || 'generic'
+                        });
                         setCapturedImage(null);
                         startCamera();
                         return;
@@ -146,6 +161,33 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, aspectR
 
     return (
         <div className="w-full max-w-md mx-auto bg-slate-900 rounded-[2rem] overflow-hidden shadow-2xl border border-white/10">
+            {/* Verification error banner (anti-fraud + duplicate rejection) */}
+            {verificationError && (
+                <div className="p-4 bg-gradient-to-b from-rose-950/60 to-slate-900 border-b border-rose-500/30 animate-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                            <div className="h-9 w-9 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center">
+                                {verificationError.type === 'time' && <span className="text-rose-300 text-lg">🕒</span>}
+                                {verificationError.type === 'location' && <span className="text-rose-300 text-lg">📍</span>}
+                                {verificationError.type === 'edited' && <span className="text-rose-300 text-lg">✂️</span>}
+                                {verificationError.type === 'duplicate' && <span className="text-rose-300 text-lg">🔁</span>}
+                                {verificationError.type === 'generic' && <AlertCircleIcon className="h-5 w-5 text-rose-300" />}
+                            </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-white font-black text-sm">{verificationError.title}</p>
+                            <p className="text-rose-100/80 text-xs mt-1 leading-relaxed">{verificationError.message}</p>
+                        </div>
+                        <button
+                            onClick={() => setVerificationError(null)}
+                            className="flex-shrink-0 text-rose-300/60 hover:text-white transition-colors"
+                            aria-label="Cerrar"
+                        >
+                            <XIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="p-4 bg-slate-800/50 border-b border-white/5 flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
                 <div className="flex gap-1">
