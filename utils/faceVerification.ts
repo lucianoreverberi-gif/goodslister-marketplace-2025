@@ -7,7 +7,7 @@ import * as faceapi from 'face-api.js';
  * Uses TinyFaceDetector + FaceLandmark68Net + FaceRecognitionNet.
  */
 
-const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
 
 let modelsLoaded = false;
 let loadPromise: Promise<void> | null = null;
