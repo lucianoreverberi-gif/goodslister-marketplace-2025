@@ -7,6 +7,7 @@ import {
     Notification
 } from '../services/notificationsService';
 import { BellIcon, MailIcon, CheckCircleIcon, MessageCircleIcon, AlertTriangleIcon, XIcon } from './icons';
+import { track } from '../services/analytics';
 
 interface NotificationsBellProps {
     userId: string;
@@ -67,6 +68,13 @@ const NotificationsBell: React.FC<NotificationsBellProps> = ({ userId, onNavigat
     }, [isOpen]);
 
     const handleNotificationClick = async (notif: Notification) => {
+        // ANALYTICS: track notification engagement
+        track('notification_clicked', {
+            notification_id: notif.id,
+            notification_type: notif.type,
+            was_unread: !notif.readAt,
+            has_link: !!notif.link,
+        });
         // Mark as read first (fire and forget UI-wise)
         if (!notif.read) {
             markNotificationAsRead(userId, notif.id);
