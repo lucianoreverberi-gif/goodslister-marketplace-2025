@@ -15,6 +15,7 @@ import ReviewWizard from './ReviewWizard';
 import DigitalInspection from './DigitalInspection';
 import { LegalService } from '../services/legalService';
 import { compareFaces, loadFaceModels, FaceMatchResult } from '../utils/faceVerification';
+import { track } from '../services/analytics';
 
 type WizardPhase = 'IDLE' | 'HANDOVER' | 'ACTIVE' | 'RETURN' | 'COMPLETED';
 
@@ -64,6 +65,13 @@ const IdentityVerificationStep: React.FC<{
             if (!idPhoto) throw new Error('No ID photo captured');
             const result = await compareFaces(idPhoto, url);
             setVerificationResult(result);
+            // ANALYTICS: face verification event with tier + confidence
+            track('face_verification_used', {
+                booking_id: booking.id,
+                tier: result.tier,
+                confidence: result.confidence,
+                matched: result.matched,
+            });
             // NO_MATCH or ERROR: show failed screen, otherwise show success
             if (result.tier === 'NO_MATCH' || result.tier === 'ERROR' || result.tier === 'NO_FACE_DETECTED') {
                 setSubStep('failed');
