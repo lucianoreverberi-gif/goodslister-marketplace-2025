@@ -39,11 +39,15 @@ export function initAnalytics(): void {
             },
             person_profiles: 'identified_only', // only create profiles for identified users
             loaded: (ph) => {
+                console.info('[Analytics] PostHog fully loaded, sending test pageview');
+                // Force capture in prod to verify events reach the server
+                ph.capture('$pageview');
                 if (import.meta.env.DEV) {
-                    // In dev mode, print event names to console for debugging
                     ph.debug();
                 }
             },
+            debug: true, // TEMP - remove after diagnosing prod issue
+            autocapture: true, // ensure autocapture is on
         });
         initialized = true;
         console.info('[Analytics] PostHog initialized');
