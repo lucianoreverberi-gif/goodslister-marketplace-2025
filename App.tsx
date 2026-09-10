@@ -640,7 +640,7 @@ const App: React.FC = () => {
             type: 'booking_new',
             title: 'New booking request',
             message: `${renter.name} wants to book "${listing.title}" (${format(startDate, 'MMM dd')}${startDate.getTime() !== endDate.getTime() ? ' - ' + format(endDate, 'MMM dd') : ''})`,
-            link: '#userDashboard'
+            link: '#userDashboard?tab=bookings&mode=hosting'
         });
 
         // 1. Notify Host
@@ -715,14 +715,14 @@ const App: React.FC = () => {
                 type: 'booking_confirmed',
                 title: 'Booking confirmed!',
                 message: `${host.name} confirmed your booking for "${listing.title}"`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=renting'
             });
             createNotification({
                 userId: host.id,
                 type: 'booking_confirmed',
                 title: 'Booking confirmed',
                 message: `You confirmed ${renter.name}'s booking for "${listing.title}"`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=hosting'
             });
         } else if (newStatus === 'rejected') {
             createNotification({
@@ -730,7 +730,7 @@ const App: React.FC = () => {
                 type: 'booking_rejected',
                 title: 'Booking rejected',
                 message: `${host.name} rejected your booking for "${listing.title}"`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=renting'
             });
         } else if (newStatus === 'cancelled') {
             const otherPartyId = session?.id === host.id ? renter.id : host.id;
@@ -740,7 +740,7 @@ const App: React.FC = () => {
                 type: 'booking_cancelled',
                 title: 'Booking cancelled',
                 message: `A booking for "${listing.title}" was cancelled`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=' + (session?.id === host.id ? 'hosting' : 'renting')
             });
         }
 
