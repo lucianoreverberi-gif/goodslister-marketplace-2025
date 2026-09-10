@@ -424,7 +424,15 @@ const BookingsManager: React.FC<{
     onStatusUpdate: (id: string, status: string) => Promise<void>,
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void
 }> = ({ bookings, userId, userName, onStatusUpdate, onUpdateDepositStatus }) => {
-    const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => hostingCount > 0 ? 'hosting' : 'renting');
+    const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => {
+        // Check for deep-link mode from URL hash (e.g. from notification)
+        const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('dashboardInitialMode') : null;
+        if (stored === 'renting' || stored === 'hosting') {
+            sessionStorage.removeItem('dashboardInitialMode'); // one-time use
+            return stored;
+        }
+        return hostingCount > 0 ? 'hosting' : 'renting';
+    });
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     const [processingId, setProcessingId] = useState<string | null>(null);    const [damageReportBooking, setDamageReportBooking] = useState<Booking | null>(null);
@@ -489,7 +497,7 @@ const BookingsManager: React.FC<{
                                 type: 'contract_signed',
                                 title: 'Renter signed the contract',
                                 message: 'Check-in is now unlocked for "' + (signingBooking.listing?.title || 'this rental') + '". You can proceed with handover.',
-                                link: '#userDashboard'
+                                link: '#userDashboard?tab=bookings&mode=hosting'
                             }).catch(err => console.warn('Notification failed:', err));
                         }
                         setSigningBooking(null);
@@ -526,7 +534,7 @@ const BookingsManager: React.FC<{
                                 type: 'review_received',
                                 title: 'You have a new review',
                                 message: 'A review for your rental of "' + (reviewingBooking.listing?.title || 'this listing') + '" has been submitted.',
-                                link: '#profile'
+                                link: '#userDashboard?tab=bookings&mode=' + (mode === 'renting' ? 'renting' : 'hosting')
                             }).catch(err => console.warn('Review notification failed:', err));
                         }
                         setReviewingBooking(null); 
@@ -1009,6 +1017,30 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             fetchStripeStatus();
         }
     }, [activeTab, user.id]);
+
+    // Parse URL hash for deep-linking (e.g. #userDashboard?tab=bookings&mode=hosting)
+    useEffect(() => {
+        const parseHash = () => {
+            if (typeof window === 'undefined') return;
+            const hash = window.location.hash;
+            const queryStart = hash.indexOf('?');
+            if (queryStart === -1) return;
+            const params = new URLSearchParams(hash.substring(queryStart + 1));
+            const tab = params.get('tab');
+            const validTabs: DashboardTab[] = ['overview', 'profile', 'listings', 'bookings', 'boosts', 'billing', 'coach', 'security', 'performance'];
+            if (tab && validTabs.includes(tab as DashboardTab)) {
+                setActiveTab(tab as DashboardTab);
+            }
+            // Store mode in sessionStorage for BookingsManager to pick up
+            const mode = params.get('mode');
+            if (mode === 'renting' || mode === 'hosting') {
+                sessionStorage.setItem('dashboardInitialMode', mode);
+            }
+        };
+        parseHash();
+        window.addEventListener('hashchange', parseHash);
+        return () => window.removeEventListener('hashchange', parseHash);
+    }, []);
 
     // Handle hash check for onboarding redirect/reload
     useEffect(() => {
