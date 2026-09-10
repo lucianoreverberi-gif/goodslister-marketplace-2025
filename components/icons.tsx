@@ -193,6 +193,21 @@ export const FileTextIcon: React.FC<IconProps> = (props) => (
     </svg>
 );
 
+// NoThiefIcon — bandit mask with diagonal slash (anti-scam trust signal)
+export const NoThiefIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        {/* Head/face outline */}
+        <circle cx="12" cy="12" r="9" />
+        {/* Bandit mask across eyes */}
+        <path d="M4.5 10.5 h15 v3 h-15 z" fill="currentColor" fillOpacity="0.85" stroke="none" />
+        {/* Eye slits (white cutouts) */}
+        <circle cx="9" cy="12" r="0.8" fill="white" stroke="none" />
+        <circle cx="15" cy="12" r="0.8" fill="white" stroke="none" />
+        {/* Diagonal ban slash across whole icon */}
+        <line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="2.4" />
+    </svg>
+);
+
 export const SparklesIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <path d="M12 3L9.5 8.5 4 11l5.5 2.5L12 19l2.5-5.5L20 11l-5.5-2.5z"></path>
