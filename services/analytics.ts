@@ -19,6 +19,16 @@ export function initAnalytics(): void {
     const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
     const host = import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 
+    // DIAGNOSTIC LOG - remove after fix
+    console.info('[Analytics] Reading env vars', {
+        keyType: typeof key,
+        keyLen: key?.length || 0,
+        keyFirst6: key?.substring(0, 6) || 'null',
+        keyLast4: key?.substring(key.length - 4) || 'null',
+        hasWhitespace: key !== key?.trim(),
+        hostValue: host,
+    });
+
     if (!key) {
         console.info('[Analytics] PostHog disabled - no VITE_PUBLIC_POSTHOG_KEY set');
         return;
