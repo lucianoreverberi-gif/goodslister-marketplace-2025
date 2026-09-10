@@ -41,6 +41,7 @@ import { User, Listing, HeroSlide, Banner, Conversation, Message, Page, Category
 import * as mockApi from './services/mockApiService';
 import { FilterCriteria, translateText, processSearchQuery } from './services/geminiService';
 import { createNotification } from './services/notificationsService';
+import { identifyUser, resetUser, track, trackBookingPaymentSuccess } from './services/analytics';
 import { CheckCircleIcon, BellIcon, MailIcon, XIcon, MessageCircleIcon } from './components/icons';
 import { format } from 'date-fns';
 
@@ -64,6 +65,20 @@ const App: React.FC = () => {
     
     // Initialize session state
     const [session, setSession] = useState<Session | null>(null);
+
+    // Sync session to PostHog analytics whenever it changes
+    useEffect(() => {
+        if (session?.id) {
+            identifyUser(session.id, {
+                email: session.email,
+                name: session.name,
+                createdAt: session.registeredDate,
+                isSuperhost: (session as any).isSuperhost || false,
+                listingCount: appData?.listings?.filter((l: Listing) => l.owner?.id === session.id).length || 0,
+                isHost: appData?.listings?.some((l: Listing) => l.owner?.id === session.id) || false,
+            });
+        }
+    }, [session?.id]);
 
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
@@ -566,6 +581,8 @@ const App: React.FC = () => {
         } catch (error) {
             console.warn("Firebase sign out issue:", error);
         }
+        resetUser(); // clear PostHog identity
+        track('user_logout');
         setSession(null);
         handleNavigate('home');
         addNotification('info', 'Logged Out', 'See you next time!');
@@ -635,6 +652,17 @@ const App: React.FC = () => {
         const listing = result.updatedListing;
         const host = listing.owner;
         const renter = session;
+
+        // ANALYTICS: booking created (payment success — Stripe already captured at this point)
+        trackBookingPaymentSuccess({
+            id: result.newBooking.id,
+            listingId: listing.id,
+            listingTitle: listing.title,
+            totalPrice: result.newBooking.totalPrice || 0,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            hostId: host.id,
+        });
 
         // 1. Notify Host via Firestore (client-side MVP - migrates to firebase-admin post-launch)
         createNotification({
