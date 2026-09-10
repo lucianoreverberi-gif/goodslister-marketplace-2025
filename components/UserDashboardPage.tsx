@@ -11,6 +11,7 @@ import ReviewWizard from './ReviewWizard';
 import ConfirmActionModal from './ConfirmActionModal';
 import AgreementSignatureModal from './AgreementSignatureModal';
 import { createNotification } from '../services/notificationsService';
+import { track } from '../services/analytics';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -489,6 +490,15 @@ const BookingsManager: React.FC<{
                         }
                         setJustSignedIds(prev => new Set([...prev, signingBooking.id]));
 
+                        // ANALYTICS: contract_signed event
+                        track('contract_signed', {
+                            booking_id: signingBooking.id,
+                            listing_id: signingBooking.listing?.id,
+                            listing_title: signingBooking.listing?.title,
+                            role: mode === 'renting' ? 'renter' : 'host',
+                            total_price: signingBooking.totalPrice,
+                        });
+
                         // Notify counterparty: if renter signed, notify host that check-in is unlocked
                         if (mode === 'renting' && signingBooking.listing?.ownerId) {
                             createNotification({
@@ -525,6 +535,15 @@ const BookingsManager: React.FC<{
                         role={mode === 'renting' ? 'RENTER' : 'HOST'}
                         onComplete={() => { 
                         setReviewedBookingIds(prev => new Set([...prev, reviewingBooking.id])); 
+                        
+                        // ANALYTICS: review_submitted event
+                        track('review_submitted', {
+                            booking_id: reviewingBooking.id,
+                            listing_id: reviewingBooking.listing?.id,
+                            role: mode === 'renting' ? 'renter' : 'host',
+                            target_user_id: mode === 'renting' ? reviewingBooking.listing?.ownerId : reviewingBooking.renterId,
+                        });
+                        
                         // Notify target that a review was published for them (best-effort)
                         const targetId = mode === 'renting' ? reviewingBooking.listing?.ownerId : reviewingBooking.renterId;
                         if (targetId) {
