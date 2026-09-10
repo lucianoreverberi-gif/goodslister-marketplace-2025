@@ -22,6 +22,10 @@ const getIcon = (type: Notification['type']) => {
         case 'booking_cancelled':
         case 'booking_rejected':
             return <XIcon className="h-5 w-5 text-orange-500" />;
+        case 'contract_signed':
+            return <CheckCircleIcon className="h-5 w-5 text-amber-500" />;
+        case 'review_received':
+            return <MailIcon className="h-5 w-5 text-indigo-500" />;
         case 'message_new':
             return <MessageCircleIcon className="h-5 w-5 text-blue-500" />;
         case 'damage_new':

@@ -10,6 +10,7 @@ import ConnectStripeModal from './ConnectStripeModal';import DamageReportModal f
 import ReviewWizard from './ReviewWizard';
 import ConfirmActionModal from './ConfirmActionModal';
 import AgreementSignatureModal from './AgreementSignatureModal';
+import { createNotification } from '../services/notificationsService';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -420,10 +421,17 @@ const BookingsManager: React.FC<{
     bookings: Booking[], 
     userId: string, 
     userName: string,
+    deepLinkMode: 'renting' | 'hosting' | null,
     onStatusUpdate: (id: string, status: string) => Promise<void>,
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void
-}> = ({ bookings, userId, userName, onStatusUpdate, onUpdateDepositStatus }) => {
-    const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => hostingCount > 0 ? 'hosting' : 'renting');
+}> = ({ bookings, userId, userName, deepLinkMode, onStatusUpdate, onUpdateDepositStatus }) => {
+    const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => deepLinkMode || (hostingCount > 0 ? 'hosting' : 'renting'));
+    // React to deep-link mode changes from parent (e.g. clicking a notification while dashboard is open)
+    useEffect(() => {
+        if (deepLinkMode === 'renting' || deepLinkMode === 'hosting') {
+            setMode(deepLinkMode);
+        }
+    }, [deepLinkMode]);
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     const [processingId, setProcessingId] = useState<string | null>(null);    const [damageReportBooking, setDamageReportBooking] = useState<Booking | null>(null);
@@ -480,6 +488,17 @@ const BookingsManager: React.FC<{
                             signingBooking.hostSignedAt = nowIso;
                         }
                         setJustSignedIds(prev => new Set([...prev, signingBooking.id]));
+
+                        // Notify counterparty: if renter signed, notify host that check-in is unlocked
+                        if (mode === 'renting' && signingBooking.listing?.ownerId) {
+                            createNotification({
+                                userId: signingBooking.listing.ownerId,
+                                type: 'contract_signed',
+                                title: 'Renter signed the contract',
+                                message: 'Check-in is now unlocked for "' + (signingBooking.listing?.title || 'this rental') + '". You can proceed with handover.',
+                                link: '#userDashboard?tab=bookings&mode=hosting'
+                            }).catch(err => console.warn('Notification failed:', err));
+                        }
                         setSigningBooking(null);
                     }}
                     onClose={() => setSigningBooking(null)}
@@ -504,7 +523,21 @@ const BookingsManager: React.FC<{
                         targetId={mode === 'renting' ? reviewingBooking.listing.owner.id : reviewingBooking.renterId}
                         targetName={mode === 'renting' ? reviewingBooking.listing.owner.name : 'Renter'}
                         role={mode === 'renting' ? 'RENTER' : 'HOST'}
-                        onComplete={() => { setReviewedBookingIds(prev => new Set([...prev, reviewingBooking.id])); setReviewingBooking(null); }}
+                        onComplete={() => { 
+                        setReviewedBookingIds(prev => new Set([...prev, reviewingBooking.id])); 
+                        // Notify target that a review was published for them (best-effort)
+                        const targetId = mode === 'renting' ? reviewingBooking.listing?.ownerId : reviewingBooking.renterId;
+                        if (targetId) {
+                            createNotification({
+                                userId: targetId,
+                                type: 'review_received',
+                                title: 'You have a new review',
+                                message: 'A review for your rental of "' + (reviewingBooking.listing?.title || 'this listing') + '" has been submitted.',
+                                link: '#userDashboard?tab=bookings&mode=' + (mode === 'renting' ? 'renting' : 'hosting')
+                            }).catch(err => console.warn('Review notification failed:', err));
+                        }
+                        setReviewingBooking(null); 
+                    }}
                     />
                 </div>
             )}
@@ -984,6 +1017,31 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
         }
     }, [activeTab, user.id]);
 
+    // Parse URL hash for deep-linking (e.g. #userDashboard?tab=bookings&mode=hosting)
+    // deepLinkMode is passed as a prop to BookingsManager to force mode change on notification click
+    const [deepLinkMode, setDeepLinkMode] = useState<'renting' | 'hosting' | null>(null);
+    useEffect(() => {
+        const parseHash = () => {
+            if (typeof window === 'undefined') return;
+            const hash = window.location.hash;
+            const queryStart = hash.indexOf('?');
+            if (queryStart === -1) return;
+            const params = new URLSearchParams(hash.substring(queryStart + 1));
+            const tab = params.get('tab');
+            const validTabs: DashboardTab[] = ['overview', 'profile', 'listings', 'bookings', 'boosts', 'billing', 'coach', 'security', 'performance'];
+            if (tab && validTabs.includes(tab as DashboardTab)) {
+                setActiveTab(tab as DashboardTab);
+            }
+            const mode = params.get('mode');
+            if (mode === 'renting' || mode === 'hosting') {
+                setDeepLinkMode(mode);
+            }
+        };
+        parseHash();
+        window.addEventListener('hashchange', parseHash);
+        return () => window.removeEventListener('hashchange', parseHash);
+    }, []);
+
     // Handle hash check for onboarding redirect/reload
     useEffect(() => {
         if (typeof window !== 'undefined' && (window.location.hash.includes('stripeOnboardingComplete') || window.location.hash.includes('stripeOnboardingRefresh'))) {
@@ -1178,7 +1236,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             case 'boosts':
                 return <MyBoostsManager user={user} onBoostListing={() => setActiveTab('listings')} />;
             case 'bookings':
-                return <BookingsManager bookings={bookings} userId={user.id} userName={user.name} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
+                return <BookingsManager bookings={bookings} userId={user.id} userName={user.name} deepLinkMode={deepLinkMode} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'security':
                 return <SecurityTab user={user} onVerify={(type) => onVerificationUpdate(user.id, type)} />;
             case 'aiAssistant':

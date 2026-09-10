@@ -54,7 +54,8 @@ interface Notification {
 const App: React.FC = () => {
     const { toast } = useToast();
     const [page, setPage] = useState<Page>(() => {
-        const hash = window.location.hash.replace('#', '') as Page;
+        const rawHash = window.location.hash.replace('#', '');
+        const hash = rawHash.split('?')[0] as Page;
         if (hash.startsWith('userProfile/')) { return 'userProfile' as Page; } if (hash.startsWith('damage/')) { return 'damageDetail' as Page; } if (hash.startsWith('userProfile/')) return 'userProfile' as Page; if (hash.startsWith('damage/')) return 'damageDetail' as Page; return hash || 'home';
     });
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);
@@ -171,7 +172,8 @@ const App: React.FC = () => {
     // Listen to hash changes for direct URL navigation
     useEffect(() => {
         const handleHashChange = () => {
-            const hash = window.location.hash.replace('#', '') as Page;
+            const rawHash = window.location.hash.replace('#', '');
+            const hash = rawHash.split('?')[0] as Page;
             if ((hash as string).startsWith('damage/')) { const reportId = (hash as string).substring(7); if (reportId) { setSelectedDamageReportId(reportId); setPage('damageDetail' as any); } } else if ((hash as string).startsWith('userProfile/')) { const userId = (hash as string).substring(12); if (userId) { setSelectedUserProfileId(userId); setPage('userProfile' as any); } } else if (hash) setPage(hash);
         };
         window.addEventListener('hashchange', handleHashChange);
@@ -640,7 +642,7 @@ const App: React.FC = () => {
             type: 'booking_new',
             title: 'New booking request',
             message: `${renter.name} wants to book "${listing.title}" (${format(startDate, 'MMM dd')}${startDate.getTime() !== endDate.getTime() ? ' - ' + format(endDate, 'MMM dd') : ''})`,
-            link: '#userDashboard'
+            link: '#userDashboard?tab=bookings&mode=hosting'
         });
 
         // 1. Notify Host
@@ -715,14 +717,14 @@ const App: React.FC = () => {
                 type: 'booking_confirmed',
                 title: 'Booking confirmed!',
                 message: `${host.name} confirmed your booking for "${listing.title}"`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=renting'
             });
             createNotification({
                 userId: host.id,
                 type: 'booking_confirmed',
                 title: 'Booking confirmed',
                 message: `You confirmed ${renter.name}'s booking for "${listing.title}"`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=hosting'
             });
         } else if (newStatus === 'rejected') {
             createNotification({
@@ -730,7 +732,7 @@ const App: React.FC = () => {
                 type: 'booking_rejected',
                 title: 'Booking rejected',
                 message: `${host.name} rejected your booking for "${listing.title}"`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=renting'
             });
         } else if (newStatus === 'cancelled') {
             const otherPartyId = session?.id === host.id ? renter.id : host.id;
@@ -740,7 +742,7 @@ const App: React.FC = () => {
                 type: 'booking_cancelled',
                 title: 'Booking cancelled',
                 message: `A booking for "${listing.title}" was cancelled`,
-                link: '#userDashboard'
+                link: '#userDashboard?tab=bookings&mode=' + (session?.id === host.id ? 'hosting' : 'renting')
             });
         }
 

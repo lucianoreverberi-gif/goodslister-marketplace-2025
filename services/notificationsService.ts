@@ -42,6 +42,8 @@ export type NotificationType =
     | 'damage_new'
     | 'damage_resolved'
     | 'deposit_released'
+    | 'contract_signed'
+    | 'review_received'
     | 'welcome';
 
 export interface Notification {
