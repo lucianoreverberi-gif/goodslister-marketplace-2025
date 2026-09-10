@@ -421,18 +421,17 @@ const BookingsManager: React.FC<{
     bookings: Booking[], 
     userId: string, 
     userName: string,
+    deepLinkMode: 'renting' | 'hosting' | null,
     onStatusUpdate: (id: string, status: string) => Promise<void>,
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void
-}> = ({ bookings, userId, userName, onStatusUpdate, onUpdateDepositStatus }) => {
-    const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => {
-        // Check for deep-link mode from URL hash (e.g. from notification)
-        const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('dashboardInitialMode') : null;
-        if (stored === 'renting' || stored === 'hosting') {
-            sessionStorage.removeItem('dashboardInitialMode'); // one-time use
-            return stored;
+}> = ({ bookings, userId, userName, deepLinkMode, onStatusUpdate, onUpdateDepositStatus }) => {
+    const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => deepLinkMode || (hostingCount > 0 ? 'hosting' : 'renting'));
+    // React to deep-link mode changes from parent (e.g. clicking a notification while dashboard is open)
+    useEffect(() => {
+        if (deepLinkMode === 'renting' || deepLinkMode === 'hosting') {
+            setMode(deepLinkMode);
         }
-        return hostingCount > 0 ? 'hosting' : 'renting';
-    });
+    }, [deepLinkMode]);
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
     const [processingId, setProcessingId] = useState<string | null>(null);    const [damageReportBooking, setDamageReportBooking] = useState<Booking | null>(null);
@@ -1019,6 +1018,8 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
     }, [activeTab, user.id]);
 
     // Parse URL hash for deep-linking (e.g. #userDashboard?tab=bookings&mode=hosting)
+    // deepLinkMode is passed as a prop to BookingsManager to force mode change on notification click
+    const [deepLinkMode, setDeepLinkMode] = useState<'renting' | 'hosting' | null>(null);
     useEffect(() => {
         const parseHash = () => {
             if (typeof window === 'undefined') return;
@@ -1031,10 +1032,9 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             if (tab && validTabs.includes(tab as DashboardTab)) {
                 setActiveTab(tab as DashboardTab);
             }
-            // Store mode in sessionStorage for BookingsManager to pick up
             const mode = params.get('mode');
             if (mode === 'renting' || mode === 'hosting') {
-                sessionStorage.setItem('dashboardInitialMode', mode);
+                setDeepLinkMode(mode);
             }
         };
         parseHash();
@@ -1236,7 +1236,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             case 'boosts':
                 return <MyBoostsManager user={user} onBoostListing={() => setActiveTab('listings')} />;
             case 'bookings':
-                return <BookingsManager bookings={bookings} userId={user.id} userName={user.name} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
+                return <BookingsManager bookings={bookings} userId={user.id} userName={user.name} deepLinkMode={deepLinkMode} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'security':
                 return <SecurityTab user={user} onVerify={(type) => onVerificationUpdate(user.id, type)} />;
             case 'aiAssistant':
