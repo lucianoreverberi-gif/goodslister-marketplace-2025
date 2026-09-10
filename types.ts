@@ -188,6 +188,11 @@ export interface Booking {
     inspectionResult?: 'clean' | 'damaged';
     hasHandoverInspection?: boolean;
     hasReturnInspection?: boolean;
+    // Dual-signature fields (renter signs first, blocks host check-in)
+    renterSignedAt?: string;
+    renterSignatureUrl?: string;
+    hostSignedAt?: string;
+    hostSignatureUrl?: string;
 }
 
 export interface Dispute {

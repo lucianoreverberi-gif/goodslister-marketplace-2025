@@ -9,6 +9,7 @@ import RentalSessionWizard from './RentalSessionWizard';
 import ConnectStripeModal from './ConnectStripeModal';import DamageReportModal from './DamageReportModal';
 import ReviewWizard from './ReviewWizard';
 import ConfirmActionModal from './ConfirmActionModal';
+import AgreementSignatureModal from './AgreementSignatureModal';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -418,9 +419,10 @@ const ProfileCompletenessWidget: React.FC<{ user: Session, compact?: boolean }> 
 const BookingsManager: React.FC<{ 
     bookings: Booking[], 
     userId: string, 
+    userName: string,
     onStatusUpdate: (id: string, status: string) => Promise<void>,
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void
-}> = ({ bookings, userId, onStatusUpdate, onUpdateDepositStatus }) => {
+}> = ({ bookings, userId, userName, onStatusUpdate, onUpdateDepositStatus }) => {
     const rentingCount = bookings.filter(b => b.renterId === userId).length; const hostingCount = bookings.filter(b => b.listing.owner.id === userId).length; const pendingHostCount = bookings.filter(b => b.status === 'pending' && b.listing.owner.id === userId).length; const [mode, setMode] = useState<'renting' | 'hosting'>(() => hostingCount > 0 ? 'hosting' : 'renting');
     const [activeSessionBooking, setActiveSessionBooking] = useState<Booking | null>(null);
     const [sessionInitialMode, setSessionInitialMode] = useState<'handover' | 'return'>('handover');
@@ -428,6 +430,8 @@ const BookingsManager: React.FC<{
     const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
     const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set());
     const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; confirmLabel: string; variant: 'danger' | 'warning' | 'primary' | 'success'; action: () => Promise<void> } | null>(null);
+    const [signingBooking, setSigningBooking] = useState<Booking | null>(null);
+    const [justSignedIds, setJustSignedIds] = useState<Set<string>>(new Set());
 
     // Fetch existing reviews on mount to know which bookings the user already reviewed
     useEffect(() => {
@@ -461,7 +465,27 @@ const BookingsManager: React.FC<{
                      />
                  </div>
              )}
-             {confirmAction && (
+             {signingBooking && (
+                <AgreementSignatureModal
+                    booking={signingBooking}
+                    userId={userId}
+                    role={mode === 'renting' ? 'RENTER' : 'HOST'}
+                    userFullName={userName}
+                    onSigned={() => {
+                        // Optimistic local mutation + track for UI state (no page reload = no logout)
+                        const nowIso = new Date().toISOString();
+                        if (mode === 'renting') {
+                            signingBooking.renterSignedAt = nowIso;
+                        } else {
+                            signingBooking.hostSignedAt = nowIso;
+                        }
+                        setJustSignedIds(prev => new Set([...prev, signingBooking.id]));
+                        setSigningBooking(null);
+                    }}
+                    onClose={() => setSigningBooking(null)}
+                />
+            )}
+            {confirmAction && (
                 <ConfirmActionModal
                     title={confirmAction.title}
                     message={confirmAction.message}
@@ -570,7 +594,22 @@ const BookingsManager: React.FC<{
                                     <XIcon className="h-3.5 w-3.5" /> CANCEL REQUEST
                                 </button>
                             )}
-                            {b.status === 'confirmed' && (
+                            {b.status === 'confirmed' && mode === 'renting' && !b.renterSignedAt && !justSignedIds.has(b.id) && (
+                                <button onClick={() => setSigningBooking(b)} className="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-black rounded-lg hover:from-amber-600 hover:to-amber-700 shadow-lg shadow-amber-100 transition-all flex items-center gap-2 animate-pulse">
+                                    <FileTextIcon className="h-3.5 w-3.5" /> SIGN CONTRACT
+                                </button>
+                            )}
+                            {b.status === 'confirmed' && mode === 'renting' && (b.renterSignedAt || justSignedIds.has(b.id)) && (
+                                <span className="px-5 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-lg flex items-center gap-2">
+                                    <CheckCircleIcon className="h-3.5 w-3.5" /> SIGNED · Awaiting handover
+                                </span>
+                            )}
+                            {b.status === 'confirmed' && mode === 'hosting' && !b.renterSignedAt && !justSignedIds.has(b.id) && (
+                                <span className="px-5 py-2 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold rounded-lg flex items-center gap-2">
+                                    <FileTextIcon className="h-3.5 w-3.5" /> Awaiting renter signature
+                                </span>
+                            )}
+                            {b.status === 'confirmed' && mode === 'hosting' && (b.renterSignedAt || justSignedIds.has(b.id)) && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-5 py-2 bg-cyan-600 text-white text-[10px] font-bold rounded-lg hover:bg-cyan-700 shadow shadow-cyan-100 transition-all flex items-center gap-2">
                                     <RocketIcon className="h-3.5 w-3.5" /> CHECK-IN
                                 </button>
@@ -1139,7 +1178,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             case 'boosts':
                 return <MyBoostsManager user={user} onBoostListing={() => setActiveTab('listings')} />;
             case 'bookings':
-                return <BookingsManager bookings={bookings} userId={user.id} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
+                return <BookingsManager bookings={bookings} userId={user.id} userName={user.name} onStatusUpdate={onBookingStatusUpdate} onUpdateDepositStatus={onUpdateDepositStatus} />;
             case 'security':
                 return <SecurityTab user={user} onVerify={(type) => onVerificationUpdate(user.id, type)} />;
             case 'aiAssistant':

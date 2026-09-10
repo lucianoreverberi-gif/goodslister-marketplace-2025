@@ -14,6 +14,7 @@ import { differenceInSeconds, isValid, format } from 'date-fns';
 import ReviewWizard from './ReviewWizard';
 import DigitalInspection from './DigitalInspection';
 import { LegalService } from '../services/legalService';
+import { compareFaces, loadFaceModels, FaceMatchResult } from '../utils/faceVerification';
 
 type WizardPhase = 'IDLE' | 'HANDOVER' | 'ACTIVE' | 'RETURN' | 'COMPLETED';
 
@@ -40,19 +41,46 @@ const IdentityVerificationStep: React.FC<{
     onVerified: (idUrl: string, faceUrl: string) => void 
 }> = ({ booking, onVerified }) => {
     const bookingId = booking.id;
-    const [subStep, setSubStep] = useState<'intro' | 'scan_id' | 'face_scan' | 'verifying' | 'success'>('intro');
+    const [subStep, setSubStep] = useState<'intro' | 'scan_id' | 'face_scan' | 'verifying' | 'success' | 'failed'>('intro');
     const [idPhoto, setIdPhoto] = useState<string | null>(null);
     const [facePhoto, setFacePhoto] = useState<string | null>(null);
+    const [verificationResult, setVerificationResult] = useState<FaceMatchResult | null>(null);
+
+    // Preload face-api.js models when this step mounts (models ~7MB, cached after first load)
+    React.useEffect(() => {
+        loadFaceModels().catch(err => console.warn('Face model preload failed:', err));
+    }, []);
 
     const handleIdPhoto = (url: string) => {
         setIdPhoto(url);
         setSubStep('face_scan');
     };
 
-    const handleFacePhoto = (url: string) => {
+    const handleFacePhoto = async (url: string) => {
         setFacePhoto(url);
         setSubStep('verifying');
-        setTimeout(() => setSubStep('success'), 3000);
+        // REAL face verification via face-api.js (100% client-side)
+        try {
+            if (!idPhoto) throw new Error('No ID photo captured');
+            const result = await compareFaces(idPhoto, url);
+            setVerificationResult(result);
+            // NO_MATCH or ERROR: show failed screen, otherwise show success
+            if (result.tier === 'NO_MATCH' || result.tier === 'ERROR' || result.tier === 'NO_FACE_DETECTED') {
+                setSubStep('failed');
+            } else {
+                setSubStep('success');
+            }
+        } catch (err: any) {
+            console.error('Face verification error:', err);
+            setVerificationResult({
+                matched: false,
+                distance: 1.0,
+                confidence: 0,
+                tier: 'ERROR',
+                message: 'Error en la verificaci\u00f3n: ' + (err?.message || 'Intent\u00e1 nuevamente.'),
+            });
+            setSubStep('failed');
+        }
     };
 
     return (
@@ -173,9 +201,9 @@ const IdentityVerificationStep: React.FC<{
                         <div className="space-y-2">
                             <h4 className="text-2xl font-black text-slate-900 tracking-tight">Identity Confirmed</h4>
                             <div className="flex items-center justify-center gap-2 text-emerald-600 font-black text-xs uppercase tracking-widest">
-                                <ShieldCheckIcon className="h-4 w-4" /> 100% Match Detected
+                                <ShieldCheckIcon className="h-4 w-4" /> {verificationResult?.confidence ?? 0}% Match Detected · {verificationResult?.tier === 'STRONG' ? 'STRONG' : verificationResult?.tier === 'MODERATE' ? 'MODERATE' : 'WEAK'}
                             </div>
-                            <p className="text-sm text-slate-500 max-w-xs mx-auto mt-4">The renter's live face matches the ID document perfectly. Safety audit trail updated.</p>
+                            <p className="text-sm text-slate-500 max-w-xs mx-auto mt-4">{verificationResult?.message || "The renter's live face matches the ID document. Safety audit trail updated."}</p>
                         </div>
                         
                         <button 
@@ -184,6 +212,36 @@ const IdentityVerificationStep: React.FC<{
                         >
                             PROCEED TO CONTRACT
                         </button>
+                    </div>
+                )}
+
+                {subStep === 'failed' && (
+                    <div className="text-center space-y-6 animate-in zoom-in-95">
+                        <div className="w-24 h-24 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-rose-100">
+                            <XIcon className="h-12 w-12" />
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="text-2xl font-black text-slate-900 tracking-tight">Verificaci\u00f3n fallida</h4>
+                            <div className="flex items-center justify-center gap-2 text-rose-600 font-black text-xs uppercase tracking-widest">
+                                <ShieldIcon className="h-4 w-4" /> {verificationResult?.tier === 'NO_FACE_DETECTED' ? 'No face detected' : verificationResult?.tier === 'ERROR' ? 'Verification error' : (verificationResult?.confidence ?? 0) + '% Match'}
+                            </div>
+                            <p className="text-sm text-slate-600 max-w-sm mx-auto mt-4">{verificationResult?.message || 'La foto no coincide con el ID. Intent\u00e1 nuevamente.'}</p>
+                        </div>
+                        
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={() => { setFacePhoto(null); setVerificationResult(null); setSubStep('face_scan'); }}
+                                className="w-full py-4 bg-slate-900 hover:bg-black text-white font-black rounded-3xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+                            >
+                                <RefreshCwIcon className="h-4 w-4" /> RETAKE PHOTO
+                            </button>
+                            <button 
+                                onClick={() => onVerified(idPhoto!, facePhoto!)}
+                                className="w-full py-3 text-slate-500 hover:text-slate-900 text-xs font-bold transition-all"
+                            >
+                                Override & continue (visual verification by host)
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -242,6 +300,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
     // Defensive: booking.listing may be undefined if data enrichment failed at bootstrap
     const requiresLicense = booking.listing ? LegalService.isLicenseRequired(booking.listing) : false;
 
+    // Set initial step ONCE on mount. Do NOT re-fire on status changes -
+    // it would jump the wizard back to RETURN_INSPECTION after handover completes.
     useEffect(() => {
         if (initialMode === 'return' || booking.status === 'active') {
             setPhase('RETURN');
@@ -250,7 +310,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
             setPhase('HANDOVER');
             setStep('PAYMENT_COLLECTION');
         }
-    }, [booking.status, initialMode]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleContractSign = () => {
         setIsLoading(true);
@@ -340,11 +401,8 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         </div>
                         <button 
                             onClick={() => {
-                                if (requiresLicense) {
-                                    setStep('IDENTITY_VERIFICATION');
-                                } else {
-                                    setStep('CONTRACT_SIGNING');
-                                }
+                                // Always require identity verification (real face-api.js match)
+                                setStep('IDENTITY_VERIFICATION');
                             }}
                             className="w-full py-5 bg-slate-900 hover:bg-black text-white font-black rounded-3xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95"
                         >

@@ -111,7 +111,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         securityDeposit: row.deposit_amount != null ? Number(row.deposit_amount) : (listing?.securityDeposit || 0),
         depositStatus: row.deposit_hold_status || 'held',
         depositHoldStatus: row.deposit_hold_status || 'held',
-        stripeDepositPaymentIntentId: row.stripe_deposit_payment_intent_id
+        stripeDepositPaymentIntentId: row.stripe_deposit_payment_intent_id,
+        // Dual-signature fields
+        renterSignedAt: row.renter_signed_at ? new Date(row.renter_signed_at).toISOString() : null,
+        renterSignatureUrl: row.renter_signature_url || null,
+        hostSignedAt: row.host_signed_at ? new Date(row.host_signed_at).toISOString() : null,
+        hostSignatureUrl: row.host_signature_url || null,
       };
     }).filter(b => b.listing);
 
