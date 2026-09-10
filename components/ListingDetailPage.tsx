@@ -9,6 +9,7 @@ import { MapPinIcon, StarIcon, ChevronLeftIcon, ShareIcon, HeartIcon, MessageSqu
 import ListingMap from './ListingMap';import IdentityVerificationModal from './IdentityVerificationModal';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { differenceInCalendarDays, format, addHours, setHours, setMinutes } from 'date-fns';
+import { trackListingViewed, track } from '../services/analytics';
 
 const stripePromise = loadStripe((import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
 
@@ -242,6 +243,20 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = (props) => (
 
 const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile, similarListings = [], onListingClick }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    
+    // ANALYTICS: track listing view on mount + when listing changes
+    useEffect(() => {
+        if (listing?.id) {
+            trackListingViewed({
+                id: listing.id,
+                title: listing.title,
+                category: listing.category,
+                price: listing.dailyPrice || listing.hourlyPrice || 0,
+                ownerId: listing.owner?.id,
+                city: listing.city,
+            });
+        }
+    }, [listing?.id]);
     const [range, setRange] = useState<DateRange | undefined>();
     const [hourlyDate, setHourlyDate] = useState<Date | undefined>(undefined);
     const [startTime, setStartTime] = useState<string>('09:00');
