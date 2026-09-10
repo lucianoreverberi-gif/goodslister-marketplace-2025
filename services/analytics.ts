@@ -19,16 +19,6 @@ export function initAnalytics(): void {
     const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
     const host = import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 
-    // DIAGNOSTIC LOG - remove after fix
-    console.info('[Analytics] Reading env vars', {
-        keyType: typeof key,
-        keyLen: key?.length || 0,
-        keyFirst6: key?.substring(0, 6) || 'null',
-        keyLast4: key?.substring(key.length - 4) || 'null',
-        hasWhitespace: key !== key?.trim(),
-        hostValue: host,
-    });
-
     if (!key) {
         console.info('[Analytics] PostHog disabled - no VITE_PUBLIC_POSTHOG_KEY set');
         return;
@@ -49,15 +39,10 @@ export function initAnalytics(): void {
             },
             person_profiles: 'identified_only', // only create profiles for identified users
             loaded: (ph) => {
-                console.info('[Analytics] PostHog fully loaded, sending test pageview');
-                // Force capture in prod to verify events reach the server
-                ph.capture('$pageview');
                 if (import.meta.env.DEV) {
                     ph.debug();
                 }
             },
-            debug: true, // TEMP - remove after diagnosing prod issue
-            autocapture: true, // ensure autocapture is on
         });
         initialized = true;
         console.info('[Analytics] PostHog initialized');
