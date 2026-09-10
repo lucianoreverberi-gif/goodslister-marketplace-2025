@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainIcon, ZapIcon, CheckCircleIcon, MapPinIcon, AlertCircleIcon } from './icons';
+import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainIcon, ZapIcon, CheckCircleIcon, MapPinIcon, AlertCircleIcon, NoThiefIcon, FileTextIcon } from './icons';
 import FAQSection from './FAQSection';
 
 // --- Shared Layouts ---
@@ -113,7 +113,7 @@ export const HowItWorksPage: React.FC = () => {
                             </div>
                             <div className="flex items-start gap-3">
                                 <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
-                                    <LockIcon className="h-5 w-5" />
+                                    <FileTextIcon className="h-5 w-5" />
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-gray-900">Digital contracts</h4>
@@ -122,7 +122,7 @@ export const HowItWorksPage: React.FC = () => {
                             </div>
                             <div className="flex items-start gap-3">
                                 <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
-                                    <BrainIcon className="h-5 w-5" />
+                                    <NoThiefIcon className="h-5 w-5" />
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-gray-900">Verified identities</h4>
