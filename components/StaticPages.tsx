@@ -90,68 +90,82 @@ export const HowItWorksPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Comparison Section */}
-                <div className="mb-20 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-                    <div className="p-8 sm:p-12 text-center bg-gray-900 text-white">
-                        <h2 className="text-3xl font-bold">Choose Your Way to Rent</h2>
-                        <p className="mt-4 text-gray-300">Flexibility is key. Choose the booking method that works best for you.</p>
+                {/* Platform Protection Section - replaces old 'Direct Arrangement' option */}
+                <div className="mb-20 bg-gradient-to-br from-cyan-50 to-white rounded-2xl shadow-xl overflow-hidden border border-cyan-100">
+                    <div className="p-8 sm:p-12 text-center bg-gradient-to-r from-slate-900 to-cyan-950 text-white">
+                        <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 px-4 py-1.5 rounded-full mb-4">
+                            <ShieldCheckIcon className="h-4 w-4 text-emerald-400" />
+                            <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Protected by Goodslister</span>
+                        </div>
+                        <h2 className="text-3xl font-bold">Every rental is fully protected</h2>
+                        <p className="mt-4 text-gray-300 max-w-2xl mx-auto">All bookings, payments, and communications happen through Goodslister so we can verify identities, protect deposits, and step in if something goes wrong.</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-                        <div className="p-8 sm:p-12 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="bg-green-100 p-3 rounded-full text-green-600">
-                                    <LockIcon className="h-8 w-8" />
+                    <div className="p-8 sm:p-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-5">
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <ShieldCheckIcon className="h-5 w-5" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-900">Secure Platform Booking</h3>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Payment protection</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Your funds are held securely by Stripe until the host approves and check-in is verified. If a host doesn't show up, you're refunded fully.</p>
+                                </div>
                             </div>
-                            <ul className="space-y-4 text-gray-600">
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                                    <span><strong>Full Insurance Coverage:</strong> Items are protected against damage and theft.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                                    <span><strong>Payment Protection:</strong> Funds are held securely until the rental starts.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                                    <span><strong>Verified Reviews:</strong> Only completed bookings can leave feedback.</span>
-                                </li>
-                            </ul>
-                            <div className="mt-8">
-                                <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Recommended</span>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <LockIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Digital contracts</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Both parties sign a legally-binding agreement before pickup. Full audit trail if a dispute ever comes up.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <BrainIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Verified identities</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Every user completes biometric ID verification. Live face match at pickup confirms the person is real.</p>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="p-8 sm:p-12 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="bg-amber-100 p-3 rounded-full text-amber-600">
-                                    <HandshakeIcon className="h-8 w-8" />
+                        <div className="space-y-5">
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <ZapIcon className="h-5 w-5" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-900">Direct Arrangement</h3>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Photo authentication</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Handover photos verified for GPS location, timestamp, and editing software so damage claims are grounded in real evidence.</p>
+                                </div>
                             </div>
-                            <ul className="space-y-4 text-gray-600">
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-amber-500 flex-shrink-0" />
-                                    <span><strong>Flexible Payments:</strong> Pay via cash, Venmo, or other methods upon meeting.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-amber-500 flex-shrink-0" />
-                                    <span><strong>Direct Communication:</strong> Negotiate terms directly with the owner.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                                    <span><span className="text-gray-500">Note:</span> No platform insurance coverage included.</span>
-                                </li>
-                            </ul>
-                            <div className="mt-8">
-                                <span className="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Flexible</span>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <MessageSquareIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Dispute mediation</h4>
+                                    <p className="text-sm text-gray-600 mt-1">If something goes wrong, our team reviews photos, messages, and contracts — and can refund from the deposit within 5 days.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <StarIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Verified reviews</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Only completed rentals can leave a review. Double-blind system so hosts and renters can be honest without retaliation.</p>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                    <div className="px-8 pb-8 sm:px-12 sm:pb-10 text-center text-xs text-gray-500">
+                        🔒 All payments and messages go through Goodslister. Off-platform arrangements are not supported and forfeit all protections.
                     </div>
                 </div>
 
-                <div className="border-t border-gray-200 my-12"></div>
+                                <div className="border-t border-gray-200 my-12"></div>
 
                 {/* For Owners Section */}
                 <div>
