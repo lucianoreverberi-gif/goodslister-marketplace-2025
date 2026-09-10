@@ -54,7 +54,8 @@ interface Notification {
 const App: React.FC = () => {
     const { toast } = useToast();
     const [page, setPage] = useState<Page>(() => {
-        const hash = window.location.hash.replace('#', '') as Page;
+        const rawHash = window.location.hash.replace('#', '');
+        const hash = rawHash.split('?')[0] as Page;
         if (hash.startsWith('userProfile/')) { return 'userProfile' as Page; } if (hash.startsWith('damage/')) { return 'damageDetail' as Page; } if (hash.startsWith('userProfile/')) return 'userProfile' as Page; if (hash.startsWith('damage/')) return 'damageDetail' as Page; return hash || 'home';
     });
     const [selectedListingId, setSelectedListingId] = useState<string | null>(null);    const [selectedDamageReportId, setSelectedDamageReportId] = useState<string | null>(null);
@@ -171,7 +172,8 @@ const App: React.FC = () => {
     // Listen to hash changes for direct URL navigation
     useEffect(() => {
         const handleHashChange = () => {
-            const hash = window.location.hash.replace('#', '') as Page;
+            const rawHash = window.location.hash.replace('#', '');
+            const hash = rawHash.split('?')[0] as Page;
             if ((hash as string).startsWith('damage/')) { const reportId = (hash as string).substring(7); if (reportId) { setSelectedDamageReportId(reportId); setPage('damageDetail' as any); } } else if ((hash as string).startsWith('userProfile/')) { const userId = (hash as string).substring(12); if (userId) { setSelectedUserProfileId(userId); setPage('userProfile' as any); } } else if (hash) setPage(hash);
         };
         window.addEventListener('hashchange', handleHashChange);
