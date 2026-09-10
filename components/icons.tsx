@@ -193,6 +193,24 @@ export const FileTextIcon: React.FC<IconProps> = (props) => (
     </svg>
 );
 
+// NoThiefIcon — hooded thief/hacker with balaclava + diagonal slash (anti-scam trust signal)
+export const NoThiefIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" {...props}>
+        {/* Hood/head silhouette (rounded top, chin cut off) */}
+        <path d="M6.5 6.5 C6.5 3.5 9 2 12 2 C15 2 17.5 3.5 17.5 6.5 L17.5 15 C17.5 17 16 18.5 14 18.5 L10 18.5 C8 18.5 6.5 17 6.5 15 Z" fill="currentColor" />
+        {/* Shoulders/body */}
+        <path d="M3 22 L3 20 C3 18.5 4.5 17.5 6 17.5 L18 17.5 C19.5 17.5 21 18.5 21 20 L21 22 Z" fill="currentColor" fillOpacity="0.85" />
+        {/* Eye band (skin visible strip) */}
+        <rect x="7" y="9" width="10" height="3" fill="white" fillOpacity="0.95" rx="0.4" />
+        {/* Two dark eyes peering out */}
+        <circle cx="9.5" cy="10.5" r="1" fill="currentColor" />
+        <circle cx="14.5" cy="10.5" r="1" fill="currentColor" />
+        {/* Diagonal ban slash - white outline for contrast + main red slash */}
+        <line x1="3" y1="21" x2="21" y2="3" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+        <line x1="3" y1="21" x2="21" y2="3" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
 export const SparklesIcon: React.FC<IconProps> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
         <path d="M12 3L9.5 8.5 4 11l5.5 2.5L12 19l2.5-5.5L20 11l-5.5-2.5z"></path>

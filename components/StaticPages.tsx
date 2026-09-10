@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainIcon, ZapIcon, CheckCircleIcon, MapPinIcon } from './icons';
+import { MailIcon, PhoneIcon, SearchIcon, ShieldCheckIcon, SmileIcon, UploadCloudIcon, WalletIcon, MessageSquareIcon, StarIcon, HandshakeIcon, LockIcon, GlobeIcon, BrainIcon, ZapIcon, CheckCircleIcon, MapPinIcon, AlertCircleIcon, NoThiefIcon, FileTextIcon } from './icons';
 import FAQSection from './FAQSection';
 
 // --- Shared Layouts ---
@@ -40,7 +40,14 @@ const BrandHeader: React.FC<{ title: string; subtitle: string; imageUrl?: string
 
 // --- Pages ---
 
-export const HowItWorksPage: React.FC = () => (
+export const HowItWorksPage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'How Goodslister Works - Rent or List Adventure Gear Safely';
+        const meta = document.querySelector('meta[name="description"]') || document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'description' }));
+        meta.setAttribute('content', 'Rent adventure gear in 3 steps or list yours in minutes. Every rental protected by biometric ID verification, EXIF photo authentication, and dual-signature digital contracts.');
+    }, []);
+
+    return (
     <div className="bg-white">
         <BrandHeader 
             title="How Goodslister Works" 
@@ -83,68 +90,82 @@ export const HowItWorksPage: React.FC = () => (
                     </div>
                 </div>
 
-                {/* Comparison Section */}
-                <div className="mb-20 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-                    <div className="p-8 sm:p-12 text-center bg-gray-900 text-white">
-                        <h2 className="text-3xl font-bold">Choose Your Way to Rent</h2>
-                        <p className="mt-4 text-gray-300">Flexibility is key. Choose the booking method that works best for you.</p>
+                {/* Platform Protection Section - replaces old 'Direct Arrangement' option */}
+                <div className="mb-20 bg-gradient-to-br from-cyan-50 to-white rounded-2xl shadow-xl overflow-hidden border border-cyan-100">
+                    <div className="p-8 sm:p-12 text-center bg-gradient-to-r from-slate-900 to-cyan-950 text-white">
+                        <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 px-4 py-1.5 rounded-full mb-4">
+                            <ShieldCheckIcon className="h-4 w-4 text-emerald-400" />
+                            <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Protected by Goodslister</span>
+                        </div>
+                        <h2 className="text-3xl font-bold">Every rental is fully protected</h2>
+                        <p className="mt-4 text-gray-300 max-w-2xl mx-auto">All bookings, payments, and communications happen through Goodslister so we can verify identities, protect deposits, and step in if something goes wrong.</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-                        <div className="p-8 sm:p-12 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="bg-green-100 p-3 rounded-full text-green-600">
-                                    <LockIcon className="h-8 w-8" />
+                    <div className="p-8 sm:p-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-5">
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <ShieldCheckIcon className="h-5 w-5" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-900">Secure Platform Booking</h3>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Payment protection</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Your funds are held securely by Stripe until the host approves and check-in is verified. If a host doesn't show up, you're refunded fully.</p>
+                                </div>
                             </div>
-                            <ul className="space-y-4 text-gray-600">
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                                    <span><strong>Full Insurance Coverage:</strong> Items are protected against damage and theft.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                                    <span><strong>Payment Protection:</strong> Funds are held securely until the rental starts.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                                    <span><strong>Verified Reviews:</strong> Only completed bookings can leave feedback.</span>
-                                </li>
-                            </ul>
-                            <div className="mt-8">
-                                <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Recommended</span>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <FileTextIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Digital contracts</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Both parties sign a legally-binding agreement before pickup. Full audit trail if a dispute ever comes up.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <NoThiefIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Verified identities</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Every user completes biometric ID verification. Live face match at pickup confirms the person is real.</p>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="p-8 sm:p-12 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="bg-amber-100 p-3 rounded-full text-amber-600">
-                                    <HandshakeIcon className="h-8 w-8" />
+                        <div className="space-y-5">
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <ZapIcon className="h-5 w-5" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-900">Direct Arrangement</h3>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Photo authentication</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Handover photos verified for GPS location, timestamp, and editing software so damage claims are grounded in real evidence.</p>
+                                </div>
                             </div>
-                            <ul className="space-y-4 text-gray-600">
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-amber-500 flex-shrink-0" />
-                                    <span><strong>Flexible Payments:</strong> Pay via cash, Venmo, or other methods upon meeting.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-amber-500 flex-shrink-0" />
-                                    <span><strong>Direct Communication:</strong> Negotiate terms directly with the owner.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <ShieldCheckIcon className="h-6 w-6 text-gray-400 flex-shrink-0" />
-                                    <span><span className="text-gray-500">Note:</span> No platform insurance coverage included.</span>
-                                </li>
-                            </ul>
-                            <div className="mt-8">
-                                <span className="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Flexible</span>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <MessageSquareIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Dispute mediation</h4>
+                                    <p className="text-sm text-gray-600 mt-1">If something goes wrong, our team reviews photos, messages, and contracts — and can refund from the deposit within 5 days.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 flex-shrink-0">
+                                    <StarIcon className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Verified reviews</h4>
+                                    <p className="text-sm text-gray-600 mt-1">Only completed rentals can leave a review. Double-blind system so hosts and renters can be honest without retaliation.</p>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                    <div className="px-8 pb-8 sm:px-12 sm:pb-10 text-center text-xs text-gray-500">
+                        🔒 All payments and messages go through Goodslister. Off-platform arrangements are not supported and forfeit all protections.
                     </div>
                 </div>
 
-                <div className="border-t border-gray-200 my-12"></div>
+                                <div className="border-t border-gray-200 my-12"></div>
 
                 {/* For Owners Section */}
                 <div>
@@ -181,12 +202,64 @@ export const HowItWorksPage: React.FC = () => (
             </div>
         </div>
 
+
+        {/* Trust Technology Section — showcases real anti-fraud stack */}
+        <div className="bg-gray-900 py-16 sm:py-24 text-white">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-16">
+                    <span className="text-cyan-400 font-bold tracking-wider uppercase text-sm">Powered by trust technology</span>
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2">Enterprise-grade verification at every step</h2>
+                    <p className="text-gray-400 mt-4 max-w-2xl mx-auto">The same anti-fraud technology used by Turo and Getaround, applied to every kind of adventure gear.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+                        <div className="bg-cyan-500/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <ShieldCheckIcon className="h-6 w-6 text-cyan-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Biometric ID</h3>
+                        <p className="text-gray-400 text-sm">Government ID + live selfie verification via Stripe Identity before any renter can book. One-time, then trusted forever.</p>
+                    </div>
+
+                    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+                        <div className="bg-indigo-500/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <BrainIcon className="h-6 w-6 text-indigo-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Live Face Match</h3>
+                        <p className="text-gray-400 text-sm">At check-in, the person picking up the gear takes a live selfie. Client-side face matching against their ID photo.</p>
+                    </div>
+
+                    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+                        <div className="bg-amber-500/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <ZapIcon className="h-6 w-6 text-amber-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Photo Authentication</h3>
+                        <p className="text-gray-400 text-sm">EXIF metadata checked for GPS, timestamp, and editing software. Fraudsters can't reuse old photos or edit damage.</p>
+                    </div>
+
+                    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+                        <div className="bg-green-500/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <LockIcon className="h-6 w-6 text-green-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Digital Contracts</h3>
+                        <p className="text-gray-400 text-sm">Both parties sign a legally-binding digital agreement before pickup. Full audit trail stored securely.</p>
+                    </div>
+                </div>
+
+                <div className="mt-12 flex justify-center">
+                    <a href="/#aboutUs" className="text-cyan-400 font-bold hover:text-cyan-300 transition-colors inline-flex items-center gap-2">
+                        Read more about our trust stack →
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <FAQSection />
 
         <div className="bg-gray-900 py-16">
             <div className="container mx-auto px-4 text-center">
                 <h2 className="text-2xl font-bold text-white mb-4">Ready to get started?</h2>
-                <p className="text-gray-400 mb-8">Join thousands of adventurers and owners today.</p>
+                <p className="text-gray-400 mb-8">Join the launch in Miami and South Florida.</p>
                 <div className="flex justify-center gap-4">
                     <a href="/explore" className="px-6 py-3 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition-colors">
                         Explore Gear
@@ -198,82 +271,149 @@ export const HowItWorksPage: React.FC = () => (
             </div>
         </div>
     </div>
-);
+    );
+};
 
-export const AboutUsPage: React.FC = () => (
+export const AboutUsPage: React.FC = () => {
+    React.useEffect(() => {
+        document.title = 'About Goodslister - Trust-First P2P Adventure Gear Marketplace';
+        const meta = document.querySelector('meta[name="description"]') || document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'description' }));
+        meta.setAttribute('content', 'Goodslister is a peer-to-peer adventure gear marketplace built on enterprise-grade trust technology: biometric ID verification, EXIF photo verification, and dual-signature digital contracts. Miami-first, launching 2026.');
+    }, []);
+
+    return (
     <div className="bg-white">
         <BrandHeader 
-            title="About Goodslister" 
-            subtitle="We are on a mission to democratize adventure and unlock the potential of the world's idle gear."
+            title="Adventure, powered by trust" 
+            subtitle="A peer-to-peer marketplace where owners of adventure gear can rent to travelers safely — with biometric verification, digital contracts, and photo authentication at every step."
             imageUrl="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2084&auto=format&fit=crop"
         />
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="max-w-3xl mx-auto text-lg text-gray-600 leading-relaxed mb-16 space-y-6">
-                <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-cyan-600 first-letter:mr-3 float-left">
-                    G
+            {/* Story - product-focused, no founder narrative */}
+            <div className="max-w-3xl mx-auto text-lg text-gray-600 leading-relaxed mb-20 space-y-6">
+                <p>
+                    Goodslister exists because the biggest problem in peer-to-peer rentals isn't finding gear — it's <strong>trust</strong>.
                 </p>
                 <p>
-                    oodslister was born from a simple observation: countless kayaks, mountain bikes, snowboards, and camping sets were collecting dust in garages. Meanwhile, thousands of people dreamed of weekend getaways but were held back by the high cost and logistics of owning gear.
+                    Renters worry the gear won't be as described. Owners worry the renter might not be who they say they are. Both worry about what happens if something goes wrong. Traditional marketplaces solve this with insurance disclaimers and hope for the best.
                 </p>
                 <p>
-                    In 2023, we launched with a vision to bridge this gap using <strong>AI technology</strong>. We built a platform that not only connects owners and renters but does so intelligently—simplifying legal contracts, optimizing listings, and ensuring safety for every transaction.
+                    We took a different approach: we built the <strong>same trust infrastructure that Turo and Getaround use</strong> — biometric ID verification, live face matching, EXIF photo authenticity checks, dual-signature digital contracts — and made it work for any kind of adventure gear. Kayaks, jetskis, mountain bikes, kitesurfing kits, camping sets, whatever.
+                </p>
+                <p>
+                    We're launching in <strong>Miami and South Florida</strong> in 2026, then expanding to adventure hubs across the US.
                 </p>
             </div>
 
-            {/* Values Grid */}
+            {/* What We're Building — real product features */}
+            <div className="mb-20">
+                <div className="text-center mb-12">
+                    <span className="text-cyan-600 font-bold tracking-wider uppercase text-sm">What we're building</span>
+                    <h2 className="text-3xl font-bold text-gray-900 mt-2">A trust stack, not a listings site</h2>
+                    <p className="text-gray-600 mt-4 max-w-2xl mx-auto">Every rental on Goodslister passes through five layers of verification.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-cyan-50 p-8 rounded-2xl border border-cyan-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+                                <ShieldCheckIcon className="h-6 w-6 text-cyan-600" />
+                            </div>
+                            <span className="text-xs font-black text-cyan-600 uppercase tracking-wider">Layer 1</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Verified onboarding</h3>
+                        <p className="text-gray-600">Every renter completes Stripe Identity verification with a government ID and live selfie before their first booking.</p>
+                    </div>
+
+                    <div className="bg-indigo-50 p-8 rounded-2xl border border-indigo-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+                                <LockIcon className="h-6 w-6 text-indigo-600" />
+                            </div>
+                            <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">Layer 2</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Digital contracts</h3>
+                        <p className="text-gray-600">Both renter and host sign a digital agreement before pickup. Renter signs first — check-in is blocked until they do.</p>
+                    </div>
+
+                    <div className="bg-green-50 p-8 rounded-2xl border border-green-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+                                <BrainIcon className="h-6 w-6 text-green-600" />
+                            </div>
+                            <span className="text-xs font-black text-green-600 uppercase tracking-wider">Layer 3</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Live face matching</h3>
+                        <p className="text-gray-600">At handover, the person picking up the gear takes a live selfie. Our system matches it against their ID photo — client-side, private, real-time.</p>
+                    </div>
+
+                    <div className="bg-amber-50 p-8 rounded-2xl border border-amber-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+                                <ZapIcon className="h-6 w-6 text-amber-600" />
+                            </div>
+                            <span className="text-xs font-black text-amber-600 uppercase tracking-wider">Layer 4</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Photo authentication</h3>
+                        <p className="text-gray-600">Handover and return photos are checked against EXIF metadata — GPS location, timestamp, and edit-software detection. Duplicates get rejected.</p>
+                    </div>
+
+                    <div className="bg-rose-50 p-8 rounded-2xl border border-rose-100 md:col-span-2">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+                                <StarIcon className="h-6 w-6 text-rose-600" />
+                            </div>
+                            <span className="text-xs font-black text-rose-600 uppercase tracking-wider">Layer 5</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Double-blind reviews</h3>
+                        <p className="text-gray-600">Reviews stay hidden until both parties submit theirs (or 3 days pass). No retaliation, no negotiation — just honest feedback.</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Values grounded in product */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-                <div className="bg-cyan-50 p-8 rounded-2xl border border-cyan-100 hover:shadow-lg transition-shadow">
-                    <div className="bg-white w-14 h-14 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <GlobeIcon className="h-8 w-8 text-cyan-600" />
+                <div className="p-8">
+                    <div className="bg-cyan-100 w-14 h-14 rounded-full flex items-center justify-center mb-6">
+                        <ShieldCheckIcon className="h-8 w-8 text-cyan-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Accessibility</h3>
-                    <p className="text-gray-600">Making the outdoors accessible to everyone, regardless of ownership status.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Trust as infrastructure</h3>
+                    <p className="text-gray-600">We invest in verification technology because you shouldn't have to hope a rental goes well — the platform should make it certain.</p>
                 </div>
-                <div className="bg-indigo-50 p-8 rounded-2xl border border-indigo-100 hover:shadow-lg transition-shadow">
-                    <div className="bg-white w-14 h-14 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <BrainIcon className="h-8 w-8 text-indigo-600" />
+                <div className="p-8">
+                    <div className="bg-indigo-100 w-14 h-14 rounded-full flex items-center justify-center mb-6">
+                        <MapPinIcon className="h-8 w-8 text-indigo-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Innovation</h3>
-                    <p className="text-gray-600">Leveraging AI to remove friction from rentals, from contracts to discovery.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Miami-first, local roots</h3>
+                    <p className="text-gray-600">Every adventure spot has its own gear culture. We're starting in South Florida — kayaks, jetskis, kitesurfing — and expanding city by city.</p>
                 </div>
-                <div className="bg-green-50 p-8 rounded-2xl border border-green-100 hover:shadow-lg transition-shadow">
-                    <div className="bg-white w-14 h-14 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                        <ShieldCheckIcon className="h-8 w-8 text-green-600" />
+                <div className="p-8">
+                    <div className="bg-green-100 w-14 h-14 rounded-full flex items-center justify-center mb-6">
+                        <BrainIcon className="h-8 w-8 text-green-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Trust</h3>
-                    <p className="text-gray-600">Building a community rooted in safety, verification, and mutual respect.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">AI where it matters</h3>
+                    <p className="text-gray-600">Natural-language search, listing optimization, face matching. Not "AI" for marketing — AI applied to specific problems that save time.</p>
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="bg-gray-900 rounded-2xl py-16 px-6 sm:px-12 text-center text-white relative overflow-hidden">
-                {/* Decorative Circles */}
-                <div className="absolute top-0 left-0 w-64 h-64 bg-cyan-600/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-                <div className="absolute bottom-0 right-0 w-64 h-64 bg-green-600/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10">
-                    <div className="space-y-2">
-                        <div className="text-4xl sm:text-5xl font-extrabold text-cyan-400">50k+</div>
-                        <div className="text-sm font-medium text-gray-400 uppercase tracking-wider">Active Users</div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="text-4xl sm:text-5xl font-extrabold text-cyan-400">12k+</div>
-                        <div className="text-sm font-medium text-gray-400 uppercase tracking-wider">Listings</div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="text-4xl sm:text-5xl font-extrabold text-cyan-400">$5M+</div>
-                        <div className="text-sm font-medium text-gray-400 uppercase tracking-wider">Owner Earnings</div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="text-4xl sm:text-5xl font-extrabold text-cyan-400">15+</div>
-                        <div className="text-sm font-medium text-gray-400 uppercase tracking-wider">Countries</div>
-                    </div>
+            {/* CTA */}
+            <div className="bg-gray-900 rounded-2xl py-16 px-6 sm:px-12 text-center text-white">
+                <h2 className="text-3xl font-bold mb-4">Ready to try it?</h2>
+                <p className="text-gray-300 mb-8 max-w-xl mx-auto">Browse verified gear in Miami and South Florida, or list yours and start earning.</p>
+                <div className="flex justify-center gap-4 flex-wrap">
+                    <a href="/#explore" className="px-6 py-3 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition-colors">
+                        Explore Gear
+                    </a>
+                    <a href="/#createListing" className="px-6 py-3 bg-white text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors">
+                        List Your Gear
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-);
+    );
+};
 
 export const CareersPage: React.FC = () => (
     <div className="bg-white">
@@ -388,82 +528,207 @@ export const PressPage: React.FC = () => (
     </div>
 );
 
-export const HelpCenterPage: React.FC = () => (
-    <div className="bg-gray-50 min-h-screen">
-        <div className="bg-cyan-900 py-16 sm:py-24 text-center px-4 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-            <div className="relative z-10">
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-6">How can we help you?</h1>
-                <div className="max-w-2xl mx-auto relative">
-                    <input 
-                        type="text" 
-                        placeholder="Search for answers (e.g. 'How to refund', 'Insurance policy')..." 
-                        className="w-full py-4 pl-12 pr-4 rounded-full shadow-2xl border-none focus:ring-4 focus:ring-cyan-400/50 text-gray-900 outline-none text-lg"
-                    />
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400">
-                        <SearchIcon className="h-6 w-6" />
+export const HelpCenterPage: React.FC = () => {
+    const [search, setSearch] = React.useState('');
+    const [openId, setOpenId] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        document.title = 'Help Center - Goodslister';
+        const meta = document.querySelector('meta[name="description"]') || document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'description' }));
+        meta.setAttribute('content', 'Answers to common questions about renting and hosting adventure gear on Goodslister. Booking, payments, verification, cancellations, safety, and more.');
+    }, []);
+
+    // 6 categories × 5-6 FAQs = 32 FAQs total
+    const categories = [
+        {
+            id: 'getting-started',
+            title: 'Getting Started',
+            icon: <SmileIcon className="h-6 w-6" />,
+            color: 'cyan',
+            faqs: [
+                { q: 'What is Goodslister?', a: 'Goodslister is a peer-to-peer marketplace for adventure gear rentals. Owners list their kayaks, jetskis, mountain bikes, kitesurfing kits, and more. Renters book them by the day or hour with full payment protection and verified handovers.' },
+                { q: 'How do I create an account?', a: 'Click "Log In" at the top of the page, then choose "Sign Up". You can register with email or Google. After registration, you\'ll be asked to verify your identity via Stripe Identity (government ID + selfie) before your first booking.' },
+                { q: 'Do I need to verify my identity?', a: 'Yes — all renters must complete a one-time identity verification with a government ID and live selfie. This protects hosts and keeps the community trustworthy. It takes about 2 minutes.' },
+                { q: 'Is Goodslister available in my area?', a: 'We\'re launching in Miami and South Florida in 2026, then expanding to other adventure hubs across the US. Check the Explore page to see what\'s available near you.' },
+                { q: 'How much does it cost to use Goodslister?', a: 'It\'s free to sign up and browse. Renters pay the listing price + service fee at booking. Hosts pay a 3% platform fee on payouts — they keep 97% of the rental price.' },
+            ],
+        },
+        {
+            id: 'renting',
+            title: 'Renting Gear',
+            icon: <SearchIcon className="h-6 w-6" />,
+            color: 'indigo',
+            faqs: [
+                { q: 'How does the booking process work?', a: 'Search or browse for the gear you want, select your dates, and click Reserve. The host reviews your request. Once approved, you sign the digital rental contract, then coordinate pickup with the host on the scheduled date.' },
+                { q: 'Can I book multiple items at once?', a: 'Yes — you can book multiple items from different hosts. Each booking is handled independently with its own contract, verification, and check-in.' },
+                { q: 'What happens at pickup?', a: 'The host walks through the item with you, checks your identity via live face match, and confirms the condition with photos. You both sign the check-in inspection. The rental period officially begins.' },
+                { q: 'What if the gear isn\'t as described?', a: 'Contact the host first — most misunderstandings are resolved directly. If you can\'t reach an agreement, use the "Report Damage" button in your booking to open a formal dispute. Our team reviews evidence and can issue a refund.' },
+                { q: 'How do I return the gear?', a: 'Meet the host at the return time and location. Both parties inspect the item together, take return photos, and confirm no damage. Once approved, your security deposit is released within 24 hours.' },
+                { q: 'Can I extend my rental?', a: 'Yes, if the host has availability. Contact the host through the chat before your rental ends. Extensions are processed as separate bookings for clean accounting.' },
+            ],
+        },
+        {
+            id: 'hosting',
+            title: 'Hosting Your Gear',
+            icon: <UploadCloudIcon className="h-6 w-6" />,
+            color: 'green',
+            faqs: [
+                { q: 'How do I list my gear?', a: 'Click "List Your Item" in the top nav. Upload 4-6 clear photos, add a description (our AI can help optimize it), set your price and availability, and publish. Most listings go live in under 10 minutes.' },
+                { q: 'How much can I earn?', a: 'Depends on the item, location, and how often you make it available. In Miami, a jetski typically earns $150-300/day. A kayak $50-80/day. A kitesurfing kit $100-150/day. You keep 97% of the listing price.' },
+                { q: 'When do I get paid?', a: 'Payouts arrive via Stripe direct deposit within 24 hours after the rental starts. First-time hosts may have a 2-3 day hold on their first payout while Stripe verifies the account.' },
+                { q: 'What if the renter damages my gear?', a: 'You document the damage with photos at return inspection, then submit a claim via the "Report Damage" button. Your renter\'s security deposit is held pending review. If the claim is valid, you\'re reimbursed from the deposit within 5 business days.' },
+                { q: 'Do I have to accept every booking?', a: 'No — you review each request and can approve or reject. Rejecting doesn\'t affect your listing visibility, but consistent rejections may. Consider using our Instant Book flag if you want automatic acceptance for verified renters.' },
+                { q: 'Can I set my own rules?', a: 'Yes. In your listing you can require a minimum age, disallow specific uses (e.g. no whitewater), require a captain\'s license, or add custom rules. All rules are shown to renters before they book.' },
+            ],
+        },
+        {
+            id: 'payments',
+            title: 'Payments & Refunds',
+            icon: <WalletIcon className="h-6 w-6" />,
+            color: 'amber',
+            faqs: [
+                { q: 'What payment methods do you accept?', a: 'All major credit and debit cards (Visa, Mastercard, Amex, Discover), plus Apple Pay and Google Pay. Payments are processed by Stripe and never touch our servers.' },
+                { q: 'When is my card charged?', a: 'When you complete the booking, Stripe places an authorization hold for the total (rental + deposit). The rental amount is captured when the host approves. The deposit hold is released within 24 hours after a clean return.' },
+                { q: 'What is the security deposit?', a: 'A refundable hold to cover potential damage. It varies by item — usually 20-50% of the rental value. The deposit is held on your card, not charged, and released after inspection.' },
+                { q: 'How do refunds work?', a: 'Full refund if the host cancels or rejects your booking, or if you cancel more than 24 hours before start time. Partial refund for later cancellations. Refunds arrive on your original payment method within 5-10 business days.' },
+                { q: 'Is there a service fee?', a: 'Yes — a small service fee (typically 8-12% of the rental) is added at checkout. This covers payment processing, identity verification, and platform infrastructure. It\'s shown clearly before you confirm.' },
+                { q: 'Do I need to report earnings to the IRS?', a: 'US hosts earning $600+ per year receive a 1099-K from Stripe. You\'re responsible for reporting rental income on your tax return. We recommend consulting a tax professional if you\'re earning significant income.' },
+            ],
+        },
+        {
+            id: 'safety',
+            title: 'Trust & Safety',
+            icon: <ShieldCheckIcon className="h-6 w-6" />,
+            color: 'rose',
+            faqs: [
+                { q: 'How does identity verification work?', a: 'Powered by Stripe Identity — you upload a photo of your government ID and take a live selfie. Stripe matches the two using biometric analysis. Takes 2 minutes, one-time per account.' },
+                { q: 'What is the live face match at pickup?', a: 'At handover, the person picking up the gear takes a live selfie. Our system compares it to the ID selfie you provided during onboarding. This prevents "identity swap" fraud where the person who booked isn\'t the person who shows up.' },
+                { q: 'How do photo verification checks work?', a: 'All handover and return photos are checked against EXIF metadata (GPS coordinates, timestamp, and edit-software detection). Old, misplaced, or Photoshopped photos are automatically rejected. This protects both parties in a dispute.' },
+                { q: 'Are digital contracts legally binding?', a: 'Yes. Digital signatures are legally enforceable in the US under ESIGN Act (2000) and in most countries under similar laws. Every contract includes a full audit trail with IP, timestamp, and biometric-verified identity.' },
+                { q: 'What data do you collect?', a: 'Only what\'s needed for verification, payments, and communication. Your government ID is processed by Stripe and never stored on our servers. Photos and messages are stored securely and only accessible to you and the other party.' },
+                { q: 'Someone contacted me outside the platform. What should I do?', a: 'Don\'t engage. All communication and payment must happen on Goodslister for you to be protected. Report the contact via "Report user" on their profile. We investigate and can suspend accounts for policy violations.' },
+            ],
+        },
+        {
+            id: 'cancellations',
+            title: 'Cancellations & Disputes',
+            icon: <AlertCircleIcon className="h-6 w-6" />,
+            color: 'slate',
+            faqs: [
+                { q: 'How do I cancel my booking?', a: 'Go to My Bookings, find the reservation, and click Cancel. If you\'re more than 24 hours before start, you get a full refund. Between 24 and 2 hours, 50% refund. Under 2 hours or no-show, no refund.' },
+                { q: 'What if the host cancels?', a: 'Full refund immediately, plus a credit for the inconvenience. We also investigate the host — repeated cancellations affect their standing and can lead to account suspension.' },
+                { q: 'What if the host doesn\'t show up?', a: 'Wait 30 minutes past the pickup time, then mark it as "Host no-show" in the app. You get a full refund + credit. Contact support if you need help.' },
+                { q: 'The item was damaged during my rental. What do I do?', a: 'Report it immediately via the "Report Damage" button. Take photos, describe what happened. Your security deposit may cover minor damage. For larger claims, our team reviews evidence from both parties.' },
+                { q: 'How long do disputes take to resolve?', a: 'Most disputes are resolved within 3-5 business days. Complex cases with multiple pieces of evidence may take up to 10 days. We\'ll email you at each step so you know where things stand.' },
+            ],
+        },
+    ];
+
+    const colorClasses: Record<string, { bg: string; text: string; light: string }> = {
+        cyan: { bg: 'bg-cyan-100', text: 'text-cyan-600', light: 'bg-cyan-50' },
+        indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600', light: 'bg-indigo-50' },
+        green: { bg: 'bg-green-100', text: 'text-green-600', light: 'bg-green-50' },
+        amber: { bg: 'bg-amber-100', text: 'text-amber-600', light: 'bg-amber-50' },
+        rose: { bg: 'bg-rose-100', text: 'text-rose-600', light: 'bg-rose-50' },
+        slate: { bg: 'bg-slate-100', text: 'text-slate-600', light: 'bg-slate-50' },
+    };
+
+    // Filter FAQs by search
+    const searchLower = search.toLowerCase().trim();
+    const filteredCategories = searchLower
+        ? categories.map(cat => ({
+            ...cat,
+            faqs: cat.faqs.filter(f =>
+                f.q.toLowerCase().includes(searchLower) ||
+                f.a.toLowerCase().includes(searchLower)
+            ),
+        })).filter(cat => cat.faqs.length > 0)
+        : categories;
+
+    const totalFaqs = categories.reduce((sum, c) => sum + c.faqs.length, 0);
+    const shownFaqs = filteredCategories.reduce((sum, c) => sum + c.faqs.length, 0);
+
+    return (
+        <div className="bg-gray-50 min-h-screen">
+            <div className="bg-cyan-900 py-16 sm:py-24 text-center px-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div className="relative z-10">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-6">How can we help you?</h1>
+                    <div className="max-w-2xl mx-auto relative">
+                        <input 
+                            type="text" 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search for answers (e.g. 'refund', 'insurance', 'verification')..." 
+                            className="w-full py-4 pl-12 pr-4 rounded-full shadow-2xl border-none focus:ring-4 focus:ring-cyan-400/50 text-gray-900 outline-none text-lg"
+                        />
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400">
+                            <SearchIcon className="h-6 w-6" />
+                        </div>
                     </div>
+                    {searchLower && (
+                        <p className="mt-4 text-cyan-100 text-sm">
+                            {shownFaqs === 0 ? 'No answers found.' : `Showing ${shownFaqs} of ${totalFaqs} answers matching "${search}"`}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
+                {filteredCategories.length === 0 && (
+                    <div className="text-center py-16">
+                        <div className="text-gray-400 mb-4"><SearchIcon className="h-12 w-12 mx-auto" /></div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">No results found</h3>
+                        <p className="text-gray-600">Try different keywords, or <button onClick={() => setSearch('')} className="text-cyan-600 font-bold hover:underline">clear search</button> to browse all categories.</p>
+                    </div>
+                )}
+
+                {filteredCategories.map((cat) => {
+                    const color = colorClasses[cat.color];
+                    return (
+                        <div key={cat.id} className="mb-10">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                                <div className={`${color.bg} p-2 rounded-lg ${color.text}`}>
+                                    {cat.icon}
+                                </div>
+                                {cat.title}
+                                <span className="text-sm font-normal text-gray-400">({cat.faqs.length})</span>
+                            </h2>
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+                                {cat.faqs.map((faq, idx) => {
+                                    const faqId = `${cat.id}-${idx}`;
+                                    const isOpen = openId === faqId;
+                                    return (
+                                        <div key={faqId}>
+                                            <button
+                                                onClick={() => setOpenId(isOpen ? null : faqId)}
+                                                className="w-full text-left px-6 py-5 hover:bg-gray-50 transition-colors flex items-start justify-between gap-4"
+                                            >
+                                                <span className="font-semibold text-gray-900 text-base">{faq.q}</span>
+                                                <span className={`${color.text} font-black text-xl transition-transform ${isOpen ? 'rotate-45' : ''}`}>+</span>
+                                            </button>
+                                            {isOpen && (
+                                                <div className={`px-6 pb-6 ${color.light}`}>
+                                                    <p className="text-gray-700 text-sm leading-relaxed pt-4 border-t border-gray-200">{faq.a}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })}
+
+                <div className="text-center mt-16 bg-gradient-to-br from-gray-900 to-slate-800 rounded-2xl p-8 sm:p-12 text-white">
+                    <h3 className="text-2xl font-bold mb-2">Still need help?</h3>
+                    <p className="text-gray-300 mb-6 max-w-xl mx-auto">Our support team responds to all inquiries within 24 hours (usually much faster).</p>
+                    <a href="/#contactUs" className="inline-block px-8 py-3 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 transition-colors shadow-lg">Contact Support</a>
                 </div>
             </div>
         </div>
-
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                        <div className="bg-cyan-100 p-2 rounded-lg text-cyan-600">
-                            <SmileIcon className="h-6 w-6" />
-                        </div>
-                        For Renters
-                    </h2>
-                    <ul className="space-y-4">
-                        {[
-                            { q: "How does the booking process work?", a: "Search, select dates, request booking, and pay securely." },
-                            { q: "What if the item is damaged?", a: "Document with photos and contact support immediately." },
-                            { q: "Cancellation Policy", a: "Free cancellation up to 24 hours before start date." }
-                        ].map((item, idx) => (
-                            <li key={idx} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                                <button className="text-left w-full group">
-                                    <span className="font-semibold text-gray-800 group-hover:text-cyan-600 transition-colors text-lg">{item.q}</span>
-                                    <p className="text-sm text-gray-500 mt-1">{item.a}</p>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                        <div className="bg-green-100 p-2 rounded-lg text-green-600">
-                            <UploadCloudIcon className="h-6 w-6" />
-                        </div>
-                        For Owners
-                    </h2>
-                    <ul className="space-y-4">
-                        {[
-                            { q: "How do I get paid?", a: "Direct deposit via Stripe 24h after rental start." },
-                            { q: "Insurance Coverage", a: "Learn about our $1M liability protection plan." },
-                            { q: "Creating a great listing", a: "Tips on photos, pricing, and descriptions." }
-                        ].map((item, idx) => (
-                            <li key={idx} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                                <button className="text-left w-full group">
-                                    <span className="font-semibold text-gray-800 group-hover:text-cyan-600 transition-colors text-lg">{item.q}</span>
-                                    <p className="text-sm text-gray-500 mt-1">{item.a}</p>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-            
-            <div className="text-center mt-16 bg-gray-100 rounded-xl p-8 max-w-3xl mx-auto">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Still need help?</h3>
-                <p className="text-gray-600 mb-6">Our support team is available 24/7 to assist you with any issues.</p>
-                <a href="/contactUs" className="inline-block px-8 py-3 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition-colors shadow-lg">Contact Support</a>
-            </div>
-        </div>
-    </div>
-);
+    );
+};
 
 export const ContactUsPage: React.FC = () => (
     <div className="bg-white min-h-screen">
