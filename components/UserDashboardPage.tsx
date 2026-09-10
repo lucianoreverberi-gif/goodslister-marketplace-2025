@@ -10,6 +10,7 @@ import ConnectStripeModal from './ConnectStripeModal';import DamageReportModal f
 import ReviewWizard from './ReviewWizard';
 import ConfirmActionModal from './ConfirmActionModal';
 import AgreementSignatureModal from './AgreementSignatureModal';
+import { createNotification } from '../services/notificationsService';
 
 interface UserDashboardPageProps {
     user: Session;
@@ -480,6 +481,17 @@ const BookingsManager: React.FC<{
                             signingBooking.hostSignedAt = nowIso;
                         }
                         setJustSignedIds(prev => new Set([...prev, signingBooking.id]));
+
+                        // Notify counterparty: if renter signed, notify host that check-in is unlocked
+                        if (mode === 'renting' && signingBooking.listing?.ownerId) {
+                            createNotification({
+                                userId: signingBooking.listing.ownerId,
+                                type: 'contract_signed',
+                                title: 'Renter signed the contract',
+                                message: 'Check-in is now unlocked for "' + (signingBooking.listing?.title || 'this rental') + '". You can proceed with handover.',
+                                link: '#userDashboard'
+                            }).catch(err => console.warn('Notification failed:', err));
+                        }
                         setSigningBooking(null);
                     }}
                     onClose={() => setSigningBooking(null)}
@@ -504,7 +516,21 @@ const BookingsManager: React.FC<{
                         targetId={mode === 'renting' ? reviewingBooking.listing.owner.id : reviewingBooking.renterId}
                         targetName={mode === 'renting' ? reviewingBooking.listing.owner.name : 'Renter'}
                         role={mode === 'renting' ? 'RENTER' : 'HOST'}
-                        onComplete={() => { setReviewedBookingIds(prev => new Set([...prev, reviewingBooking.id])); setReviewingBooking(null); }}
+                        onComplete={() => { 
+                        setReviewedBookingIds(prev => new Set([...prev, reviewingBooking.id])); 
+                        // Notify target that a review was published for them (best-effort)
+                        const targetId = mode === 'renting' ? reviewingBooking.listing?.ownerId : reviewingBooking.renterId;
+                        if (targetId) {
+                            createNotification({
+                                userId: targetId,
+                                type: 'review_received',
+                                title: 'You have a new review',
+                                message: 'A review for your rental of "' + (reviewingBooking.listing?.title || 'this listing') + '" has been submitted.',
+                                link: '#profile'
+                            }).catch(err => console.warn('Review notification failed:', err));
+                        }
+                        setReviewingBooking(null); 
+                    }}
                     />
                 </div>
             )}
