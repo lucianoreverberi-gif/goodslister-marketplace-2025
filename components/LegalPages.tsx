@@ -71,7 +71,7 @@ export const TermsOfServicePage: React.FC = () => (
         <p className="text-sm text-gray-500 italic mb-8">Effective Date: September 11, 2026 · Version {LEGAL_VERSION}</p>
 
         <Section id="acceptance" title="1. Acceptance of Terms">
-            <p>These Terms of Service ("Terms") constitute a legally binding agreement between you and <strong>Goodslister LLC</strong>, a Florida limited liability company ("Goodslister," "we," "us," or "our"), governing your access to and use of goodslister.com, our mobile applications, and all related services (collectively, the "Platform").</p>
+            <p>These Terms of Service ("Terms") constitute a legally binding agreement between you and <strong>Goodslister LLC</strong>, a Florida limited liability company (Florida Document Number L25000563190, principal address 810 SW 102 Terrace, Unit 105, Pembroke Pines, FL 33025) ("Goodslister," "we," "us," or "our"), governing your access to and use of goodslister.com, our mobile applications, and all related services (collectively, the "Platform").</p>
             <p className="uppercase font-bold bg-gray-100 p-4 rounded-lg text-sm">By creating an account, listing an item, booking a rental, or otherwise using the Platform, you agree to be bound by these Terms, including the binding arbitration agreement and class action waiver in Section 20. If you do not agree, do not use the Platform.</p>
         </Section>
 
@@ -203,7 +203,12 @@ export const TermsOfServicePage: React.FC = () => (
 
         <Section id="contact" title="21. Contact">
             <p>Questions about these Terms? Contact us at <a href="mailto:legal@goodslister.com">legal@goodslister.com</a>.</p>
-            <p className="text-sm text-gray-500 mt-6">Goodslister LLC<br/>Pembroke Pines, Florida</p>
+            <p className="text-sm text-gray-500 mt-6">
+                <strong>Goodslister LLC</strong><br/>
+                810 SW 102 Terrace, Unit 105<br/>
+                Pembroke Pines, FL 33025<br/>
+                Florida Document Number: L25000563190
+            </p>
         </Section>
     </LegalPageLayout>
 );
@@ -311,7 +316,11 @@ export const PrivacyPolicyPageV2: React.FC = () => (
 
         <Section id="contact-privacy" title="12. Contact Us">
             <p>Questions about this Privacy Policy or your data? Contact our Data Protection Contact at <a href="mailto:privacy@goodslister.com">privacy@goodslister.com</a>.</p>
-            <p className="text-sm text-gray-500 mt-6">Goodslister LLC<br/>Pembroke Pines, Florida</p>
+            <p className="text-sm text-gray-500 mt-6">
+                <strong>Goodslister LLC</strong><br/>
+                810 SW 102 Terrace, Unit 105<br/>
+                Pembroke Pines, FL 33025
+            </p>
         </Section>
     </LegalPageLayout>
 );
@@ -550,8 +559,14 @@ export const TrustSafetyPage: React.FC = () => (
             </ul>
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 my-4">
                 <p className="font-bold text-gray-900">Designated Agent</p>
-                <p className="text-gray-700 mt-2">Luciano Reverberi<br/>Goodslister LLC<br/>Pembroke Pines, Florida<br/>Email: <a href="mailto:legal@goodslister.com">legal@goodslister.com</a></p>
-                <p className="text-sm text-gray-500 mt-2 italic">Registered with the U.S. Copyright Office. See <a href="https://dmca.copyright.gov/" target="_blank" rel="noopener noreferrer" className="underline">dmca.copyright.gov</a>.</p>
+                <p className="text-gray-700 mt-2">
+                    Luciano Reverberi<br/>
+                    Goodslister LLC<br/>
+                    810 SW 102 Terrace, Unit 105<br/>
+                    Pembroke Pines, FL 33025<br/>
+                    Email: <a href="mailto:legal@goodslister.com">legal@goodslister.com</a>
+                </p>
+                <p className="text-sm text-gray-500 mt-2 italic">Registration with the U.S. Copyright Office pending. See <a href="https://dmca.copyright.gov/" target="_blank" rel="noopener noreferrer" className="underline">dmca.copyright.gov</a>.</p>
             </div>
             <p>We will respond to valid notices and counter-notices and terminate repeat infringers.</p>
         </Section>
