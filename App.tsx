@@ -33,6 +33,7 @@ import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage, CookiePolicyPage, DoNotSellPage } from './components/StaticPages';
 import { TermsOfServicePage, PrivacyPolicyPageV2, PaymentsTermsPage, InsuranceDisclosurePage, DisputeResolutionPage, TrustSafetyPage } from './components/LegalPages';
+import { LegalAcceptanceModal } from './components/LegalAcceptanceModal';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { CookieConsentBanner } from './components/CookieConsentBanner';
@@ -79,6 +80,28 @@ const App: React.FC = () => {
                 isHost: appData?.listings?.some((l: Listing) => l.owner?.id === session.id) || false,
             });
         }
+    }, [session?.id]);
+
+    // Legal acceptance gate — Universal Core v2.0
+    // Runs whenever the session changes to check if this user has accepted the
+    // current legal bundle. If not, LegalAcceptanceModal is rendered as a blocker.
+    const [needsLegalAcceptance, setNeedsLegalAcceptance] = useState(false);
+    useEffect(() => {
+        if (!session?.id) {
+            setNeedsLegalAcceptance(false);
+            return;
+        }
+        const url = `/api/legal/acceptance-status?userId=${encodeURIComponent(session.id)}&documentBundle=universal_core_v2_0&documentVersion=2.0`;
+        fetch(url)
+            .then((r) => r.json())
+            .then((data) => {
+                setNeedsLegalAcceptance(!data.accepted);
+            })
+            .catch((err) => {
+                console.warn('[legal acceptance check] failed, allowing app in:', err);
+                // Fail-open so a transient API/DB issue does not lock users out.
+                setNeedsLegalAcceptance(false);
+            });
     }, [session?.id]);
 
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -1180,6 +1203,14 @@ const App: React.FC = () => {
             <CookieConsentBanner />
             {consent?.analytics && <SpeedInsights />}
             
+            {session?.id && needsLegalAcceptance && (
+                <LegalAcceptanceModal
+                    userId={session.id}
+                    userName={session.name}
+                    onAccepted={() => setNeedsLegalAcceptance(false)}
+                />
+            )}
+
             {isLoginModalOpen && (
                 <LoginModal 
                     onLogin={handleLogin}
