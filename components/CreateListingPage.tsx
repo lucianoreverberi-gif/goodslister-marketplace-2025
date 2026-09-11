@@ -249,21 +249,36 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
 
     // Maps
     const locationInputRef = useRef<HTMLInputElement>(null);
+    const fullAddressInputRef = useRef<HTMLInputElement>(null);
     const [mapsLoaded, setMapsLoaded] = useState(false);
 
     useEffect(() => {
         const initAutocomplete = () => {
-            if (locationInputRef.current && (window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
+            if (!(window as any).google || !(window as any).google.maps || !(window as any).google.maps.places) return;
+            // City-level location input (top of form)
+            if (locationInputRef.current) {
                 try {
-                    const autocomplete = new (window as any).google.maps.places.Autocomplete(locationInputRef.current, { types: ['geocode'] });
-                    autocomplete.addListener('place_changed', () => {
-                        const place = autocomplete.getPlace();
+                    const locAutocomplete = new (window as any).google.maps.places.Autocomplete(locationInputRef.current, { types: ['geocode'] });
+                    locAutocomplete.addListener('place_changed', () => {
+                        const place = locAutocomplete.getPlace();
                         if (place.formatted_address) setLocation(place.formatted_address);
                         else if (place.name) setLocation(place.name);
                     });
                     setMapsLoaded(true);
                 } catch (e) {
                     setMapsLoaded(false);
+                }
+            }
+            // Full street-address input (pickup/return, only in signed PDF)
+            if (fullAddressInputRef.current) {
+                try {
+                    const addrAutocomplete = new (window as any).google.maps.places.Autocomplete(fullAddressInputRef.current, { types: ['address'] });
+                    addrAutocomplete.addListener('place_changed', () => {
+                        const place = addrAutocomplete.getPlace();
+                        if (place.formatted_address) setFullAddress(place.formatted_address);
+                    });
+                } catch (e) {
+                    // silent — city-level autocomplete still works
                 }
             }
         };
@@ -347,11 +362,16 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         for (const file of Array.from(files) as File[]) {
             try {
                 const response = await fetch(`/api/upload-image?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
-                if (!response.ok) throw new Error('Upload failed');
+                if (!response.ok) {
+                    // Parse the error body so the user sees the real reason
+                    const errBody = await response.json().catch(() => ({}));
+                    const reason = errBody.userMessage || errBody.error || `HTTP ${response.status}`;
+                    throw new Error(reason);
+                }
                 const { url } = await response.json();
                 uploadedUrls.push(url);
-            } catch (error) {
-                alert(`Error uploading ${file.name}`);
+            } catch (error: any) {
+                alert(`Could not upload "${file.name}": ${error?.message || 'Unknown error'}`);
             }
         }
         setImageUrls(prev => [...prev, ...uploadedUrls]);
@@ -693,7 +713,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-cyan-900">Full Pickup/Return Address</label>
-                                <input type="text" value={fullAddress} onChange={e => setFullAddress(e.target.value)} className="mt-1 block w-full border-cyan-200 rounded-md shadow-sm text-sm" placeholder="E.g., 123 Ocean Drive, Miami Beach, FL 33139, USA" />
+                                <input ref={fullAddressInputRef} type="text" value={fullAddress} onChange={e => setFullAddress(e.target.value)} className="mt-1 block w-full border-cyan-200 rounded-md shadow-sm text-sm" placeholder="Start typing your address..." />
                                 <p className="mt-1 text-xs text-cyan-700">Full street address appears only in the signed agreement PDF, never in the public listing.</p>
                             </div>
                         </div>
@@ -1091,14 +1111,14 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                   </div>
                                   <div className="flex-1">
                                     <span className="block font-bold text-sm">
-                                      {getPreviewMode() === 1 && 'Your listing will use Peer Waiver protection (Mode 1)'}
-                                      {getPreviewMode() === 2 && 'Your listing will use P2P Insurance protection (Mode 2)'}
-                                      {getPreviewMode() === 3 && 'Your listing will use Bareboat Charter protection (Mode 3)'}
+                                      {getPreviewMode() === 1 && 'Simple Protection'}
+                                      {getPreviewMode() === 2 && 'Insurance Required'}
+                                      {getPreviewMode() === 3 && 'Full Operator Responsibility'}
                                     </span>
                                     <p className="text-xs mt-1 opacity-80">
-                                      {getPreviewMode() === 1 && 'Low-risk non-motorized gear. Simple click-wrap agreement. Security deposit protects owners.'}
-                                      {getPreviewMode() === 2 && 'Motorized items require insurance declaration. Renter accepts P2P coverage at checkout.'}
-                                      {getPreviewMode() === 3 && 'High-value assets use Bareboat Demise Charter framework. Renter takes full operational responsibility.'}
+                                      {getPreviewMode() === 1 && 'This is low-risk gear. Renters sign a short digital agreement at checkout, and your security deposit covers minor damages.'}
+                                      {getPreviewMode() === 2 && 'Motorized items need extra protection. You will need to declare your insurance policy when publishing, and renters must accept coverage at checkout.'}
+                                      {getPreviewMode() === 3 && 'High-value item. At checkout the renter accepts full operator responsibility under Florida law — this is the strongest legal protection for you.'}
                                     </p>
                                   </div>
                                 </div>

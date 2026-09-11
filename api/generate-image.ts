@@ -26,8 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const { title, locationContext, customPrompt } = req.body || {};
-    if (!title || typeof title !== 'string') {
-        return res.status(400).json({ error: 'title is required' });
+    // Either a title OR a customPrompt is required (customPrompt takes precedence when both given)
+    if (!customPrompt && (!title || typeof title !== 'string' || !title.trim())) {
+        return res.status(400).json({ error: 'title or customPrompt is required' });
     }
 
     try {
