@@ -28,9 +28,23 @@ interface LegalAcceptanceModalProps {
     userId: string;
     userName?: string;
     onAccepted: () => void;
+    onCancel?: () => void;
+    reason?: 'listing' | 'booking' | 'generic';
 }
 
-export const LegalAcceptanceModal: React.FC<LegalAcceptanceModalProps> = ({ userId, userName, onAccepted }) => {
+export const LegalAcceptanceModal: React.FC<LegalAcceptanceModalProps> = ({ userId, userName, onAccepted, onCancel, reason = 'generic' }) => {
+
+    const headline = {
+        listing: 'Before you list an item',
+        booking: 'Before you book',
+        generic: 'One quick step',
+    }[reason];
+
+    const subtitle = {
+        listing: 'Please review and accept our platform terms so listers and renters are protected.',
+        booking: 'Please review and accept our platform terms so this booking is properly protected.',
+        generic: 'Please review and accept our platform terms. These documents govern how you use Goodslister and protect both listers and renters.',
+    }[reason];
     const [checked, setChecked] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -72,13 +86,13 @@ export const LegalAcceptanceModal: React.FC<LegalAcceptanceModalProps> = ({ user
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
                 <div className="bg-gradient-to-br from-slate-900 to-cyan-950 text-white p-6 sm:p-8">
                     <span className="text-cyan-400 font-bold tracking-wider uppercase text-xs">
-                        Welcome{userName ? `, ${userName.split(' ')[0]}` : ''}
+                        {userName ? `${userName.split(' ')[0]}, quick check` : 'Platform Terms'}
                     </span>
                     <h2 id="legal-modal-title" className="text-2xl sm:text-3xl font-extrabold mt-2">
-                        One quick step before you start
+                        {headline}
                     </h2>
                     <p className="text-gray-300 mt-3 text-sm sm:text-base">
-                        Please review and accept our platform terms. These documents govern how you use Goodslister and protect both listers and renters.
+                        {subtitle}
                     </p>
                 </div>
 
@@ -132,13 +146,24 @@ export const LegalAcceptanceModal: React.FC<LegalAcceptanceModalProps> = ({ user
                 </div>
 
                 <div className="border-t border-gray-100 p-4 sm:p-6 bg-gray-50">
-                    <button
-                        onClick={handleAccept}
-                        disabled={!checked || submitting}
-                        className="w-full bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition text-base shadow-lg"
-                    >
-                        {submitting ? 'Recording your acceptance…' : 'Accept & Continue'}
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        {onCancel && (
+                            <button
+                                onClick={onCancel}
+                                disabled={submitting}
+                                className="sm:w-auto px-6 py-3 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 font-medium rounded-xl transition text-base"
+                            >
+                                Not now
+                            </button>
+                        )}
+                        <button
+                            onClick={handleAccept}
+                            disabled={!checked || submitting}
+                            className="flex-1 bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition text-base shadow-lg"
+                        >
+                            {submitting ? 'Recording your acceptance…' : 'Accept & Continue'}
+                        </button>
+                    </div>
                     <p className="text-xs text-gray-500 text-center mt-3">
                         Your acceptance is timestamped and recorded per the ESIGN Act (15 U.S.C. § 7001) and Fla. Stat. § 668.004.
                     </p>
