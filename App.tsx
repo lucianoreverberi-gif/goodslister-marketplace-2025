@@ -32,6 +32,7 @@ import ChatLayout from './components/chat/ChatLayout';
 import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage, CookiePolicyPage, DoNotSellPage } from './components/StaticPages';
+import { TermsOfServicePage, PrivacyPolicyPageV2, PaymentsTermsPage, InsuranceDisclosurePage, DisputeResolutionPage, TrustSafetyPage } from './components/LegalPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { CookieConsentBanner } from './components/CookieConsentBanner';
@@ -1088,13 +1089,21 @@ const App: React.FC = () => {
             case 'contactUs':
                 return <ContactUsPage />;
             case 'terms':
-                return <TermsPage />;
+                return <TermsOfServicePage />;
             case 'privacyPolicy':
-                return <PrivacyPolicyPage />;
+                return <PrivacyPolicyPageV2 />;
             case 'cookiePolicy':
                 return <CookiePolicyPage />;
             case 'doNotSell':
                 return <DoNotSellPage />;
+            case 'payments':
+                return <PaymentsTermsPage />;
+            case 'insuranceDisclosure':
+                return <InsuranceDisclosurePage />;
+            case 'disputeResolution':
+                return <DisputeResolutionPage />;
+            case 'trustSafety':
+                return <TrustSafetyPage />;
             case 'howItWorks':
                 return <HowItWorksPage />;
             case 'floridaCompliance':
