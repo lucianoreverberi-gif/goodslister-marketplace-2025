@@ -222,21 +222,21 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
                         
                         <div className="flex flex-wrap gap-2">
                             {INSPIRATION_CHIPS.vibes.map((chip, idx) => (
-                                <button key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
+                                <button type="button" key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
                                     {chip.label}
                                 </button>
                             ))}
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {INSPIRATION_CHIPS.lighting.map((chip, idx) => (
-                                <button key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
+                                <button type="button" key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
                                     {chip.label}
                                 </button>
                             ))}
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {INSPIRATION_CHIPS.action.map((chip, idx) => (
-                                <button key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
+                                <button type="button" key={idx} onClick={() => addInspiration(chip.text)} className="text-xs bg-white border border-gray-200 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 text-gray-600 px-3 py-1.5 rounded-full transition-all">
                                     {chip.label}
                                 </button>
                             ))}
@@ -246,7 +246,7 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
 
                 {/* Generate Action */}
                 {!generatedImage && (
-                    <button 
+                    <button type="button" 
                         onClick={handleGenerate} 
                         disabled={isGenerating || !isFormValid}
                         className="w-full py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.01] active:scale-[0.99] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
@@ -301,13 +301,13 @@ const AICoverGeneratorStep: React.FC<AICoverGeneratorStepProps> = ({ realPhotoCo
                             </div>
 
                             <div className="flex gap-3">
-                                <button 
+                                <button type="button" 
                                     onClick={() => setGeneratedImage(null)} 
                                     className="flex-1 py-2.5 border border-gray-300 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     Discard & Edit
                                 </button>
-                                <button 
+                                <button type="button" 
                                     onClick={handleApply} 
                                     disabled={!hasAgreed}
                                     className="flex-1 py-2.5 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed shadow-sm flex justify-center items-center gap-2 transition-all"
