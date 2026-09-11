@@ -286,23 +286,15 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         setIsSubmitting(true);
         setSubmitMessage('');
 
-        // Confirm Stripe Connect status for secure payouts
+        // Fetch Stripe Connect status silently — does NOT block listing creation.
+        // Listers can publish without Stripe. Stripe Connect is required only when
+        // they accept their first booking (payout gate is enforced elsewhere).
         try {
             const checkRes = await fetch(`/api/stripe/connect/check-status?userId=${currentUser.id}`);
             const checkData = await checkRes.json();
-            if (!checkRes.ok || !checkData.charges_enabled) {
-                setChargesEnabled(false);
-                setSubmitMessage('No puedes publicar anuncios hasta configurar tu cuenta de Stripe Connect.');
-                setIsSubmitting(false);
-                return;
-            } else {
-                setChargesEnabled(true);
-            }
+            setChargesEnabled(checkRes.ok && !!checkData.charges_enabled);
         } catch (e) {
-            console.error('Error validation stripe onboarding:', e);
-            setSubmitMessage('Error al validar cuenta de cobros.');
-            setIsSubmitting(false);
-            return;
+            console.warn('[CreateListing] Stripe status check failed, allowing anyway:', e);
         }
 
         if (!title || !category || !price || !location || !description || imageUrls.length === 0 || !itemValue || parseFloat(itemValue) <= 0) {
@@ -978,13 +970,13 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                         </div>
 
                         {chargesEnabled === false && (
-                            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-left">
+                            <div className="bg-cyan-50 rounded-2xl p-5 border border-cyan-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-left">
                                 <div className="space-y-1">
-                                    <h4 className="text-sm font-extrabold text-amber-950 uppercase tracking-widest flex items-center gap-1.5">
-                                        <InfoIcon className="h-4 w-4 text-amber-500" /> Configuración de cobros requerida
+                                    <h4 className="text-sm font-extrabold text-cyan-950 uppercase tracking-widest flex items-center gap-1.5">
+                                        <InfoIcon className="h-4 w-4 text-cyan-600" /> Configura tus cobros (opcional ahora)
                                     </h4>
                                     <p className="text-xs text-slate-700 leading-relaxed max-w-xl">
-                                        ¡Hola! Como tu Coach de Éxito en Alquileres, queremos asegurarnos de que cobres tu dinero de forma segura. Antes de poder publicar o editar un anuncio, necesitas conectar una cuenta de cobros mediante Stripe Connect. ¡Solo te tomará un minuto!
+                                        Podés publicar este anuncio ahora sin problemas. Necesitarás conectar <strong>Stripe Connect</strong> antes de aceptar tu primera reserva — te toma menos de un minuto y podés hacerlo ahora o después.
                                     </p>
                                 </div>
                                 <button
@@ -992,9 +984,9 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                     onClick={() => {
                                         setIsConnectModalOpen(true);
                                     }}
-                                    className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl shadow-md transition-all shrink-0 active:scale-95 whitespace-nowrap"
+                                    className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-black rounded-xl shadow-md transition-all shrink-0 active:scale-95 whitespace-nowrap"
                                 >
-                                    Vincular Stripe Connect
+                                    Configurar Stripe ahora
                                 </button>
                             </div>
                         )}
@@ -1003,7 +995,7 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             <button type="button" onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
                             <button 
                                 type="submit" 
-                                disabled={isSubmitting || chargesEnabled === false} 
+                                disabled={isSubmitting} 
                                 className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-md hover:bg-cyan-700 disabled:opacity-50"
                             >
                                 {isSubmitting ? 'Saving...' : isEditing ? 'Update Listing' : 'Publish Listing'}
