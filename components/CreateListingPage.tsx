@@ -115,7 +115,138 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
     const [submitMessage, setSubmitMessage] = useState('');
     const [imageUrls, setImageUrls] = useState<string[]>(initialData?.images || []);
     const [isUploading, setIsUploading] = useState(false);
+
+    // ---------------------------------------------------------------------
+    // DRAFT AUTO-SAVE (localStorage) — protects the user's progress
+    // Draft is auto-saved on every change (debounced 800ms) and manually via
+    // "Save Draft" button. Loaded on mount for NEW listings only (not edits).
+    // Cleared after successful publish.
+    // ---------------------------------------------------------------------
+    const draftKey = currentUser?.id ? `goodslister_listing_draft_${currentUser.id}` : null;
+    const [draftLoaded, setDraftLoaded] = useState(false);
+    const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+    const [showDraftBanner, setShowDraftBanner] = useState(false);
+    const [showSavedToast, setShowSavedToast] = useState(false);
     
+    // Load draft on mount (NEW listings only)
+    useEffect(() => {
+        if (isEditing || !draftKey || draftLoaded) return;
+        try {
+            const raw = localStorage.getItem(draftKey);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            if (draft.title) setTitle(draft.title);
+            if (draft.description) setDescription(draft.description);
+            if (draft.category) setCategory(draft.category);
+            if (draft.subcategory) setSubcategory(draft.subcategory);
+            if (draft.hostType) setHostType(draft.hostType);
+            if (draft.businessName) setBusinessName(draft.businessName);
+            if (draft.businessEin) setBusinessEin(draft.businessEin);
+            if (draft.businessLicenseUrl) setBusinessLicenseUrl(draft.businessLicenseUrl);
+            if (typeof draft.insuranceDeclared === 'boolean') setInsuranceDeclared(draft.insuranceDeclared);
+            if (draft.insuranceProofUrl) setInsuranceProofUrl(draft.insuranceProofUrl);
+            if (draft.listingType) setListingType(draft.listingType);
+            if (Array.isArray(draft.features)) setFeatures(draft.features);
+            if (typeof draft.isInstantBook === 'boolean') setIsInstantBook(draft.isInstantBook);
+            if (draft.contractPreference) setContractPreference(draft.contractPreference);
+            if (draft.customContractUrl) setCustomContractUrl(draft.customContractUrl);
+            if (draft.location) setLocation(draft.location);
+            if (draft.brand) setBrand(draft.brand);
+            if (draft.model) setModel(draft.model);
+            if (draft.fullAddress) setFullAddress(draft.fullAddress);
+            if (draft.videoUrl) setVideoUrl(draft.videoUrl);
+            if (draft.ownerRules) setOwnerRules(draft.ownerRules);
+            if (typeof draft.licenseRequired === 'boolean') setLicenseRequired(draft.licenseRequired);
+            if (draft.licenseType) setLicenseType(draft.licenseType);
+            if (draft.pricingType) setPricingType(draft.pricingType);
+            if (draft.price) setPrice(draft.price);
+            if (draft.itemValue) setItemValue(draft.itemValue);
+            if (draft.securityDeposit) setSecurityDeposit(draft.securityDeposit);
+            if (draft.priceUnit) setPriceUnit(draft.priceUnit);
+            if (draft.operatorLicenseId) setOperatorLicenseId(draft.operatorLicenseId);
+            if (draft.engineCC) setEngineCC(draft.engineCC);
+            if (draft.fuelPolicy) setFuelPolicy(draft.fuelPolicy);
+            if (draft.skillLevel) setSkillLevel(draft.skillLevel);
+            if (draft.whatsIncluded) setWhatsIncluded(draft.whatsIncluded);
+            if (draft.itinerary) setItinerary(draft.itinerary);
+            if (Array.isArray(draft.imageUrls)) setImageUrls(draft.imageUrls);
+            if (draft.savedAt) setDraftSavedAt(new Date(draft.savedAt));
+            setDraftLoaded(true);
+            setShowDraftBanner(true);
+        } catch (e) {
+            console.warn('[CreateListing] Failed to load draft:', e);
+        }
+    }, [isEditing, draftKey, draftLoaded]);
+
+    // Auto-save draft on any relevant field change (debounced 800ms)
+    useEffect(() => {
+        if (isEditing || !draftKey) return;
+        const timeoutId = setTimeout(() => {
+            try {
+                const draft = {
+                    title, description, category, subcategory, hostType,
+                    businessName, businessEin, businessLicenseUrl,
+                    insuranceDeclared, insuranceProofUrl, listingType, features,
+                    isInstantBook, contractPreference, customContractUrl,
+                    location, brand, model, fullAddress, videoUrl, ownerRules,
+                    licenseRequired, licenseType, pricingType, price, itemValue,
+                    securityDeposit, priceUnit, operatorLicenseId, engineCC,
+                    fuelPolicy, skillLevel, whatsIncluded, itinerary, imageUrls,
+                    savedAt: new Date().toISOString(),
+                };
+                localStorage.setItem(draftKey, JSON.stringify(draft));
+                setDraftSavedAt(new Date());
+            } catch (e) {
+                console.warn('[CreateListing] Draft auto-save failed:', e);
+            }
+        }, 800);
+        return () => clearTimeout(timeoutId);
+    }, [isEditing, draftKey, title, description, category, subcategory, hostType,
+        businessName, businessEin, businessLicenseUrl, insuranceDeclared, insuranceProofUrl,
+        listingType, features, isInstantBook, contractPreference, customContractUrl,
+        location, brand, model, fullAddress, videoUrl, ownerRules, licenseRequired,
+        licenseType, pricingType, price, itemValue, securityDeposit, priceUnit,
+        operatorLicenseId, engineCC, fuelPolicy, skillLevel, whatsIncluded, itinerary, imageUrls]);
+
+    const handleSaveDraftClick = () => {
+        if (!draftKey) return;
+        try {
+            const draft = {
+                title, description, category, subcategory, hostType,
+                businessName, businessEin, businessLicenseUrl,
+                insuranceDeclared, insuranceProofUrl, listingType, features,
+                isInstantBook, contractPreference, customContractUrl,
+                location, brand, model, fullAddress, videoUrl, ownerRules,
+                licenseRequired, licenseType, pricingType, price, itemValue,
+                securityDeposit, priceUnit, operatorLicenseId, engineCC,
+                fuelPolicy, skillLevel, whatsIncluded, itinerary, imageUrls,
+                savedAt: new Date().toISOString(),
+            };
+            localStorage.setItem(draftKey, JSON.stringify(draft));
+            setDraftSavedAt(new Date());
+            setShowSavedToast(true);
+            setTimeout(() => setShowSavedToast(false), 2500);
+        } catch (e) {
+            console.warn('[CreateListing] Draft manual save failed:', e);
+        }
+    };
+
+    const handleDiscardDraft = () => {
+        if (!draftKey) return;
+        if (!confirm('Discard your saved draft? All the fields you filled will be cleared.')) return;
+        localStorage.removeItem(draftKey);
+        setShowDraftBanner(false);
+        // Reset all fields to blank
+        setTitle(''); setDescription(''); setCategory(''); setSubcategory('');
+        setFeatures(['']); setLocation(''); setBrand(''); setModel(''); setFullAddress('');
+        setVideoUrl(''); setOwnerRules(''); setLicenseRequired(false); setLicenseType('');
+        setPricingType('daily'); setPrice(''); setItemValue(''); setSecurityDeposit('');
+        setPriceUnit('item'); setOperatorLicenseId(''); setEngineCC(''); setFuelPolicy('extra');
+        setSkillLevel('all_levels'); setWhatsIncluded(''); setItinerary(''); setImageUrls([]);
+        setInsuranceDeclared(false); setInsuranceProofUrl('');
+        setBusinessName(''); setBusinessEin(''); setBusinessLicenseUrl('');
+    };
+
     // Maps
     const locationInputRef = useRef<HTMLInputElement>(null);
     const [mapsLoaded, setMapsLoaded] = useState(false);
@@ -372,6 +503,8 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
         try {
             const success = await onSubmit(listingData);
             if (success) {
+                // Clear the draft — listing was published successfully
+                if (draftKey) localStorage.removeItem(draftKey);
                 setSubmitMessage('Success! Redirecting...');
                 setTimeout(onBack, 2000);
             } else {
@@ -415,6 +548,37 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
+                        {showDraftBanner && (
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-start gap-3">
+                                    <span className="text-xl">📝</span>
+                                    <div>
+                                        <p className="text-sm font-bold text-cyan-950">Draft loaded from your previous session</p>
+                                        {draftSavedAt && (
+                                            <p className="text-xs text-cyan-700 mt-0.5">
+                                                Saved {draftSavedAt.toLocaleString()}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDraftBanner(false)}
+                                        className="text-xs px-3 py-1.5 text-cyan-700 hover:text-cyan-900 font-medium"
+                                    >
+                                        Dismiss
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleDiscardDraft}
+                                        className="text-xs px-3 py-1.5 bg-white border border-cyan-300 text-cyan-700 hover:bg-red-50 hover:border-red-300 hover:text-red-700 rounded-lg font-medium"
+                                    >
+                                        Discard draft
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
                             <div>
@@ -991,15 +1155,32 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                             </div>
                         )}
 
-                        <div className="pt-6 border-t flex justify-end gap-4">
-                            <button type="button" onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
-                            <button 
-                                type="submit" 
-                                disabled={isSubmitting} 
-                                className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-md hover:bg-cyan-700 disabled:opacity-50"
-                            >
-                                {isSubmitting ? 'Saving...' : isEditing ? 'Update Listing' : 'Publish Listing'}
-                            </button>
+                        <div className="pt-6 border-t flex flex-col sm:flex-row justify-between gap-4">
+                            <div className="flex gap-3">
+                                <button type="button" onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
+                                {!isEditing && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveDraftClick}
+                                        disabled={isSubmitting}
+                                        className="px-4 py-2 border border-cyan-600 text-cyan-700 bg-white rounded-md hover:bg-cyan-50 disabled:opacity-50 font-medium"
+                                    >
+                                        Save as Draft
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {showSavedToast && (
+                                    <span className="text-sm text-green-700 font-medium">✓ Draft saved</span>
+                                )}
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="px-6 py-2 bg-cyan-600 text-white font-bold rounded-md hover:bg-cyan-700 disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Saving...' : isEditing ? 'Update Listing' : 'Publish Listing'}
+                                </button>
+                            </div>
                         </div>
                         {submitMessage && <p className="text-center text-sm font-medium text-gray-700">{submitMessage}</p>}
                     </form>
