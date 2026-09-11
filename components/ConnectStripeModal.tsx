@@ -38,7 +38,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
             }
         } catch (err: any) {
             console.error('Stripe connect error:', err);
-            setError(err.message || 'Hubo un error al iniciar la conexión con Stripe. Por favor intenta de nuevo.');
+            setError(err.message || 'There was an error starting the Stripe connection. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -65,11 +65,11 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                     </div>
 
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
-                        ¡Prepara tu cuenta para ganar dinero seguro!
+                        Get ready to earn safely!
                     </h3>
                     
                     <p className="text-slate-600 text-sm mt-3 leading-relaxed">
-                        ¡Gran iniciativa! Para comenzar a recibir tus ingresos por alquileres directamente en tu banco, utilizamos <strong>Stripe Connect Express</strong>, la plataforma de procesamiento de cobros líder en el mundo.
+                        Great move! To start receiving your rental income directly to your bank, we use <strong>Stripe Connect Express</strong>, the world's leading payment processing platform.
                     </p>
 
                     {/* Insider Advice box */}
@@ -80,7 +80,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                         <div>
                             <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Smart Pro-Tip</h4>
                             <p className="text-xs text-slate-650 mt-1 leading-relaxed">
-                                ¡Olvídate de la incertidumbre! Al conectar tu cuenta de Stripe, activas inmediatamente la capacidad de configurar <strong>Depósitos de Garantía</strong> para proteger tus equipos y habilitas nuestro <strong>Smart Legal Shield</strong>. Tú pones las reglas, Stripe asegura los fondos.
+                                Forget the uncertainty! Connecting your Stripe account instantly enables <strong>Security Deposits</strong> to protect your gear and activates our <strong>Smart Legal Shield</strong>. You set the rules, Stripe secures the funds.
                             </p>
                         </div>
                     </div>
@@ -92,7 +92,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                                 <CheckCircleIcon className="h-4 w-4" />
                             </div>
                             <p className="text-xs text-slate-600 leading-normal">
-                                <strong className="text-slate-950">Garantía sin riesgo:</strong> Retención automática del depósito antes de cada entrega de equipo.
+                                <strong className="text-slate-950">Risk-free guarantee:</strong> Automatic deposit hold before every rental handover.
                             </p>
                         </div>
                         <div className="flex items-start gap-3">
@@ -100,7 +100,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                                 <CheckCircleIcon className="h-4 w-4" />
                             </div>
                             <p className="text-xs text-slate-600 leading-normal">
-                                <strong className="text-slate-950">Pagos ultra-rápidos:</strong> Fondos directo a tu cuenta bancaria o de débito sin esperas intermedias.
+                                <strong className="text-slate-950">Ultra-fast payouts:</strong> Funds sent directly to your bank or debit card with no middleman delays.
                             </p>
                         </div>
                         <div className="flex items-start gap-3">
@@ -108,7 +108,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                                 <CheckCircleIcon className="h-4 w-4" />
                             </div>
                             <p className="text-xs text-slate-600 leading-normal">
-                                <strong className="text-slate-950">Control absoluto:</strong> Panel de control Express personal donde puedes revisar transferencias y requisitos legales.
+                                <strong className="text-slate-950">Full control:</strong> Personal Express dashboard to review transfers and legal requirements.
                             </p>
                         </div>
                     </div>
@@ -124,7 +124,7 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                             onClick={onClose}
                             className="w-full sm:w-1/3 py-3.5 bg-slate-50 text-slate-700 text-sm font-bold rounded-2xl hover:bg-slate-100 transition-colors"
                         >
-                            En otro momento
+                            Not now
                         </button>
                         <button
                             onClick={handleConnect}
@@ -134,12 +134,12 @@ const ConnectStripeModal: React.FC<ConnectStripeModalProps> = ({ user, onClose, 
                             {isLoading ? (
                                 <>
                                     <RefreshCwIcon className="h-4 w-4 animate-spin" />
-                                    <span>Iniciando conexión...</span>
+                                    <span>Starting connection...</span>
                                 </>
                             ) : (
                                 <>
                                     <LandmarkIcon className="h-4 w-4" />
-                                    <span>Conectar mi cuenta</span>
+                                    <span>Connect my account</span>
                                 </>
                             )}
                         </button>
