@@ -47,6 +47,10 @@ const Footer: React.FC<FooterProps> = ({ logoUrl, onNavigate }) => {
                             <ul className="mt-4 space-y-4">
                                 <li><a href="/terms" onClick={(e) => handleLinkClick(e, 'terms')} className="text-base text-gray-600 hover:text-gray-900">Terms of Service</a></li>
                                 <li><a href="/privacy" onClick={(e) => handleLinkClick(e, 'privacyPolicy')} className="text-base text-gray-600 hover:text-gray-900">Privacy Policy</a></li>
+                                <li><a href="/payments" onClick={(e) => handleLinkClick(e, 'payments')} className="text-base text-gray-600 hover:text-gray-900">Payments Terms</a></li>
+                                <li><a href="/insurance-disclosure" onClick={(e) => handleLinkClick(e, 'insuranceDisclosure')} className="text-base text-gray-600 hover:text-gray-900">Insurance & Verification</a></li>
+                                <li><a href="/dispute-resolution" onClick={(e) => handleLinkClick(e, 'disputeResolution')} className="text-base text-gray-600 hover:text-gray-900">Dispute Resolution</a></li>
+                                <li><a href="/trust-safety" onClick={(e) => handleLinkClick(e, 'trustSafety')} className="text-base text-gray-600 hover:text-gray-900">Trust & Safety</a></li>
                                 <li><a href="/cookies" onClick={(e) => handleLinkClick(e, 'cookiePolicy')} className="text-base text-gray-600 hover:text-gray-900">Cookie Policy</a></li>
                                 <li><a href="/do-not-sell" onClick={(e) => handleLinkClick(e, 'doNotSell')} className="text-base text-gray-600 hover:text-gray-900">Do Not Sell My Info (CA)</a></li>
                                 <li>
