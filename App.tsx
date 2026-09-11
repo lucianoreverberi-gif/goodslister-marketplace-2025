@@ -33,6 +33,7 @@ import ChatInboxModal from './components/ChatModal';
 import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage, CookiePolicyPage, DoNotSellPage } from './components/StaticPages';
 import { TermsOfServicePage, PrivacyPolicyPageV2, PaymentsTermsPage, InsuranceDisclosurePage, DisputeResolutionPage, TrustSafetyPage } from './components/LegalPages';
+import { LegalAcceptanceModal } from './components/LegalAcceptanceModal';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { CookieConsentBanner } from './components/CookieConsentBanner';
@@ -80,6 +81,46 @@ const App: React.FC = () => {
             });
         }
     }, [session?.id]);
+
+    // Legal acceptance gate — Universal Core v2.0
+    // Silently checks status on session change. The modal is triggered on-demand
+    // (before create-listing or booking actions) rather than at login, so users
+    // can browse the marketplace without friction.
+    const [needsLegalAcceptance, setNeedsLegalAcceptance] = useState(false);
+    const [hasAcceptedLegal, setHasAcceptedLegal] = useState<boolean | null>(null); // null = unknown, true/false = known
+    const [pendingLegalAction, setPendingLegalAction] = useState<{ fn: () => void; reason: 'listing' | 'booking' | 'generic' } | null>(null);
+    const [legalReason, setLegalReason] = useState<'listing' | 'booking' | 'generic'>('generic');
+    useEffect(() => {
+        if (!session?.id) {
+            setHasAcceptedLegal(null);
+            return;
+        }
+        const url = `/api/legal/acceptance-status?userId=${encodeURIComponent(session.id)}&documentBundle=universal_core_v2_0&documentVersion=2.0`;
+        fetch(url)
+            .then((r) => r.json())
+            .then((data) => setHasAcceptedLegal(!!data.accepted))
+            .catch((err) => {
+                console.warn('[legal acceptance check] failed, defaulting to accepted:', err);
+                // Fail-open: if the check fails, assume accepted so users are not blocked.
+                setHasAcceptedLegal(true);
+            });
+    }, [session?.id]);
+
+    // Gate for actions that require Universal Core acceptance.
+    // If user has accepted (or not logged in), the action fires immediately.
+    // Otherwise the modal appears with the action queued.
+    const requireLegalAcceptance = useCallback(
+        (reason: 'listing' | 'booking' | 'generic', onAccepted: () => void) => {
+            if (!session?.id || hasAcceptedLegal === true) {
+                onAccepted();
+                return;
+            }
+            setLegalReason(reason);
+            setPendingLegalAction({ fn: onAccepted, reason });
+            setNeedsLegalAcceptance(true);
+        },
+        [session?.id, hasAcceptedLegal]
+    );
 
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     
@@ -180,6 +221,10 @@ const App: React.FC = () => {
     };
 
     const handleNavigate = useCallback((newPage: Page) => {
+        // Gate sensitive routes behind legal acceptance
+        if (newPage === 'createListing') {
+            return requireLegalAcceptance('listing', () => setPage('createListing'));
+        }
         setPage(newPage);
         window.location.hash = newPage;
         window.scrollTo(0, 0);
@@ -1180,6 +1225,25 @@ const App: React.FC = () => {
             <CookieConsentBanner />
             {consent?.analytics && <SpeedInsights />}
             
+            {session?.id && needsLegalAcceptance && (
+                <LegalAcceptanceModal
+                    userId={session.id}
+                    userName={session.name}
+                    reason={legalReason}
+                    onAccepted={() => {
+                        setNeedsLegalAcceptance(false);
+                        setHasAcceptedLegal(true);
+                        const action = pendingLegalAction;
+                        setPendingLegalAction(null);
+                        if (action) action.fn();
+                    }}
+                    onCancel={() => {
+                        setNeedsLegalAcceptance(false);
+                        setPendingLegalAction(null);
+                    }}
+                />
+            )}
+
             {isLoginModalOpen && (
                 <LoginModal 
                     onLogin={handleLogin}
