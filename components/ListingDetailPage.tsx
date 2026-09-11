@@ -241,7 +241,7 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = (props) => (
     </Elements>
 );
 
-const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile, similarListings = [], onListingClick }) => {
+const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegalAcceptance?: (category: string, itemTitle: string, onAccepted: () => void) => void }> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile, similarListings = [], onListingClick, requireBookingLegalAcceptance }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     
     // ANALYTICS: track listing view on mount + when listing changes
@@ -352,9 +352,13 @@ const ListingDetailPage: React.FC<ListingDetailPageProps> = ({ listing, onBack, 
             if (statusRes.ok) {
                 const statusData = await statusRes.json();
                 
-                // If verified fresh from DB, skip modal and proceed
+                // If verified fresh from DB, gate booking legal acceptance BEFORE payment modal
                 if (statusData.verified === true) {
-                    setShowPaymentModal(true);
+                    if (requireBookingLegalAcceptance) {
+                        requireBookingLegalAcceptance(listing.category, listing.title, () => setShowPaymentModal(true));
+                    } else {
+                        setShowPaymentModal(true);
+                    }
                     return;
                 }
                 

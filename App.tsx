@@ -34,6 +34,18 @@ import ExplorePage from './components/ExplorePage';
 import { AboutUsPage, CareersPage, PressPage, HelpCenterPage, ContactUsPage, TermsPage, PrivacyPolicyPage, HowItWorksPage, CookiePolicyPage, DoNotSellPage } from './components/StaticPages';
 import { TermsOfServicePage, PrivacyPolicyPageV2, PaymentsTermsPage, InsuranceDisclosurePage, DisputeResolutionPage, TrustSafetyPage } from './components/LegalPages';
 import { LegalAcceptanceModal } from './components/LegalAcceptanceModal';
+import { BookingLegalModal } from './components/BookingLegalModal';
+import {
+    TransactionalCorePage,
+    AnnexMotorcyclesPage,
+    AnnexBikesPage,
+    AnnexBoatsPage,
+    AnnexCampingPage,
+    AnnexWinterSportsPage,
+    AnnexWaterSportsPage,
+    AnnexRVsPage,
+    AnnexATVsPage,
+} from './components/LegalBookingPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { CookieConsentBanner } from './components/CookieConsentBanner';
@@ -120,6 +132,52 @@ const App: React.FC = () => {
             setNeedsLegalAcceptance(true);
         },
         [session?.id, hasAcceptedLegal]
+    );
+
+    // Fase 3: Booking-time gate for Transactional Core + Category Annex.
+    // Checks two bundles (transactional_core_v2_0 + annex_<category>_v2_0). If either
+    // is missing, shows BookingLegalModal with the applicable category-specific annex.
+    const [bookingLegalRequest, setBookingLegalRequest] = useState<{
+        category: string;
+        itemTitle: string;
+        onAccepted: () => void;
+    } | null>(null);
+
+    const requireBookingLegalAcceptance = useCallback(
+        async (category: string, itemTitle: string, onAccepted: () => void) => {
+            if (!session?.id) {
+                onAccepted();
+                return;
+            }
+            // Check both bundles: transactional core + specific annex
+            const annexId = `annex_${category.toLowerCase().replace(/_/g, '_').replace(/s$/, 's')}_v2_0`;
+            // Map to actual bundle ids used by the modal
+            const annexBundleMap: Record<string, string> = {
+                MOTORCYCLES: 'annex_a_motorcycles_v2_0',
+                BIKES: 'annex_b_bikes_v2_0',
+                BOATS: 'annex_c_boats_v2_0',
+                CAMPING: 'annex_d_camping_v2_0',
+                WINTER_SPORTS: 'annex_e_winter_sports_v2_0',
+                WATER_SPORTS: 'annex_f_water_sports_v2_0',
+                RVS: 'annex_g_rvs_v2_0',
+                ATVS_UTVS: 'annex_h_atvs_utvs_v2_0',
+            };
+            const annexBundle = annexBundleMap[category] || 'annex_generic_v2_0';
+            try {
+                const [txRes, annexRes] = await Promise.all([
+                    fetch(`/api/legal/acceptance-status?userId=${encodeURIComponent(session.id)}&documentBundle=transactional_core_v2_0&documentVersion=2.0`).then((r) => r.json()),
+                    fetch(`/api/legal/acceptance-status?userId=${encodeURIComponent(session.id)}&documentBundle=${annexBundle}&documentVersion=2.0`).then((r) => r.json()),
+                ]);
+                if (txRes.accepted && annexRes.accepted) {
+                    onAccepted();
+                    return;
+                }
+            } catch (err) {
+                console.warn('[booking legal check] failed, defaulting to modal:', err);
+            }
+            setBookingLegalRequest({ category, itemTitle, onAccepted });
+        },
+        [session?.id]
     );
 
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -1049,6 +1107,7 @@ const App: React.FC = () => {
                     onViewOwnerProfile={() => handleViewUserProfile(listing.owner.id)}
                     similarListings={listings.filter((l: Listing) => l.category === listing.category && l.id !== listing.id).slice(0, 4)}
                     onListingClick={(id) => { setSelectedListingId(id); handleNavigate('listingDetail'); }}
+                    requireBookingLegalAcceptance={requireBookingLegalAcceptance}
                 /> : <p>Listing not found.</p>;
             case 'userProfile': // NEW PAGE CASE
                 const profileUser = users.find((u: User) => u.id === selectedUserProfileId);
@@ -1149,6 +1208,24 @@ const App: React.FC = () => {
                 return <DisputeResolutionPage />;
             case 'trustSafety':
                 return <TrustSafetyPage />;
+            case 'transactionalCore':
+                return <TransactionalCorePage />;
+            case 'annexMotorcycles':
+                return <AnnexMotorcyclesPage />;
+            case 'annexBikes':
+                return <AnnexBikesPage />;
+            case 'annexBoats':
+                return <AnnexBoatsPage />;
+            case 'annexCamping':
+                return <AnnexCampingPage />;
+            case 'annexWinterSports':
+                return <AnnexWinterSportsPage />;
+            case 'annexWaterSports':
+                return <AnnexWaterSportsPage />;
+            case 'annexRVs':
+                return <AnnexRVsPage />;
+            case 'annexATVs':
+                return <AnnexATVsPage />;
             case 'howItWorks':
                 return <HowItWorksPage />;
             case 'floridaCompliance':
@@ -1241,6 +1318,21 @@ const App: React.FC = () => {
                         setNeedsLegalAcceptance(false);
                         setPendingLegalAction(null);
                     }}
+                />
+            )}
+
+            {session?.id && bookingLegalRequest && (
+                <BookingLegalModal
+                    userId={session.id}
+                    userName={session.name}
+                    category={bookingLegalRequest.category as any}
+                    itemTitle={bookingLegalRequest.itemTitle}
+                    onAccepted={() => {
+                        const req = bookingLegalRequest;
+                        setBookingLegalRequest(null);
+                        if (req) req.onAccepted();
+                    }}
+                    onCancel={() => setBookingLegalRequest(null)}
                 />
             )}
 
