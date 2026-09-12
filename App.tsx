@@ -140,11 +140,13 @@ const App: React.FC = () => {
     const [bookingLegalRequest, setBookingLegalRequest] = useState<{
         category: string;
         itemTitle: string;
+        bookingPrice?: number;
+        securityDeposit?: number;
         onAccepted: () => void;
     } | null>(null);
 
     const requireBookingLegalAcceptance = useCallback(
-        async (category: string, itemTitle: string, onAccepted: () => void) => {
+        async (category: string, itemTitle: string, onAccepted: () => void, bookingPrice?: number, securityDeposit?: number) => {
             if (!session?.id) {
                 onAccepted();
                 return;
@@ -175,7 +177,7 @@ const App: React.FC = () => {
             } catch (err) {
                 console.warn('[booking legal check] failed, defaulting to modal:', err);
             }
-            setBookingLegalRequest({ category, itemTitle, onAccepted });
+            setBookingLegalRequest({ category, itemTitle, bookingPrice, securityDeposit, onAccepted });
         },
         [session?.id]
     );
@@ -1327,6 +1329,8 @@ const App: React.FC = () => {
                     userName={session.name}
                     category={bookingLegalRequest.category as any}
                     itemTitle={bookingLegalRequest.itemTitle}
+                    bookingPrice={bookingLegalRequest.bookingPrice}
+                    securityDeposit={bookingLegalRequest.securityDeposit}
                     onAccepted={() => {
                         const req = bookingLegalRequest;
                         setBookingLegalRequest(null);
