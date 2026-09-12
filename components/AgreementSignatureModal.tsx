@@ -272,7 +272,7 @@ const AgreementSignatureModal: React.FC<AgreementSignatureModalProps> = ({ booki
                             <CheckCircleIcon className="h-4 w-4 text-slate-500" />
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Your signature</span>
                         </div>
-                        <SignaturePad onSignatureChange={setSignatureDataUrl} />
+                        <SignaturePad onChange={setSignatureDataUrl} />
                         <p className="text-[10px] text-slate-500 mt-2 italic">
                             Your signature, timestamp, and IP address are recorded as your electronic signature per ESIGN Act (15 U.S.C. § 7001) and Fla. Stat. § 668.004.
                         </p>
