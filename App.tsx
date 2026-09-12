@@ -151,7 +151,28 @@ const App: React.FC = () => {
                 onAccepted();
                 return;
             }
-            // Check both bundles: transactional core + specific annex
+            // ---------------------------------------------------------------
+            // TESTING / DEV HELPERS — bypass the "already accepted" cache
+            // so the modal always fires. Two ways to trigger:
+            //   1. URL param: ?forceLegal=1 or #hash?forceLegal=1
+            //   2. localStorage flag: localStorage.setItem('gl_force_legal', '1')
+            // Neither affects a real, non-dev user because they must be set
+            // deliberately.
+            // ---------------------------------------------------------------
+            const forceLegalFromUrl = typeof window !== 'undefined' && (
+                new URLSearchParams(window.location.search).get('forceLegal') === '1' ||
+                window.location.hash.includes('forceLegal=1')
+            );
+            const forceLegalFromStorage = typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('gl_force_legal') === '1';
+            const forceLegal = forceLegalFromUrl || forceLegalFromStorage;
+
+            if (forceLegal) {
+                console.log('[booking legal] force-show flag detected — skipping cache check');
+                // Fall through to show the modal
+            } else {
+                // Check both bundles: transactional core + specific annex
+                // (cache lookup; if both already accepted, skip modal)
+            }
             const annexId = `annex_${category.toLowerCase().replace(/_/g, '_').replace(/s$/, 's')}_v2_0`;
             // Map to actual bundle ids used by the modal
             const annexBundleMap: Record<string, string> = {
@@ -170,7 +191,7 @@ const App: React.FC = () => {
                     fetch(`/api/legal/acceptance-status?userId=${encodeURIComponent(session.id)}&documentBundle=transactional_core_v2_0&documentVersion=2.0`).then((r) => r.json()),
                     fetch(`/api/legal/acceptance-status?userId=${encodeURIComponent(session.id)}&documentBundle=${annexBundle}&documentVersion=2.0`).then((r) => r.json()),
                 ]);
-                if (txRes.accepted && annexRes.accepted) {
+                if (!forceLegal && txRes.accepted && annexRes.accepted) {
                     onAccepted();
                     return;
                 }
