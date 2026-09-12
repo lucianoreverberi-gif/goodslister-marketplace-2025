@@ -241,7 +241,7 @@ const StripeCheckout: React.FC<PaymentSelectionModalProps> = (props) => (
     </Elements>
 );
 
-const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegalAcceptance?: (category: string, itemTitle: string, onAccepted: () => void) => void }> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile, similarListings = [], onListingClick, requireBookingLegalAcceptance }) => {
+const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegalAcceptance?: (category: string, itemTitle: string, onAccepted: () => void, bookingPrice?: number, securityDeposit?: number) => void }> = ({ listing, onBack, onStartConversation, currentUser, onCreateBooking, isFavorite, onToggleFavorite, onViewOwnerProfile, similarListings = [], onListingClick, requireBookingLegalAcceptance }) => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     
     // ANALYTICS: track listing view on mount + when listing changes
@@ -355,7 +355,10 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
                 // If verified fresh from DB, gate booking legal acceptance BEFORE payment modal
                 if (statusData.verified === true) {
                     if (requireBookingLegalAcceptance) {
-                        requireBookingLegalAcceptance(listing.category, listing.title, () => setShowPaymentModal(true));
+                        // Pass the base price shown on the listing + security deposit for the modal summary
+                        const basePrice = listing.pricingType === 'hourly' ? (listing.pricePerHour || 0) : (listing.pricePerDay || 0);
+                        const deposit = listing.securityDeposit || (listing as any).security_deposit || 0;
+                        requireBookingLegalAcceptance(listing.category, listing.title, () => setShowPaymentModal(true), basePrice, deposit);
                     } else {
                         setShowPaymentModal(true);
                     }
