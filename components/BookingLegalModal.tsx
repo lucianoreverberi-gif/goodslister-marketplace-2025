@@ -24,7 +24,7 @@ const LEGAL_VERSION = '2.0';
 // Category-specific critical risks displayed INLINE in the modal.
 // Extracted from Section 5 (Specific Risk Disclosure) of each Annex v2.0.
 // Kept short (4-6 bullets max) so the modal remains scannable.
-const CATEGORY_RISKS: Record<string, { critical: string[]; note?: string }> = {
+export const CATEGORY_RISKS: Record<string, { critical: string[]; note?: string }> = {
     MOTORCYCLES: {
         critical: [
             'Serious injury or DEATH — motorcycles have far higher fatality per mile than cars',
@@ -115,7 +115,7 @@ const CATEGORY_RISKS: Record<string, { critical: string[]; note?: string }> = {
 };
 
 // Maps app categories to annex identifiers per legal package v2.0
-const CATEGORY_TO_ANNEX: Record<string, { id: string; label: string; annexHash: string }> = {
+export const CATEGORY_TO_ANNEX: Record<string, { id: string; label: string; annexHash: string }> = {
     MOTORCYCLES: { id: 'annex_a_motorcycles_v2_0', label: 'Motorcycles', annexHash: '#annexMotorcycles' },
     BIKES: { id: 'annex_b_bikes_v2_0', label: 'Bikes', annexHash: '#annexBikes' },
     BOATS: { id: 'annex_c_boats_v2_0', label: 'Boats & Vessels', annexHash: '#annexBoats' },
