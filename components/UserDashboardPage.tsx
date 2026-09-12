@@ -488,7 +488,9 @@ const BookingsManager: React.FC<{
                         } else {
                             signingBooking.hostSignedAt = nowIso;
                         }
-                        setJustSignedIds(prev => new Set([...prev, signingBooking.id]));
+                        // Use suffix to distinguish which party signed (for CHECK-IN button gating)
+                        const signKey = mode === 'renting' ? signingBooking.id : signingBooking.id + '_host';
+                        setJustSignedIds(prev => new Set([...prev, signKey]));
 
                         // ANALYTICS: contract_signed event
                         track('contract_signed', {
@@ -507,6 +509,16 @@ const BookingsManager: React.FC<{
                                 title: 'Renter signed the contract',
                                 message: 'Check-in is now unlocked for "' + (signingBooking.listing?.title || 'this rental') + '". You can proceed with handover.',
                                 link: '#userDashboard?tab=bookings&mode=hosting'
+                            }).catch(err => console.warn('Notification failed:', err));
+                        }
+                        // Notify counterparty: if host signed, notify renter that both signatures complete
+                        if (mode === 'hosting' && signingBooking.renterId) {
+                            createNotification({
+                                userId: signingBooking.renterId,
+                                type: 'contract_signed',
+                                title: 'Owner signed the contract',
+                                message: 'Both parties have signed the rental agreement for "' + (signingBooking.listing?.title || 'this rental') + '". Handover is ready.',
+                                link: '#userDashboard?tab=bookings&mode=renting'
                             }).catch(err => console.warn('Notification failed:', err));
                         }
                         setSigningBooking(null);
@@ -661,7 +673,12 @@ const BookingsManager: React.FC<{
                                     <FileTextIcon className="h-3.5 w-3.5" /> Awaiting renter signature
                                 </span>
                             )}
-                            {b.status === 'confirmed' && mode === 'hosting' && (b.renterSignedAt || justSignedIds.has(b.id)) && (
+                            {b.status === 'confirmed' && mode === 'hosting' && (b.renterSignedAt || justSignedIds.has(b.id)) && !b.hostSignedAt && !justSignedIds.has(b.id + '_host') && (
+                                <button onClick={() => setSigningBooking(b)} className="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-black rounded-lg hover:from-amber-600 hover:to-amber-700 shadow-lg shadow-amber-100 transition-all flex items-center gap-2 animate-pulse">
+                                    <FileTextIcon className="h-3.5 w-3.5" /> SIGN CONTRACT
+                                </button>
+                            )}
+                            {b.status === 'confirmed' && mode === 'hosting' && (b.renterSignedAt || justSignedIds.has(b.id)) && (b.hostSignedAt || justSignedIds.has(b.id + '_host')) && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-5 py-2 bg-cyan-600 text-white text-[10px] font-bold rounded-lg hover:bg-cyan-700 shadow shadow-cyan-100 transition-all flex items-center gap-2">
                                     <RocketIcon className="h-3.5 w-3.5" /> CHECK-IN
                                 </button>
