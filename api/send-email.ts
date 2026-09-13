@@ -201,6 +201,70 @@ export default async function handler(
         `, 'View Booking Details', `https://goodslister.com/userDashboard`);
         break;
 
+      case 'rental_reminder_host':
+        subject = `Heads up: rental starts tomorrow (${data.listingTitle})`;
+        html = getBaseTemplate(`
+          <h1>Your gear goes out tomorrow</h1>
+          <p>Hi ${data.hostName || 'there'},</p>
+          <p><strong>${data.renterName || 'Your renter'}</strong> has a confirmed booking for your <strong>${data.listingTitle}</strong> starting tomorrow.</p>
+          <div class="card">
+            <div class="info-row"><span class="info-label">Start Date:</span> <span class="info-value">${data.startDate}</span></div>
+            <div class="info-row"><span class="info-label">Meeting Point:</span> <span class="info-value">${data.meetingPoint || 'Coordinate via chat'}</span></div>
+            <div class="info-row"><span class="info-label">Renter:</span> <span class="info-value">${data.renterName || '-'}</span></div>
+          </div>
+          <p>Prep the item, confirm the handover time with the renter, and get the Condition Report ready.</p>
+        `, 'Open Dashboard', `https://goodslister.com/#userDashboard`);
+        break;
+
+      case 'rental_return_reminder':
+        subject = `Reminder: return ${data.listingTitle} tomorrow`;
+        html = getBaseTemplate(`
+          <h1>Return is tomorrow</h1>
+          <p>Hi ${data.renterName || 'there'},</p>
+          <p>Your rental of <strong>${data.listingTitle}</strong> is scheduled to be returned <strong>tomorrow</strong>.</p>
+          <div class="card">
+            <div class="info-row"><span class="info-label">Return Date:</span> <span class="info-value">${data.endDate}</span></div>
+            <div class="info-row"><span class="info-label">Return Location:</span> <span class="info-value">${data.meetingPoint || 'As agreed with host'}</span></div>
+          </div>
+          <p>Please make sure the item is in the same condition, fuel/battery is topped up as agreed, and coordinate the exact return time with the host. Late returns may incur late fees.</p>
+        `, 'View Booking', `https://goodslister.com/#userDashboard`);
+        break;
+
+      case 'rental_return_reminder_host':
+        subject = `Return incoming tomorrow (${data.listingTitle})`;
+        html = getBaseTemplate(`
+          <h1>Your gear comes back tomorrow</h1>
+          <p>Hi ${data.hostName || 'there'},</p>
+          <p><strong>${data.renterName || 'Your renter'}</strong> is scheduled to return your <strong>${data.listingTitle}</strong> tomorrow.</p>
+          <div class="card">
+            <div class="info-row"><span class="info-label">Return Date:</span> <span class="info-value">${data.endDate}</span></div>
+            <div class="info-row"><span class="info-label">Return Location:</span> <span class="info-value">${data.meetingPoint || 'As agreed with renter'}</span></div>
+          </div>
+          <p>Have the Condition Report photos ready and be prepared to inspect the item.</p>
+        `, 'Open Dashboard', `https://goodslister.com/#userDashboard`);
+        break;
+
+      case 'rental_overdue_renter':
+        subject = `Overdue: please return ${data.listingTitle}`;
+        html = getBaseTemplate(`
+          <h1>Your rental is overdue</h1>
+          <p>Hi ${data.renterName || 'there'},</p>
+          <p>Your rental of <strong>${data.listingTitle}</strong> was scheduled to be returned on <strong>${data.endDate}</strong> and has not been checked in yet.</p>
+          <p>Please return the item to the host as soon as possible. Late fees may apply per the rental agreement, and if the item is not returned within 24 hours of the scheduled return, it may be reported to law enforcement.</p>
+          <p>If you need more time, please contact the host directly to arrange an extension.</p>
+        `, 'Return Now', `https://goodslister.com/#userDashboard`);
+        break;
+
+      case 'rental_overdue_host':
+        subject = `Rental is overdue: ${data.listingTitle}`;
+        html = getBaseTemplate(`
+          <h1>A rental is overdue</h1>
+          <p>Hi ${data.hostName || 'there'},</p>
+          <p><strong>${data.renterName || 'The renter'}</strong> has not returned your <strong>${data.listingTitle}</strong>, which was due on <strong>${data.endDate}</strong>.</p>
+          <p>We have sent them a return reminder. If they do not return the item soon, you may contact them directly or open a support ticket via the Damage Center.</p>
+        `, 'Open Dashboard', `https://goodslister.com/#userDashboard`);
+        break;
+
       case 'review_request':
         subject = `How was your adventure with ${data.hostName}?`;
         html = getBaseTemplate(`
