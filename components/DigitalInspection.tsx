@@ -159,13 +159,19 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
                                     <RefreshCwIcon className="h-4 w-4" /> RETAKE
                                 </button>
                             </div>
-                            {isLastStep && (
+                            {photos.filter(Boolean).length > 0 && (
                                 <div className="mt-4 bg-white/5 border border-white/10 rounded-2xl p-4">
                                     <div className="flex items-center justify-between mb-2">
                                         <div>
-                                            <div className="text-emerald-400 font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                                                <CheckCircleIcon className="h-3 w-3" /> 4 required photos done
-                                            </div>
+                                            {isLastStep ? (
+                                                <div className="text-emerald-400 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                                                    <CheckCircleIcon className="h-3 w-3" /> 4 required photos done
+                                                </div>
+                                            ) : (
+                                                <div className="text-amber-300 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                                                    <CameraIcon className="h-3 w-3" /> Extras (optional, any time)
+                                                </div>
+                                            )}
                                             <p className="text-slate-400 text-[11px] mt-1">Add extras (optional): odometer &middot; fuel gauge &middot; damage close-up &middot; extra angles</p>
                                         </div>
                                         {extras.length + 4 < 10 && (
