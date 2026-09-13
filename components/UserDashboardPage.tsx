@@ -10,6 +10,7 @@ import ConnectStripeModal from './ConnectStripeModal';import DamageReportModal f
 import ReviewWizard from './ReviewWizard';
 import ConfirmActionModal from './ConfirmActionModal';
 import AgreementSignatureModal from './AgreementSignatureModal';
+import BookingCardTimer from './BookingCardTimer';
 import { createNotification } from '../services/notificationsService';
 import { track } from '../services/analytics';
 
@@ -682,6 +683,11 @@ const BookingsManager: React.FC<{
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('handover'); }} className="px-5 py-2 bg-cyan-600 text-white text-[10px] font-bold rounded-lg hover:bg-cyan-700 shadow shadow-cyan-100 transition-all flex items-center gap-2">
                                     <RocketIcon className="h-3.5 w-3.5" /> CHECK-IN
                                 </button>
+                            )}
+                            {b.status === 'active' && (
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <BookingCardTimer endDate={b.endDate} compact />
+                                </div>
                             )}
                             {b.status === 'active' && (
                                 <button onClick={() => { setActiveSessionBooking(b); setSessionInitialMode('return'); }} className="px-5 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-black shadow shadow-slate-200 transition-all flex items-center gap-2">
