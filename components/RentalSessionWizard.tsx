@@ -329,6 +329,34 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         }, 1000);
     };
 
+    // Live countdown to Scheduled Return time.
+    // Ticks every second while the wizard is on the RENTAL_DASHBOARD step.
+    // Shows OVERDUE state (red) when the deadline has passed.
+    const calcTimeLeft = (endDate: string | Date) => {
+        const end = new Date(endDate).getTime();
+        const now = Date.now();
+        const diff = end - now;
+        const isOverdue = diff < 0;
+        const abs = Math.abs(diff);
+        return {
+            days: Math.floor(abs / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((abs / (1000 * 60 * 60)) % 24),
+            minutes: Math.floor((abs / (1000 * 60)) % 60),
+            seconds: Math.floor((abs / 1000) % 60),
+            isOverdue,
+        };
+    };
+    const [timeLeft, setTimeLeft] = useState(() => calcTimeLeft(booking.endDate));
+    useEffect(() => {
+        if (step !== 'RENTAL_DASHBOARD') return;
+        // Tick immediately then every second
+        setTimeLeft(calcTimeLeft(booking.endDate));
+        const interval = window.setInterval(() => {
+            setTimeLeft(calcTimeLeft(booking.endDate));
+        }, 1000);
+        return () => window.clearInterval(interval);
+    }, [step, booking.endDate]);
+
     const handleHandoverComplete = (photos: InspectionPhoto[]) => {
         setHandoverPhotos(photos); if (photos.length >= 4) { fetch('/api/handoff/upsert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: booking.id, type: 'checkin', photoUrls: photos.map(p => p.url).slice(0, 10), conditionRating: 5, conditionNotes: null }) }).catch(err => console.warn('Handoff checkin persist failed:', err)); }
         onStatusChange('active');
@@ -479,11 +507,30 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         
                         <div className="bg-white rounded-[3rem] p-12 shadow-2xl border border-slate-100 mb-10 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><ClockIcon className="h-32 w-32" /></div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Time to Return</p>
-                            <div className="text-6xl font-black text-slate-900 tracking-tighter">
-                                {format(new Date(booking.endDate), 'HH:mm:ss')}
+                            <p className={`text-[10px] font-black uppercase tracking-widest mb-4 ${timeLeft.isOverdue ? 'text-red-600' : 'text-slate-400'}`}>{timeLeft.isOverdue ? 'Overdue by' : 'Time to Return'}</p>
+                            <div className={`text-6xl font-black tracking-tighter tabular-nums ${timeLeft.isOverdue ? 'text-red-600' : 'text-slate-900'}`}>
+                                {timeLeft.days > 0 && (<span>{timeLeft.days}d </span>)}
+                                {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
                             </div>
                             <p className="text-xs text-slate-400 font-bold mt-6 uppercase tracking-widest">Scheduled Return: {format(new Date(booking.endDate), 'MMM dd, p')}</p>
+                            {timeLeft.isOverdue && (
+                                <div className="mt-6 bg-red-50 border-l-4 border-red-500 p-3 rounded-r-lg text-left flex items-start gap-2">
+                                    <AlertTriangleIcon className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-red-900 text-xs font-black uppercase tracking-widest">Return overdue</p>
+                                        <p className="text-red-800 text-[11px] mt-1">Late fees may apply per your listing's late-return policy. Contact the renter as soon as possible.</p>
+                                    </div>
+                                </div>
+                            )}
+                            {!timeLeft.isOverdue && timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes < 30 && (
+                                <div className="mt-6 bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-lg text-left flex items-start gap-2">
+                                    <ClockIcon className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-amber-900 text-xs font-black uppercase tracking-widest">Return imminent</p>
+                                        <p className="text-amber-800 text-[11px] mt-1">Less than 30 minutes remaining. Prepare for return inspection.</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <button 
