@@ -90,14 +90,32 @@ const HandoffModal: React.FC<Props> = ({ bookingId, type, onClose, onSuccess }) 
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">Ã</button>
         </div>
 
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 mb-2">
           {isCheckin
-            ? 'Take at least 4 photos showing the current condition of the item. This protects both you and the host.'
+            ? "Take at least 4 photos of the item's current condition. This protects both you and the host."
             : 'Take at least 4 photos of the item as you return it. If everything looks OK, your security deposit will be released automatically.'}
         </p>
+        <div className="bg-cyan-50 border-l-4 border-cyan-400 rounded-r-lg p-2.5 mb-4">
+          <p className="text-[11px] text-cyan-900 leading-snug">
+            <span className="font-bold">Tips:</span> all sides of the item &middot; any pre-existing damage in close-up &middot; for motorized items, odometer or hour meter &middot; fuel gauge
+          </p>
+        </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-semibold mb-2">Photos ({photos.length}/4 required, max 10)</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-semibold">Photos</label>
+            {photos.length < 4 && (
+              <span className="text-xs text-gray-600">{photos.length}/4 required</span>
+            )}
+            {photos.length >= 4 && photos.length < 10 && (
+              <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                <span>&#10003;</span> Minimum reached &middot; {photos.length}/10 total
+              </span>
+            )}
+            {photos.length === 10 && (
+              <span className="text-xs font-semibold text-amber-700">Maximum reached (10/10)</span>
+            )}
+          </div>
           <div className="grid grid-cols-4 gap-2 mb-2">
             {photos.map((url, idx) => (
               <div key={idx} className="relative aspect-square">
@@ -106,10 +124,24 @@ const HandoffModal: React.FC<Props> = ({ bookingId, type, onClose, onSuccess }) 
               </div>
             ))}
           </div>
-          <label className="block cursor-pointer bg-cyan-50 border-2 border-dashed border-cyan-300 rounded-lg py-4 text-center hover:bg-cyan-100">
-            <span className="text-sm text-cyan-700 font-semibold">{uploading ? 'Uploading...' : '+ Add photos'}</span>
-            <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} disabled={uploading} className="hidden" />
-          </label>
+          {photos.length < 10 && (
+            <label className={`block cursor-pointer border-2 border-dashed rounded-lg py-4 text-center transition-all ${
+              photos.length >= 4
+                ? 'bg-emerald-50 border-emerald-300 hover:bg-emerald-100'
+                : 'bg-cyan-50 border-cyan-300 hover:bg-cyan-100'
+            }`}>
+              <span className={`text-sm font-semibold ${photos.length >= 4 ? 'text-emerald-700' : 'text-cyan-700'}`}>
+                {uploading
+                  ? 'Uploading...'
+                  : photos.length === 0
+                    ? '+ Take or upload photos'
+                    : photos.length < 4
+                      ? `+ Add more (${4 - photos.length} still required)`
+                      : '+ Add more (optional — odometer, fuel gauge, extra angles)'}
+              </span>
+              <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} disabled={uploading} className="hidden" />
+            </label>
+          )}
         </div>
 
         <div className="mb-4">
