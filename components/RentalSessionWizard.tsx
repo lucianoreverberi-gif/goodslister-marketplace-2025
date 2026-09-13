@@ -424,7 +424,10 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                         booking={booking}
                         onVerified={(idUrl, faceUrl) => {
                             setVerificationPhotos({ id: idUrl, face: faceUrl });
-                            setStep('CONTRACT_SIGNING');
+                            // SKIP CONTRACT_SIGNING - user already signed the robust
+                            // AgreementSignatureModal via Dashboard's SIGN CONTRACT button
+                            // (gated by both hostSignedAt + renterSignedAt before CHECK-IN).
+                            setStep('HANDOVER_INSPECTION');
                         }}
                     />
                 )}
