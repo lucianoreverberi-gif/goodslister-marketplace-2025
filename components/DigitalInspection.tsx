@@ -43,6 +43,11 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
     const [step, setStep] = useState(0);
     const [photos, setPhotos] = useState<InspectionPhoto[]>([]);
     const [damageReported, setDamageReported] = useState(false);
+    // Extra optional photos captured after the 4 required angles
+    // (odometer, fuel gauge, close-up damage, extra angles). Merged into
+    // the photos array on FINISH, capped at 10 total by the API.
+    const [extras, setExtras] = useState<InspectionPhoto[]>([]);
+    const [capturingExtra, setCapturingExtra] = useState(false);
     
     const category = booking.listing.category;
     const angles = CATEGORY_INSPECTION_CONFIG[category] || [
@@ -68,9 +73,25 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
         setPhotos(updated);
     };
 
+    const handleExtraPhoto = (url: string) => {
+        const newPhoto: InspectionPhoto = {
+            url,
+            angleId: 'extra_' + (extras.length + 1),
+            category,
+            capturedAt: Date.now(),
+            takenByUserId: 'user'
+        };
+        setExtras(prev => [...prev, newPhoto]);
+        setCapturingExtra(false);
+    };
+    const removeExtra = (idx: number) => {
+        setExtras(prev => prev.filter((_, i) => i !== idx));
+    };
+
     const handleNext = () => {
         if (isLastStep) {
-            onComplete(photos, damageReported);
+            const allPhotos = [...photos, ...extras].slice(0, 10);
+            onComplete(allPhotos, damageReported);
         } else {
             setStep(s => s + 1);
         }
@@ -106,15 +127,76 @@ const DigitalInspection: React.FC<DigitalInspectionProps> = ({ booking, mode, ha
 
                 {/* Active Capture Area */}
                 <div className="flex-1 relative flex md:items-center justify-center p-4 pb-32 md:pb-4 md:overflow-y-auto">
-                    {photos[step] ? (
-                        <div className="relative w-full h-full animate-in zoom-in-95">
-                            <img src={photos[step].url} className="w-full h-full object-contain rounded-2xl" />
-                            <button 
-                                onClick={() => { const u = [...photos]; u[step] = null as any; setPhotos(u.filter(Boolean)); }}
-                                className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2"
-                            >
-                                <RefreshCwIcon className="h-4 w-4" /> RETAKE
-                            </button>
+                    {capturingExtra ? (
+                        <div className="text-center max-w-sm w-full">
+                            <div className="bg-amber-500/10 p-4 rounded-3xl mb-6 inline-block">
+                                <CameraIcon className="h-10 w-10 text-amber-400" />
+                            </div>
+                            <h2 className="text-2xl font-black text-white mb-2">Extra photo</h2>
+                            <p className="text-slate-400 text-sm mb-6">Odometer, fuel gauge, extra angle, or a close-up of something worth documenting.</p>
+                            <div className="bg-white/5 border border-white/10 p-2 rounded-3xl mb-4">
+                                <CameraCapture
+                                    label=""
+                                    aspectRatio="video"
+                                    onCapture={handleExtraPhoto}
+                                    bookingId={booking.id}
+                                    photoType={mode}
+                                    angleId={'extra_' + (extras.length + 1)}
+                                    angleLabel={'Extra ' + (extras.length + 1)}
+                                    folder={`inspections/${booking.id}`}
+                                />
+                            </div>
+                            <button onClick={() => setCapturingExtra(false)} className="text-slate-400 hover:text-white text-sm font-bold">Cancel</button>
+                        </div>
+                    ) : photos[step] ? (
+                        <div className="relative w-full h-full animate-in zoom-in-95 flex flex-col">
+                            <div className="relative flex-1 min-h-0">
+                                <img src={photos[step].url} className="w-full h-full object-contain rounded-2xl" />
+                                <button 
+                                    onClick={() => { const u = [...photos]; u[step] = null as any; setPhotos(u.filter(Boolean)); }}
+                                    className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2"
+                                >
+                                    <RefreshCwIcon className="h-4 w-4" /> RETAKE
+                                </button>
+                            </div>
+                            {isLastStep && (
+                                <div className="mt-4 bg-white/5 border border-white/10 rounded-2xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div>
+                                            <div className="text-emerald-400 font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                                                <CheckCircleIcon className="h-3 w-3" /> 4 required photos done
+                                            </div>
+                                            <p className="text-slate-400 text-[11px] mt-1">Add extras (optional): odometer &middot; fuel gauge &middot; damage close-up &middot; extra angles</p>
+                                        </div>
+                                        {extras.length + 4 < 10 && (
+                                            <button
+                                                onClick={() => setCapturingExtra(true)}
+                                                className="bg-amber-500 hover:bg-amber-400 text-slate-900 font-black text-xs uppercase px-4 py-2 rounded-xl flex items-center gap-1 whitespace-nowrap"
+                                            >
+                                                + Add extra
+                                            </button>
+                                        )}
+                                    </div>
+                                    {extras.length > 0 && (
+                                        <div className="grid grid-cols-6 gap-2 mt-3">
+                                            {extras.map((p, idx) => (
+                                                <div key={idx} className="relative aspect-square">
+                                                    <img src={p.url} alt="" className="w-full h-full object-cover rounded-lg" />
+                                                    <button
+                                                        onClick={() => removeExtra(idx)}
+                                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
+                                                    >
+                                                        &times;
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {extras.length + 4 >= 10 && (
+                                        <p className="text-amber-300 text-[10px] mt-2 font-bold">Maximum 10 photos reached</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="text-center max-w-sm w-full">
