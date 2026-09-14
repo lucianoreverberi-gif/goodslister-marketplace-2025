@@ -13,11 +13,33 @@
 export interface CalendarEvent {
     title: string;
     description: string;
-    location?: string;
+    /**
+     * Either a plain string, or a structured location object
+     * (matches the Location type in types.ts). If an object is
+     * passed, it's stringified via stringifyLocation() below.
+     */
+    location?: string | { city?: string; state?: string; country?: string; countryCode?: string } | null;
     startDate: Date | string;
     endDate: Date | string;
     /** Absolute URL to the booking on Goodslister (added to description) */
     bookingUrl?: string;
+}
+
+/**
+ * Coerce a location value (string, Location object, or nullish) into a
+ * human-readable single-line string for display in the calendar event.
+ * Fixes the "[object Object]" bug that used to appear in Google Cal URLs.
+ */
+function stringifyLocation(loc: CalendarEvent['location']): string | undefined {
+    if (!loc) return undefined;
+    if (typeof loc === 'string') return loc.trim() || undefined;
+    if (typeof loc === 'object') {
+        const parts = [loc.city, loc.state, loc.country || loc.countryCode]
+            .map(p => (typeof p === 'string' ? p.trim() : ''))
+            .filter(Boolean);
+        return parts.length > 0 ? parts.join(', ') : undefined;
+    }
+    return undefined;
 }
 
 // --- Formatters -------------------------------------------------------------
@@ -70,7 +92,8 @@ export function googleCalendarUrl(evt: CalendarEvent): string {
         dates: formatUtc(evt.startDate) + '/' + formatUtc(evt.endDate),
         details: buildDescription(evt),
     });
-    if (evt.location) params.set('location', evt.location);
+    const locStr = stringifyLocation(evt.location);
+    if (locStr) params.set('location', locStr);
     return 'https://calendar.google.com/calendar/render?' + params.toString();
 }
 
@@ -88,7 +111,8 @@ export function outlookWebUrl(evt: CalendarEvent): string {
         enddt: new Date(evt.endDate).toISOString(),
         body: buildDescription(evt),
     });
-    if (evt.location) params.set('location', evt.location);
+    const locStr = stringifyLocation(evt.location);
+    if (locStr) params.set('location', locStr);
     return 'https://outlook.live.com/calendar/0/deeplink/compose?' + params.toString();
 }
 
@@ -114,7 +138,8 @@ export function buildIcsFile(evt: CalendarEvent, uid: string): string {
         'SUMMARY:' + escapeIcs(evt.title),
         'DESCRIPTION:' + escapeIcs(buildDescription(evt)),
     ];
-    if (evt.location) lines.push('LOCATION:' + escapeIcs(evt.location));
+    const locStr = stringifyLocation(evt.location);
+    if (locStr) lines.push('LOCATION:' + escapeIcs(locStr));
     lines.push(
         'STATUS:CONFIRMED',
         'SEQUENCE:0',
