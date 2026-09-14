@@ -8,6 +8,11 @@ export enum ListingCategory {
     WATER_SPORTS = "Water Sports",
     RVS = "RVs",
     ATVS_UTVS = "ATVs & UTVs",
+    // Added categories for taxonomy clean-up + FL market coverage:
+    PWC = "Personal Watercraft",
+    ELECTRIC_RIDEABLES = "Electric Rideables",
+    FISHING = "Fishing Gear",
+    DIVING = "Diving & Snorkeling",
 }
 
 // NEW: Define the Risk Tiers for the Hybrid Strategy
