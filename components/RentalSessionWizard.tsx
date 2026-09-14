@@ -22,7 +22,6 @@ type WizardPhase = 'IDLE' | 'HANDOVER' | 'ACTIVE' | 'RETURN' | 'COMPLETED';
 type WizardStep = 
     | 'PAYMENT_COLLECTION'
     | 'IDENTITY_VERIFICATION'
-    | 'CONTRACT_SIGNING'
     | 'HANDOVER_INSPECTION'
     | 'RENTAL_DASHBOARD'
     | 'RETURN_INSPECTION'
@@ -321,13 +320,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleContractSign = () => {
-        setIsLoading(true);
-        setTimeout(() => {
-            setStep('HANDOVER_INSPECTION');
-            setIsLoading(false);
-        }, 1000);
-    };
+
 
     // Live countdown to Scheduled Return time.
     // Ticks every second while the wizard is on the RENTAL_DASHBOARD step.
@@ -460,36 +453,7 @@ const RentalSessionWizard: React.FC<RentalSessionWizardProps> = ({ booking, init
                     />
                 )}
 
-                {step === 'CONTRACT_SIGNING' && (
-                    <div className="bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-100 animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
-                                <FileSignatureIcon className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Legal Signature</h3>
-                        </div>
-                        <div className="bg-slate-50 border border-slate-200 rounded-3xl p-8 mb-8 max-h-[350px] overflow-y-auto text-sm text-slate-600 leading-relaxed font-serif shadow-inner">
-                            {booking.listing.contractPreference === 'custom' ? (
-                                <div className="text-center py-12">
-                                    <FileTextIcon className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                                    <p className="font-black text-slate-800 uppercase tracking-widest">Custom Host Agreement</p>
-                                    <a href={booking.listing.customContractUrl} target="_blank" className="text-cyan-600 font-black underline mt-4 block text-xs">VIEW PDF ATTACHMENT</a>
-                                </div>
-                            ) : (
-                                <div dangerouslySetInnerHTML={{ __html: LegalService.generateContractHtml(booking.listing, booking.listing.owner, new Date(booking.startDate), new Date(booking.endDate), booking.totalPrice) }} />
-                            )}
-                        </div>
-                        <button 
-                            onClick={handleContractSign}
-                            disabled={isLoading}
-                            className="w-full py-5 bg-slate-900 hover:bg-black text-white font-black rounded-3xl shadow-xl transition-all active:scale-95"
-                        >
-                            {isLoading ? 'SIGNING...' : 'CONFIRM & SIGN AGREEMENT'}
-                        </button>
-                    </div>
-                )}
-
-                {step === 'HANDOVER_INSPECTION' && (
+{step === 'HANDOVER_INSPECTION' && (
                     <DigitalInspection 
                         booking={booking} 
                         mode="handover" 
