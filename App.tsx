@@ -45,6 +45,7 @@ import {
     AnnexWaterSportsPage,
     AnnexRVsPage,
     AnnexATVsPage,
+    AnnexPWCPage,
 } from './components/LegalBookingPages';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
@@ -1249,6 +1250,8 @@ const App: React.FC = () => {
                 return <AnnexRVsPage />;
             case 'annexATVs':
                 return <AnnexATVsPage />;
+            case 'annexPWC':
+                return <AnnexPWCPage />;
             case 'howItWorks':
                 return <HowItWorksPage />;
             case 'floridaCompliance':
