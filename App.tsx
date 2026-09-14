@@ -45,8 +45,11 @@ import {
     AnnexWaterSportsPage,
     AnnexRVsPage,
     AnnexATVsPage,
-    AnnexPWCPage,
 } from './components/LegalBookingPages';
+import {
+    AnnexPWCPage,
+    AnnexElectricRideablesPage,
+} from './components/LegalBookingPagesV2';
 import FloridaCompliancePage from './components/FloridaCompliancePage';
 import UserProfilePage from './components/UserProfilePage'; // NEW IMPORT
 import { CookieConsentBanner } from './components/CookieConsentBanner';
@@ -1252,6 +1255,8 @@ const App: React.FC = () => {
                 return <AnnexATVsPage />;
             case 'annexPWC':
                 return <AnnexPWCPage />;
+            case 'annexElectricRideables':
+                return <AnnexElectricRideablesPage />;
             case 'howItWorks':
                 return <HowItWorksPage />;
             case 'floridaCompliance':
