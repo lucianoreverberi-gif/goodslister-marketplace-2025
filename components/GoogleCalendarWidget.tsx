@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CalendarIcon, CheckCircleIcon, RefreshCwIcon, AlertTriangleIcon, LinkIcon } from './icons';
+import { CalendarIcon, CheckCircleIcon, RefreshCwIcon, AlertTriangleIcon, ExternalLinkIcon } from './icons';
 
 /**
  * GoogleCalendarWidget
@@ -218,7 +218,7 @@ const GoogleCalendarWidget: React.FC<GoogleCalendarWidgetProps> = ({ userId }) =
                     disabled={busy !== null}
                     className="w-full px-4 py-3 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
                 >
-                    <LinkIcon className="h-4 w-4" />
+                    <ExternalLinkIcon className="h-4 w-4" />
                     {busy === 'connecting' ? 'Redirecting to Google...' : 'Connect Google Calendar'}
                 </button>
             )}
