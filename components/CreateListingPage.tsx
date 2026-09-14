@@ -687,6 +687,21 @@ const CreateListingPage: React.FC<CreateListingPageProps> = ({ onBack, currentUs
                                 </div>
                             </div>
 
+                            {/* Business-only notice for high-liability categories (Diving requires a registered dive shop) */}
+                            {category === ListingCategory.DIVING && (
+                                <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-md animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex items-start gap-3">
+                                        <ShieldAlertIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="font-black text-amber-900 text-sm">Registered dive businesses only</p>
+                                            <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                                                Scuba equipment listings require a valid dive shop authorization from PADI, NAUI, or SSI, current commercial insurance, and an active Florida business registration. Equipment must have current service records (regulator, tank hydro, tank VIP, BCD inflation test). By continuing, you confirm your business meets all requirements. Individual (non-business) listings will be removed and may lead to account suspension.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-bold text-gray-800">Location</label>
                                 <input ref={locationInputRef} type="text" value={location} onChange={e => setLocation(e.target.value)} className="mt-2 block w-full border-gray-300 rounded-md shadow-sm" placeholder="E.g., Miami, FL" />
