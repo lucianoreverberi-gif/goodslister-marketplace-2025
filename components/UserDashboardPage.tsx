@@ -701,7 +701,7 @@ const BookingsManager: React.FC<{
                                     href={googleCalendarUrl({
                                         title: 'Rental: ' + (b.listing?.title || 'Goodslister booking'),
                                         description: 'Your Goodslister rental period. Manage: https://www.goodslister.com/#userDashboard',
-                                        location: b.listing?.location || undefined,
+                                        location: b.listing?.fullAddress || b.listing?.location || undefined,
                                         startDate: b.startDate,
                                         endDate: b.endDate,
                                     })}
