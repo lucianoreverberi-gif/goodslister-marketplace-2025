@@ -112,6 +112,50 @@ export const CATEGORY_RISKS: Record<string, { critical: string[]; note?: string 
         ],
         note: 'PROHIBITED on Florida public roads/highways (Fla. Stat. § 316.2074). Operate only on private property or designated OHV areas.',
     },
+    PWC: {
+        critical: [
+            'DROWNING — including after ejection, capsize, or loss of consciousness',
+            'Propeller strike causing amputation, laceration, and DEATH',
+            'Orifice injury from jet thrust (rectal, vaginal, throat) — wetsuit bottoms mandatory',
+            'Collision at high speed with other vessels, docks, swimmers, or floating objects',
+            'Ejection at speed causing spine, neck, or head injury',
+            'Getting lost, running out of fuel, engine failure far from shore',
+        ],
+        note: 'A neoprene/wetsuit bottom is required to prevent orifice injury from jet thrust. The kill-switch lanyard MUST be attached to your wrist or PFD at all times. Valid Florida Boating Safety ID required if born after Jan 1, 1988 (Fla. Stat. § 327.395).',
+    },
+    ELECTRIC_RIDEABLES: {
+        critical: [
+            'High-speed falls causing traumatic brain injury (TBI), road rash, and DEATH',
+            'For One Wheel: "nose dive" if speed exceeds motor capacity — sudden pitch forward with no warning',
+            'Sudden loss of control from software errors, motor cut-outs, or battery drops',
+            'Collision with cars, curbs, pedestrians, or fixed obstacles',
+            'Being struck by a car — low visibility profile, especially at night',
+            'Lithium battery thermal runaway and fire, especially during or after charging',
+        ],
+        note: 'Certified helmet is contractually required. Do NOT ride above the manufacturer\'s speed rating. Never charge the battery unattended or overnight.',
+    },
+    FISHING: {
+        critical: [
+            'Hook injury to hands, eyes, and face — treble hooks are particularly dangerous',
+            'Fishing line entanglement causing lacerations, finger loss, or drowning from a watercraft',
+            'If kayak/boat fishing: capsize, drowning, hypothermia',
+            'Sun exposure, heat stroke, dehydration during long outings',
+            'Wildlife: barracuda, sharks, jellyfish, stingrays, alligators, snakes',
+            'Lightning strikes during Florida afternoon storms while on open water',
+        ],
+        note: 'Valid Florida fishing license required (Fla. Stat. § 379.354) — freshwater and saltwater are separate. Follow bag and size limits.',
+    },
+    DIVING: {
+        critical: [
+            'DECOMPRESSION SICKNESS ("the bends") — DEATH, paralysis, nervous system damage',
+            'DROWNING from equipment failure, panic, entanglement, or being trapped underwater',
+            'Arterial gas embolism from ascending too quickly with a full breath — DEATH',
+            'Ear and sinus barotrauma from improper equalization',
+            'Marine life encounters: sharks, moray eels, stingrays, jellyfish, fire coral',
+            'For deep dives: nitrogen narcosis causing impaired judgment; running out of air',
+        ],
+        note: 'PADI/NAUI/SSI Open Water certification is MANDATORY for scuba — no exceptions. Never dive alone. Follow safe ascent rate (max 30 ft/min) and safety stops. Snorkeling requires no certification but requires strong swimming ability.',
+    },
 };
 
 // Maps app categories to annex identifiers per legal package v2.0
@@ -124,6 +168,10 @@ export const CATEGORY_TO_ANNEX: Record<string, { id: string; label: string; anne
     WATER_SPORTS: { id: 'annex_f_water_sports_v2_0', label: 'Water Sports', annexHash: '#annexWaterSports' },
     RVS: { id: 'annex_g_rvs_v2_0', label: 'RVs', annexHash: '#annexRVs' },
     ATVS_UTVS: { id: 'annex_h_atvs_utvs_v2_0', label: 'ATVs & UTVs', annexHash: '#annexATVs' },
+    PWC: { id: 'annex_i_pwc_v2_0', label: 'Personal Watercraft', annexHash: '#annexPWC' },
+    ELECTRIC_RIDEABLES: { id: 'annex_j_electric_rideables_v2_0', label: 'Electric Rideables', annexHash: '#annexElectricRideables' },
+    FISHING: { id: 'annex_k_fishing_v2_0', label: 'Fishing Gear', annexHash: '#annexFishing' },
+    DIVING: { id: 'annex_l_diving_v2_0', label: 'Diving & Snorkeling', annexHash: '#annexDiving' },
 };
 
 interface BookingLegalModalProps {
