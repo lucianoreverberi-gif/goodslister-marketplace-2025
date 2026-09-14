@@ -17,6 +17,179 @@ function formatCurrency(amount: number | string | null | undefined): string {
     return `$${n.toFixed(2)}`;
 }
 
+// =========================================================================
+// Category-specific legal data (mirrored from components/BookingLegalModal)
+// =========================================================================
+
+interface CategoryLegal {
+    label: string;
+    annexPath: string;
+    isMotorized: boolean;
+    safetyEquipment: string[];
+    eligibility: string[];
+    criticalRisks: string[];
+    keyNote?: string;
+    flStatutes?: string[];
+}
+
+const CATEGORY_LEGAL: Record<string, CategoryLegal> = {
+    MOTORCYCLES: {
+        label: 'Motorcycles',
+        annexPath: '/#legalAnnexMotorcycles',
+        isMotorized: true,
+        safetyEquipment: [
+            'DOT-approved helmet (contractually required for ALL riders regardless of any Florida adult helmet exemption)',
+            'Eye protection (goggles or full-face shield)',
+            'Long pants and closed-toe boots covering the ankle',
+            'Abrasion-resistant jacket or riding gear (recommended)',
+        ],
+        eligibility: [
+            'Valid motorcycle endorsement (Fla. Stat. § 322.03) or equivalent from home state',
+            'Minimum 21 years old (or as set by listing)',
+            'No DUI or reckless driving convictions in the last 5 years',
+        ],
+        criticalRisks: [
+            'Serious injury or DEATH — motorcycles have far higher fatality per mile than cars',
+            'Traumatic brain injury even with helmet',
+            'Road rash, amputation, spinal cord injury, paralysis',
+            'Being struck by a car whose driver fails to see you (esp. at intersections)',
+            'Burns from hot exhaust pipes, fuel fire',
+            'Loss of control on sand, gravel, painted lines, wet or oily pavement',
+        ],
+        keyNote: 'DOT-approved helmet is contractually required for ALL riders regardless of any Florida adult helmet exemption.',
+        flStatutes: ['Fla. Stat. § 322.03 (motorcycle endorsement)', 'Fla. Stat. § 316.211 (helmet law + $10,000 medical coverage exemption)'],
+    },
+    BIKES: {
+        label: 'Bikes',
+        annexPath: '/#legalAnnexBikes',
+        isMotorized: false,
+        safetyEquipment: ['Helmet (STRONGLY recommended, required if under 16)', 'Front and rear lights if riding at night', 'Reflective clothing at night'],
+        eligibility: ['Minimum 12 years old with parental supervision; 16+ for solo rental', 'For e-bikes: valid state ID (18+ for Class 3 e-bikes)'],
+        criticalRisks: [
+            'Being struck by cars, trucks, or buses (especially at intersections)',
+            'Head injury, traumatic brain injury, facial injury even with helmet',
+            'Falls from potholes, gravel, sand, wet leaves, painted lines',
+            'Brake failure, tire blowout, chain or drivetrain failure',
+            'For e-bikes: heavier + faster than regular bikes, longer braking distance',
+            'Lithium battery overheating (never charge unattended)',
+        ],
+    },
+    BOATS: {
+        label: 'Boats & Vessels',
+        annexPath: '/#legalAnnexBoats',
+        isMotorized: true,
+        safetyEquipment: [
+            'USCG-approved life jacket (PFD) for every person on board (Fla. Stat. § 327.50)',
+            'Type IV throwable PFD for vessels 16 ft or longer',
+            'Fire extinguisher, distress signals, and visual/audible signaling devices',
+            'Carbon monoxide detector (mandatory for enclosed cabins)',
+        ],
+        eligibility: [
+            'Valid Florida Boating Safety ID card if born after January 1, 1988 (Fla. Stat. § 327.395)',
+            'Minimum 21 years old (or as set by listing)',
+            'For chartered vessels: USCG captain\'s license required',
+        ],
+        criticalRisks: [
+            'DROWNING — including after falling overboard, capsizing, or loss of consciousness',
+            'Propeller strike causing laceration, amputation, and DEATH',
+            'Carbon monoxide poisoning from engine, generator, or station-wagon effect',
+            'Sudden storms, waterspouts, squalls, and building seas',
+            'Hypothermia even in Florida waters; grounding, sinking, fire',
+            'Collision with vessels, docks, pilings, channel markers, sandbars, reefs',
+        ],
+        keyNote: 'Valid Florida Boating Safety ID required if born after Jan 1, 1988. Help may be hours away.',
+        flStatutes: ['Fla. Stat. § 327.395 (Boater Safety ID)', 'Fla. Stat. § 327.50 (USCG equipment)', 'Fla. Stat. § 327.54 (livery — Lister obligations)'],
+    },
+    CAMPING: {
+        label: 'Camping Equipment',
+        annexPath: '/#legalAnnexCamping',
+        isMotorized: false,
+        safetyEquipment: ['Fire extinguisher for stove/grill use', 'Carbon monoxide detector inside any enclosed sleeping area', 'First aid kit', 'Water purification method for remote camps'],
+        eligibility: ['18+ years old; 21+ for backcountry / remote trips', 'Basic outdoor first-aid knowledge recommended'],
+        criticalRisks: [
+            'Carbon monoxide poisoning and DEATH from heaters, stoves, grills, generators in enclosed spaces',
+            'Fire, burns, and explosion from propane, butane, campfires, lanterns',
+            'Lithium battery thermal runaway, fire, and toxic smoke',
+            'Falls from roof top tent or ladder (esp. at night)',
+            'Wildlife encounters: bears, snakes, alligators, insect-borne illness',
+            'Remote locations with delayed emergency response (measured in hours)',
+        ],
+        keyNote: 'NEVER run any fuel-burning appliance inside a tent, vehicle, trailer, or enclosed space.',
+    },
+    WINTER_SPORTS: {
+        label: 'Winter Sports',
+        annexPath: '/#legalAnnexWinterSports',
+        isMotorized: false,
+        safetyEquipment: ['Certified snow-sports helmet (ASTM F2040 or CE EN 1077)', 'Goggles rated for ambient conditions', 'Properly fitted boots with bindings adjusted and tested to your specs'],
+        eligibility: ['13+ years old with parent-approved lesson history; 18+ for solo rental', 'Self-declared skill level matching terrain (beginner/intermediate/advanced)'],
+        criticalRisks: [
+            'Serious injury, paralysis, and DEATH from falls and collisions',
+            'Collision with trees, lift towers, rocks, other skiers/riders',
+            'Traumatic brain injury even with helmet',
+            'Knee ligament injury, ACL tear, wrist/clavicle fracture',
+            'Binding failure to release, or premature release',
+            'Hidden obstacles, tree wells, deep snow immersion suffocation, avalanche',
+        ],
+        keyNote: 'YOU are solely responsible for having bindings professionally adjusted and tested to your specs before use.',
+    },
+    WATER_SPORTS: {
+        label: 'Water Sports',
+        annexPath: '/#legalAnnexWaterSports',
+        isMotorized: false,
+        safetyEquipment: ['USCG-approved PFD (life jacket) — mandatory even for strong swimmers', 'Leash (for surf/SUP/kite)', 'Impact vest recommended for tow sports', 'Whistle for signaling'],
+        eligibility: ['You must be able to swim competently', 'Kitesurf / Wingfoil NOT available to beginners without a certified instructor', 'Age minimums vary by discipline (typically 14+ SUP/surf, 18+ kite/foil)'],
+        criticalRisks: [
+            'DROWNING — including after impact, entanglement, or exhaustion',
+            'Being carried out by rip current, tide, wind, or offshore drift',
+            'For Jet Ski: propeller strike causing amputation; orifice injury from jet thrust',
+            'For hydrofoils: exceptionally sharp equipment causing severe lacerating injury',
+            'Kite: being lofted, dragged, or slammed; line injury and strangulation',
+            'Sudden squalls, lightning, unforecast weather; marine animal injury',
+        ],
+        keyNote: 'You must be able to swim competently. Kitesurf/Wingfoil not available to beginners without an instructor.',
+    },
+    RVS: {
+        label: 'RVs',
+        annexPath: '/#legalAnnexRVs',
+        isMotorized: true,
+        safetyEquipment: ['Working smoke detector, carbon monoxide detector, and LP-gas leak detector', 'Fire extinguisher (minimum 1 per class per RV size)', 'Wheel chocks and leveling blocks'],
+        eligibility: ['25+ years old (industry standard) or 21+ with additional deposit', 'Valid driver\'s license appropriate for RV class (some Class A RVs require CDL depending on GVWR)', 'No moving violations in the last 3 years'],
+        criticalRisks: [
+            'Rollover from high center of gravity, especially in crosswind or emergency swerve',
+            'Trailer sway, jackknife, and total loss of control at highway speed',
+            'Overhead clearance strikes on bridges, canopies, drive-throughs, tree limbs',
+            'Tire blowout on a heavy vehicle causing immediate loss of control',
+            'Propane leak, fire, and explosion; refrigerator or wiring fire',
+            'Carbon monoxide poisoning from generator, furnace, or engine while sleeping',
+        ],
+        keyNote: 'RV drives, turns, stops, and reacts to wind completely differently from a car. Plan your route for height, length, weight.',
+        flStatutes: ['Fla. Stat. § 627.7483 (RV liability considerations)'],
+    },
+    ATVS_UTVS: {
+        label: 'ATVs & UTVs',
+        annexPath: '/#legalAnnexATVs',
+        isMotorized: true,
+        safetyEquipment: ['DOT-approved helmet + goggles (MANDATORY)', 'Long-sleeve shirt and pants, over-the-ankle boots, gloves', 'Chest protector recommended for high-speed use'],
+        eligibility: ['Minimum 16 years old with parent/guardian present for under-18', '18+ for solo rental', 'ATV Safety Institute (ASI) certification recommended'],
+        criticalRisks: [
+            'Rollover (common due to high center of gravity + unstable terrain)',
+            'Ejection, collision, impact with trees or fixed objects',
+            'Terrain hazards: hidden holes, logs, rocks, ruts',
+            'Drowning from water crossings',
+            'Helmet failure; mechanical failure',
+            'Serious injury or DEATH',
+        ],
+        keyNote: 'PROHIBITED on Florida public roads/highways (Fla. Stat. § 316.2074). Operate only on private property or designated OHV areas.',
+        flStatutes: ['Fla. Stat. § 316.2074 (ATV/UTV — NOT street-legal on public roads)'],
+    },
+};
+
+function getCategoryLegal(category: string | undefined): CategoryLegal | null {
+    if (!category) return null;
+    const key = String(category).toUpperCase().replace(/\s+/g, '_');
+    return CATEGORY_LEGAL[key] || null;
+}
+
 async function autoInitColumns() {
     try {
         await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS brand TEXT`;
@@ -46,17 +219,23 @@ async function generatePdfBuffer(data: any): Promise<Buffer> {
         doc.font('Helvetica').text(`Effective Date: ${formatDate(new Date())}`);
         doc.moveDown(1);
 
-        const section = (num: number, title: string) => {
+        let sectionCounter = 0;
+        const section = (title: string) => {
+            sectionCounter++;
             doc.moveDown(0.8);
-            doc.fillColor(BRAND_COLOR).fontSize(13).font('Helvetica-Bold').text(`${num}. ${title}`);
+            doc.fillColor(BRAND_COLOR).fontSize(13).font('Helvetica-Bold').text(`${sectionCounter}. ${title}`);
             doc.fillColor(DARK_TEXT).fontSize(10).font('Helvetica').moveDown(0.3);
         };
+        const bullet = (line: string) => {
+            doc.fillColor(GRAY_TEXT).text('  •  ' + line, { align: 'left' });
+        };
+        const catLegal = getCategoryLegal(data.listing?.category);
         const field = (label: string, value: string) => {
             doc.font('Helvetica-Bold').text(`${label}: `, { continued: true }).font('Helvetica').text(value);
         };
 
         // ========== SECTION 1: PARTIES ==========
-        section(1, 'Parties');
+        section('Parties');
         doc.font('Helvetica-Bold').text('HOST');
         field('Name', data.host.name || 'N/A');
         field('Email', data.host.email || 'N/A');
@@ -68,7 +247,7 @@ async function generatePdfBuffer(data: any): Promise<Buffer> {
         field('Identity Verified', data.renter.identity_verified ? 'Yes' : 'No');
 
         // ========== SECTION 2: ITEM IDENTIFICATION (expanded) ==========
-        section(2, 'Item Identification');
+        section('Item Identification');
         field('Listing Title', data.listing.title || 'N/A');
         field('Category', `${data.listing.category || 'N/A'}${data.listing.subcategory ? ` / ${data.listing.subcategory}` : ''}`);
         if (data.listing.brand) field('Brand', data.listing.brand);
@@ -80,8 +259,24 @@ async function generatePdfBuffer(data: any): Promise<Buffer> {
             `${data.listing.location_city || 'N/A'}, ${data.listing.location_state || 'N/A'}${data.listing.location_country ? `, ${data.listing.location_country}` : ''} (city-level — full address not provided)`
         );
 
-        // ========== SECTION 3: RENTAL PERIOD ==========
-        section(3, 'Rental Period');
+        // ========== NEW SECTION: CATEGORY-SPECIFIC SAFETY & ELIGIBILITY ==========
+        if (catLegal) {
+            section(`Category-Specific Safety & Eligibility — ${catLegal.label}`);
+            doc.font('Helvetica-Bold').fillColor(DARK_TEXT).text('Safety equipment required:');
+            doc.font('Helvetica').fillColor(GRAY_TEXT);
+            for (const item of catLegal.safetyEquipment) bullet(item);
+            doc.moveDown(0.4);
+            doc.font('Helvetica-Bold').fillColor(DARK_TEXT).text('Eligibility requirements:');
+            doc.font('Helvetica').fillColor(GRAY_TEXT);
+            for (const item of catLegal.eligibility) bullet(item);
+            if (catLegal.keyNote) {
+                doc.moveDown(0.4);
+                doc.fillColor('#b45309').font('Helvetica-Bold').fontSize(10).text('KEY REQUIREMENT: ', { continued: true }).font('Helvetica').text(catLegal.keyNote);
+            }
+        }
+
+        // ========== SECTION: RENTAL PERIOD ==========
+        section('Rental Period');
         field('Start Date', formatDate(data.booking.start_date));
         field('End Date', formatDate(data.booking.end_date));
         const startDate = new Date(data.booking.start_date);
@@ -90,7 +285,7 @@ async function generatePdfBuffer(data: any): Promise<Buffer> {
         field('Duration', `${durationDays} day(s)`);
 
         // ========== SECTION 4: FINANCIAL TERMS ==========
-        section(4, 'Financial Terms');
+        section('Financial Terms');
         field('Total Rental Amount', formatCurrency(data.booking.total_price));
         field('Amount Paid Online', formatCurrency(data.booking.amount_paid_online));
         field('Balance Due On Site', formatCurrency(data.booking.balance_due_on_site));
@@ -99,42 +294,79 @@ async function generatePdfBuffer(data: any): Promise<Buffer> {
         field('Platform Fee', '6% of total (included in Goodslister service)');
 
         // ========== SECTION 5: SECURITY DEPOSIT POLICY ==========
-        section(5, 'Security Deposit Policy');
+        section('Security Deposit Policy');
         doc.font('Helvetica').fontSize(10).fillColor(GRAY_TEXT).text(
             'The security deposit is authorized (held) on the Renter\'s payment method at booking. It is NOT charged unless damage is reported. The hold is automatically released 72 hours (3 days) after checkout if no damage claim is filed. Bank processing may take an additional 5-10 business days to reflect on the Renter\'s statement.',
             { align: 'justify' }
         );
 
-        // ========== SECTION 6: HANDOFF PROTOCOL ==========
-        section(6, 'Handoff Protocol');
+        // ========== NEW SECTION: CRITICAL RISKS YOU ARE ASSUMING ==========
+        if (catLegal) {
+            section('Critical Risks You Are Assuming');
+            doc.fillColor('#dc2626').font('Helvetica-Bold').fontSize(10).text('BY ACCEPTING THIS BOOKING, THE RENTER EXPRESSLY ACKNOWLEDGES THE FOLLOWING CATEGORY-SPECIFIC RISKS:');
+            doc.moveDown(0.2);
+            doc.fillColor(DARK_TEXT).font('Helvetica');
+            for (const risk of catLegal.criticalRisks) bullet(risk);
+            doc.moveDown(0.3);
+            doc.fillColor(GRAY_TEXT).fontSize(9).font('Helvetica-Oblique').text(
+                'This list is illustrative, NOT exhaustive. Additional risks are set out in the Category Annex and Master Rental Agreement. The Renter has read, understood, and assumes all such risks voluntarily.',
+                { align: 'justify' }
+            );
+            doc.fontSize(10).font('Helvetica');
+        }
+
+        // ========== SECTION: HANDOFF PROTOCOL ==========
+        section('Handoff Protocol');
         doc.fillColor(GRAY_TEXT).text(
             'Both Host and Renter must complete the handoff protocol at pickup AND return. This includes: (a) Upload 4-10 photos of the item\'s condition, (b) Confirm receipt/return with a digital signature (checkbox + timestamp + IP address). Failure to complete the handoff protocol may forfeit deposit protection and dispute rights.',
             { align: 'justify' }
         );
 
-        // ========== SECTION 7: DAMAGE CLAIMS ==========
-        section(7, 'Damage Claims');
+        // ========== NEW SECTION: DANGEROUS INSTRUMENTALITY NOTICE (motorized only) ==========
+        if (catLegal && catLegal.isMotorized) {
+            section('Dangerous Instrumentality Notice');
+            doc.fillColor(DARK_TEXT).font('Helvetica').text(
+                `Under Florida common law (see Aurbach v. Gallina, 753 So. 2d 60 (Fla. 2000)), the owner of a "dangerous instrumentality" ` +
+                `— including motor vehicles, motorcycles, boats, RVs, and other motorized equipment — may be held vicariously liable ` +
+                `for negligence in its operation, even by another person to whom the owner has entrusted the vehicle. `,
+                { align: 'justify' }
+            );
+            doc.moveDown(0.3);
+            doc.font('Helvetica-Bold').fillColor('#dc2626').text(
+                'The Host (Lister) is on notice that renting this motorized ${catLegal.label} on Goodslister may expose the Host to vicarious liability for injuries or property damage caused by the Renter\'s use, in addition to the Renter\'s primary liability. Both parties are strongly advised to verify insurance coverage before handoff.',
+                { align: 'justify' }
+            );
+            if (catLegal.flStatutes && catLegal.flStatutes.length > 0) {
+                doc.moveDown(0.3);
+                doc.fillColor(GRAY_TEXT).font('Helvetica-Oblique').fontSize(9).text('Applicable Florida statutes:');
+                doc.font('Helvetica').fontSize(10);
+                for (const stat of catLegal.flStatutes) bullet(stat);
+            }
+        }
+
+        // ========== SECTION: DAMAGE CLAIMS ==========
+        section('Damage Claims');
         doc.fillColor(GRAY_TEXT).text(
             'The Host must report any damage within 48 hours of checkout via the Goodslister platform, including photos, description, and claim amount (not exceeding the security deposit hold). The Renter is notified via email and has 48 hours to accept or dispute the claim. If accepted (or no response), funds are captured to the Host. If disputed, Goodslister admin reviews all evidence (photos from both parties, signatures, condition notes) and issues a fair, final decision.',
             { align: 'justify' }
         );
 
         // ========== SECTION 8: CANCELLATION ==========
-        section(8, 'Cancellation');
+        section('Cancellation');
         doc.fillColor(GRAY_TEXT).text(
             'Cancellation policies are set by the Host and displayed on the listing prior to booking. Eligible refunds are processed automatically via Stripe within 5-10 business days depending on the Renter\'s bank. If the Host cancels a confirmed booking, the Renter receives a full refund automatically.',
             { align: 'justify' }
         );
 
         // ========== SECTION 9: INSURANCE ==========
-        section(9, 'Insurance');
+        section('Insurance');
         doc.fillColor(GRAY_TEXT).text(
             'The Host is responsible for maintaining valid insurance on the rental item, particularly for high-value equipment (vehicles, boats, jet skis, RVs, ATVs). Personal insurance of the Renter may apply for third-party damages. Goodslister LLC is NOT an insurance provider and does not guarantee coverage. Both parties are strongly advised to verify their respective insurance policies cover this rental transaction prior to handoff.',
             { align: 'justify' }
         );
 
         // ========== SECTION 10: LIABILITY & ASSUMPTION OF RISK (NEW - separated) ==========
-        section(10, 'Liability & Assumption of Risk');
+        section('Liability & Assumption of Risk');
         doc.fillColor(GRAY_TEXT).text(
             'ASSUMPTION OF RISK: The Renter acknowledges that the use of adventure and recreational equipment (including but not limited to watercraft, motorcycles, ATVs, camping gear, sports equipment) involves inherent risks of physical injury, property damage, and, in extreme cases, death. The Renter voluntarily assumes all such risks arising from the use of the rented Item.',
             { align: 'justify' }
@@ -151,14 +383,14 @@ async function generatePdfBuffer(data: any): Promise<Buffer> {
         );
 
         // ========== SECTION 11: GOVERNING LAW ==========
-        section(11, 'Governing Law');
+        section('Governing Law');
         doc.fillColor(GRAY_TEXT).text(
             'This Agreement shall be governed by and construed in accordance with the laws of the State of Florida, USA. Any disputes not resolved through Goodslister\'s admin resolution process shall be subject to the exclusive jurisdiction of the courts located in Miami-Dade County, Florida.',
             { align: 'justify' }
         );
 
         // ========== SECTION 12: DIGITAL SIGNATURES ==========
-        section(12, 'Digital Signatures');
+        section('Digital Signatures');
         doc.fillColor(DARK_TEXT).font('Helvetica').text('Signatures below confirm acceptance of the terms in this agreement:');
         doc.moveDown(0.8);
         const sigY = doc.y;
@@ -172,6 +404,28 @@ async function generatePdfBuffer(data: any): Promise<Buffer> {
            .text(`Name: ${data.renter.name || ''}`, 310, sigY + 48, { width: 220 });
         doc.text('Date: _______________', 50, sigY + 63, { width: 220 })
            .text('Date: _______________', 310, sigY + 63, { width: 220 });
+
+        // ========== NEW SECTION: REFERENCES TO FULL LEGAL DOCUMENTS ==========
+        section('References to Full Legal Documents');
+        doc.fillColor(GRAY_TEXT).font('Helvetica').text(
+            'This agreement is a summary of the terms binding both parties. The full legal package (v2.0), which governs this rental in its entirety, is publicly available at goodslister.com and includes the following documents:',
+            { align: 'justify' }
+        );
+        doc.moveDown(0.3);
+        bullet('Universal Core (6 modules): Terms of Service, Privacy Policy, Cookie Policy, Community Guidelines, IP Policy, DMCA — https://goodslister.com/#legalTermsV2');
+        bullet('Transactional Core (6 modules): Lister Agreement, Renter Agreement, Master Rental Agreement, Security Deposit & Damage Policy, Cancellation Policy, Assumption of Risk (General Part) — https://goodslister.com/#legalMasterAgreement');
+        if (catLegal) {
+            bullet(`Category Annex — ${catLegal.label}: full risk disclosure, eligibility, safety equipment, photographic checklist, Lister obligations — https://goodslister.com${catLegal.annexPath}`);
+        }
+        bullet('Insurance & Verification: https://goodslister.com/#insuranceDisclosure');
+        bullet('Trust & Safety: https://goodslister.com/#trustSafety');
+        bullet('Dispute Resolution: https://goodslister.com/#disputeResolution');
+        doc.moveDown(0.3);
+        doc.fillColor(GRAY_TEXT).font('Helvetica-Oblique').fontSize(9).text(
+            'In the event of conflict between this summary and the full legal package, the full legal package controls.',
+            { align: 'justify' }
+        );
+        doc.fontSize(10).font('Helvetica');
 
         // ========== DISCLAIMER (bottom) ==========
         doc.moveDown(3);
