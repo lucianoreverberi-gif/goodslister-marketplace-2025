@@ -52,6 +52,11 @@ const CATEGORY_MARKER: Record<string, { emoji: string; color: string }> = {
     WATER_SPORTS:  { emoji: '🏄', color: '#14B8A6' }, // 🏄 teal
     RVS:           { emoji: '🚐', color: '#EA580C' }, // 🚐 orange
     ATVS_UTVS:     { emoji: '🚙', color: '#7C3AED' }, // 🚙 violet
+    // ---- Categories added in the taxonomy clean-up ----
+    PERSONAL_WATERCRAFT: { emoji: '🚤', color: '#0EA5E9' }, // 🚤 sky (PWC/Jet Ski)
+    ELECTRIC_RIDEABLES:  { emoji: '🛴', color: '#A855F7' }, // 🛴 purple (One Wheel / e-scooter)
+    FISHING_GEAR:        { emoji: '🎣', color: '#1E40AF' }, // 🎣 navy
+    DIVING_SNORKELING:   { emoji: '🤿', color: '#0284C7' }, // 🤿 deep blue
 };
 
 const DEFAULT_MARKER = { emoji: '📍', color: '#64748B' };
@@ -64,7 +69,13 @@ const DEFAULT_MARKER = { emoji: '📍', color: '#64748B' };
  * render natively per the user's device (Apple, Google, MS).
  */
 function getCategoryMarkerIcon(category: string | undefined, hovered: boolean) {
-    const key = String(category || '').toUpperCase().replace(/\s+/g, '_');
+    // Normalize the category label into an uppercase, underscore-separated key.
+    // Strips runs of whitespace or ampersands so "ATVs & UTVs" and
+    // "Diving & Snorkeling" collapse to "ATVS_UTVS" and "DIVING_SNORKELING".
+    const key = String(category || '')
+        .toUpperCase()
+        .replace(/[\s&]+/g, '_')
+        .replace(/^_+|_+$/g, '');
     const cat = CATEGORY_MARKER[key] || DEFAULT_MARKER;
     const size = hovered ? 44 : 36;
     const half = size / 2;
