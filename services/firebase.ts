@@ -7,7 +7,9 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -33,6 +35,13 @@ export const db = getFirestore(app, 'default');
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Ensure Firebase auth state persists across page reloads / tab close (via localStorage).
+// Without this, some browser/environment combos default to in-memory persistence and
+// the user gets logged out on any full page refresh.
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+    console.error('[firebase] Failed to set browserLocalPersistence:', err);
+});
 
 export {
   signInWithEmailAndPassword,
