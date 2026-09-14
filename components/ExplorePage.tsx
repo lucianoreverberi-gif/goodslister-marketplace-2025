@@ -40,6 +40,53 @@ const defaultCenter = {
 
 const DEFAULT_ZOOM = 11;
 
+// =========================================================================
+// Category-specific map marker (emoji + colored circle) per listing category
+// =========================================================================
+const CATEGORY_MARKER: Record<string, { emoji: string; color: string }> = {
+    MOTORCYCLES:   { emoji: '🏍', color: '#DC2626' }, // 🏍 red
+    BIKES:         { emoji: '🚲', color: '#2563EB' }, // 🚲 blue
+    BOATS:         { emoji: '⛵',  color: '#0891B2' }, // ⛵ cyan
+    CAMPING:       { emoji: '🏕', color: '#059669' }, // 🏕 green
+    WINTER_SPORTS: { emoji: '🎿', color: '#64748B' }, // 🎿 slate
+    WATER_SPORTS:  { emoji: '🏄', color: '#14B8A6' }, // 🏄 teal
+    RVS:           { emoji: '🚐', color: '#EA580C' }, // 🚐 orange
+    ATVS_UTVS:     { emoji: '🚙', color: '#7C3AED' }, // 🚙 violet
+};
+
+const DEFAULT_MARKER = { emoji: '📍', color: '#64748B' };
+
+/**
+ * Generates a Google Maps icon config for a category, with a bigger
+ * hovered variant that adds an outer accent ring.
+ *
+ * Uses inline SVG data URIs so no external assets are needed. Emojis
+ * render natively per the user's device (Apple, Google, MS).
+ */
+function getCategoryMarkerIcon(category: string | undefined, hovered: boolean) {
+    const key = String(category || '').toUpperCase().replace(/\s+/g, '_');
+    const cat = CATEGORY_MARKER[key] || DEFAULT_MARKER;
+    const size = hovered ? 44 : 36;
+    const half = size / 2;
+
+    const svg = hovered
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="21" fill="none" stroke="${cat.color}" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="22" cy="22" r="18" fill="${cat.color}" stroke="white" stroke-width="2.5"/>
+            <text x="22" y="29" text-anchor="middle" font-size="22" font-family="sans-serif">${cat.emoji}</text>
+          </svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="${cat.color}" stroke="white" stroke-width="2"/>
+            <text x="18" y="24" text-anchor="middle" font-size="18" font-family="sans-serif">${cat.emoji}</text>
+          </svg>`;
+
+    return {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+        scaledSize: new (window as any).google.maps.Size(size, size),
+        anchor: new (window as any).google.maps.Point(half, half),
+    };
+}
+
 const ExplorePage: React.FC<ExplorePageProps> = ({ 
     listings, 
     onListingClick, 
@@ -601,15 +648,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                             onClick={() => setSelectedListing(listing)}
                             onMouseOver={() => setHoveredListingId(listing.id)}
                             onMouseOut={() => setHoveredListingId(null)}
-                            icon={{
-                                // FIX: Cast 'window' to 'any' to access 'google.maps' without type definitions.
-                                path: (window as any).google.maps.SymbolPath.CIRCLE,
-                                scale: hoveredListingId === listing.id ? 10 : 7,
-                                fillColor: hoveredListingId === listing.id ? "#06B6D4" : "#10B981",
-                                fillOpacity: 0.9,
-                                strokeColor: "white",
-                                strokeWeight: 2,
-                            }}
+                            icon={getCategoryMarkerIcon(listing.category, hoveredListingId === listing.id)}
                         />
                     ))}
                     {selectedListing && (
