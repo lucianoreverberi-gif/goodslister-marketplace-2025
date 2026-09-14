@@ -154,33 +154,62 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings, userId, onO
                         const inCurrentMonth = isSameMonth(day, currentMonth);
                         const isToday = isSameDay(day, new Date());
                         const isSelected = !!selectedDay && isSameDay(day, selectedDay);
-                        const hasHost = dayBookings.some(d => d.role === 'host');
-                        const hasRenter = dayBookings.some(d => d.role === 'renter');
 
+                        // Border-only ring for selected/today so chips inside stay legible
                         const cellClass = isSelected
-                            ? 'bg-cyan-500 text-white ring-2 ring-cyan-400'
+                            ? 'bg-cyan-50 ring-2 ring-cyan-500 border-transparent'
                             : isToday
-                                ? 'bg-cyan-50 text-cyan-700 font-bold ring-1 ring-cyan-200'
+                                ? 'bg-cyan-50 ring-1 ring-cyan-300 border-transparent'
                                 : !inCurrentMonth
-                                    ? 'text-slate-300 hover:bg-slate-50'
+                                    ? 'bg-white border-transparent hover:bg-slate-50'
                                     : dayBookings.length > 0
-                                        ? 'text-slate-900 hover:bg-slate-100 font-bold'
-                                        : 'text-slate-700 hover:bg-slate-50';
+                                        ? 'bg-white border-slate-100 hover:bg-slate-50 hover:border-slate-200'
+                                        : 'bg-white border-transparent hover:bg-slate-50';
+
+                        const dayNumClass = !inCurrentMonth
+                            ? 'text-slate-300'
+                            : isSelected || isToday
+                                ? 'text-cyan-700'
+                                : dayBookings.length > 0
+                                    ? 'text-slate-900'
+                                    : 'text-slate-500';
+
+                        const maxChips = 2;
+                        const visibleBookings = dayBookings.slice(0, maxChips);
+                        const overflow = dayBookings.length - maxChips;
 
                         return (
                             <button
                                 key={i}
                                 onClick={() => setSelectedDay(isSelected ? null : day)}
-                                className={`aspect-square flex flex-col items-center justify-center rounded-lg transition-all relative ${cellClass}`}
+                                className={`min-h-[74px] p-1.5 flex flex-col items-stretch rounded-lg border transition-all text-left overflow-hidden ${cellClass}`}
                             >
-                                <span className="text-sm">{format(day, 'd')}</span>
-                                {dayBookings.length > 0 && (
-                                    <div className="flex gap-0.5 mt-0.5">
-                                        {hasHost && (
-                                            <div className={`h-1 w-1 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-500'}`} />
-                                        )}
-                                        {hasRenter && (
-                                            <div className={`h-1 w-1 rounded-full ${isSelected ? 'bg-white' : 'bg-cyan-500'}`} />
+                                <span className={`text-xs font-black ${dayNumClass}`}>
+                                    {format(day, 'd')}
+                                </span>
+                                {inCurrentMonth && visibleBookings.length > 0 && (
+                                    <div className="flex flex-col gap-0.5 mt-1 overflow-hidden">
+                                        {visibleBookings.map((entry, idx) => {
+                                            const title = entry.booking.listing?.title || 'Rental';
+                                            const chipClass = entry.role === 'host'
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'bg-cyan-500 text-white';
+                                            const roleLabel = entry.role === 'host' ? 'H' : 'R';
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className={`text-[9px] px-1 py-0.5 rounded truncate font-bold flex items-center gap-1 ${chipClass}`}
+                                                    title={(entry.role === 'host' ? 'Hosting: ' : 'Renting: ') + title}
+                                                >
+                                                    <span className="opacity-70">{roleLabel}</span>
+                                                    <span className="truncate">{title}</span>
+                                                </div>
+                                            );
+                                        })}
+                                        {overflow > 0 && (
+                                            <div className="text-[9px] text-slate-500 font-bold px-1">
+                                                +{overflow} more
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -221,7 +250,21 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings, userId, onO
                             const title = b.listing?.title || 'Booking';
                             let range = '';
                             try {
-                                range = format(new Date(b.startDate), 'MMM d') + ' → ' + format(new Date(b.endDate), 'MMM d, yyyy');
+                                const s = new Date(b.startDate);
+                                const e = new Date(b.endDate);
+                                if (isValid(s) && isValid(e)) {
+                                    const sameDay = isSameDay(s, e);
+                                    const hasTime = s.getHours() !== 0 || s.getMinutes() !== 0 || e.getHours() !== 0 || e.getMinutes() !== 0;
+                                    if (sameDay && hasTime) {
+                                        range = format(s, 'MMM d, yyyy') + ' · ' + format(s, 'h:mm a') + ' → ' + format(e, 'h:mm a');
+                                    } else if (sameDay) {
+                                        range = format(s, 'MMM d, yyyy');
+                                    } else if (hasTime) {
+                                        range = format(s, 'MMM d, h:mm a') + ' → ' + format(e, 'MMM d, h:mm a');
+                                    } else {
+                                        range = format(s, 'MMM d') + ' → ' + format(e, 'MMM d, yyyy');
+                                    }
+                                }
                             } catch { /* leave empty */ }
                             const statusClass =
                                 b.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
