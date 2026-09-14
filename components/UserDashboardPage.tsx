@@ -13,6 +13,7 @@ import AgreementSignatureModal from './AgreementSignatureModal';
 import BookingCardTimer from './BookingCardTimer';
 import AttentionPanel from './AttentionPanel';
 import ErrorBoundary from './ErrorBoundary';
+import BookingCalendar from './BookingCalendar';
 import { googleCalendarUrl } from '../utils/calendarLinks';
 import { createNotification } from '../services/notificationsService';
 import { track } from '../services/analytics';
@@ -34,7 +35,7 @@ interface UserDashboardPageProps {
     onUpdateDepositStatus: (bookingId: string, newStatus: 'held' | 'released' | 'disputed' | 'claimed') => void;
 }
 
-type DashboardTab = 'overview' | 'profile' | 'listings' | 'bookings' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant' | 'boosts';
+type DashboardTab = 'overview' | 'profile' | 'listings' | 'bookings' | 'calendar' | 'billing' | 'analytics' | 'security' | 'favorites' | 'aiAssistant' | 'boosts';
 
 const STRIPE_ENABLED = true;
 
@@ -1099,7 +1100,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
             if (queryStart === -1) return;
             const params = new URLSearchParams(hash.substring(queryStart + 1));
             const tab = params.get('tab');
-            const validTabs: DashboardTab[] = ['overview', 'profile', 'listings', 'bookings', 'boosts', 'billing', 'coach', 'security', 'performance'];
+            const validTabs: DashboardTab[] = ['overview', 'profile', 'listings', 'bookings', 'calendar', 'boosts', 'billing', 'coach', 'security', 'performance'];
             if (tab && validTabs.includes(tab as DashboardTab)) {
                 setActiveTab(tab as DashboardTab);
             }
@@ -1162,6 +1163,7 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
         { id: 'listings', name: 'My Listings', icon: PackageIcon },
         { id: 'boosts', name: 'My Boosts', icon: RocketIcon },
         { id: 'bookings', name: 'My Bookings', icon: CalendarIcon },
+        { id: 'calendar', name: 'Calendar', icon: CalendarIcon },
         { id: 'favorites', name: 'Saved Items', icon: HeartIcon },
         { id: 'security', name: 'Security & Trust', icon: ShieldIcon },
         { id: 'analytics', name: 'Performance', icon: BarChartIcon },
@@ -1248,6 +1250,12 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                             </div>
                         </div>
                     </div>
+                );
+            case 'calendar':
+                return (
+                    <ErrorBoundary fallback={<div className="bg-white rounded-2xl p-6 border border-amber-200 text-sm text-amber-700">The calendar view is temporarily unavailable. Please try again later or use the Bookings tab.</div>}>
+                        <BookingCalendar bookings={bookings} userId={user.id} onOpenBookings={() => setActiveTab('bookings')} />
+                    </ErrorBoundary>
                 );
             case 'listings':
                 return (
