@@ -33,7 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 b.status,
                 l.title AS listing_title,
                 l.category AS listing_category,
-                l.location AS listing_location
+                l.location AS listing_location,
+                l.full_address AS listing_full_address
             FROM bookings b
             LEFT JOIN listings l ON l.id = b.listing_id
             WHERE b.id = ${bookingId}
@@ -59,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 'Item: ' + (row.listing_title || 'Rental item') + '\n' +
                 'Category: ' + category + '\n' +
                 'Manage this booking on Goodslister.',
-            location: row.listing_location || undefined,
+            location: row.listing_full_address || row.listing_location || undefined,
             startDate: row.start_date,
             endDate: row.end_date,
             bookingUrl,
