@@ -13,7 +13,7 @@ const LAST_UPDATED = 'September 12, 2026';
 // SHARED LAYOUT + SUBCOMPONENTS
 // ============================================================================
 
-const LegalPageLayout: React.FC<{
+export const LegalPageLayout: React.FC<{
     title: string;
     subtitle: string;
     metaDescription: string;
@@ -56,14 +56,14 @@ const LegalPageLayout: React.FC<{
     );
 };
 
-const Section: React.FC<{ id: string; title: string; children: React.ReactNode }> = ({ id, title, children }) => (
+export const Section: React.FC<{ id: string; title: string; children: React.ReactNode }> = ({ id, title, children }) => (
     <section id={id} className="mb-8">
         <h2>{title}</h2>
         {children}
     </section>
 );
 
-const RiskCallout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const RiskCallout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-lg my-4">
         <div className="uppercase font-bold text-rose-900 text-sm space-y-3">
             {children}
@@ -71,13 +71,13 @@ const RiskCallout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     </div>
 );
 
-const AllCapsBlock: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const AllCapsBlock: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <p className="uppercase font-bold bg-gray-100 border-l-4 border-gray-400 p-4 rounded-lg text-sm leading-relaxed">
         {children}
     </p>
 );
 
-const InfoBox: React.FC<{ children: React.ReactNode; kind?: 'info' | 'warn' | 'note' }> = ({ children, kind = 'info' }) => {
+export const InfoBox: React.FC<{ children: React.ReactNode; kind?: 'info' | 'warn' | 'note' }> = ({ children, kind = 'info' }) => {
     const bg = kind === 'warn' ? 'bg-amber-50 border-amber-500' : kind === 'note' ? 'bg-gray-50 border-gray-400' : 'bg-cyan-50 border-cyan-500';
     return (
         <div className={`${bg} border-l-4 p-4 rounded-lg my-4 text-sm`}>
