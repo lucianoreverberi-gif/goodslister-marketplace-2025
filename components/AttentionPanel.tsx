@@ -69,15 +69,21 @@ const AttentionPanel: React.FC<AttentionPanelProps> = ({
         const list: UrgentItem[] = [];
 
         for (const b of bookings) {
-            const isHost = b.listing?.ownerId === userId;
-            const isRenter = b.renterId === userId;
-            if (!isHost && !isRenter) continue;
+            try {
+                // Guard: skip malformed booking rows so one bad row doesn't blow up the whole panel
+                if (!b || !b.id || !b.startDate || !b.endDate) continue;
 
-            const start = new Date(b.startDate);
-            const end = new Date(b.endDate);
-            const hoursToStart = differenceInHours(start, now);
-            const hoursToEnd = differenceInHours(end, now);
-            const listingTitle = b.listing?.title || 'Rental';
+                // Listing type uses owner: User (nested), not ownerId
+                const isHost = b.listing?.owner?.id === userId;
+                const isRenter = b.renterId === userId;
+                if (!isHost && !isRenter) continue;
+
+                const start = new Date(b.startDate);
+                const end = new Date(b.endDate);
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) continue;
+                const hoursToStart = differenceInHours(start, now);
+                const hoursToEnd = differenceInHours(end, now);
+                const listingTitle = b.listing?.title || 'Rental';
 
             // 1. OVERDUE
             if (b.status === 'active' && hoursToEnd < 0) {
@@ -182,6 +188,10 @@ const AttentionPanel: React.FC<AttentionPanelProps> = ({
                     tint: urgent ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600',
                 });
                 continue;
+            }
+            } catch (err) {
+                // Skip this booking on any unexpected error, keep panel usable
+                console.warn('[AttentionPanel] skipped booking', b?.id, err);
             }
         }
 
