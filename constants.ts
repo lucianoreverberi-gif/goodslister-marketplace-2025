@@ -241,9 +241,13 @@ export const subcategories: { [key in ListingCategory]: string[] } = {
     [ListingCategory.BOATS]: ["Speedboat", "Fishing Boat", "Sailboat", "Pontoon", "Yacht"],
     [ListingCategory.CAMPING]: ["Roof Top Tents", "Overlanding Trailers", "Off-Grid Power Kits", "Family Glamping Kits", "Portable AC/Heaters", "Winter Expedition Gear"],
     [ListingCategory.WINTER_SPORTS]: ["Skis", "Snowboard", "Snowshoes", "Sled", "Ice Skates"],
-    [ListingCategory.WATER_SPORTS]: ["Kayak", "Surfboard", "Paddleboard", "Wakeboard", "Jet Ski", "Wingfoil", "Kitesurf"],
+    [ListingCategory.WATER_SPORTS]: ["Kayak", "Surfboard", "Paddleboard", "Wakeboard", "Wingfoil", "Kitesurf", "E-Foil", "Hydrofoil"],
     [ListingCategory.RVS]: ["Class A", "Class C", "Campervan", "Travel Trailer", "Fifth Wheel"],
     [ListingCategory.ATVS_UTVS]: ["Sport ATV (Quad)", "Utility ATV (4x4)", "Sport Side-by-Side (SxS)", "Utility UTV", "4-Seater Crew", "Dune Buggy", "Youth ATV"],
+    [ListingCategory.PWC]: ["Jet Ski", "Sea-Doo", "Wave Runner", "Stand-up PWC", "Two-Seater PWC", "Three-Seater PWC"],
+    [ListingCategory.ELECTRIC_RIDEABLES]: ["One Wheel", "Electric Skateboard", "E-Scooter", "Electric Unicycle", "Boosted Board", "Segway"],
+    [ListingCategory.FISHING]: ["Fishing Rod", "Tackle Box", "Fly Fishing", "Kayak Fishing", "Offshore Fishing Gear", "Deep Sea Fishing", "Fish Finder"],
+    [ListingCategory.DIVING]: ["Scuba Tank", "Regulator", "BCD (Buoyancy Compensator)", "Wetsuit", "Fins & Mask", "Snorkeling Set", "Dive Computer", "Underwater Camera"],
 };
 
 export const mockConversations: Conversation[] = [
