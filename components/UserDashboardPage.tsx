@@ -1211,6 +1211,10 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                             </div>
                         </div>
 
+                        <ErrorBoundary fallback={<div className="bg-white rounded-2xl p-4 border border-amber-200 text-xs text-amber-700">Google Calendar sync temporarily unavailable.</div>}>
+                            <GoogleCalendarWidget userId={user.id} />
+                        </ErrorBoundary>
+
                         <div className="pt-8 border-t border-slate-100">
                             <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
                                 <LockIcon className="h-4 w-4 text-slate-400" /> Account Security
@@ -1252,9 +1256,6 @@ const UserDashboardPage: React.FC<UserDashboardPageProps> = (props) => {
                             </div>
                         </div>
                     </div>
-                    <ErrorBoundary fallback={<div className="bg-white rounded-2xl p-4 border border-amber-200 text-xs text-amber-700">Google Calendar sync temporarily unavailable.</div>}>
-                        <GoogleCalendarWidget userId={user.id} />
-                    </ErrorBoundary>
                     </div>
                 );
             case 'calendar':
