@@ -6,7 +6,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { Listing, ListingCategory } from '../types';
 import { subcategories } from '../constants';
 import ListingCard from './ListingCard';
-import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon, CompassIcon, AlertTriangleIcon } from './icons';
+import { SearchIcon, MapPinIcon, LocateIcon, LayoutDashboardIcon, CompassIcon, AlertTriangleIcon, SlidersIcon } from './icons';
 import { ListingsGridSkeleton } from './Skeleton';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { FilterCriteria } from '../services/geminiService';import { DayPicker, DateRange } from 'react-day-picker';import { format, parseISO, isWithinInterval, areIntervalsOverlapping } from 'date-fns';
@@ -132,6 +132,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
     // Resizable sidebar state
     const [sidebarWidth, setSidebarWidth] = useState(550);
     const [showMapDesktop, setShowMapDesktop] = useState(true);
+    const [showFiltersDesktop, setShowFiltersDesktop] = useState(true);
     const [isResizing, setIsResizing] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     
@@ -456,7 +457,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                     ${isMobile ? (mobileView === 'map' ? 'hidden' : 'flex h-full') : 'flex md:overflow-y-auto'}
                 `}
             >
-                <div className="p-4 border-b flex-shrink-0">
+                <div className={`p-4 border-b flex-shrink-0 ${showFiltersDesktop ? '' : 'md:hidden'}`}>
                     {/* Filters */}
                     <div className="space-y-4">
                         {/* Geo-Aware Breadcrumb */}
@@ -573,6 +574,20 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
                 <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
                     <p className="text-sm text-gray-600">{filteredAndSortedListings.length} results</p>
                     <div className="flex items-center gap-4">
+                        {/* Filters Toggle - Desktop only */}
+                        <div className="hidden md:flex items-center gap-2">
+                            <SlidersIcon className="h-4 w-4 text-gray-600" />
+                            <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Filters</span>
+                            <button
+                                type="button"
+                                onClick={() => setShowFiltersDesktop(!showFiltersDesktop)}
+                                className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${showFiltersDesktop ? 'bg-cyan-500' : 'bg-gray-300'}`}
+                                aria-label={showFiltersDesktop ? 'Hide filters' : 'Show filters'}
+                                title={showFiltersDesktop ? 'Hide filters' : 'Show filters'}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${showFiltersDesktop ? 'translate-x-5' : 'translate-x-0.5'}`}/>
+                            </button>
+                        </div>
                         {/* Map View Toggle - Desktop only */}
                         <div className="hidden md:flex items-center gap-2">
                             <MapPinIcon className="h-4 w-4 text-gray-600" />
