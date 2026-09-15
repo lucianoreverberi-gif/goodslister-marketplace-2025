@@ -52,13 +52,6 @@ export const LegalPageLayout: React.FC<{
                     <p className="text-gray-400 text-sm mt-4">Last updated: {LAST_UPDATED}</p>
                 </div>
             </div>
-            <div className="bg-amber-50 border-b border-amber-200 py-3">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-                    <p className="text-amber-900 text-sm">
-                        <strong>Draft notice:</strong> This document is pending final review by a Florida-licensed attorney. Terms may change before Goodslister's official launch.
-                    </p>
-                </div>
-            </div>
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
                 <div className="prose prose-slate max-w-none prose-headings:text-gray-900 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-10 prose-h2:mb-4 prose-h2:border-b prose-h2:border-gray-200 prose-h2:pb-2 prose-h3:text-lg prose-h3:font-bold prose-h3:mt-6 prose-h3:mb-3 prose-p:text-gray-700 prose-p:leading-relaxed prose-ul:text-gray-700 prose-strong:text-gray-900 prose-table:text-sm">
                     {children}
