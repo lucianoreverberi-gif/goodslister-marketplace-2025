@@ -131,6 +131,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
 
     // Resizable sidebar state
     const [sidebarWidth, setSidebarWidth] = useState(550);
+    const [showMapDesktop, setShowMapDesktop] = useState(true);
     const [isResizing, setIsResizing] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     
@@ -450,7 +451,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
 
             {/* Left Panel (Filters & List) */}
             <div
-                style={!isMobile ? { width: `${sidebarWidth}px` } : {}}
+                style={!isMobile && showMapDesktop ? { width: `${sidebarWidth}px` } : {}}
                 className={`w-full flex-col flex-shrink-0 bg-white border-r border-gray-200 transition-all duration-300 
                     ${isMobile ? (mobileView === 'map' ? 'hidden' : 'flex h-full') : 'flex md:overflow-y-auto'}
                 `}
@@ -571,22 +572,38 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
 
                 <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
                     <p className="text-sm text-gray-600">{filteredAndSortedListings.length} results</p>
-                    <select 
-                        id="sort-by"
-                        value={sortBy}
-                        onChange={e => setSortBy(e.target.value as SortOption)}
-                        className="text-sm border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 rounded-md shadow-sm"
-                    >
-                        <option value="rating_desc">Highest Rated</option>
-                        <option value="price_desc">Price: High to Low</option>
-                        <option value="price_asc">Price: Low to High</option>
-                    </select>
+                    <div className="flex items-center gap-4">
+                        {/* Map View Toggle - Desktop only */}
+                        <div className="hidden md:flex items-center gap-2">
+                            <MapPinIcon className="h-4 w-4 text-gray-600" />
+                            <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Map</span>
+                            <button
+                                type="button"
+                                onClick={() => setShowMapDesktop(!showMapDesktop)}
+                                className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${showMapDesktop ? 'bg-cyan-500' : 'bg-gray-300'}`}
+                                aria-label={showMapDesktop ? 'Hide map' : 'Show map'}
+                                title={showMapDesktop ? 'Hide map' : 'Show map'}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${showMapDesktop ? 'translate-x-5' : 'translate-x-0.5'}`}/>
+                            </button>
+                        </div>
+                        <select 
+                            id="sort-by"
+                            value={sortBy}
+                            onChange={e => setSortBy(e.target.value as SortOption)}
+                            className="text-sm border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 rounded-md shadow-sm"
+                        >
+                            <option value="rating_desc">Highest Rated</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="price_asc">Price: Low to High</option>
+                        </select>
+                    </div>
                 </div>
 
                 {/* Listing Grid */}
                 <div className="p-4 bg-gray-50">
                     {filteredAndSortedListings.length > 0 ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className={`grid grid-cols-1 gap-4 ${showMapDesktop ? 'lg:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
                             {filteredAndSortedListings.map(listing => (
                                 <div
                                     key={listing.id}
@@ -640,11 +657,11 @@ const ExplorePage: React.FC<ExplorePageProps> = ({
             {/* Mini Legal Footer - Mobile only */} <div className={`md:hidden py-6 px-4 text-center text-xs text-gray-500 border-t border-gray-200 ${isMobile && mobileView === 'map' ? 'hidden' : ''}`}> <div className="flex flex-wrap justify-center gap-x-3 gap-y-2"> <a href="#terms" onClick={(e) => { e.preventDefault(); window.location.hash = 'terms'; }} className="hover:text-cyan-600">Terms</a> <span>·</span> <a href="#privacy" onClick={(e) => { e.preventDefault(); window.location.hash = 'privacy'; }} className="hover:text-cyan-600">Privacy</a> <span>·</span> <a href="#cookies" onClick={(e) => { e.preventDefault(); window.location.hash = 'cookies'; }} className="hover:text-cyan-600">Cookies</a> <span>·</span> <a href="#doNotSell" onClick={(e) => { e.preventDefault(); window.location.hash = 'doNotSell'; }} className="hover:text-cyan-600">Do Not Sell (CA)</a> </div> <p className="mt-3">© 2026 GOODSLISTER LLC. All rights reserved</p> </div> {/* Draggable Divider (Desktop only) */}
             <div
                 onMouseDown={handleMouseDown}
-                className="hidden md:block w-2 cursor-col-resize bg-gray-200 hover:bg-cyan-400 active:bg-cyan-500 transition-colors duration-200 flex-shrink-0"
+                className={`w-2 cursor-col-resize bg-gray-200 hover:bg-cyan-400 active:bg-cyan-500 transition-colors duration-200 flex-shrink-0 ${showMapDesktop ? 'hidden md:block' : 'hidden'}`}
             ></div>
 
             {/* Right Panel - Map */}
-            <div className={`relative h-[calc(100dvh-64px)] md:flex-1 md:h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : 'block'}`}>
+            <div className={`relative h-[calc(100dvh-64px)] md:flex-1 md:h-full ${isMobile ? (mobileView === 'list' ? 'hidden' : 'block') : (showMapDesktop ? 'block' : 'hidden')}`}>
                 <GoogleMap
                     mapContainerStyle={mapContainerStyle}
                     center={mapCenter}
