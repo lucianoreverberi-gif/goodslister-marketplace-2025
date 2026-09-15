@@ -17,7 +17,7 @@ export const LegalPageLayout: React.FC<{
     title: string;
     subtitle: string;
     metaDescription: string;
-    accent?: 'cyan' | 'amber' | 'rose';
+    accent?: 'cyan' | 'amber' | 'rose' | 'sky' | 'violet' | 'emerald';
     children: React.ReactNode;
 }> = ({ title, subtitle, metaDescription, accent = 'cyan', children }) => {
     React.useEffect(() => {
@@ -27,8 +27,20 @@ export const LegalPageLayout: React.FC<{
         window.scrollTo(0, 0);
     }, [title, metaDescription]);
 
-    const gradientClass = accent === 'amber' ? 'from-slate-900 to-amber-950' : accent === 'rose' ? 'from-slate-900 to-rose-950' : 'from-slate-900 to-cyan-950';
-    const accentColorClass = accent === 'amber' ? 'text-amber-400' : accent === 'rose' ? 'text-rose-400' : 'text-cyan-400';
+    const gradientClass =
+        accent === 'amber'   ? 'from-slate-900 to-amber-950' :
+        accent === 'rose'    ? 'from-slate-900 to-rose-950' :
+        accent === 'sky'     ? 'from-slate-900 to-sky-950' :
+        accent === 'violet'  ? 'from-slate-900 to-violet-950' :
+        accent === 'emerald' ? 'from-slate-900 to-emerald-950' :
+                               'from-slate-900 to-cyan-950';
+    const accentColorClass =
+        accent === 'amber'   ? 'text-amber-400' :
+        accent === 'rose'    ? 'text-rose-400' :
+        accent === 'sky'     ? 'text-sky-400' :
+        accent === 'violet'  ? 'text-violet-400' :
+        accent === 'emerald' ? 'text-emerald-400' :
+                               'text-cyan-400';
 
     return (
         <div className="bg-white min-h-screen">
