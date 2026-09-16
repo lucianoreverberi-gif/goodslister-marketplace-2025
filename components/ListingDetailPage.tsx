@@ -94,12 +94,14 @@ interface PaymentSelectionModalProps {
     protectionFee: number;
     securityDeposit: number;
     deductible: number;
+    poolMessage?: string;
+    poolEligible?: boolean;
     listing: Listing;    currentUser: User | null;    onConfirm: (method: 'platform' | 'direct') => void;
     onClose: () => void;
     isProcessing: boolean;
 }
 
-const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, deductible, listing, currentUser, onConfirm, onClose, isProcessing }) => {
+const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, deductible, poolMessage, poolEligible, listing, currentUser, onConfirm, onClose, isProcessing }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [error, setError] = useState<string | null>(null);
@@ -162,6 +164,18 @@ const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, 
                 </div>
 
                 <div className="p-8 space-y-6">
+                    {/* Pool Coverage Badge */}
+                    {poolMessage && (
+                        <div className={`rounded-xl p-3 border ${poolEligible ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                            <div className="flex items-start gap-2">
+                                <span className="text-lg">{poolEligible ? '🛡️' : '⚠️'}</span>
+                                <div>
+                                    <p className={`text-sm font-bold ${poolEligible ? 'text-emerald-900' : 'text-amber-900'}`}>{poolMessage}</p>
+                                    {poolEligible && <p className="text-xs text-emerald-700 mt-0.5">Covered by Goodslister's own risk fund. Repairs only — no liability coverage.</p>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {/* Summary Card */}
                     <div className="bg-cyan-50 rounded-2xl p-6 border border-cyan-100">
                         <div className="space-y-3">
@@ -347,8 +361,12 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
         let poolEligible = false;
         let poolMessage = '';
         if (platformSettings && platformSettings.insurance_strategy) {
-            // Item value proxy: securityDeposit if set, else 10x rentalTotal as estimate
-            const itemValue = Number(listing.securityDeposit) || Number(listing.security_deposit) || (rentalTotal * 10);
+            // Item value: use explicit item_value field (required on listing form),
+            // fall back to securityDeposit proxy for legacy listings without it.
+            const itemValue = Number(listing.item_value)
+                || Number(listing.securityDeposit)
+                || Number(listing.security_deposit)
+                || (rentalTotal * 10);
             const combined = itemValue + rentalTotal;
             const strategy = platformSettings.insurance_strategy;
 
@@ -511,7 +529,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
                     serviceFee={priceDetails.serviceFee}
                     protectionFee={priceDetails.protectionFee}
                     securityDeposit={priceDetails.securityDeposit}
-                    deductible={priceDetails.deductible}                    listing={listing}                    currentUser={currentUser}
+                    deductible={priceDetails.deductible}
+                    poolMessage={priceDetails.poolMessage}
+                    poolEligible={priceDetails.poolEligible}                    listing={listing}                    currentUser={currentUser}
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
