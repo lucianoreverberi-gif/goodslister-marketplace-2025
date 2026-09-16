@@ -887,6 +887,39 @@ const App: React.FC = () => {
                 message: `You confirmed ${renter.name}'s booking for "${listing.title}"`,
                 link: '#userDashboard?tab=bookings&mode=hosting'
             });
+
+            // Auto-allocation to Self-Insurance Pool (repairs only, no liability).
+            // Only allocates when: strategy=self_pool AND item+rental combined <= threshold.
+            // Idempotent server-side (booking_id unique constraint via check).
+            if (Number(booking.protectionFee) > 0) {
+                try {
+                    const settingsRes = await fetch('/api/settings');
+                    const settings = await settingsRes.json();
+                    if (settings && !settings.error && settings.insurance_strategy === 'self_pool') {
+                        const itemValue = Number((listing as any).item_value)
+                            || Number(listing.securityDeposit)
+                            || 0;
+                        const combined = itemValue + Number(booking.totalPrice);
+                        const threshold = Number(settings.pool_max_combined_value) || 5000;
+                        if (itemValue > 0 && combined <= threshold) {
+                            await fetch('/api/risk-pool', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    type: 'premium',
+                                    amount: Number(booking.protectionFee),
+                                    bookingId: booking.id,
+                                    listingId: listing.id,
+                                    itemValue: itemValue,
+                                    description: `Auto-allocated on booking ${booking.id.slice(0, 8)} confirmation`
+                                })
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Pool auto-allocation failed (booking still confirmed):', err);
+                }
+            }
         } else if (newStatus === 'rejected') {
             createNotification({
                 userId: renter.id,
