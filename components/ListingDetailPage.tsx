@@ -371,17 +371,13 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
             const strategy = platformSettings.insurance_strategy;
 
             if (strategy === 'self_pool') {
-                const threshold = Number(platformSettings.pool_max_combined_value) || 5000;
-                if (combined <= threshold) {
-                    poolEligible = true;
-                    const rate = Number(platformSettings.pool_rate_percent) || 2;
-                    const minPrem = Number(platformSettings.pool_min_premium) || 5;
-                    protectionFee = Math.max(minPrem, itemValue * rate / 100);
-                    poolMessage = 'Insured by Goodslister Risk Pool (repairs only)';
-                } else {
-                    protectionFee = 0;
-                    poolMessage = 'External insurance required for high-value rentals';
-                }
+                // Self-pool is DISABLED at checkout while we transition to a Lister-owned
+                // Damage Waiver structure (see product/legal brief 2026-09-16).
+                // Admin panel can still configure this strategy for development,
+                // but no protection fee is charged and no pool allocation occurs.
+                protectionFee = 0;
+                poolEligible = false;
+                poolMessage = '';
             } else if (strategy === 'percentage') {
                 const rate = Number(platformSettings.insurance_percent_rate) || 15;
                 const minPrem = Number(platformSettings.insurance_percent_min) || 5;
