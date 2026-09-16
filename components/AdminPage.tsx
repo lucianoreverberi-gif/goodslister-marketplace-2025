@@ -1236,7 +1236,200 @@ const SystemHealth: React.FC = () => {
     );
 };
 
-const RiskFundTab = InsuranceStrategyConfig;
+const RiskPoolBalanceTile: React.FC = () => {
+    const [pool, setPool] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [showAdjustModal, setShowAdjustModal] = useState(false);
+    const [adjustAmount, setAdjustAmount] = useState(0);
+    const [adjustType, setAdjustType] = useState<'premium' | 'claim' | 'adjustment'>('adjustment');
+    const [adjustDescription, setAdjustDescription] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const loadPool = () => {
+        setLoading(true);
+        fetch('/api/risk-pool')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) setError(data.error);
+                else setPool(data);
+                setLoading(false);
+            })
+            .catch(function(e) {
+                setError(String(e));
+                setLoading(false);
+            });
+    };
+
+    useEffect(function() { loadPool(); }, []);
+
+    const handleAdjust = () => {
+        if (adjustAmount <= 0) return;
+        setSaving(true);
+        let adminEmail = '';
+        try { adminEmail = JSON.parse(localStorage.getItem('goodslister_session') || '{}').email || ''; } catch(e) {}
+        fetch('/api/risk-pool', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: adjustType,
+                amount: adjustAmount,
+                description: adjustDescription || (adjustType === 'adjustment' ? 'Manual adjustment' : adjustType),
+                adminEmail: adminEmail
+            })
+        })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    setShowAdjustModal(false);
+                    setAdjustAmount(0);
+                    setAdjustDescription('');
+                    loadPool();
+                } else {
+                    alert('Failed: ' + (res.error || 'Unknown error'));
+                }
+            })
+            .catch(function(e) { alert('Network error: ' + e); })
+            .finally(function() { setSaving(false); });
+    };
+
+    if (loading) {
+        return <div className="bg-white p-6 rounded-lg shadow border-l-4 border-emerald-500"><p className="text-gray-500">Loading pool balance…</p></div>;
+    }
+    if (error) {
+        return <div className="bg-red-50 p-6 rounded-lg border border-red-200"><p className="text-red-800 font-bold">Pool error:</p><p className="text-red-700 text-sm">{error}</p></div>;
+    }
+    if (!pool) return null;
+
+    const balance = Number(pool.balance || 0);
+    const reserveThreshold = Number(pool.reserve_threshold || 0);
+    let status: 'healthy' | 'warning' | 'blocked';
+    let statusColor: string;
+    let statusLabel: string;
+    if (balance < reserveThreshold) { status = 'blocked'; statusColor = 'red'; statusLabel = '🔴 BLOCKED'; }
+    else if (balance < reserveThreshold * 1.5) { status = 'warning'; statusColor = 'amber'; statusLabel = '🟡 WARNING'; }
+    else { status = 'healthy'; statusColor = 'emerald'; statusLabel = '🟢 HEALTHY'; }
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+            <div className="bg-gradient-to-r from-emerald-800 to-teal-900 p-6 text-white flex justify-between items-center">
+                <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                        <ShieldIcon className="h-6 w-6" />
+                        Self-Insurance Pool
+                    </h3>
+                    <p className="text-emerald-200 text-sm mt-1">Live balance of the Goodslister risk fund (repairs only).</p>
+                </div>
+                <div className={`px-4 py-2 rounded-lg font-bold text-sm bg-${statusColor}-500/20 text-white border border-${statusColor}-300/40}`}>{statusLabel}</div>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Balance</p>
+                    <p className="text-3xl font-black text-emerald-700 mt-1">${balance.toFixed(2)}</p>
+                </div>
+                <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Lifetime Inflow</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">${Number(pool.total_inflow).toFixed(2)}</p>
+                </div>
+                <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Lifetime Outflow</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">${Number(pool.total_outflow).toFixed(2)}</p>
+                </div>
+                <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Reserve Threshold</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">${reserveThreshold.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Min. balance for new bookings</p>
+                </div>
+            </div>
+
+            <div className="px-6 pb-4">
+                <button
+                    onClick={() => setShowAdjustModal(true)}
+                    className="px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg hover:bg-black transition-colors"
+                >
+                    + Add Manual Transaction
+                </button>
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="border-t border-gray-200 p-6">
+                <h4 className="font-bold text-gray-800 mb-4">Recent Transactions</h4>
+                {pool.transactions && pool.transactions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm">
+                            <thead className="text-xs uppercase text-gray-500 border-b">
+                                <tr>
+                                    <th className="text-left py-2 pr-4">When</th>
+                                    <th className="text-left py-2 pr-4">Type</th>
+                                    <th className="text-right py-2 pr-4">Amount</th>
+                                    <th className="text-right py-2 pr-4">Balance After</th>
+                                    <th className="text-left py-2 pr-4">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {pool.transactions.slice(0, 10).map(function(t: any) { return (
+                                    <tr key={t.id} className="border-b border-gray-100">
+                                        <td className="py-2 pr-4 text-gray-600 text-xs">{new Date(t.created_at).toLocaleDateString()}</td>
+                                        <td className="py-2 pr-4">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${t.type === 'premium' ? 'bg-emerald-100 text-emerald-800' : t.type === 'claim' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>{t.type}</span>
+                                        </td>
+                                        <td className={`py-2 pr-4 text-right font-bold ${t.type === 'claim' ? 'text-red-700' : 'text-emerald-700'}`}>{t.type === 'claim' ? '-' : '+'}${Number(t.amount).toFixed(2)}</td>
+                                        <td className="py-2 pr-4 text-right text-gray-900">${Number(t.balance_after).toFixed(2)}</td>
+                                        <td className="py-2 pr-4 text-gray-600 text-xs">{t.description || '—'}</td>
+                                    </tr>
+                                ); })}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500 italic">No transactions yet. Use “Add Manual Transaction” to seed the pool.</p>
+                )}
+            </div>
+
+            {/* Manual Adjustment Modal */}
+            {showAdjustModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+                        <h3 className="text-lg font-bold mb-4">Add Manual Pool Transaction</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Type</label>
+                                <select value={adjustType} onChange={function(e) { setAdjustType(e.target.value as any); }} className="w-full border-gray-300 rounded-md">
+                                    <option value="premium">Premium (add to pool)</option>
+                                    <option value="claim">Claim (subtract from pool)</option>
+                                    <option value="adjustment">Manual adjustment (add)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Amount</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                    <input type="number" step="0.01" min="0.01" value={adjustAmount} onChange={function(e) { setAdjustAmount(Number(e.target.value)); }} className="w-full border-gray-300 rounded-md pl-6 py-2" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Description (optional)</label>
+                                <input type="text" value={adjustDescription} onChange={function(e) { setAdjustDescription(e.target.value); }} placeholder="e.g. Seed capital, Q1 loss reserve" className="w-full border-gray-300 rounded-md py-2 px-3" />
+                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button onClick={function() { setShowAdjustModal(false); }} className="px-4 py-2 text-gray-700 font-bold hover:bg-gray-100 rounded-md">Cancel</button>
+                            <button onClick={handleAdjust} disabled={saving || adjustAmount <= 0} className="px-4 py-2 bg-emerald-700 text-white font-bold rounded-md hover:bg-emerald-800 disabled:opacity-50">{saving ? 'Saving…' : 'Save Transaction'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const RiskFundTab: React.FC = () => (
+    <div>
+        <RiskPoolBalanceTile />
+        <InsuranceStrategyConfig />
+    </div>
+);
 
 const BookingsTab: React.FC<{ bookings: Booking[], onUpdateDepositStatus: (id: string, status: 'held' | 'released' | 'disputed' | 'claimed') => void }> = ({ bookings, onUpdateDepositStatus }) => {
     const [searchQuery, setSearchQuery] = useState('');
