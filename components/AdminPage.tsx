@@ -604,13 +604,15 @@ const GlobalSettingsTab: React.FC = () => {
     const [feeThreshold, setFeeThreshold] = useState(100);
     const [lowTierFee, setLowTierFee] = useState(10);
     const [highTierFee, setHighTierFee] = useState(25);
-    const [ownerFee, setOwnerFee] = useState(3);    React.useEffect(function() { fetch('/api/settings').then(function(r) { return r.json(); }).then(function(s) { if (s && !s.error) { setFeeThreshold(parseFloat(s.price_threshold)); setLowTierFee(parseFloat(s.low_value_fee)); setHighTierFee(parseFloat(s.high_value_fee)); setOwnerFee(parseFloat(s.transaction_fee_percent)); } }).catch(function(e) { console.warn('Load settings failed:', e); }); }, []);    React.useEffect(function() { fetch('/api/settings').then(function(r) { return r.json(); }).then(function(s) { if (s && !s.error) { setFeeThreshold(parseFloat(s.price_threshold)); setLowTierFee(parseFloat(s.low_value_fee)); setHighTierFee(parseFloat(s.high_value_fee)); setOwnerFee(parseFloat(s.transaction_fee_percent)); } }).catch(function(e) { console.warn('Load settings failed:', e); }); }, []);
+    const [ownerFee, setOwnerFee] = useState(3);
+    const [feeMode, setFeeMode] = useState('tiered');
+    const [renterPercentFee, setRenterPercentFee] = useState(10);    React.useEffect(function() { fetch('/api/settings').then(function(r) { return r.json(); }).then(function(s) { if (s && !s.error) { setFeeThreshold(parseFloat(s.price_threshold)); setLowTierFee(parseFloat(s.low_value_fee)); setHighTierFee(parseFloat(s.high_value_fee)); setOwnerFee(parseFloat(s.transaction_fee_percent)); if (s.renter_fee_mode) setFeeMode(s.renter_fee_mode); if (s.renter_fee_percent != null) setRenterPercentFee(parseFloat(s.renter_fee_percent)); } }).catch(function(e) { console.warn('Load settings failed:', e); }); }, []);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = () => {
         setIsSaving(true);
         // Simulate API call
-        let adminEmail = ''; try { adminEmail = JSON.parse(localStorage.getItem('goodslister_session') || '{}').email || ''; } catch(e) {} fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceThreshold: feeThreshold, lowValueFee: lowTierFee, highValueFee: highTierFee, transactionFeePercent: ownerFee, adminEmail: adminEmail }) }).then(function(r) { if (!r.ok) console.error('Save settings failed:', r.status); }).catch(function(e) { console.error('Save settings error:', e); }).finally(function() { setIsSaving(false); });
+        let adminEmail = ''; try { adminEmail = JSON.parse(localStorage.getItem('goodslister_session') || '{}').email || ''; } catch(e) {} fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceThreshold: feeThreshold, lowValueFee: lowTierFee, highValueFee: highTierFee, transactionFeePercent: ownerFee, renterFeeMode: feeMode, renterFeePercent: renterPercentFee, adminEmail: adminEmail }) }).then(function(r) { if (!r.ok) console.error('Save settings failed:', r.status); }).catch(function(e) { console.error('Save settings error:', e); }).finally(function() { setIsSaving(false); });
     };
 
     return (
@@ -624,71 +626,124 @@ const GlobalSettingsTab: React.FC = () => {
                         <CalculatorIcon className="h-6 w-6" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900">Renter Service Fees (Tiered Strategy)</h3>
-                        <p className="text-xs text-gray-500">Configure dynamic fixed fees based on the rental subtotal.</p>
+                        <h3 className="text-lg font-bold text-gray-900">Renter Service Fee</h3>
+                        <p className="text-xs text-gray-500">Choose between tiered fixed fees or a flat percentage of rental subtotal.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
-                    {/* 1. Threshold */}
-                    <div className="relative">
-                        <label className="block text-sm font-bold text-gray-700 mb-2">1. Price Threshold</label>
-                        <div className="relative rounded-md shadow-sm">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span className="text-gray-500 sm:text-sm">$</span>
-                            </div>
-                            <input
-                                type="number"
-                                value={feeThreshold}
-                                onChange={(e) => setFeeThreshold(Number(e.target.value))}
-                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2"
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">The breakpoint amount (e.g. rentals under/over $100).</p>
-                    </div>
-
-                    {/* 2. Low Fee */}
-                    <div className="relative">
-                        <label className="block text-sm font-bold text-gray-700 mb-2">2. Fee for Low Value Rentals</label>
-                        <div className="relative rounded-md shadow-sm">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span className="text-gray-500 sm:text-sm">$</span>
-                            </div>
-                            <input
-                                type="number"
-                                value={lowTierFee}
-                                onChange={(e) => setLowTierFee(Number(e.target.value))}
-                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2 bg-green-50"
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">Applied if booking is &lt; ${feeThreshold}.</p>
-                    </div>
-
-                    {/* 3. High Fee */}
-                    <div className="relative">
-                        <label className="block text-sm font-bold text-gray-700 mb-2">3. Fee for High Value Rentals</label>
-                        <div className="relative rounded-md shadow-sm">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span className="text-gray-500 sm:text-sm">$</span>
-                            </div>
-                            <input
-                                type="number"
-                                value={highTierFee}
-                                onChange={(e) => setHighTierFee(Number(e.target.value))}
-                                className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2 bg-blue-50"
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">Applied if booking is &gt;= ${feeThreshold}.</p>
-                    </div>
+                {/* Mode Selector: Fixed (Tiered) vs Percentage */}
+                <div className="mb-6 flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+                    <button
+                        type="button"
+                        onClick={() => setFeeMode('tiered')}
+                        className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${feeMode === 'tiered' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                        Fixed (Tiered)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFeeMode('percentage')}
+                        className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${feeMode === 'percentage' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                        Percentage
+                    </button>
                 </div>
 
-                <div className="mt-6 bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-600">
-                    <p><strong>Current Logic:</strong></p>
-                    <ul className="list-disc ml-5 mt-1 space-y-1">
-                        <li>If a user rents a kayak for <strong>$50</strong>, they pay a <strong>${lowTierFee}</strong> service fee.</li>
-                        <li>If a user rents a boat for <strong>$500</strong>, they pay a <strong>${highTierFee}</strong> service fee.</li>
-                    </ul>
-                </div>
+                {feeMode === 'tiered' ? (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2">
+                            {/* 1. Threshold */}
+                            <div className="relative">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">1. Price Threshold</label>
+                                <div className="relative rounded-md shadow-sm">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 sm:text-sm">$</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={feeThreshold}
+                                        onChange={(e) => setFeeThreshold(Number(e.target.value))}
+                                        className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2"
+                                    />
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">The breakpoint amount (e.g. rentals under/over $100).</p>
+                            </div>
+
+                            {/* 2. Low Fee */}
+                            <div className="relative">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">2. Fee for Low Value Rentals</label>
+                                <div className="relative rounded-md shadow-sm">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 sm:text-sm">$</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={lowTierFee}
+                                        onChange={(e) => setLowTierFee(Number(e.target.value))}
+                                        className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2 bg-green-50"
+                                    />
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">Applied if booking is &lt; ${feeThreshold}.</p>
+                            </div>
+
+                            {/* 3. High Fee */}
+                            <div className="relative">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">3. Fee for High Value Rentals</label>
+                                <div className="relative rounded-md shadow-sm">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 sm:text-sm">$</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={highTierFee}
+                                        onChange={(e) => setHighTierFee(Number(e.target.value))}
+                                        className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2 bg-blue-50"
+                                    />
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">Applied if booking is &gt;= ${feeThreshold}.</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-600">
+                            <p><strong>Current Logic:</strong></p>
+                            <ul className="list-disc ml-5 mt-1 space-y-1">
+                                <li>If a user rents a kayak for <strong>$50</strong>, they pay a <strong>$${lowTierFee}</strong> service fee.</li>
+                                <li>If a user rents a boat for <strong>$500</strong>, they pay a <strong>$${highTierFee}</strong> service fee.</li>
+                            </ul>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Renter Service Fee (%)</label>
+                                <div className="relative rounded-md shadow-sm">
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        max="100"
+                                        value={renterPercentFee}
+                                        onChange={(e) => setRenterPercentFee(Number(e.target.value))}
+                                        className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-3 pr-12 py-2 bg-cyan-50"
+                                    />
+                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 sm:text-sm">%</span>
+                                    </div>
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">Applied on every booking regardless of rental subtotal.</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-600">
+                            <p><strong>Current Logic:</strong></p>
+                            <ul className="list-disc ml-5 mt-1 space-y-1">
+                                <li>Kayak <strong>$50</strong> → <strong>$${(50 * renterPercentFee / 100).toFixed(2)}</strong> service fee ({renterPercentFee}%).</li>
+                                <li>Boat <strong>$500</strong> → <strong>$${(500 * renterPercentFee / 100).toFixed(2)}</strong> service fee ({renterPercentFee}%).</li>
+                            </ul>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Owner Fee Section */}
