@@ -246,9 +246,15 @@ const FinancialsTab: React.FC = () => { const [financialsData, setFinancialsData
 
 const InsuranceStrategyConfig: React.FC = () => {
     // Strategy State
-    const [strategy, setStrategy] = useState<'percentage' | 'tiered'>('percentage');
+    const [strategy, setStrategy] = useState<'percentage' | 'tiered' | 'self_pool'>('percentage');
     const [deductible, setDeductible] = useState(500);
     const [isSaving, setIsSaving] = useState(false);
+    // Self-Insurance Pool state (repairs only, no liability)
+    const [poolMaxCombinedValue, setPoolMaxCombinedValue] = useState(5000);
+    const [poolRatePercent, setPoolRatePercent] = useState(2);
+    const [poolMinPremium, setPoolMinPremium] = useState(5);
+    const [poolMaxPayoutRatio, setPoolMaxPayoutRatio] = useState(1);
+    const [poolReserveMultiplier, setPoolReserveMultiplier] = useState(3);
 
     // Percentage Model
     const [percentageRate, setPercentageRate] = useState(15);
@@ -265,21 +271,77 @@ const InsuranceStrategyConfig: React.FC = () => {
 
     // Simulator State
     const [simRentalValue, setSimRentalValue] = useState(250);
+    const [simItemValue, setSimItemValue] = useState(1500);
 
-    const calculateFee = (val: number) => {
+    // Load persisted settings on mount
+    useEffect(function() {
+        fetch('/api/settings')
+            .then(function(r) { return r.json(); })
+            .then(function(s) {
+                if (!s || s.error) return;
+                if (s.insurance_strategy) setStrategy(s.insurance_strategy);
+                if (s.insurance_deductible != null) setDeductible(parseFloat(s.insurance_deductible));
+                if (s.insurance_percent_rate != null) setPercentageRate(parseFloat(s.insurance_percent_rate));
+                if (s.insurance_percent_min != null) setMinFee(parseFloat(s.insurance_percent_min));
+                if (s.insurance_tier1_limit != null) setTier1Limit(parseFloat(s.insurance_tier1_limit));
+                if (s.insurance_tier1_fee != null) setTier1Fee(parseFloat(s.insurance_tier1_fee));
+                if (s.insurance_tier2_limit != null) setTier2Limit(parseFloat(s.insurance_tier2_limit));
+                if (s.insurance_tier2_fee != null) setTier2Fee(parseFloat(s.insurance_tier2_fee));
+                if (s.insurance_tier3_fee != null) setTier3Fee(parseFloat(s.insurance_tier3_fee));
+                if (s.pool_max_combined_value != null) setPoolMaxCombinedValue(parseFloat(s.pool_max_combined_value));
+                if (s.pool_rate_percent != null) setPoolRatePercent(parseFloat(s.pool_rate_percent));
+                if (s.pool_min_premium != null) setPoolMinPremium(parseFloat(s.pool_min_premium));
+                if (s.pool_max_payout_ratio != null) setPoolMaxPayoutRatio(parseFloat(s.pool_max_payout_ratio));
+                if (s.pool_reserve_multiplier != null) setPoolReserveMultiplier(parseFloat(s.pool_reserve_multiplier));
+            })
+            .catch(function(e) { console.warn('Load insurance settings failed:', e); });
+    }, []);
+
+    const calculateFee = (val: number, itemVal?: number) => {
         if (strategy === 'percentage') {
             const calc = val * (percentageRate / 100);
             return Math.max(calc, minFee);
-        } else {
+        }
+        if (strategy === 'tiered') {
             if (val <= tier1Limit) return tier1Fee;
             if (val <= tier2Limit) return tier2Fee;
             return tier3Fee;
         }
+        // self_pool: premium = max(min, item_value * rate%)
+        const itemValue = itemVal != null ? itemVal : simItemValue;
+        const combined = itemValue + val;
+        if (combined > poolMaxCombinedValue) return 0; // Not eligible for pool
+        return Math.max(poolMinPremium, itemValue * (poolRatePercent / 100));
     };
 
     const handleSave = () => {
         setIsSaving(true);
-        setTimeout(() => setIsSaving(false), 1500);
+        let adminEmail = '';
+        try { adminEmail = JSON.parse(localStorage.getItem('goodslister_session') || '{}').email || ''; } catch(e) {}
+        fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                insuranceStrategy: strategy,
+                insuranceDeductible: deductible,
+                insurancePercentRate: percentageRate,
+                insurancePercentMin: minFee,
+                insuranceTier1Limit: tier1Limit,
+                insuranceTier1Fee: tier1Fee,
+                insuranceTier2Limit: tier2Limit,
+                insuranceTier2Fee: tier2Fee,
+                insuranceTier3Fee: tier3Fee,
+                poolMaxCombinedValue: poolMaxCombinedValue,
+                poolRatePercent: poolRatePercent,
+                poolMinPremium: poolMinPremium,
+                poolMaxPayoutRatio: poolMaxPayoutRatio,
+                poolReserveMultiplier: poolReserveMultiplier,
+                adminEmail: adminEmail
+            })
+        })
+        .then(function(r) { if (!r.ok) console.error('Save insurance failed:', r.status); })
+        .catch(function(e) { console.error('Save insurance error:', e); })
+        .finally(function() { setIsSaving(false); });
     };
 
     return (
@@ -304,6 +366,12 @@ const InsuranceStrategyConfig: React.FC = () => {
                         className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${strategy === 'tiered' ? 'bg-white text-purple-900' : 'text-purple-100 hover:bg-white/10'}`}
                     >
                         Fixed Tiers
+                    </button>
+                    <button 
+                        onClick={() => setStrategy('self_pool')}
+                        className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${strategy === 'self_pool' ? 'bg-white text-purple-900' : 'text-purple-100 hover:bg-white/10'}`}
+                    >
+                        Self-Pool
                     </button>
                 </div>
             </div>
@@ -402,6 +470,67 @@ const InsuranceStrategyConfig: React.FC = () => {
                                         <label className="block text-xs text-indigo-800 font-bold">Charge Fee</label>
                                         <div className="relative"><span className="absolute left-2 top-1.5 text-xs">$</span><input type="number" value={tier3Fee} onChange={e => setTier3Fee(Number(e.target.value))} className="w-full pl-5 py-1 text-sm rounded border-indigo-300 bg-white font-bold text-indigo-700"/></div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6 animate-in fade-in">
+                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-lg space-y-4">
+                                <div>
+                                    <h4 className="font-bold text-emerald-900 mb-1">Self-Insurance Pool</h4>
+                                    <p className="text-xs text-emerald-800 mb-3">Goodslister's own risk fund. Covers <strong>repairs only</strong> (no liability). Eligibility: item + rental combined below threshold.</p>
+                                </div>
+
+                                {/* Eligibility threshold */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Eligibility Threshold (item + rental)</label>
+                                    <div className="relative max-w-xs">
+                                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                        <input type="number" step="100" min="0" value={poolMaxCombinedValue} onChange={e => setPoolMaxCombinedValue(Number(e.target.value))} className="block w-full border-gray-300 rounded-md pl-6" />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">Bookings where (item value + rental total) exceed this fall back to external insurance.</p>
+                                </div>
+
+                                {/* Rate + Min Premium */}
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rate (% of Item Value)</label>
+                                        <div className="relative">
+                                            <input type="number" step="0.1" min="0" max="100" value={poolRatePercent} onChange={e => setPoolRatePercent(Number(e.target.value))} className="block w-full border-gray-300 rounded-md pr-8" />
+                                            <span className="absolute right-3 top-2 text-gray-500">%</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Minimum Premium (Floor)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                            <input type="number" step="0.5" min="0" value={poolMinPremium} onChange={e => setPoolMinPremium(Number(e.target.value))} className="block w-full border-gray-300 rounded-md pl-6" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Payout ratio + Reserve multiplier */}
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Max Payout (per claim)</label>
+                                        <div className="relative">
+                                            <input type="number" step="0.05" min="0" max="1" value={poolMaxPayoutRatio} onChange={e => setPoolMaxPayoutRatio(Number(e.target.value))} className="block w-full border-gray-300 rounded-md pr-8" />
+                                            <span className="absolute right-3 top-2 text-gray-500">× item</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">1.0 = 100% of item value cap</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Reserve Multiplier</label>
+                                        <div className="relative">
+                                            <input type="number" step="0.5" min="1" value={poolReserveMultiplier} onChange={e => setPoolReserveMultiplier(Number(e.target.value))} className="block w-full border-gray-300 rounded-md pr-8" />
+                                            <span className="absolute right-3 top-2 text-gray-500">× payout</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">Pool blocks bookings below this reserve</p>
+                                    </div>
+                                </div>
+
+                                <div className="text-xs bg-amber-50 border border-amber-200 rounded p-2 text-amber-900">
+                                    ⚠️ Solvency guard: new bookings blocked if pool balance &lt; (max_payout × reserve multiplier).
                                 </div>
                             </div>
                         </div>
