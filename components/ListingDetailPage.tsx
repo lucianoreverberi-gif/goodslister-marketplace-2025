@@ -332,13 +332,47 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
             rentalTotal = (listing.pricePerDay || 0) * unitCount;
         }
         
+        // Protection Fee: dynamic from admin settings (falls back to legacy hardcoded plans)
         let protectionFee = 0;
-        if (!isHighRisk) {
-            if (insurancePlan === 'standard') protectionFee = rentalTotal * 0.10;
-            else if (insurancePlan === 'premium') protectionFee = rentalTotal * 0.20;
+        let poolEligible = false;
+        let poolMessage = '';
+        if (platformSettings && platformSettings.insurance_strategy) {
+            // Item value proxy: securityDeposit if set, else 10x rentalTotal as estimate
+            const itemValue = Number(listing.securityDeposit) || Number(listing.security_deposit) || (rentalTotal * 10);
+            const combined = itemValue + rentalTotal;
+            const strategy = platformSettings.insurance_strategy;
+
+            if (strategy === 'self_pool') {
+                const threshold = Number(platformSettings.pool_max_combined_value) || 5000;
+                if (combined <= threshold) {
+                    poolEligible = true;
+                    const rate = Number(platformSettings.pool_rate_percent) || 2;
+                    const minPrem = Number(platformSettings.pool_min_premium) || 5;
+                    protectionFee = Math.max(minPrem, itemValue * rate / 100);
+                    poolMessage = 'Insured by Goodslister Risk Pool (repairs only)';
+                } else {
+                    protectionFee = 0;
+                    poolMessage = 'External insurance required for high-value rentals';
+                }
+            } else if (strategy === 'percentage') {
+                const rate = Number(platformSettings.insurance_percent_rate) || 15;
+                const minPrem = Number(platformSettings.insurance_percent_min) || 5;
+                protectionFee = Math.max(minPrem, rentalTotal * rate / 100);
+            } else if (strategy === 'tiered') {
+                const t1Limit = Number(platformSettings.insurance_tier1_limit) || 100;
+                const t2Limit = Number(platformSettings.insurance_tier2_limit) || 500;
+                if (rentalTotal <= t1Limit) protectionFee = Number(platformSettings.insurance_tier1_fee) || 10;
+                else if (rentalTotal <= t2Limit) protectionFee = Number(platformSettings.insurance_tier2_fee) || 35;
+                else protectionFee = Number(platformSettings.insurance_tier3_fee) || 75;
+            }
         } else {
-            // For high risk, protection is often a daily flat fee to Risk Fund
-            protectionFee = unitCount * 25.00; 
+            // Legacy fallback: renter's insurancePlan choice
+            if (!isHighRisk) {
+                if (insurancePlan === 'standard') protectionFee = rentalTotal * 0.10;
+                else if (insurancePlan === 'premium') protectionFee = rentalTotal * 0.20;
+            } else {
+                protectionFee = unitCount * 25.00;
+            }
         }
         
         // Service fee: dynamic from admin settings (fallback to 10% if not loaded)
@@ -360,7 +394,7 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
         const securityDeposit = listing.securityDeposit || 0;
         const totalPrice = rentalTotal + protectionFee + serviceFee;
 
-        return { unitCount, rentalTotal, protectionFee, serviceFee, securityDeposit, totalPrice };
+        return { unitCount, rentalTotal, protectionFee, serviceFee, securityDeposit, totalPrice, poolEligible, poolMessage };
     };
 
     const priceDetails = getPriceDetails();
