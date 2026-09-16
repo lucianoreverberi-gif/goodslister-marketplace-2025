@@ -606,13 +606,14 @@ const GlobalSettingsTab: React.FC = () => {
     const [highTierFee, setHighTierFee] = useState(25);
     const [ownerFee, setOwnerFee] = useState(3);
     const [feeMode, setFeeMode] = useState('tiered');
-    const [renterPercentFee, setRenterPercentFee] = useState(10);    React.useEffect(function() { fetch('/api/settings').then(function(r) { return r.json(); }).then(function(s) { if (s && !s.error) { setFeeThreshold(parseFloat(s.price_threshold)); setLowTierFee(parseFloat(s.low_value_fee)); setHighTierFee(parseFloat(s.high_value_fee)); setOwnerFee(parseFloat(s.transaction_fee_percent)); if (s.renter_fee_mode) setFeeMode(s.renter_fee_mode); if (s.renter_fee_percent != null) setRenterPercentFee(parseFloat(s.renter_fee_percent)); } }).catch(function(e) { console.warn('Load settings failed:', e); }); }, []);
+    const [renterPercentFee, setRenterPercentFee] = useState(10);
+    const [renterFeeMin, setRenterFeeMin] = useState(10);    React.useEffect(function() { fetch('/api/settings').then(function(r) { return r.json(); }).then(function(s) { if (s && !s.error) { setFeeThreshold(parseFloat(s.price_threshold)); setLowTierFee(parseFloat(s.low_value_fee)); setHighTierFee(parseFloat(s.high_value_fee)); setOwnerFee(parseFloat(s.transaction_fee_percent)); if (s.renter_fee_mode) setFeeMode(s.renter_fee_mode); if (s.renter_fee_percent != null) setRenterPercentFee(parseFloat(s.renter_fee_percent)); if (s.renter_fee_min != null) setRenterFeeMin(parseFloat(s.renter_fee_min)); } }).catch(function(e) { console.warn('Load settings failed:', e); }); }, []);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = () => {
         setIsSaving(true);
         // Simulate API call
-        let adminEmail = ''; try { adminEmail = JSON.parse(localStorage.getItem('goodslister_session') || '{}').email || ''; } catch(e) {} fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceThreshold: feeThreshold, lowValueFee: lowTierFee, highValueFee: highTierFee, transactionFeePercent: ownerFee, renterFeeMode: feeMode, renterFeePercent: renterPercentFee, adminEmail: adminEmail }) }).then(function(r) { if (!r.ok) console.error('Save settings failed:', r.status); }).catch(function(e) { console.error('Save settings error:', e); }).finally(function() { setIsSaving(false); });
+        let adminEmail = ''; try { adminEmail = JSON.parse(localStorage.getItem('goodslister_session') || '{}').email || ''; } catch(e) {} fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceThreshold: feeThreshold, lowValueFee: lowTierFee, highValueFee: highTierFee, transactionFeePercent: ownerFee, renterFeeMode: feeMode, renterFeePercent: renterPercentFee, renterFeeMin: renterFeeMin, adminEmail: adminEmail }) }).then(function(r) { if (!r.ok) console.error('Save settings failed:', r.status); }).catch(function(e) { console.error('Save settings error:', e); }).finally(function() { setIsSaving(false); });
     };
 
     return (
@@ -715,6 +716,7 @@ const GlobalSettingsTab: React.FC = () => {
                 ) : (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2">
+                            {/* Percentage input */}
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Renter Service Fee (%)</label>
                                 <div className="relative rounded-md shadow-sm">
@@ -731,16 +733,36 @@ const GlobalSettingsTab: React.FC = () => {
                                         <span className="text-gray-500 sm:text-sm">%</span>
                                     </div>
                                 </div>
-                                <p className="mt-1 text-xs text-gray-500">Applied on every booking regardless of rental subtotal.</p>
+                                <p className="mt-1 text-xs text-gray-500">Applied on rental subtotal.</p>
+                            </div>
+                            {/* Minimum floor input */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Minimum Fee (Floor)</label>
+                                <div className="relative rounded-md shadow-sm">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 sm:text-sm">$</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        step="0.5"
+                                        min="0"
+                                        value={renterFeeMin}
+                                        onChange={(e) => setRenterFeeMin(Number(e.target.value))}
+                                        className="block w-full border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500 pl-7 py-2 bg-emerald-50"
+                                    />
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">Applied when percentage would be smaller. Set to 0 to disable.</p>
                             </div>
                         </div>
 
                         <div className="mt-6 bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-600">
-                            <p><strong>Current Logic:</strong></p>
-                            <ul className="list-disc ml-5 mt-1 space-y-1">
-                                <li>Kayak <strong>$50</strong> → <strong>$${(50 * renterPercentFee / 100).toFixed(2)}</strong> service fee ({renterPercentFee}%).</li>
-                                <li>Boat <strong>$500</strong> → <strong>$${(500 * renterPercentFee / 100).toFixed(2)}</strong> service fee ({renterPercentFee}%).</li>
+                            <p><strong>Current Logic:</strong> <code>fee = max(minimum, subtotal × percent)</code></p>
+                            <ul className="list-disc ml-5 mt-2 space-y-1">
+                                <li>Kayak <strong>$30</strong> → max($${renterFeeMin.toFixed(2)}, $${(30 * renterPercentFee / 100).toFixed(2)}) = <strong>$${Math.max(renterFeeMin, 30 * renterPercentFee / 100).toFixed(2)}</strong></li>
+                                <li>Kayak <strong>$50</strong> → max($${renterFeeMin.toFixed(2)}, $${(50 * renterPercentFee / 100).toFixed(2)}) = <strong>$${Math.max(renterFeeMin, 50 * renterPercentFee / 100).toFixed(2)}</strong></li>
+                                <li>Boat <strong>$500</strong> → max($${renterFeeMin.toFixed(2)}, $${(500 * renterPercentFee / 100).toFixed(2)}) = <strong>$${Math.max(renterFeeMin, 500 * renterPercentFee / 100).toFixed(2)}</strong></li>
                             </ul>
+                            <p className="mt-2 text-xs italic text-gray-500">Tipping point: subtotal above <strong>$${(renterPercentFee > 0 ? (renterFeeMin * 100 / renterPercentFee).toFixed(2) : '∞')}</strong> — percentage kicks in.</p>
                         </div>
                     </>
                 )}
