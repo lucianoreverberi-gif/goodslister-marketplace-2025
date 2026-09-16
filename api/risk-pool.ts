@@ -117,11 +117,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const { type, amount, bookingId, listingId, itemValue, description, adminEmail, createdBy } = req.body || {};
 
-      // Auth: admin required for manual adjustments and claims.
-      // For premium (system-generated), we still require an admin email for the MVP —
-      // will be relaxed later when booking accept endpoints call this internally.
-      if (!adminEmail || !ADMIN_EMAILS.includes(String(adminEmail).toLowerCase())) {
-        return res.status(403).json({ error: 'Not authorized' });
+      // Auth model:
+      //  - System-generated premium (type='premium' with bookingId): no admin required.
+      //    This is called from the booking accept flow.
+      //  - All other transactions (claim, adjustment, manual premium): admin required.
+      const isSystemPremium = type === 'premium' && bookingId && typeof bookingId === 'string';
+      if (!isSystemPremium) {
+        if (!adminEmail || !ADMIN_EMAILS.includes(String(adminEmail).toLowerCase())) {
+          return res.status(403).json({ error: 'Not authorized' });
+        }
+      }
+
+      // Idempotency: skip if a premium for this booking is already logged.
+      if (isSystemPremium) {
+        const existing = await sql`
+          SELECT id, balance_after FROM risk_pool_transactions
+          WHERE booking_id = ${bookingId} AND type = 'premium'
+          LIMIT 1
+        `;
+        if (existing.rows.length > 0) {
+          return res.status(200).json({
+            success: true,
+            skipped: true,
+            reason: 'Premium already logged for this booking',
+            transactionId: existing.rows[0].id,
+            newBalance: Number(existing.rows[0].balance_after)
+          });
+        }
       }
 
       if (!type || !['premium', 'claim', 'adjustment'].includes(type)) {
