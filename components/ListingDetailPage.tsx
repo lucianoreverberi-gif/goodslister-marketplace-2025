@@ -268,6 +268,17 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
     const [showIdentityModal, setShowIdentityModal] = useState(false);
     const [apiVerified, setApiVerified] = useState<boolean | null>(null);
     const [insurancePlan, setInsurancePlan] = useState<'none' | 'standard' | 'premium'>('standard');
+    // Platform fee configuration loaded from admin /api/settings
+    const [platformSettings, setPlatformSettings] = useState<any>(null);
+
+    useEffect(() => {
+        fetch('/api/settings')
+            .then(function(r) { return r.json(); })
+            .then(function(s) {
+                if (s && !s.error) setPlatformSettings(s);
+            })
+            .catch(function(e) { console.warn('Failed to load platform settings:', e); });
+    }, []);
 
     const isOwner = currentUser?.id === listing.owner.id;
 
@@ -330,7 +341,22 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
             protectionFee = unitCount * 25.00; 
         }
         
-        const serviceFee = rentalTotal * 0.10; 
+        // Service fee: dynamic from admin settings (fallback to 10% if not loaded)
+        let serviceFee: number;
+        if (platformSettings) {
+            if (platformSettings.renter_fee_mode === 'percentage') {
+                const percentAmount = rentalTotal * (Number(platformSettings.renter_fee_percent) / 100);
+                serviceFee = Math.max(Number(platformSettings.renter_fee_min) || 0, percentAmount);
+            } else {
+                // tiered
+                const threshold = Number(platformSettings.price_threshold);
+                serviceFee = rentalTotal < threshold
+                    ? Number(platformSettings.low_value_fee)
+                    : Number(platformSettings.high_value_fee);
+            }
+        } else {
+            serviceFee = rentalTotal * 0.10;
+        }
         const securityDeposit = listing.securityDeposit || 0;
         const totalPrice = rentalTotal + protectionFee + serviceFee;
 
