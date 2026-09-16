@@ -11,7 +11,23 @@ const DEFAULT_SETTINGS = {
   transaction_fee_percent: 3,
   renter_fee_mode: 'tiered',
   renter_fee_percent: 10,
-  renter_fee_min: 10
+  renter_fee_min: 10,
+  // Insurance / Protection Fee configuration
+  insurance_strategy: 'percentage',   // 'percentage' | 'tiered' | 'self_pool'
+  insurance_deductible: 500,
+  insurance_percent_rate: 15,
+  insurance_percent_min: 5,
+  insurance_tier1_limit: 100,
+  insurance_tier1_fee: 10,
+  insurance_tier2_limit: 500,
+  insurance_tier2_fee: 35,
+  insurance_tier3_fee: 75,
+  // Self-insurance pool (repairs only, no liability)
+  pool_max_combined_value: 5000,     // item + rental combined limit
+  pool_rate_percent: 2,               // % of item value contributed to pool
+  pool_min_premium: 5,                // floor per booking
+  pool_max_payout_ratio: 1,           // max payout = item_value * ratio (1 = 100%)
+  pool_reserve_multiplier: 3          // pool must hold 3x max_payout to accept new bookings
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -21,7 +37,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ALTER TABLE platform_settings
       ADD COLUMN IF NOT EXISTS renter_fee_mode TEXT DEFAULT 'tiered',
       ADD COLUMN IF NOT EXISTS renter_fee_percent NUMERIC DEFAULT 10,
-      ADD COLUMN IF NOT EXISTS renter_fee_min NUMERIC DEFAULT 10
+      ADD COLUMN IF NOT EXISTS renter_fee_min NUMERIC DEFAULT 10,
+      ADD COLUMN IF NOT EXISTS insurance_strategy TEXT DEFAULT 'percentage',
+      ADD COLUMN IF NOT EXISTS insurance_deductible NUMERIC DEFAULT 500,
+      ADD COLUMN IF NOT EXISTS insurance_percent_rate NUMERIC DEFAULT 15,
+      ADD COLUMN IF NOT EXISTS insurance_percent_min NUMERIC DEFAULT 5,
+      ADD COLUMN IF NOT EXISTS insurance_tier1_limit NUMERIC DEFAULT 100,
+      ADD COLUMN IF NOT EXISTS insurance_tier1_fee NUMERIC DEFAULT 10,
+      ADD COLUMN IF NOT EXISTS insurance_tier2_limit NUMERIC DEFAULT 500,
+      ADD COLUMN IF NOT EXISTS insurance_tier2_fee NUMERIC DEFAULT 35,
+      ADD COLUMN IF NOT EXISTS insurance_tier3_fee NUMERIC DEFAULT 75,
+      ADD COLUMN IF NOT EXISTS pool_max_combined_value NUMERIC DEFAULT 5000,
+      ADD COLUMN IF NOT EXISTS pool_rate_percent NUMERIC DEFAULT 2,
+      ADD COLUMN IF NOT EXISTS pool_min_premium NUMERIC DEFAULT 5,
+      ADD COLUMN IF NOT EXISTS pool_max_payout_ratio NUMERIC DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS pool_reserve_multiplier NUMERIC DEFAULT 3
     `;
   } catch (e) {
     console.warn('Schema migration warning:', e);
@@ -30,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     try {
       const { rows } = await sql`
-        SELECT price_threshold, low_value_fee, high_value_fee, transaction_fee_percent, renter_fee_mode, renter_fee_percent, renter_fee_min, updated_at
+        SELECT price_threshold, low_value_fee, high_value_fee, transaction_fee_percent, renter_fee_mode, renter_fee_percent, renter_fee_min, insurance_strategy, insurance_deductible, insurance_percent_rate, insurance_percent_min, insurance_tier1_limit, insurance_tier1_fee, insurance_tier2_limit, insurance_tier2_fee, insurance_tier3_fee, pool_max_combined_value, pool_rate_percent, pool_min_premium, pool_max_payout_ratio, pool_reserve_multiplier, updated_at
         FROM platform_settings WHERE id = 1
       `;
       const settings = rows[0] || DEFAULT_SETTINGS;
@@ -44,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { priceThreshold, lowValueFee, highValueFee, transactionFeePercent, renterFeeMode, renterFeePercent, renterFeeMin, adminEmail } = req.body || {};
+      const { priceThreshold, lowValueFee, highValueFee, transactionFeePercent, renterFeeMode, renterFeePercent, renterFeeMin, insuranceStrategy, insuranceDeductible, insurancePercentRate, insurancePercentMin, insuranceTier1Limit, insuranceTier1Fee, insuranceTier2Limit, insuranceTier2Fee, insuranceTier3Fee, poolMaxCombinedValue, poolRatePercent, poolMinPremium, poolMaxPayoutRatio, poolReserveMultiplier, adminEmail } = req.body || {};
 
       // Admin auth
       if (!adminEmail || !ADMIN_EMAILS.includes(String(adminEmail).toLowerCase())) {
@@ -86,6 +116,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             renter_fee_mode = ${renterFeeMode || 'tiered'},
             renter_fee_percent = ${renterFeePercent != null ? renterFeePercent : 10},
             renter_fee_min = ${renterFeeMin != null ? renterFeeMin : 10},
+            insurance_strategy = ${insuranceStrategy || 'percentage'},
+            insurance_deductible = ${insuranceDeductible != null ? insuranceDeductible : 500},
+            insurance_percent_rate = ${insurancePercentRate != null ? insurancePercentRate : 15},
+            insurance_percent_min = ${insurancePercentMin != null ? insurancePercentMin : 5},
+            insurance_tier1_limit = ${insuranceTier1Limit != null ? insuranceTier1Limit : 100},
+            insurance_tier1_fee = ${insuranceTier1Fee != null ? insuranceTier1Fee : 10},
+            insurance_tier2_limit = ${insuranceTier2Limit != null ? insuranceTier2Limit : 500},
+            insurance_tier2_fee = ${insuranceTier2Fee != null ? insuranceTier2Fee : 35},
+            insurance_tier3_fee = ${insuranceTier3Fee != null ? insuranceTier3Fee : 75},
+            pool_max_combined_value = ${poolMaxCombinedValue != null ? poolMaxCombinedValue : 5000},
+            pool_rate_percent = ${poolRatePercent != null ? poolRatePercent : 2},
+            pool_min_premium = ${poolMinPremium != null ? poolMinPremium : 5},
+            pool_max_payout_ratio = ${poolMaxPayoutRatio != null ? poolMaxPayoutRatio : 1},
+            pool_reserve_multiplier = ${poolReserveMultiplier != null ? poolReserveMultiplier : 3},
             updated_at = NOW()
         WHERE id = 1
       `;
