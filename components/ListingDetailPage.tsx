@@ -93,12 +93,13 @@ interface PaymentSelectionModalProps {
     serviceFee: number;
     protectionFee: number;
     securityDeposit: number;
+    deductible: number;
     listing: Listing;    currentUser: User | null;    onConfirm: (method: 'platform' | 'direct') => void;
     onClose: () => void;
     isProcessing: boolean;
 }
 
-const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, listing, currentUser, onConfirm, onClose, isProcessing }) => {
+const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, rentalCost, serviceFee, protectionFee, securityDeposit, deductible, listing, currentUser, onConfirm, onClose, isProcessing }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [error, setError] = useState<string | null>(null);
@@ -172,6 +173,15 @@ const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, 
                                 <span className="text-cyan-700 font-bold">Protection & Legal Shield</span>
                                 <span className="text-cyan-900 font-black">${protectionFee.toFixed(2)}</span>
                             </div>
+                            {deductible > 0 && (
+                                <div className="flex justify-between text-sm pt-2 border-t border-cyan-200/60">
+                                    <div className="flex flex-col">
+                                        <span className="text-amber-700 font-bold">Damage Deductible</span>
+                                        <span className="text-[10px] text-amber-600 italic font-medium">Your liability if item is damaged. Not charged now.</span>
+                                    </div>
+                                    <span className="text-amber-900 font-black">${deductible.toFixed(2)}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-sm pt-2 border-t border-cyan-200">
                                 <div className="flex items-center gap-1.5">
                                     <span className="text-cyan-700 font-bold">Security Deposit</span>
@@ -394,7 +404,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
         const securityDeposit = listing.securityDeposit || 0;
         const totalPrice = rentalTotal + protectionFee + serviceFee;
 
-        return { unitCount, rentalTotal, protectionFee, serviceFee, securityDeposit, totalPrice, poolEligible, poolMessage };
+        // Damage deductible from admin settings - shown to renter, not charged upfront
+        const deductible = platformSettings ? Number(platformSettings.insurance_deductible) || 0 : 500;
+        return { unitCount, rentalTotal, protectionFee, serviceFee, securityDeposit, totalPrice, poolEligible, poolMessage, deductible };
     };
 
     const priceDetails = getPriceDetails();
@@ -498,7 +510,8 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
                     rentalCost={priceDetails.rentalTotal}
                     serviceFee={priceDetails.serviceFee}
                     protectionFee={priceDetails.protectionFee}
-                    securityDeposit={priceDetails.securityDeposit}                    listing={listing}                    currentUser={currentUser}
+                    securityDeposit={priceDetails.securityDeposit}
+                    deductible={priceDetails.deductible}                    listing={listing}                    currentUser={currentUser}
                     onConfirm={handleConfirmBooking} 
                     onClose={() => setShowPaymentModal(false)} 
                     isProcessing={isBooking}
