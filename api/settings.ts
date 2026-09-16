@@ -13,8 +13,8 @@ const DEFAULT_SETTINGS = {
   renter_fee_percent: 10,
   renter_fee_min: 10,
   // Insurance / Protection Fee configuration
-  insurance_strategy: 'percentage',   // 'percentage' | 'tiered' | 'self_pool'
-  insurance_deductible: 500,
+  insurance_strategy: 'self_pool',    // 'percentage' | 'tiered' | 'self_pool'
+  insurance_deductible: 250,           // Option B production default (balanced)
   insurance_percent_rate: 15,
   insurance_percent_min: 5,
   insurance_tier1_limit: 100,
@@ -24,8 +24,8 @@ const DEFAULT_SETTINGS = {
   insurance_tier3_fee: 75,
   // Self-insurance pool (repairs only, no liability)
   pool_max_combined_value: 5000,     // item + rental combined limit
-  pool_rate_percent: 2,               // % of item value contributed to pool
-  pool_min_premium: 5,                // floor per booking
+  pool_rate_percent: 1.5,             // Option B: 1.5% of item value (balanced, adjustable)
+  pool_min_premium: 10,               // floor per booking (Option B)
   pool_max_payout_ratio: 1,           // max payout = item_value * ratio (1 = 100%)
   pool_reserve_multiplier: 3          // pool must hold 3x max_payout to accept new bookings
 };
@@ -38,8 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ADD COLUMN IF NOT EXISTS renter_fee_mode TEXT DEFAULT 'tiered',
       ADD COLUMN IF NOT EXISTS renter_fee_percent NUMERIC DEFAULT 10,
       ADD COLUMN IF NOT EXISTS renter_fee_min NUMERIC DEFAULT 10,
-      ADD COLUMN IF NOT EXISTS insurance_strategy TEXT DEFAULT 'percentage',
-      ADD COLUMN IF NOT EXISTS insurance_deductible NUMERIC DEFAULT 500,
+      ADD COLUMN IF NOT EXISTS insurance_strategy TEXT DEFAULT 'self_pool',
+      ADD COLUMN IF NOT EXISTS insurance_deductible NUMERIC DEFAULT 250,
       ADD COLUMN IF NOT EXISTS insurance_percent_rate NUMERIC DEFAULT 15,
       ADD COLUMN IF NOT EXISTS insurance_percent_min NUMERIC DEFAULT 5,
       ADD COLUMN IF NOT EXISTS insurance_tier1_limit NUMERIC DEFAULT 100,
@@ -48,8 +48,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ADD COLUMN IF NOT EXISTS insurance_tier2_fee NUMERIC DEFAULT 35,
       ADD COLUMN IF NOT EXISTS insurance_tier3_fee NUMERIC DEFAULT 75,
       ADD COLUMN IF NOT EXISTS pool_max_combined_value NUMERIC DEFAULT 5000,
-      ADD COLUMN IF NOT EXISTS pool_rate_percent NUMERIC DEFAULT 2,
-      ADD COLUMN IF NOT EXISTS pool_min_premium NUMERIC DEFAULT 5,
+      ADD COLUMN IF NOT EXISTS pool_rate_percent NUMERIC DEFAULT 1.5,
+      ADD COLUMN IF NOT EXISTS pool_min_premium NUMERIC DEFAULT 10,
       ADD COLUMN IF NOT EXISTS pool_max_payout_ratio NUMERIC DEFAULT 1,
       ADD COLUMN IF NOT EXISTS pool_reserve_multiplier NUMERIC DEFAULT 3
     `;
@@ -116,8 +116,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             renter_fee_mode = ${renterFeeMode || 'tiered'},
             renter_fee_percent = ${renterFeePercent != null ? renterFeePercent : 10},
             renter_fee_min = ${renterFeeMin != null ? renterFeeMin : 10},
-            insurance_strategy = ${insuranceStrategy || 'percentage'},
-            insurance_deductible = ${insuranceDeductible != null ? insuranceDeductible : 500},
+            insurance_strategy = ${insuranceStrategy || 'self_pool'},
+            insurance_deductible = ${insuranceDeductible != null ? insuranceDeductible : 250},
             insurance_percent_rate = ${insurancePercentRate != null ? insurancePercentRate : 15},
             insurance_percent_min = ${insurancePercentMin != null ? insurancePercentMin : 5},
             insurance_tier1_limit = ${insuranceTier1Limit != null ? insuranceTier1Limit : 100},
@@ -126,8 +126,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             insurance_tier2_fee = ${insuranceTier2Fee != null ? insuranceTier2Fee : 35},
             insurance_tier3_fee = ${insuranceTier3Fee != null ? insuranceTier3Fee : 75},
             pool_max_combined_value = ${poolMaxCombinedValue != null ? poolMaxCombinedValue : 5000},
-            pool_rate_percent = ${poolRatePercent != null ? poolRatePercent : 2},
-            pool_min_premium = ${poolMinPremium != null ? poolMinPremium : 5},
+            pool_rate_percent = ${poolRatePercent != null ? poolRatePercent : 1.5},
+            pool_min_premium = ${poolMinPremium != null ? poolMinPremium : 10},
             pool_max_payout_ratio = ${poolMaxPayoutRatio != null ? poolMaxPayoutRatio : 1},
             pool_reserve_multiplier = ${poolReserveMultiplier != null ? poolReserveMultiplier : 3},
             updated_at = NOW()
