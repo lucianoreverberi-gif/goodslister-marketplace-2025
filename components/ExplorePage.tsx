@@ -77,18 +77,18 @@ function getCategoryMarkerIcon(category: string | undefined, hovered: boolean) {
         .replace(/[\s&]+/g, '_')
         .replace(/^_+|_+$/g, '');
     const cat = CATEGORY_MARKER[key] || DEFAULT_MARKER;
-    const size = hovered ? 44 : 36;
+    const size = hovered ? 52 : 44;
     const half = size / 2;
 
     const svg = hovered
-        ? `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="21" fill="none" stroke="${cat.color}" stroke-width="1.5" opacity="0.4"/>
-            <circle cx="22" cy="22" r="18" fill="${cat.color}" stroke="white" stroke-width="2.5"/>
-            <text x="22" y="29" text-anchor="middle" font-size="22" font-family="sans-serif">${cat.emoji}</text>
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="25" fill="none" stroke="${cat.color}" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="26" cy="26" r="22" fill="${cat.color}" stroke="white" stroke-width="2.5"/>
+            <text x="26" y="34" text-anchor="middle" font-size="26" font-family="sans-serif">${cat.emoji}</text>
           </svg>`
-        : `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="16" fill="${cat.color}" stroke="white" stroke-width="2"/>
-            <text x="18" y="24" text-anchor="middle" font-size="18" font-family="sans-serif">${cat.emoji}</text>
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="${cat.color}" stroke="white" stroke-width="2"/>
+            <text x="22" y="30" text-anchor="middle" font-size="22" font-family="sans-serif">${cat.emoji}</text>
           </svg>`;
 
     return {
