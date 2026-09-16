@@ -8,14 +8,27 @@ const DEFAULT_SETTINGS = {
   price_threshold: 100,
   low_value_fee: 10,
   high_value_fee: 25,
-  transaction_fee_percent: 3
+  transaction_fee_percent: 3,
+  renter_fee_mode: 'tiered',
+  renter_fee_percent: 10
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Idempotent schema migration - safe to run on every request
+  try {
+    await sql`
+      ALTER TABLE platform_settings
+      ADD COLUMN IF NOT EXISTS renter_fee_mode TEXT DEFAULT 'tiered',
+      ADD COLUMN IF NOT EXISTS renter_fee_percent NUMERIC DEFAULT 10
+    `;
+  } catch (e) {
+    console.warn('Schema migration warning:', e);
+  }
+
   if (req.method === 'GET') {
     try {
       const { rows } = await sql`
-        SELECT price_threshold, low_value_fee, high_value_fee, transaction_fee_percent, updated_at
+        SELECT price_threshold, low_value_fee, high_value_fee, transaction_fee_percent, renter_fee_mode, renter_fee_percent, updated_at
         FROM platform_settings WHERE id = 1
       `;
       const settings = rows[0] || DEFAULT_SETTINGS;
@@ -29,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { priceThreshold, lowValueFee, highValueFee, transactionFeePercent, adminEmail } = req.body || {};
+      const { priceThreshold, lowValueFee, highValueFee, transactionFeePercent, renterFeeMode, renterFeePercent, adminEmail } = req.body || {};
 
       // Admin auth
       if (!adminEmail || !ADMIN_EMAILS.includes(String(adminEmail).toLowerCase())) {
@@ -44,6 +57,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (transactionFeePercent < 0 || transactionFeePercent > 100) {
         return res.status(400).json({ error: 'Transaction fee percent must be 0-100' });
       }
+      // Validate new renter fee fields (optional for backwards compat)
+      if (renterFeeMode !== undefined && renterFeeMode !== 'tiered' && renterFeeMode !== 'percentage') {
+        return res.status(400).json({ error: 'renterFeeMode must be "tiered" or "percentage"' });
+      }
+      if (renterFeePercent !== undefined) {
+        if (typeof renterFeePercent !== 'number' || Number.isNaN(renterFeePercent) || renterFeePercent < 0 || renterFeePercent > 100) {
+          return res.status(400).json({ error: 'renterFeePercent must be a number 0-100' });
+        }
+      }
       if (priceThreshold < 0 || lowValueFee < 0 || highValueFee < 0) {
         return res.status(400).json({ error: 'Values must be non-negative' });
       }
@@ -54,6 +76,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             low_value_fee = ${lowValueFee},
             high_value_fee = ${highValueFee},
             transaction_fee_percent = ${transactionFeePercent},
+            renter_fee_mode = ${renterFeeMode || 'tiered'},
+            renter_fee_percent = ${renterFeePercent != null ? renterFeePercent : 10},
             updated_at = NOW()
         WHERE id = 1
       `;
