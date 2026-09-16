@@ -432,7 +432,7 @@ const InsuranceStrategyConfig: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                    ) : (
+                    ) : strategy === 'tiered' ? (
                         <div className="space-y-6 animate-in fade-in">
                              <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg space-y-4">
                                 <h4 className="font-bold text-indigo-900 mb-2">Tiered Model Settings</h4>
