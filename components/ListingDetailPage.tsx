@@ -240,7 +240,7 @@ const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, 
 
                 <div className="p-8 bg-slate-900 text-white flex flex-col gap-4">
                     <div className="flex justify-between items-center opacity-80">
-                        <span className="text-sm font-bold italic">Pay owner directly at pickup:</span>
+                        <span className="text-sm font-bold italic">Rental amount (charged on host approval):</span>
                         <span className="text-lg font-black text-cyan-400">${rentalCost.toFixed(2)}</span>
                     </div>
                     <button 
@@ -250,9 +250,9 @@ const StripeCheckoutForm: React.FC<PaymentSelectionModalProps> = ({ totalPrice, 
                     >
                         {(isProcessing || processingPayment) ? <RefreshCwIcon className="h-5 w-5 animate-spin" /> : <>Pay ${totalFees.toFixed(2)} & Request Trip <RocketIcon className="h-5 w-5" /></>}
                     </button>
-                    <button type="button" onClick={() => onConfirm('direct')} disabled={isProcessing || processingPayment} className="w-full text-xs font-bold text-slate-400 hover:text-white transition-colors">
-                        Or pay full amount later (Skip checkout)
-                    </button>
+                    <p className="text-[10px] font-bold text-slate-500 text-center italic">
+                        All payments processed securely via platform. Funds released to owner after return.
+                    </p>
                 </div>
             </div>
         </form>
@@ -470,7 +470,9 @@ const ListingDetailPage: React.FC<ListingDetailPageProps & { requireBookingLegal
         setShowPaymentModal(true);
     };
 
-    const handleConfirmBooking = async (paymentMethod: 'platform' | 'direct') => {
+    const handleConfirmBooking = async (_paymentMethodArg?: 'platform' | 'direct') => {
+        // CEO policy: platform-only payments. Off-platform arrangements forfeit all protections.
+        const paymentMethod = 'platform' as const;
         if (!priceDetails) return;
         
         let finalStartDate: Date;
