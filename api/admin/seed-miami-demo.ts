@@ -216,15 +216,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           location_city, location_state, location_country, location_lat, location_lng,
           owner_id, images,
           rating, reviews_count, item_value, deposit_amount,
-          status, approval_status, created_at, updated_at
+          moderation_status
         ) VALUES (
           ${listingId}, ${l.title}, ${l.description}, ${l.category}, ${l.subcategory},
           ${l.pricePerDay}, 'daily',
-          ${spot.city}, 'FL', 'US', ${spot.lat + latJitter}, ${spot.lng + lngJitter},
+          ${spot.city}, 'FL', 'USA', ${spot.lat + latJitter}, ${spot.lng + lngJitter},
           ${owner.id}, ${imgUrl ? [imgUrl] : []}::text[],
           ${4.6 + Math.random() * 0.4}, ${Math.floor(Math.random() * 20) + 3},
           ${l.itemValue}, ${l.deposit},
-          'active', 'approved', NOW(), NOW()
+          'approved'
         )
       `;
       createdListings.push({ id: listingId, title: l.title, imageOk: !!imgUrl });
