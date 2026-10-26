@@ -163,7 +163,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ) VALUES (
         ${u.id}, ${u.name}, ${u.email}, NOW(), ${avatarUrl},
         true, true, true,
-        ${4.5 + Math.random() * 0.5}, ${Math.floor(Math.random() * 25) + 5}, ${'{}'}::text[]
+        ${4.5 + Math.random() * 0.5}, ${Math.floor(Math.random() * 25) + 5}, ${'[]'}::jsonb
       )
       ON CONFLICT (id) DO NOTHING
     `;
